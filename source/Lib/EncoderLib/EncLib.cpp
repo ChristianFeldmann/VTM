@@ -1584,6 +1584,12 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
   }
 #endif
 
+  sps.setDepQuantEnabledFlag( m_DepQuantEnabledFlag );
+  if (!sps.getDepQuantEnabledFlag())
+  {
+    sps.setSignDataHidingEnabledFlag( m_SignDataHidingEnabledFlag );
+  }
+
 #if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
   sps.setVirtualBoundariesEnabledFlag( m_virtualBoundariesEnabledFlag );
   if( sps.getVirtualBoundariesEnabledFlag() )

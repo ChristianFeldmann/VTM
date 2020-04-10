@@ -1553,6 +1553,12 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   // KJS: remove scaling lists?
   WRITE_FLAG( pcSPS->getScalingListFlag() ? 1 : 0,                                   "sps_scaling_list_enabled_flag" );
 
+  WRITE_FLAG(pcSPS->getDepQuantEnabledFlag(), "sps_dep_quant_enabled_flag");
+  if (!pcSPS->getDepQuantEnabledFlag())
+  {
+    WRITE_FLAG(pcSPS->getSignDataHidingEnabledFlag(), "sps_sign_data_hiding_enabled_flag");
+  }
+
 #if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
   WRITE_FLAG( pcSPS->getVirtualBoundariesEnabledFlag(), "sps_virtual_boundaries_enabled_flag" );
   if( pcSPS->getVirtualBoundariesEnabledFlag() )

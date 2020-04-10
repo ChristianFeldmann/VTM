@@ -2368,6 +2368,12 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_FLAG( uiCode, "sps_scaling_list_enabled_flag" );                 pcSPS->setScalingListFlag ( uiCode );
 #endif
 
+  READ_FLAG(uiCode, "sps_dep_quant_enabled_flag"); pcSPS->setDepQuantEnabledFlag(uiCode);
+  if (!pcSPS->getDepQuantEnabledFlag())
+  {
+    READ_FLAG(uiCode, "sps_sign_data_hiding_enabled_flag"); pcSPS->setSignDataHidingEnabledFlag(uiCode);
+  }
+
 #if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
   READ_FLAG( uiCode, "sps_virtual_boundaries_enabled_flag" ); pcSPS->setVirtualBoundariesEnabledFlag( uiCode != 0 );
   if( pcSPS->getVirtualBoundariesEnabledFlag() )

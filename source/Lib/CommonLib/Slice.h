@@ -1352,7 +1352,7 @@ private:
   bool                  m_subPicIdSignallingPresentFlag;     //!< indicates the presence of sub-picture ID signalling in the SPS
 #endif
   uint32_t              m_subPicIdLen;                       //!< sub-picture ID length in bits
-  uint32_t              m_subPicId[MAX_NUM_SUB_PICS];        //!< sub-picture ID for each sub-picture in the sequence
+  uint16_t              m_subPicId[MAX_NUM_SUB_PICS];        //!< sub-picture ID for each sub-picture in the sequence
 
   int               m_log2MinCodingBlockSize;
 #if !JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
@@ -1601,8 +1601,8 @@ public:
 #endif
   void                    setSubPicIdLen( uint32_t u )                                                    { m_subPicIdLen = u;                       }
   uint32_t                getSubPicIdLen() const                                                          { return  m_subPicIdLen;                   }
-  void                    setSubPicId( int i, uint8_t u )                                                 { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-picture index exceeds valid range" ); m_subPicId[i] = u;     }
-  uint32_t                getSubPicId( int i ) const                                                      { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-picture index exceeds valid range" ); return  m_subPicId[i]; }
+  void                    setSubPicId( int i, uint16_t u )                                                { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-picture index exceeds valid range" ); m_subPicId[i] = u;     }
+  uint16_t                getSubPicId( int i ) const                                                      { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-picture index exceeds valid range" ); return  m_subPicId[i]; }
 
   uint32_t                getNumLongTermRefPicSPS() const                                                 { return m_numLongTermRefPicSPS;                                       }
   void                    setNumLongTermRefPicSPS(uint32_t val)                                           { m_numLongTermRefPicSPS = val;                                        }
@@ -2035,7 +2035,7 @@ private:
   bool             m_subPicIdSignallingPresentFlag;     //!< indicates the presence of sub-picture ID signalling in the PPS
 #endif
   uint32_t         m_subPicIdLen;                       //!< sub-picture ID length in bits
-  uint32_t         m_subPicId[MAX_NUM_SUB_PICS];        //!< sub-picture ID for each sub-picture in the sequence
+  uint16_t         m_subPicId[MAX_NUM_SUB_PICS];        //!< sub-picture ID for each sub-picture in the sequence
   bool             m_noPicPartitionFlag;                //!< no picture partitioning flag - single slice, single tile
   uint8_t          m_log2CtuSize;                       //!< log2 of the CTU size - required to match corresponding value in SPS
   uint8_t          m_ctuSize;                           //!< CTU size
@@ -2224,8 +2224,8 @@ public:
 #endif
   void                   setSubPicIdLen( uint32_t u )                                     { m_subPicIdLen = u;                            }
   uint32_t               getSubPicIdLen() const                                           { return  m_subPicIdLen;                        }
-  void                   setSubPicId( int i, uint8_t u )                                  { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-picture index exceeds valid range" ); m_subPicId[i] = u;     }
-  uint32_t               getSubPicId( int i ) const                                       { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-picture index exceeds valid range" ); return  m_subPicId[i]; }
+  void                   setSubPicId( int i, uint16_t u )                                 { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-picture index exceeds valid range" ); m_subPicId[i] = u;     }
+  uint16_t               getSubPicId( int i ) const                                       { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-picture index exceeds valid range" ); return  m_subPicId[i]; }
 #if JVET_Q0044_SLICE_IDX_WITH_SUBPICS
   uint32_t               getSubPicIdxFromSubPicId( uint32_t subPicId ) const;
 #endif
@@ -2502,7 +2502,7 @@ private:
 #if !JVET_Q0119_CLEANUPS
   bool                        m_subPicIdSignallingPresentFlag;                          //!< indicates the presence of sub-picture ID signalling in the SPS
   uint32_t                    m_subPicIdLen;                                            //!< sub-picture ID length in bits
-  uint32_t                    m_subPicId[MAX_NUM_SUB_PICS];                             //!< sub-picture ID for each sub-picture in the sequence
+  uint16_t                    m_subPicId[MAX_NUM_SUB_PICS];                             //!< sub-picture ID for each sub-picture in the sequence
 #endif
 #if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
   bool                        m_virtualBoundariesEnabledFlag;                           //!< loop filtering across virtual boundaries disabled
@@ -2658,8 +2658,8 @@ public:
   bool                        getSubPicIdSignallingPresentFlag() const                  { return  m_subPicIdSignallingPresentFlag;                                                     }
   void                        setSubPicIdLen( uint32_t u )                              { m_subPicIdLen = u;                                                                           }
   uint32_t                    getSubPicIdLen() const                                    { return  m_subPicIdLen;                                                                       }
-  void                        setSubPicId( int i, uint8_t u )                           { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-pic index exceeds valid range" ); m_subPicId[i] = u;      }
-  uint32_t                    getSubPicId( int i ) const                                { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-pic index exceeds valid range" ); return  m_subPicId[i];  }
+  void                        setSubPicId( int i, uint16_t u )                           { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-pic index exceeds valid range" ); m_subPicId[i] = u;      }
+  uint16_t                    getSubPicId( int i ) const                                { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-pic index exceeds valid range" ); return  m_subPicId[i];  }
 #endif
 #if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
   void                        setVirtualBoundariesPresentFlag( bool b )                 { m_virtualBoundariesPresentFlag = b;                                                          }

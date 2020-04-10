@@ -1654,6 +1654,7 @@ void DecLib::xCheckParameterSetConstraints(const int layerId)
       // store PPS ID to have sub-picture info for the next pictures when last rectangular slice in the picture is encountered
       if( slice->getSliceID() + 1 == pps->getNumSlicesInPic() )
       {
+        previousSubPicIds[layerId].clear();
         for( int subPicIdx = 0; subPicIdx < sps->getNumSubPics(); subPicIdx++ )
         {
           previousSubPicIds[layerId].push_back( pps->getSubPic( subPicIdx ).getSubPicID() );

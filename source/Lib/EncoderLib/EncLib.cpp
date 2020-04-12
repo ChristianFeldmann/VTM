@@ -2046,8 +2046,8 @@ void EncLib::xInitPicHeader(PicHeader &picHeader, const SPS &sps, const PPS &pps
   picHeader.setMaxTTSizes( sps.getMaxTTSizes() );
 
   // quantization
-  picHeader.setDepQuantEnabledFlag( getDepQuantEnabledFlag() );
-  picHeader.setSignDataHidingEnabledFlag( getSignDataHidingEnabledFlag() );
+  picHeader.setDepQuantEnabledFlag( sps.getDepQuantEnabledFlag() );
+  picHeader.setSignDataHidingEnabledFlag( sps.getSignDataHidingEnabledFlag() );
   
   bool bUseDQP = (getCuQpDeltaSubdiv() > 0)? true : false;
 

@@ -713,9 +713,6 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
         }
       }
       pcPPS->setSliceTileIdx(pcPPS->getNumSlicesInPic()-1, tileIdx );
-      
-      // initialize mapping between rectangular slices and CTUs
-      pcPPS->initRectSliceMap();
     }
 
     // loop filtering across slice/tile controls
@@ -3140,6 +3137,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
 #endif
   
   // initialize tile/slice info for no partitioning case
+
   if( pps->getNoPicPartitionFlag() )
   {
     pps->resetTileSliceInfo();
@@ -3154,7 +3152,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
     pps->initRectSlices( );
     pps->setTileIdxDeltaPresentFlag( 0 );
     pps->setSliceTileIdx( 0, 0 );
-    pps->initRectSliceMap( );
+    pps->initRectSliceMap(sps);
 #if JVET_O1143_SUBPIC_BOUNDARY
     // when no Pic partition, number of sub picture shall be less than 2
     CHECK(pps->getNumSubPics()>=2, "error, no picture partitions, but have equal to or more than 2 sub pictures");
@@ -3163,6 +3161,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   else 
   {
     CHECK(pps->getCtuSize() != sps->getCTUSize(), "PPS CTU size does not match CTU size in SPS");
+    pps->initRectSliceMap(sps);
   }
 
 #if JVET_Q0044_SLICE_IDX_WITH_SUBPICS

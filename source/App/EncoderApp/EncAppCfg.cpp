@@ -909,6 +909,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 #endif
   ("SubPicIdLen",                                     m_subPicIdLen,                                       0u, "specifies the number of bits used to represent the syntax element sps_subpic_id[ i ]. ")
   ("SubPicId",                                        cfg_subPicId,                              cfg_subPicId, "specifies that subpicture ID of the i-th subpicture")
+  ("SingleSlicePerSubpic",                            m_singleSlicePerSubPicFlag,                       false, "Enables setting of a single slice per sub-picture (no explicit configuration required)")
   ("EnablePartitionConstraintsOverride",              m_SplitConsOverrideEnabledFlag,                    true, "Enable partition constraints override")
   ("MinQTISlice",                                     m_uiMinQT[0],                                        8u, "MinQTISlice")
   ("MinQTLumaISlice",                                 m_uiMinQT[0],                                        8u, "MinQTLumaISlice")
@@ -1197,7 +1198,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("RasterSliceSizes",                                cfgRasterSliceSize,                  cfgRasterSliceSize, "Raster-scan slice sizes in units of tiles. Last size in list will be repeated uniformly to cover any remaining tiles in the picture")
   ("DisableLoopFilterAcrossTiles",                    m_disableLFCrossTileBoundaryFlag,                 false, "Loop filtering applied across tile boundaries or not (0: filter across tile boundaries  1: do not filter across tile boundaries)")
   ("DisableLoopFilterAcrossSlices",                   m_disableLFCrossSliceBoundaryFlag,                false, "Loop filtering applied across slice boundaries or not (0: filter across slice boundaries 1: do not filter across slice boundaries)")
-  ("EnableSubPicPartitioning",                        m_subPicPartitionFlag,                             true, "Enable Sub-Picture partitioning (0: single slice per sub-picture, 1: multiple slices per sub-picture can be used)")
   ("FastUDIUseMPMEnabled",                            m_bFastUDIUseMPMEnabled,                           true, "If enabled, adapt intra direction search, accounting for MPM")
   ("FastMEForGenBLowDelayEnabled",                    m_bFastMEForGenBLowDelayEnabled,                   true, "If enabled use a fast ME for generalised B Low Delay slices")
   ("UseBLambdaForNonKeyLowDelayPictures",             m_bUseBLambdaForNonKeyLowDelayPictures,            true, "Enables use of B-Lambda for non-key low-delay pictures")
@@ -1782,14 +1782,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   for (uint8_t i = 0; i < m_numSubProfile; ++i)
   {
     m_subProfile[i] = cfg_SubProfile.values[i];
-  }
-  if (m_subPicPartitionFlag)
-  {
-    m_singleSlicePerSubPicFlag = false;
-  }
-  else
-  {
-    m_singleSlicePerSubPicFlag = true;
   }
   /* rules for input, output and internal bitdepths as per help text */
   if (m_MSBExtendedBitDepth[CHANNEL_TYPE_LUMA  ] == 0)
@@ -3387,155 +3379,162 @@ bool EncAppCfg::xCheckParameter()
     // rectangular slices
     if( !m_rasterSliceFlag )
     {
-      uint32_t sliceIdx;
-      bool     needTileIdxDelta = false;
-
-      // generate slice list for the simplified fixed-rectangular-slice-size config option
-      if( m_rectSliceFixedWidth > 0 && m_rectSliceFixedHeight > 0 )
+      if (m_singleSlicePerSubPicFlag)
       {
-        int tileIdx = 0;
-        m_rectSlicePos.clear();
-        while( tileIdx < pps.getNumTiles() ) 
+        xConfirmPara( m_subPicInfoPresentFlag == 0 || m_numSubPics < 2, "SingleSlicePerSubPic requires more than one subpicture.");
+      }
+      else
+      {
+        uint32_t sliceIdx;
+        bool     needTileIdxDelta = false;
+
+        // generate slice list for the simplified fixed-rectangular-slice-size config option
+        if( m_rectSliceFixedWidth > 0 && m_rectSliceFixedHeight > 0 )
         {
-          uint32_t startTileX = tileIdx % pps.getNumTileColumns();
-          uint32_t startTileY = tileIdx / pps.getNumTileColumns();
-          uint32_t startCtuX  = pps.getTileColumnBd( startTileX );
-          uint32_t startCtuY  = pps.getTileRowBd( startTileY );
-          uint32_t stopCtuX   = (startTileX + m_rectSliceFixedWidth)  >= pps.getNumTileColumns() ? pps.getPicWidthInCtu() - 1  : pps.getTileColumnBd( startTileX + m_rectSliceFixedWidth ) - 1;
-          uint32_t stopCtuY   = (startTileY + m_rectSliceFixedHeight) >= pps.getNumTileRows()    ? pps.getPicHeightInCtu() - 1 : pps.getTileRowBd( startTileY + m_rectSliceFixedHeight ) - 1;
+          int tileIdx = 0;
+          m_rectSlicePos.clear();
+          while( tileIdx < pps.getNumTiles() )
+          {
+            uint32_t startTileX = tileIdx % pps.getNumTileColumns();
+            uint32_t startTileY = tileIdx / pps.getNumTileColumns();
+            uint32_t startCtuX  = pps.getTileColumnBd( startTileX );
+            uint32_t startCtuY  = pps.getTileRowBd( startTileY );
+            uint32_t stopCtuX   = (startTileX + m_rectSliceFixedWidth)  >= pps.getNumTileColumns() ? pps.getPicWidthInCtu() - 1  : pps.getTileColumnBd( startTileX + m_rectSliceFixedWidth ) - 1;
+            uint32_t stopCtuY   = (startTileY + m_rectSliceFixedHeight) >= pps.getNumTileRows()    ? pps.getPicHeightInCtu() - 1 : pps.getTileRowBd( startTileY + m_rectSliceFixedHeight ) - 1;
+            uint32_t stopTileX  = pps.ctuToTileCol( stopCtuX );
+            uint32_t stopTileY  = pps.ctuToTileRow( stopCtuY );
+
+            // add rectangular slice to list
+            m_rectSlicePos.push_back( startCtuY * pps.getPicWidthInCtu() + startCtuX );
+            m_rectSlicePos.push_back( stopCtuY  * pps.getPicWidthInCtu() + stopCtuX  );
+
+            // get slice size in tiles
+            uint32_t sliceWidth  = stopTileX - startTileX + 1;
+            uint32_t sliceHeight = stopTileY - startTileY + 1;
+
+            // move to next tile in raster scan order
+            tileIdx += sliceWidth;
+            if( tileIdx % pps.getNumTileColumns() == 0 )
+            {
+              tileIdx += (sliceHeight - 1) * pps.getNumTileColumns();
+            }
+          }
+        }
+
+        xConfirmPara( m_rectSlicePos.size() & 1, "Odd number of rectangular slice positions provided. Rectangular slice positions must be specified in pairs of (top-left / bottom-right) raster-scan CTU addresses.");
+
+        // set default slice size if not provided
+        if( m_rectSlicePos.size() == 0 )
+        {
+          m_rectSlicePos.push_back( 0 );
+          m_rectSlicePos.push_back( pps.getPicWidthInCtu() * pps.getPicHeightInCtu() - 1 );
+        }
+        pps.setNumSlicesInPic( (uint32_t)(m_rectSlicePos.size() >> 1) );
+        xConfirmPara(pps.getNumSlicesInPic() > getMaxSlicesByLevel( m_level ), "Number of rectangular slices exceeds maximum number allowed according to specified level");
+        pps.initRectSlices();
+
+        // set slice parameters from CTU addresses
+        for( sliceIdx = 0; sliceIdx < pps.getNumSlicesInPic(); sliceIdx++ )
+        {
+          xConfirmPara( m_rectSlicePos[2*sliceIdx]     >= pps.getPicWidthInCtu() * pps.getPicHeightInCtu(), "Rectangular slice position exceeds total number of CTU in picture.");
+          xConfirmPara( m_rectSlicePos[2*sliceIdx + 1] >= pps.getPicWidthInCtu() * pps.getPicHeightInCtu(), "Rectangular slice position exceeds total number of CTU in picture.");
+
+          // map raster scan CTU address to X/Y position
+          uint32_t startCtuX = m_rectSlicePos[2*sliceIdx]     % pps.getPicWidthInCtu();
+          uint32_t startCtuY = m_rectSlicePos[2*sliceIdx]     / pps.getPicWidthInCtu();
+          uint32_t stopCtuX  = m_rectSlicePos[2*sliceIdx + 1] % pps.getPicWidthInCtu();
+          uint32_t stopCtuY  = m_rectSlicePos[2*sliceIdx + 1] / pps.getPicWidthInCtu();
+
+          // get corresponding tile index
+          uint32_t startTileX = pps.ctuToTileCol( startCtuX );
+          uint32_t startTileY = pps.ctuToTileRow( startCtuY );
           uint32_t stopTileX  = pps.ctuToTileCol( stopCtuX );
           uint32_t stopTileY  = pps.ctuToTileRow( stopCtuY );
-          
-          // add rectangular slice to list
-          m_rectSlicePos.push_back( startCtuY * pps.getPicWidthInCtu() + startCtuX );          
-          m_rectSlicePos.push_back( stopCtuY  * pps.getPicWidthInCtu() + stopCtuX  );
-          
+          uint32_t tileIdx    = startTileY * pps.getNumTileColumns() + startTileX;
+
           // get slice size in tiles
           uint32_t sliceWidth  = stopTileX - startTileX + 1;
           uint32_t sliceHeight = stopTileY - startTileY + 1;
 
-          // move to next tile in raster scan order
-          tileIdx += sliceWidth;
-          if( tileIdx % pps.getNumTileColumns() == 0 )
+          // check for slice / tile alignment
+          xConfirmPara( startCtuX != pps.getTileColumnBd( startTileX ), "Rectangular slice position does not align with a left tile edge.");
+          xConfirmPara( stopCtuX  != (pps.getTileColumnBd( stopTileX + 1 ) - 1), "Rectangular slice position does not align with a right tile edge.");
+          if( sliceWidth > 1 || sliceHeight > 1 )
           {
-            tileIdx += (sliceHeight - 1) * pps.getNumTileColumns();
+            xConfirmPara( startCtuY != pps.getTileRowBd( startTileY ), "Rectangular slice position does not align with a top tile edge.");
+            xConfirmPara( stopCtuY  != (pps.getTileRowBd( stopTileY + 1 ) - 1), "Rectangular slice position does not align with a bottom tile edge.");
           }
-        }
-      }
 
-      xConfirmPara( m_rectSlicePos.size() & 1, "Odd number of rectangular slice positions provided. Rectangular slice positions must be specified in pairs of (top-left / bottom-right) raster-scan CTU addresses.");
-      
-      // set default slice size if not provided
-      if( m_rectSlicePos.size() == 0 ) 
-      {
-        m_rectSlicePos.push_back( 0 );
-        m_rectSlicePos.push_back( pps.getPicWidthInCtu() * pps.getPicHeightInCtu() - 1 );
-      }
-      pps.setNumSlicesInPic( (uint32_t)(m_rectSlicePos.size() >> 1) );
-      xConfirmPara(pps.getNumSlicesInPic() > getMaxSlicesByLevel( m_level ), "Number of rectangular slices exceeds maximum number allowed according to specified level");
-      pps.initRectSlices();
-
-      // set slice parameters from CTU addresses
-      for( sliceIdx = 0; sliceIdx < pps.getNumSlicesInPic(); sliceIdx++ )
-      {
-        xConfirmPara( m_rectSlicePos[2*sliceIdx]     >= pps.getPicWidthInCtu() * pps.getPicHeightInCtu(), "Rectangular slice position exceeds total number of CTU in picture.");
-        xConfirmPara( m_rectSlicePos[2*sliceIdx + 1] >= pps.getPicWidthInCtu() * pps.getPicHeightInCtu(), "Rectangular slice position exceeds total number of CTU in picture.");
-
-        // map raster scan CTU address to X/Y position
-        uint32_t startCtuX = m_rectSlicePos[2*sliceIdx]     % pps.getPicWidthInCtu();
-        uint32_t startCtuY = m_rectSlicePos[2*sliceIdx]     / pps.getPicWidthInCtu();
-        uint32_t stopCtuX  = m_rectSlicePos[2*sliceIdx + 1] % pps.getPicWidthInCtu();
-        uint32_t stopCtuY  = m_rectSlicePos[2*sliceIdx + 1] / pps.getPicWidthInCtu();
-        
-        // get corresponding tile index
-        uint32_t startTileX = pps.ctuToTileCol( startCtuX );
-        uint32_t startTileY = pps.ctuToTileRow( startCtuY );
-        uint32_t stopTileX  = pps.ctuToTileCol( stopCtuX );
-        uint32_t stopTileY  = pps.ctuToTileRow( stopCtuY );
-        uint32_t tileIdx    = startTileY * pps.getNumTileColumns() + startTileX;
-
-        // get slice size in tiles
-        uint32_t sliceWidth  = stopTileX - startTileX + 1;
-        uint32_t sliceHeight = stopTileY - startTileY + 1;
-        
-        // check for slice / tile alignment
-        xConfirmPara( startCtuX != pps.getTileColumnBd( startTileX ), "Rectangular slice position does not align with a left tile edge.");
-        xConfirmPara( stopCtuX  != (pps.getTileColumnBd( stopTileX + 1 ) - 1), "Rectangular slice position does not align with a right tile edge.");
-        if( sliceWidth > 1 || sliceHeight > 1 )
-        {
-          xConfirmPara( startCtuY != pps.getTileRowBd( startTileY ), "Rectangular slice position does not align with a top tile edge.");
-          xConfirmPara( stopCtuY  != (pps.getTileRowBd( stopTileY + 1 ) - 1), "Rectangular slice position does not align with a bottom tile edge.");
-        }
-
-        // set slice size and tile index
-        pps.setSliceWidthInTiles( sliceIdx, sliceWidth );
-        pps.setSliceHeightInTiles( sliceIdx, sliceHeight );
-        pps.setSliceTileIdx( sliceIdx, tileIdx );
-        if( sliceIdx > 0 && !needTileIdxDelta )
-        {
-          uint32_t lastTileIdx = pps.getSliceTileIdx( sliceIdx-1 );
-          lastTileIdx += pps.getSliceWidthInTiles( sliceIdx-1 );
-          if( lastTileIdx % pps.getNumTileColumns() == 0)
+          // set slice size and tile index
+          pps.setSliceWidthInTiles( sliceIdx, sliceWidth );
+          pps.setSliceHeightInTiles( sliceIdx, sliceHeight );
+          pps.setSliceTileIdx( sliceIdx, tileIdx );
+          if( sliceIdx > 0 && !needTileIdxDelta )
           {
-            lastTileIdx += (pps.getSliceHeightInTiles( sliceIdx-1 ) - 1) * pps.getNumTileColumns();
-          }
-          if( lastTileIdx != tileIdx )
-          {
-            needTileIdxDelta = true;
-          }
-        }
-
-        // special case for multiple slices within a single tile
-        if( sliceWidth == 1 && sliceHeight == 1 )
-        {
-          uint32_t firstSliceIdx = sliceIdx;
-          uint32_t numSlicesInTile = 1;
-          pps.setSliceHeightInCtu( sliceIdx, stopCtuY - startCtuY + 1 );
-          
-          while( sliceIdx < pps.getNumSlicesInPic()-1 ) 
-          {
-            uint32_t nextTileIdx;
-            startCtuX   = m_rectSlicePos[2*(sliceIdx+1)]     % pps.getPicWidthInCtu();
-            startCtuY   = m_rectSlicePos[2*(sliceIdx+1)]     / pps.getPicWidthInCtu();
-            stopCtuX    = m_rectSlicePos[2*(sliceIdx+1) + 1] % pps.getPicWidthInCtu();
-            stopCtuY    = m_rectSlicePos[2*(sliceIdx+1) + 1] / pps.getPicWidthInCtu();          
-            startTileX  = pps.ctuToTileCol( startCtuX );
-            startTileY  = pps.ctuToTileRow( startCtuY );
-            stopTileX   = pps.ctuToTileCol( stopCtuX );
-            stopTileY   = pps.ctuToTileRow( stopCtuY );
-            nextTileIdx = startTileY * pps.getNumTileColumns() + startTileX;
-            sliceWidth  = stopTileX - startTileX + 1;
-            sliceHeight = stopTileY - startTileY + 1;
-            if(nextTileIdx != tileIdx || sliceWidth != 1 || sliceHeight != 1) 
+            uint32_t lastTileIdx = pps.getSliceTileIdx( sliceIdx-1 );
+            lastTileIdx += pps.getSliceWidthInTiles( sliceIdx-1 );
+            if( lastTileIdx % pps.getNumTileColumns() == 0)
             {
-              break;
+              lastTileIdx += (pps.getSliceHeightInTiles( sliceIdx-1 ) - 1) * pps.getNumTileColumns();
             }
-            numSlicesInTile++;
-            sliceIdx++;
-            pps.setSliceWidthInTiles( sliceIdx, 1 );
-            pps.setSliceHeightInTiles( sliceIdx, 1 );
-            pps.setSliceTileIdx( sliceIdx, tileIdx );    
-            pps.setSliceHeightInCtu( sliceIdx, stopCtuY - startCtuY + 1 );
+            if( lastTileIdx != tileIdx )
+            {
+              needTileIdxDelta = true;
+            }
           }
-          pps.setNumSlicesInTile( firstSliceIdx, numSlicesInTile );
-        }
-      }
-      pps.setTileIdxDeltaPresentFlag( needTileIdxDelta );
-      m_tileIdxDeltaPresentFlag = needTileIdxDelta;
-      
-      // check rectangular slice mapping and full picture CTU coverage
-      pps.initRectSliceMap();
 
-      // store rectangular slice parameters from temporary PPS structure
-      m_numSlicesInPic = pps.getNumSlicesInPic();
-      m_rectSlices.resize( pps.getNumSlicesInPic() );
-      for( sliceIdx = 0; sliceIdx < pps.getNumSlicesInPic(); sliceIdx++ )
-      {
-        m_rectSlices[sliceIdx].setSliceWidthInTiles( pps.getSliceWidthInTiles(sliceIdx) );
-        m_rectSlices[sliceIdx].setSliceHeightInTiles( pps.getSliceHeightInTiles(sliceIdx) );
-        m_rectSlices[sliceIdx].setNumSlicesInTile( pps.getNumSlicesInTile(sliceIdx) );
-        m_rectSlices[sliceIdx].setSliceHeightInCtu( pps.getSliceHeightInCtu(sliceIdx) );
-        m_rectSlices[sliceIdx].setTileIdx( pps.getSliceTileIdx(sliceIdx) );
+          // special case for multiple slices within a single tile
+          if( sliceWidth == 1 && sliceHeight == 1 )
+          {
+            uint32_t firstSliceIdx = sliceIdx;
+            uint32_t numSlicesInTile = 1;
+            pps.setSliceHeightInCtu( sliceIdx, stopCtuY - startCtuY + 1 );
+
+            while( sliceIdx < pps.getNumSlicesInPic()-1 )
+            {
+              uint32_t nextTileIdx;
+              startCtuX   = m_rectSlicePos[2*(sliceIdx+1)]     % pps.getPicWidthInCtu();
+              startCtuY   = m_rectSlicePos[2*(sliceIdx+1)]     / pps.getPicWidthInCtu();
+              stopCtuX    = m_rectSlicePos[2*(sliceIdx+1) + 1] % pps.getPicWidthInCtu();
+              stopCtuY    = m_rectSlicePos[2*(sliceIdx+1) + 1] / pps.getPicWidthInCtu();
+              startTileX  = pps.ctuToTileCol( startCtuX );
+              startTileY  = pps.ctuToTileRow( startCtuY );
+              stopTileX   = pps.ctuToTileCol( stopCtuX );
+              stopTileY   = pps.ctuToTileRow( stopCtuY );
+              nextTileIdx = startTileY * pps.getNumTileColumns() + startTileX;
+              sliceWidth  = stopTileX - startTileX + 1;
+              sliceHeight = stopTileY - startTileY + 1;
+              if(nextTileIdx != tileIdx || sliceWidth != 1 || sliceHeight != 1)
+              {
+                break;
+              }
+              numSlicesInTile++;
+              sliceIdx++;
+              pps.setSliceWidthInTiles( sliceIdx, 1 );
+              pps.setSliceHeightInTiles( sliceIdx, 1 );
+              pps.setSliceTileIdx( sliceIdx, tileIdx );
+              pps.setSliceHeightInCtu( sliceIdx, stopCtuY - startCtuY + 1 );
+            }
+            pps.setNumSlicesInTile( firstSliceIdx, numSlicesInTile );
+          }
+        }
+        pps.setTileIdxDeltaPresentFlag( needTileIdxDelta );
+        m_tileIdxDeltaPresentFlag = needTileIdxDelta;
+
+        // check rectangular slice mapping and full picture CTU coverage
+        pps.initRectSliceMap(nullptr);
+
+        // store rectangular slice parameters from temporary PPS structure
+        m_numSlicesInPic = pps.getNumSlicesInPic();
+        m_rectSlices.resize( pps.getNumSlicesInPic() );
+        for( sliceIdx = 0; sliceIdx < pps.getNumSlicesInPic(); sliceIdx++ )
+        {
+          m_rectSlices[sliceIdx].setSliceWidthInTiles( pps.getSliceWidthInTiles(sliceIdx) );
+          m_rectSlices[sliceIdx].setSliceHeightInTiles( pps.getSliceHeightInTiles(sliceIdx) );
+          m_rectSlices[sliceIdx].setNumSlicesInTile( pps.getNumSlicesInTile(sliceIdx) );
+          m_rectSlices[sliceIdx].setSliceHeightInCtu( pps.getSliceHeightInCtu(sliceIdx) );
+          m_rectSlices[sliceIdx].setTileIdx( pps.getSliceTileIdx(sliceIdx) );
+        }
       }
     }
     // raster-scan slices

@@ -1082,24 +1082,6 @@ Specifies the value of one_subpic_per_pic_constraint_flag
 Specifies the value of general_frame_only_constraint_flag
 \\
 
-\Option{SubPicInfoPresentFlag} &
-%\ShortOption{\None} &
-\Default{false} &
-Specifies the value of subpicture subpic_info_present_flag
-\\
-
-\Option{SubPicIdMappingExplicitlySignalledFlag} &
-%\ShortOption{\None} &
-\Default{false} &
-Specifies the value of subpicture subpic_id_mapping_explicitly_signalled_flag
-\\
-
-\Option{SubPicIdMappingInSpsFlag} &
-%\ShortOption{\None} &
-\Default{false} &
-Specifies the value of subpicture subpic_id_mapping_in_sps_flag
-\\
-
 \end{OptionTableNoShorthand}
 
 
@@ -1991,6 +1973,12 @@ Tile row heights in units of CTUs. Last row height in list will be repeated unif
 Use raster-scan or rectangular slices (0: rectangular, 1: raster-scan).
 \\
 
+\Option{SingleSlicePerSubpic} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables slice layout derivation from subpicture layout. Requires more than one subpicture to be enabled. If enabled, all other slice layout parameters will be ignored.
+\\
+
 \Option{RectSlicePositions} &
 %\ShortOption{\None} &
 \Default{\NotSet} &
@@ -2051,15 +2039,82 @@ Note that when a slice contains more than one tile, entry point offsets for tile
 \end{OptionTableNoShorthand}
 
 %%
-%% Slice/Sub-Picture coding parameters
+%% Subpicture coding parameters
 %%
-\begin{OptionTableNoShorthand}{Slice and Sub-Picture coding parameters}{tab:subpicture-coding}
+\begin{OptionTableNoShorthand}{Subpicture coding parameters}{tab:subpicture-coding}
 
-\Option{EnableSubPicPartitioning} &
+\Option{SubPicInfoPresentFlag} &
 %\ShortOption{\None} &
-\Default{1} &
-Enable Sub Picture partitioning (0: single slice per sub-picture, 1: multiple slices per sub-picture can be used).
+\Default{false} &
+Enables conding of subpictures.
 \\
+
+\Option{NumSubPics} &
+%\ShortOption{\None} &
+\Default{0} &
+Number of subpictures. Must be greater that zero, if SubPicInfoPresentFlag is enabled.
+\\
+
+\Option{SubPicCtuTopLeftX} &
+%\ShortOption{\None} &
+\Default{\None} &
+Array of subpicture top left horizontal (x) coordinates. The number of entries must be equal to NumSubPics.
+\\
+
+\Option{SubPicCtuTopLeftY} &
+%\ShortOption{\None} &
+\Default{\None} &
+Array of subpicture top left vertical (y) coordinates. The number of entries must be equal to NumSubPics.
+\\
+
+\Option{SubPicWidth} &
+%\ShortOption{\None} &
+\Default{\None} &
+Array of subpicture widths. The number of entries must be equal to NumSubPics.
+\\
+
+\Option{SubPicHeight} &
+%\ShortOption{\None} &
+\Default{\None} &
+Array of subpicture heights. The number of entries must be equal to NumSubPics.
+\\
+
+\Option{SubPicTreatedAsPicFlag} &
+%\ShortOption{\None} &
+\Default{\None} &
+Setting of subpic_treated_as_pic_flag for each subpicture. If enabled subpicture boundaries will be treated as picture boundaries. The number of entries must be equal to NumSubPics.
+\\
+
+\Option{LoopFilterAcrossSubpicEnabledFlag} &
+%\ShortOption{\None} &
+\Default{\None} &
+Enables loop filtering across subpicture boundaries for each subpicture. The number of entries must be equal to NumSubPics.
+\\
+
+\Option{SubPicIdMappingExplicitlySignalledFlag} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables explicit signalling of a subpicture ID map. If disabled, a default map will be derived.
+\\
+
+\Option{SubPicIdMappingInSpsFlag} &
+%\ShortOption{\None} &
+\Default{false} &
+Specifies wheter to signal the subpicture ID map in SPS or PPS. If SubPicIdMappingInSpsFlag is enabled subpicture IDs are signalled in SPS, otherwise in PPS.
+\\
+
+\Option{SubPicIdLen} &
+%\ShortOption{\None} &
+\Default{0} &
+Length of the subpicture IDs in bits. (1<<SubPicIdLen) must be bigger than the number of subpictures and the highes subpicture ID specifid in SubPicId. 
+\\
+
+\Option{SubPicId} &
+%\ShortOption{\None} &
+\Default{\None} &
+Array of subpicture IDs. The number of entries must be equal to NumSubPics.
+\\
+
 
 \end{OptionTableNoShorthand}
 

@@ -2938,7 +2938,7 @@ PPS::PPS()
 , m_numTileCols                      (1)
 , m_numTileRows                      (1)
 , m_rectSliceFlag                    (1)  
-  , m_singleSlicePerSubPicFlag       (0)
+, m_singleSlicePerSubPicFlag         (0)
 , m_numSlicesInPic                   (1)
 , m_tileIdxDeltaPresentFlag          (0)
 , m_loopFilterAcrossTilesEnabledFlag (1)
@@ -3138,89 +3138,143 @@ void PPS::initRectSlices()
 /**
  - initialize mapping between rectangular slices and CTUs
  */
-void PPS::initRectSliceMap()
+void PPS::initRectSliceMap(const SPS  *sps)
 {
   uint32_t  ctuY;
   uint32_t  tileX, tileY;
-    
-  // allocate new memory for slice list
-  CHECK(m_numSlicesInPic > MAX_SLICES, "Number of slices in picture exceeds valid range");
-  m_sliceMap.resize( m_numSlicesInPic );
-#if JVET_Q0817   
-  if( getSingleSlicePerSubPicFlag() )
-  {
-#else
-  if ((getNumSubPics() > 0) && getSingleSlicePerSubPicFlag())
-  {
-#endif
-    for (uint32_t i = 0; i <= getNumSubPics() - 1; i++)
-    {
-      m_sliceMap[i].initSliceMap();
-    }
-    uint32_t picSizeInCtu = getPicWidthInCtu() * getPicHeightInCtu();
-    uint32_t sliceIdx;
-    for (uint32_t i = 0; i < picSizeInCtu; i++)
-    {
-      sliceIdx = getCtuToSubPicIdx(i);
-      m_sliceMap[sliceIdx].pushToCtuAddrInSlice(i);
-    }
-  }
-  else
-  {
-  // generate CTU maps for all rectangular slices in picture
-  for( uint32_t i = 0; i < m_numSlicesInPic; i++ )
-  {
-    m_sliceMap[ i ].initSliceMap();
 
-    // get position of first tile in slice
-    tileX =  m_rectSlices[ i ].getTileIdx() % m_numTileCols;
-    tileY =  m_rectSlices[ i ].getTileIdx() / m_numTileCols;
-    
-    // infer slice size for last slice in picture
-    if( i == m_numSlicesInPic-1 ) 
+  if (sps)
+  {
+    m_ctuToSubPicIdx.resize(getPicWidthInCtu() * getPicHeightInCtu());
+    if (sps->getNumSubPics() > 1)
     {
-      m_rectSlices[ i ].setSliceWidthInTiles ( m_numTileCols - tileX );
-      m_rectSlices[ i ].setSliceHeightInTiles( m_numTileRows - tileY );
-      m_rectSlices[ i ].setNumSlicesInTile( 1 );
-    }
-
-    // set slice index
-    m_sliceMap[ i ].setSliceID(i);
-    
-    // complete tiles within a single slice case
-    if( m_rectSlices[ i ].getSliceWidthInTiles( ) > 1 || m_rectSlices[ i ].getSliceHeightInTiles( ) > 1)
-    {
-      for( uint32_t j = 0; j < m_rectSlices[ i ].getSliceHeightInTiles( ); j++ )
+      for (int i = 0; i <= sps->getNumSubPics() - 1; i++)
       {
-        for( uint32_t k = 0; k < m_rectSlices[ i ].getSliceWidthInTiles( ); k++ )
+        for (int y = sps->getSubPicCtuTopLeftY(i); y < sps->getSubPicCtuTopLeftY(i) + sps->getSubPicHeight(i); y++)
         {
-          m_sliceMap[ i ].addCtusToSlice( getTileColumnBd(tileX + k), getTileColumnBd(tileX + k +1),
-                                          getTileRowBd(tileY + j), getTileRowBd(tileY + j +1), m_picWidthInCtu);
+          for (int x = sps->getSubPicCtuTopLeftX(i); x < sps->getSubPicCtuTopLeftX(i) + sps->getSubPicWidth(i); x++)
+          {
+            m_ctuToSubPicIdx[ x+ y * getPicWidthInCtu()] = i;
+          }
         }
       }
     }
-    // multiple slices within a single tile case
-    else 
+    else
     {
-      uint32_t  numSlicesInTile = m_rectSlices[ i ].getNumSlicesInTile( );
-
-      ctuY = getTileRowBd( tileY );
-      for( uint32_t j = 0; j < numSlicesInTile-1; j++ ) 
+      for (int i = 0; i < getPicWidthInCtu() * getPicHeightInCtu(); i++)
       {
-        m_sliceMap[ i ].addCtusToSlice( getTileColumnBd(tileX), getTileColumnBd(tileX+1),
-                                        ctuY, ctuY + m_rectSlices[ i ].getSliceHeightInCtu(), m_picWidthInCtu);
-        ctuY += m_rectSlices[ i ].getSliceHeightInCtu();
-        i++;
-        m_sliceMap[ i ].setSliceID(i);
+        m_ctuToSubPicIdx[i] = 0;
+      }
+    }
+  }
+
+#if JVET_Q0817
+  if( getSingleSlicePerSubPicFlag() )
+#else
+  if ((getNumSubPics() > 0) && getSingleSlicePerSubPicFlag())
+#endif
+  {
+    CHECK (sps==nullptr, "RectSliceMap can only be initialized for slice_per_sub_pic_flag with a valid SPS");
+    m_numSlicesInPic = sps->getNumSubPics();
+
+    // allocate new memory for slice list
+    CHECK(m_numSlicesInPic > MAX_SLICES, "Number of slices in picture exceeds valid range");
+    m_sliceMap.resize( m_numSlicesInPic );
+    
+    for( int i = 0; i < m_numSlicesInPic; i++ )
+    {
+      m_sliceMap[ i ].initSliceMap();
+    }
+    for (int row = 0; row < m_numTileRows; row++)
+    {
+      for (int col = 0; col < m_numTileCols; col++)
+      {
+        const int tileTopLeftCtu = getTileColumnBd(col) + getTileRowBd(row) * getPicWidthInCtu();
+        const int sliceIdx = getCtuToSubPicIdx(tileTopLeftCtu);
+        const int tileSizeInCtus = (getTileColumnBd(col + 1) - getTileColumnBd(col)) * (getTileRowBd(row + 1) - getTileRowBd(row));
+        const int subPicSizeInCtus = sps->getSubPicHeight(sliceIdx) * sps->getSubPicWidth(sliceIdx);
+        if (subPicSizeInCtus >= tileSizeInCtus)
+        {
+          m_sliceMap[sliceIdx].addCtusToSlice(getTileColumnBd(col), getTileColumnBd(col + 1),
+            getTileRowBd(row), getTileRowBd(row + 1), m_picWidthInCtu);
+        }
+        else
+        {
+          int sliceIdxInTile = sliceIdx;
+          do
+          {
+            // subpicture vertical boundary must be a tile boundary, so tile column parameter doesn't change
+            m_sliceMap[sliceIdxInTile].addCtusToSlice(getTileColumnBd(col), getTileColumnBd(col + 1),
+              sps->getSubPicCtuTopLeftY(sliceIdxInTile), sps->getSubPicCtuTopLeftY(sliceIdxInTile) +  sps->getSubPicHeight(sliceIdxInTile), m_picWidthInCtu);
+            sliceIdxInTile++;
+            if (sliceIdxInTile == sps->getNumSubPics())
+            {
+              break;
+            }
+          } while (sps->getSubPicCtuTopLeftY(sliceIdxInTile) < getTileRowBd(row + 1));
+        }
+      }
+    }    
+  }
+  else
+  {
+    // allocate new memory for slice list
+    CHECK(m_numSlicesInPic > MAX_SLICES, "Number of slices in picture exceeds valid range");
+    m_sliceMap.resize( m_numSlicesInPic );
+    // generate CTU maps for all rectangular slices in picture
+    for( uint32_t i = 0; i < m_numSlicesInPic; i++ )
+    {
+      m_sliceMap[ i ].initSliceMap();
+
+      // get position of first tile in slice
+      tileX =  m_rectSlices[ i ].getTileIdx() % m_numTileCols;
+      tileY =  m_rectSlices[ i ].getTileIdx() / m_numTileCols;
+
+      // infer slice size for last slice in picture
+      if( i == m_numSlicesInPic-1 )
+      {
+        m_rectSlices[ i ].setSliceWidthInTiles ( m_numTileCols - tileX );
+        m_rectSlices[ i ].setSliceHeightInTiles( m_numTileRows - tileY );
+        m_rectSlices[ i ].setNumSlicesInTile( 1 );
       }
 
-      // infer slice height for last slice in tile
-      CHECK( ctuY >= getTileRowBd( tileY + 1 ), "Invalid rectangular slice signalling");
-      m_rectSlices[ i ].setSliceHeightInCtu( getTileRowBd( tileY + 1 ) - ctuY );
-      m_sliceMap[ i ].addCtusToSlice( getTileColumnBd(tileX), getTileColumnBd(tileX+1),
-                                      ctuY, getTileRowBd( tileY + 1 ), m_picWidthInCtu);
-    } 
-  }
+      // set slice index
+      m_sliceMap[ i ].setSliceID(i);
+
+      // complete tiles within a single slice case
+      if( m_rectSlices[ i ].getSliceWidthInTiles( ) > 1 || m_rectSlices[ i ].getSliceHeightInTiles( ) > 1)
+      {
+        for( uint32_t j = 0; j < m_rectSlices[ i ].getSliceHeightInTiles( ); j++ )
+        {
+          for( uint32_t k = 0; k < m_rectSlices[ i ].getSliceWidthInTiles( ); k++ )
+          {
+            m_sliceMap[ i ].addCtusToSlice( getTileColumnBd(tileX + k), getTileColumnBd(tileX + k +1),
+                                            getTileRowBd(tileY + j), getTileRowBd(tileY + j +1), m_picWidthInCtu);
+          }
+        }
+      }
+      // multiple slices within a single tile case
+      else
+      {
+        uint32_t  numSlicesInTile = m_rectSlices[ i ].getNumSlicesInTile( );
+
+        ctuY = getTileRowBd( tileY );
+        for( uint32_t j = 0; j < numSlicesInTile-1; j++ )
+        {
+          m_sliceMap[ i ].addCtusToSlice( getTileColumnBd(tileX), getTileColumnBd(tileX+1),
+                                          ctuY, ctuY + m_rectSlices[ i ].getSliceHeightInCtu(), m_picWidthInCtu);
+          ctuY += m_rectSlices[ i ].getSliceHeightInCtu();
+          i++;
+          m_sliceMap[ i ].setSliceID(i);
+        }
+
+        // infer slice height for last slice in tile
+        CHECK( ctuY >= getTileRowBd( tileY + 1 ), "Invalid rectangular slice signalling");
+        m_rectSlices[ i ].setSliceHeightInCtu( getTileRowBd( tileY + 1 ) - ctuY );
+        m_sliceMap[ i ].addCtusToSlice( getTileColumnBd(tileX), getTileColumnBd(tileX+1),
+                                        ctuY, getTileRowBd( tileY + 1 ), m_picWidthInCtu);
+      }
+    }
   }
   // check for valid rectangular slice map
   checkSliceMap();

@@ -499,7 +499,6 @@ protected:
   std::vector<RectSlice> m_rectSlices;                        ///< derived list of rectangular slice signalling parameters
   uint32_t  m_numTileCols;                                    ///< derived number of tile columns
   uint32_t  m_numTileRows;                                    ///< derived number of tile rows
-  bool      m_subPicPartitionFlag;
   bool      m_singleSlicePerSubPicFlag;
   bool      m_entropyCodingSyncEnabledFlag;
 #if JVET_Q0151_Q0205_ENTRYPOINTS

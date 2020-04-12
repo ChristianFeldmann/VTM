@@ -2295,7 +2295,7 @@ public:
   void                   resetTileSliceInfo();
   void                   initTiles();
   void                   initRectSlices();
-  void                   initRectSliceMap();
+  void                   initRectSliceMap(const SPS  *sps);
 #if JVET_O1143_SUBPIC_BOUNDARY
   std::vector<SubPic>    getSubPics()  const                                              {return m_subPics;          };
 #if JVET_Q0044_SLICE_IDX_WITH_SUBPICS

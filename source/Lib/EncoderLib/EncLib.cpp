@@ -1583,13 +1583,13 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
     }
   }
 #endif
-
+#if DQ_SDH_SIGNALLING
   sps.setDepQuantEnabledFlag( m_DepQuantEnabledFlag );
   if (!sps.getDepQuantEnabledFlag())
   {
     sps.setSignDataHidingEnabledFlag( m_SignDataHidingEnabledFlag );
   }
-
+#endif
 #if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
   sps.setVirtualBoundariesEnabledFlag( m_virtualBoundariesEnabledFlag );
   if( sps.getVirtualBoundariesEnabledFlag() )
@@ -2046,8 +2046,13 @@ void EncLib::xInitPicHeader(PicHeader &picHeader, const SPS &sps, const PPS &pps
   picHeader.setMaxTTSizes( sps.getMaxTTSizes() );
 
   // quantization
+#if DQ_SDH_SIGNALLING
   picHeader.setDepQuantEnabledFlag( sps.getDepQuantEnabledFlag() );
   picHeader.setSignDataHidingEnabledFlag( sps.getSignDataHidingEnabledFlag() );
+#else
+  picHeader.setDepQuantEnabledFlag( getDepQuantEnabledFlag() );
+  picHeader.setSignDataHidingEnabledFlag( getSignDataHidingEnabledFlag() );
+#endif
   
   bool bUseDQP = (getCuQpDeltaSubdiv() > 0)? true : false;
 

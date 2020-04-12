@@ -3265,6 +3265,7 @@ void PPS::initRectSliceMap(const SPS  *sps)
                                           ctuY, ctuY + m_rectSlices[ i ].getSliceHeightInCtu(), m_picWidthInCtu);
           ctuY += m_rectSlices[ i ].getSliceHeightInCtu();
           i++;
+          m_sliceMap[ i ].initSliceMap();
           m_sliceMap[ i ].setSliceID(i);
         }
 

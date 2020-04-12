@@ -1871,10 +1871,11 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
     pps.setRectSliceFlag( m_rectSliceFlag );
     if( m_rectSliceFlag ) 
     {
+      pps.setSingleSlicePerSubPicFlag(m_singleSlicePerSubPicFlag);
       pps.setNumSlicesInPic( m_numSlicesInPic );
       pps.setTileIdxDeltaPresentFlag( m_tileIdxDeltaPresentFlag );
       pps.setRectSlices( m_rectSlices );
-      pps.initRectSliceMap( );
+      pps.initRectSliceMap(&sps);
 #if JVET_O1143_SUBPIC_BOUNDARY
       pps.initSubPic(sps);
 #endif
@@ -1899,7 +1900,7 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
     pps.initRectSlices( );
     pps.setTileIdxDeltaPresentFlag( 0 );
     pps.setSliceTileIdx( 0, 0 );
-    pps.initRectSliceMap( );
+    pps.initRectSliceMap( &sps );
 #if JVET_O1143_SUBPIC_BOUNDARY
     pps.initSubPic(sps);
 #endif

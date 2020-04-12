@@ -933,12 +933,14 @@ void InterPrediction::xPredAffineBlk(const ComponentID &compID, const Prediction
   int iMvScaleHor = mvLT.getHor() << iBit;
   int iMvScaleVer = mvLT.getVer() << iBit;
   const SPS &sps    = *pu.cs->sps;
+#if !JVET_O1143_MV_ACROSS_SUBPIC_BOUNDARY
   const int iMvShift = 4;
   const int iOffset  = 8;
   const int iHorMax = ( pu.cs->pps->getPicWidthInLumaSamples() + iOffset - pu.Y().x - 1 ) << iMvShift;
   const int iHorMin = (      -(int)pu.cs->pcv->maxCUWidth  - iOffset - (int)pu.Y().x + 1 ) << iMvShift;
   const int iVerMax = ( pu.cs->pps->getPicHeightInLumaSamples() + iOffset - pu.Y().y - 1 ) << iMvShift;
   const int iVerMin = (      -(int)pu.cs->pcv->maxCUHeight - iOffset - (int)pu.Y().y + 1 ) << iMvShift;
+#endif
 
   const int vFilterSize = isLuma(compID) ? NTAPS_LUMA : NTAPS_CHROMA;
 
@@ -1134,8 +1136,14 @@ void InterPrediction::xPredAffineBlk(const ComponentID &compID, const Prediction
           if( scalingRatio == SCALE_1X ) 
 #endif
           {
+#if JVET_O1143_MV_ACROSS_SUBPIC_BOUNDARY
+            clipMv(tmpMv, pu.lumaPos(), pu.lumaSize(), *pu.cs->sps, *pu.cs->pps);
+            iMvScaleTmpHor = tmpMv.getHor();
+            iMvScaleTmpVer = tmpMv.getVer();
+#else
             iMvScaleTmpHor = std::min<int>(iHorMax, std::max<int>(iHorMin, iMvScaleTmpHor));
             iMvScaleTmpVer = std::min<int>(iVerMax, std::max<int>(iVerMin, iMvScaleTmpVer));
+#endif
           }
         }
       }
@@ -1157,8 +1165,12 @@ void InterPrediction::xPredAffineBlk(const ComponentID &compID, const Prediction
           if( scalingRatio == SCALE_1X ) 
 #endif
           {
+#if JVET_O1143_MV_ACROSS_SUBPIC_BOUNDARY
+            clipMv(curMv, pu.lumaPos(), pu.lumaSize(), *pu.cs->sps, *pu.cs->pps);
+#else
             curMv.hor = std::min<int>(iHorMax, std::max<int>(iHorMin, curMv.hor));
             curMv.ver = std::min<int>(iVerMax, std::max<int>(iVerMin, curMv.ver));
+#endif
           }
         }
         iMvScaleTmpHor = curMv.hor;

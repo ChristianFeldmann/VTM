@@ -182,7 +182,7 @@ void BitstreamExtractorApp::xRewritePPS (PPS &targetPPS, const PPS &sourcePPS, S
     }
   }
   numTileCols=(int)tileColBd.size() - 1;
-  CHECK (numTileCols < 1, "After extraction there should be at least one tile horizonally.")
+  CHECK (numTileCols < 1, "After extraction there should be at least one tile horizonally.");
   tileColWidth.resize(numTileCols);
   for (int i=0; i<numTileCols; i++)
   {
@@ -201,7 +201,34 @@ void BitstreamExtractorApp::xRewritePPS (PPS &targetPPS, const PPS &sourcePPS, S
     }
   }
   numTileRows=(int)tileRowBd.size() - 1;
-  CHECK (numTileRows < 1, "After extraction there should be at least one tile vertically.")
+  // if subpicture was part of a tile, top and/or bottom borders need to be added
+  // note: this can only happen with vertical slice splits of a tile
+  if (numTileRows < 1 )
+  {
+    if (tileRowBd.size()==0)
+    {
+      tileRowBd.push_back(0);
+      tileRowBd.push_back(subPic.getSubPicHeightInCTUs());
+      numTileRows+=2;
+    }
+    else
+    {
+      if (tileRowBd[0] == 0)
+      {
+        // top border exists, add bottom
+        tileRowBd.push_back(subPic.getSubPicHeightInCTUs());
+        numTileRows++;
+      }
+      else
+      {
+        // bottom border exists, add top
+        const int row1 = tileRowBd[0];
+        tileRowBd[0] = 0;
+        tileRowBd.push_back(row1);
+        numTileRows++;
+      }
+    }
+  }
   tileRowHeight.resize(numTileRows);
   for (int i=0; i<numTileRows; i++)
   {

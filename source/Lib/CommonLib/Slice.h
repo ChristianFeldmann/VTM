@@ -2888,6 +2888,7 @@ public:
   }
   void                        getWpScaling(RefPicList e, int iRefIdx, WPScalingParam *&wp) const;
   WPScalingParam*             getWpScalingAll()                                        { return (WPScalingParam *) m_weightPredTable; }
+  void                        resetWpScaling();
   void                        setNumL0Weights(int b)                                   { m_numL0Weights = b;                          }
   int                         getNumL0Weights()                                        { return m_numL0Weights;                       }
   void                        setNumL1Weights(int b)                                   { m_numL1Weights = b;                          }

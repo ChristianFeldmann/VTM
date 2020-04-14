@@ -2410,6 +2410,10 @@ PicHeader::PicHeader()
   m_localRPL1.setNumberOfInterLayerPictures( 0 );
 
   m_alfApsId.resize(0);
+
+#if JVET_Q0819_PH_CHANGES 
+  resetWpScaling();
+#endif
 }
 
 PicHeader::~PicHeader()
@@ -2551,6 +2555,24 @@ void PicHeader::getWpScaling(RefPicList e, int iRefIdx, WPScalingParam *&wp) con
 {
   CHECK(e >= NUM_REF_PIC_LIST_01, "Invalid picture reference list");
   wp = (WPScalingParam *) m_weightPredTable[e][iRefIdx];
+}
+
+void PicHeader::resetWpScaling()
+{
+  for ( int e=0 ; e<NUM_REF_PIC_LIST_01 ; e++ )
+  {
+    for ( int i=0 ; i<MAX_NUM_REF ; i++ )
+    {
+      for ( int yuv=0 ; yuv<MAX_NUM_COMPONENT ; yuv++ )
+      {
+        WPScalingParam  *pwp = &(m_weightPredTable[e][i][yuv]);
+        pwp->bPresentFlag      = false;
+        pwp->uiLog2WeightDenom = 0;
+        pwp->iWeight           = 1;
+        pwp->iOffset           = 0;
+      }
+    }
+  }
 }
 #endif
 

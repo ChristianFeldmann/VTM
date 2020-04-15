@@ -1337,13 +1337,13 @@ private:
 #else
   bool                  m_subPicPresentFlag;                    // indicates the presence of sub-pictures
 #endif
-  uint8_t               m_numSubPics;                        //!< number of sub-pictures used
-  uint32_t              m_subPicCtuTopLeftX[MAX_NUM_SUB_PICS];                
-  uint32_t              m_subPicCtuTopLeftY[MAX_NUM_SUB_PICS];                
-  uint32_t              m_SubPicWidth[MAX_NUM_SUB_PICS];                      
-  uint32_t              m_SubPicHeight[MAX_NUM_SUB_PICS];                     
-  bool                  m_subPicTreatedAsPicFlag[MAX_NUM_SUB_PICS];           
-  bool                  m_loopFilterAcrossSubpicEnabledFlag[MAX_NUM_SUB_PICS];
+  uint32_t              m_numSubPics;                        //!< number of sub-pictures used
+  std::vector<uint32_t> m_subPicCtuTopLeftX;
+  std::vector<uint32_t> m_subPicCtuTopLeftY;
+  std::vector<uint32_t> m_subPicWidth;
+  std::vector<uint32_t> m_subPicHeight;
+  std::vector<bool>     m_subPicTreatedAsPicFlag;
+  std::vector<bool>     m_loopFilterAcrossSubpicEnabledFlag;
 #if JVET_Q0119_CLEANUPS
   bool                  m_subPicIdMappingExplicitlySignalledFlag;
   bool                  m_subPicIdMappingInSpsFlag;
@@ -1352,7 +1352,7 @@ private:
   bool                  m_subPicIdSignallingPresentFlag;     //!< indicates the presence of sub-picture ID signalling in the SPS
 #endif
   uint32_t              m_subPicIdLen;                       //!< sub-picture ID length in bits
-  uint16_t              m_subPicId[MAX_NUM_SUB_PICS];        //!< sub-picture ID for each sub-picture in the sequence
+  std::vector<uint16_t> m_subPicId;                          //!< sub-picture ID for each sub-picture in the sequence
 
   int               m_log2MinCodingBlockSize;
 #if !JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
@@ -1571,27 +1571,45 @@ public:
 #endif
 
 #if JVET_Q0119_CLEANUPS
-  void                    setSubPicInfoPresentFlag(bool b)                                                { m_subPicInfoPresentFlag = b;            }
-  bool                    getSubPicInfoPresentFlag() const                                                { return m_subPicInfoPresentFlag;         }
+  void      setSubPicInfoPresentFlag(bool b)                                                { m_subPicInfoPresentFlag = b;            }
+  bool      getSubPicInfoPresentFlag() const                                                { return m_subPicInfoPresentFlag;         }
 #else
-  void                    setSubPicPresentFlag(bool b)                                                    { m_subPicPresentFlag = b;                }
-  bool                    getSubPicPresentFlag() const                                                    { return m_subPicPresentFlag;             }
+  void      setSubPicPresentFlag(bool b)                                                    { m_subPicPresentFlag = b;                }
+  bool      getSubPicPresentFlag() const                                                    { return m_subPicPresentFlag;             }
 #endif
 
-  void                    setNumSubPics( uint8_t u )                                                      { m_numSubPics = u;                        }
-  uint8_t                 getNumSubPics( ) const                                                          { return  m_numSubPics;                    }
-  void                    setSubPicCtuTopLeftX( int i, uint32_t u )                                       { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-picture index exceeds valid range" ); m_subPicCtuTopLeftX[i] = u;                     }
-  uint32_t                getSubPicCtuTopLeftX( int i ) const                                             { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-picture index exceeds valid range" ); return  m_subPicCtuTopLeftX[i];                 }
-  void                    setSubPicCtuTopLeftY( int i, uint32_t u )                                       { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-picture index exceeds valid range" ); m_subPicCtuTopLeftY[i] = u;                     }
-  uint32_t                getSubPicCtuTopLeftY( int i ) const                                             { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-picture index exceeds valid range" ); return  m_subPicCtuTopLeftY[i];                 }
-  void                    setSubPicWidth( int i, uint32_t u )                                             { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-picture index exceeds valid range" ); m_SubPicWidth[i] = u;                           }
-  uint32_t                getSubPicWidth( int i ) const                                                   { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-picture index exceeds valid range" ); return  m_SubPicWidth[i];                       }
-  void                    setSubPicHeight( int i, uint32_t u )                                            { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-picture index exceeds valid range" ); m_SubPicHeight[i] = u;                          }
-  uint32_t                getSubPicHeight( int i ) const                                                  { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-picture index exceeds valid range" ); return  m_SubPicHeight[i];                      }
-  void                    setSubPicTreatedAsPicFlag( int i, bool u )                                      { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-picture index exceeds valid range" ); m_subPicTreatedAsPicFlag[i] = u;                }
-  bool                    getSubPicTreatedAsPicFlag( int i ) const                                        { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-picture index exceeds valid range" ); return  m_subPicTreatedAsPicFlag[i];            }
-  void                    setLoopFilterAcrossSubpicEnabledFlag( int i, bool u )                           { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-picture index exceeds valid range" ); m_loopFilterAcrossSubpicEnabledFlag[i] = u;     }
-  bool                    getLoopFilterAcrossSubpicEnabledFlag( int i ) const                             { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-picture index exceeds valid range" ); return  m_loopFilterAcrossSubpicEnabledFlag[i]; }
+  void      setNumSubPics( uint32_t u )                                                     { CHECK( u >= MAX_NUM_SUB_PICS, "Maximum number of subpictures exceeded" );
+                                                                                              m_numSubPics = u;
+                                                                                              m_subPicCtuTopLeftX.resize(m_numSubPics);
+                                                                                              m_subPicCtuTopLeftY.resize(m_numSubPics);
+                                                                                              m_subPicWidth.resize(m_numSubPics);
+                                                                                              m_subPicHeight.resize(m_numSubPics);
+                                                                                              m_subPicTreatedAsPicFlag.resize(m_numSubPics);
+                                                                                              m_loopFilterAcrossSubpicEnabledFlag.resize(m_numSubPics);
+                                                                                              m_subPicId.resize(m_numSubPics);
+                                                                                            }
+  uint32_t  getNumSubPics( ) const                                                          { return  m_numSubPics;                           }
+  void      setSubPicCtuTopLeftX( int i, uint32_t u )                                       { m_subPicCtuTopLeftX[i] = u;                     }
+  uint32_t  getSubPicCtuTopLeftX( int i ) const                                             { return  m_subPicCtuTopLeftX[i];                 }
+  void      setSubPicCtuTopLeftY( int i, uint32_t u )                                       { m_subPicCtuTopLeftY[i] = u;                     }
+  uint32_t  getSubPicCtuTopLeftY( int i ) const                                             { return  m_subPicCtuTopLeftY[i];                 }
+  void      setSubPicWidth( int i, uint32_t u )                                             { m_subPicWidth[i] = u;                           }
+  uint32_t  getSubPicWidth( int i ) const                                                   { return  m_subPicWidth[i];                       }
+  void      setSubPicHeight( int i, uint32_t u )                                            { m_subPicHeight[i] = u;                          }
+  uint32_t  getSubPicHeight( int i ) const                                                  { return  m_subPicHeight[i];                      }
+  void      setSubPicTreatedAsPicFlag( int i, bool u )                                      { m_subPicTreatedAsPicFlag[i] = u;                }
+  bool      getSubPicTreatedAsPicFlag( int i ) const                                        { return  m_subPicTreatedAsPicFlag[i];            }
+  void      setLoopFilterAcrossSubpicEnabledFlag( int i, bool u )                           { m_loopFilterAcrossSubpicEnabledFlag[i] = u;     }
+  bool      getLoopFilterAcrossSubpicEnabledFlag( int i ) const                             { return  m_loopFilterAcrossSubpicEnabledFlag[i]; }
+
+  void      setSubPicCtuTopLeftX                        (const std::vector<uint32_t> &v)   { CHECK(v.size()!=m_numSubPics, "number of vector entries must be equal to numSubPics") ;m_subPicCtuTopLeftX = v; }
+  void      setSubPicCtuTopLeftY                        (const std::vector<uint32_t> &v)   { CHECK(v.size()!=m_numSubPics, "number of vector entries must be equal to numSubPics") ;m_subPicCtuTopLeftY = v; }
+  void      setSubPicWidth                              (const std::vector<uint32_t> &v)   { CHECK(v.size()!=m_numSubPics, "number of vector entries must be equal to numSubPics") ;m_subPicWidth = v; }
+  void      setSubPicHeight                             (const std::vector<uint32_t> &v)   { CHECK(v.size()!=m_numSubPics, "number of vector entries must be equal to numSubPics") ;m_subPicHeight = v; }
+  void      setSubPicTreatedAsPicFlag                   (const std::vector<bool> &v)       { CHECK(v.size()!=m_numSubPics, "number of vector entries must be equal to numSubPics") ;m_subPicTreatedAsPicFlag = v; }
+  void      setLoopFilterAcrossSubpicEnabledFlag        (const std::vector<bool> &v)       { CHECK(v.size()!=m_numSubPics, "number of vector entries must be equal to numSubPics") ;m_loopFilterAcrossSubpicEnabledFlag = v; }
+
+
 #if JVET_Q0119_CLEANUPS
   void                    setSubPicIdMappingExplicitlySignalledFlag( bool b )                             { m_subPicIdMappingExplicitlySignalledFlag = b;    }
   bool                    getSubPicIdMappingExplicitlySignalledFlag() const                               { return m_subPicIdMappingExplicitlySignalledFlag; }
@@ -1605,8 +1623,9 @@ public:
 #endif
   void                    setSubPicIdLen( uint32_t u )                                                    { m_subPicIdLen = u;                       }
   uint32_t                getSubPicIdLen() const                                                          { return  m_subPicIdLen;                   }
-  void                    setSubPicId( int i, uint16_t u )                                                { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-picture index exceeds valid range" ); m_subPicId[i] = u;     }
-  uint16_t                getSubPicId( int i ) const                                                      { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-picture index exceeds valid range" ); return  m_subPicId[i]; }
+  void                    setSubPicId( int i, uint16_t u )                                                { m_subPicId[i] = u;     }
+  uint16_t                getSubPicId( int i ) const                                                      { return  m_subPicId[i]; }
+  void                    setSubPicId(const std::vector<uint16_t> &v)                                     { CHECK(v.size()!=m_numSubPics, "number of vector entries must be equal to numSubPics") ; m_subPicId = v; }
 
   uint32_t                getNumLongTermRefPicSPS() const                                                 { return m_numLongTermRefPicSPS;                                       }
   void                    setNumLongTermRefPicSPS(uint32_t val)                                           { m_numLongTermRefPicSPS = val;                                        }
@@ -2038,14 +2057,14 @@ private:
   bool             m_bUseWeightPred;                    //!< Use of Weighting Prediction (P_SLICE)
   bool             m_useWeightedBiPred;                 //!< Use of Weighting Bi-Prediction (B_SLICE)
   bool             m_OutputFlagPresentFlag;             //!< Indicates the presence of output_flag in slice header
-  uint8_t          m_numSubPics;                        //!< number of sub-pictures used - must match SPS
+  uint32_t         m_numSubPics;                        //!< number of sub-pictures used - must match SPS
 #if JVET_Q0119_CLEANUPS
   bool             m_subPicIdMappingInPpsFlag;
 #else
   bool             m_subPicIdSignallingPresentFlag;     //!< indicates the presence of sub-picture ID signalling in the PPS
 #endif
   uint32_t         m_subPicIdLen;                       //!< sub-picture ID length in bits
-  uint16_t         m_subPicId[MAX_NUM_SUB_PICS];        //!< sub-picture ID for each sub-picture in the sequence
+  std::vector<uint16_t> m_subPicId;                     //!< sub-picture ID for each sub-picture in the sequence
   bool             m_noPicPartitionFlag;                //!< no picture partitioning flag - single slice, single tile
   uint8_t          m_log2CtuSize;                       //!< log2 of the CTU size - required to match corresponding value in SPS
   uint8_t          m_ctuSize;                           //!< CTU size
@@ -2223,8 +2242,11 @@ public:
 
   void                   setOutputFlagPresentFlag( bool b )                               { m_OutputFlagPresentFlag = b;                  }
   bool                   getOutputFlagPresentFlag() const                                 { return m_OutputFlagPresentFlag;               }
-  void                   setNumSubPics( uint8_t u )                                       { m_numSubPics = u;                             }
-  uint8_t                getNumSubPics( ) const                                           { return  m_numSubPics;                         }
+  void                   setNumSubPics(uint32_t u )                                       { CHECK( u >= MAX_NUM_SUB_PICS, "Maximum number of subpictures exceeded" );
+                                                                                            m_numSubPics = u;
+                                                                                            m_subPicId.resize(m_numSubPics);
+                                                                                          }
+  uint32_t               getNumSubPics( ) const                                           { return  m_numSubPics;                         }
 #if JVET_Q0119_CLEANUPS
   void                   setSubPicIdMappingInPpsFlag( bool b )                            { m_subPicIdMappingInPpsFlag = b;               }
   bool                   getSubPicIdMappingInPpsFlag() const                              { return m_subPicIdMappingInPpsFlag;            }
@@ -2234,8 +2256,9 @@ public:
 #endif
   void                   setSubPicIdLen( uint32_t u )                                     { m_subPicIdLen = u;                            }
   uint32_t               getSubPicIdLen() const                                           { return  m_subPicIdLen;                        }
-  void                   setSubPicId( int i, uint16_t u )                                 { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-picture index exceeds valid range" ); m_subPicId[i] = u;     }
-  uint16_t               getSubPicId( int i ) const                                       { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-picture index exceeds valid range" ); return  m_subPicId[i]; }
+  void                   setSubPicId( int i, uint16_t u )                                 { m_subPicId[i] = u;     }
+  void                   setSubPicId(const std::vector<uint16_t> &v)                      { CHECK(v.size()!=m_numSubPics, "number of vector entries must be equal to numSubPics") ; m_subPicId = v; }
+  uint16_t               getSubPicId( int i ) const                                       { return  m_subPicId[i]; }
 #if JVET_Q0044_SLICE_IDX_WITH_SUBPICS
   uint32_t               getSubPicIdxFromSubPicId( uint32_t subPicId ) const;
 #endif
@@ -2668,8 +2691,8 @@ public:
   bool                        getSubPicIdSignallingPresentFlag() const                  { return  m_subPicIdSignallingPresentFlag;                                                     }
   void                        setSubPicIdLen( uint32_t u )                              { m_subPicIdLen = u;                                                                           }
   uint32_t                    getSubPicIdLen() const                                    { return  m_subPicIdLen;                                                                       }
-  void                        setSubPicId( int i, uint16_t u )                           { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-pic index exceeds valid range" ); m_subPicId[i] = u;      }
-  uint16_t                    getSubPicId( int i ) const                                { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-pic index exceeds valid range" ); return  m_subPicId[i];  }
+  void                        setSubPicId( int i, uint16_t u )                          { m_subPicId[i] = u;      }
+  uint16_t                    getSubPicId( int i ) const                                { return  m_subPicId[i];  }
 #endif
 #if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
   void                        setVirtualBoundariesPresentFlag( bool b )                 { m_virtualBoundariesPresentFlag = b;                                                          }

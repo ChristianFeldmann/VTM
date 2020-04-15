@@ -425,38 +425,26 @@ void EncApp::xInitLibCfg()
 #endif
   {
     m_cEncLib.setNumSubPics                                      ( m_numSubPics );
-    for (int i = 0; i < m_numSubPics; i++)
-    {
-      m_cEncLib.setSubPicCtuTopLeftX                             ( m_subPicCtuTopLeftX[i], i );
-      m_cEncLib.setSubPicCtuTopLeftY                             ( m_subPicCtuTopLeftY[i], i );
-      m_cEncLib.setSubPicWidth                                   ( m_subPicWidth[i], i );
-      m_cEncLib.setSubPicHeight                                  ( m_subPicHeight[i], i );
-      m_cEncLib.setSubPicTreatedAsPicFlag                        ( m_subPicTreatedAsPicFlag[i], i );
-      m_cEncLib.setLoopFilterAcrossSubpicEnabledFlag             ( m_loopFilterAcrossSubpicEnabledFlag[i], i );
-    }
-  }
-
-#if JVET_Q0119_CLEANUPS
-  m_cEncLib.setSubPicIdMappingExplicitlySignalledFlag            ( m_subPicIdMappingExplicitlySignalledFlag );
-  if (m_subPicIdMappingExplicitlySignalledFlag)
-  {
+    m_cEncLib.setSubPicCtuTopLeftX                               ( m_subPicCtuTopLeftX );
+    m_cEncLib.setSubPicCtuTopLeftY                               ( m_subPicCtuTopLeftY );
+    m_cEncLib.setSubPicWidth                                     ( m_subPicWidth );
+    m_cEncLib.setSubPicHeight                                    ( m_subPicHeight );
+    m_cEncLib.setSubPicTreatedAsPicFlag                          ( m_subPicTreatedAsPicFlag );
+    m_cEncLib.setLoopFilterAcrossSubpicEnabledFlag               ( m_loopFilterAcrossSubpicEnabledFlag );
     m_cEncLib.setSubPicIdMappingInSpsFlag                        ( m_subPicIdMappingInSpsFlag );
-    if(m_subPicIdMappingInSpsFlag)
+    m_cEncLib.setSubPicIdLen                                     ( m_subPicIdLen );
+#if JVET_Q0119_CLEANUPS
+    m_cEncLib.setSubPicIdMappingExplicitlySignalledFlag          ( m_subPicIdMappingExplicitlySignalledFlag );
+    if (m_subPicIdMappingExplicitlySignalledFlag)
 #else
-  m_cEncLib.setSubPicIdPresentFlag                               ( m_subPicIdPresentFlag );
-  if (m_subPicIdPresentFlag) 
-  {
     m_cEncLib.setSubPicIdSignallingPresentFlag                   ( m_subPicIdSignallingPresentFlag );
     if(m_subPicIdSignallingPresentFlag)
 #endif
     {
-      m_cEncLib.setSubPicIdLen                                   ( m_subPicIdLen );
-      for (int i = 0; i < m_numSubPics; i++)
-      {
-        m_cEncLib.setSubPicId                                    ( m_subPicId[i], i );
-      }
+      m_cEncLib.setSubPicId                                      ( m_subPicId );
     }
   }
+
   m_cEncLib.setUseSplitConsOverride                              ( m_SplitConsOverrideEnabledFlag );
   m_cEncLib.setMinQTSizes                                        ( m_uiMinQT );
   m_cEncLib.setMaxMTTHierarchyDepth                              ( m_uiMaxMTTHierarchyDepth, m_uiMaxMTTHierarchyDepthI, m_uiMaxMTTHierarchyDepthIChroma );

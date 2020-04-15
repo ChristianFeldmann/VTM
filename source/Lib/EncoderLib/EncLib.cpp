@@ -1532,15 +1532,13 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
 #endif
   {
     sps.setNumSubPics(m_numSubPics);
-    for (int i = 0; i < m_numSubPics; i++) 
-    {
-      sps.setSubPicCtuTopLeftX(i, m_subPicCtuTopLeftX[i] );
-      sps.setSubPicCtuTopLeftY(i, m_subPicCtuTopLeftY[i]);
-      sps.setSubPicWidth(i, m_subPicWidth[i]);
-      sps.setSubPicHeight(i, m_subPicHeight[i]);
-      sps.setSubPicTreatedAsPicFlag(i, m_subPicTreatedAsPicFlag[i]);
-      sps.setLoopFilterAcrossSubpicEnabledFlag(i, m_loopFilterAcrossSubpicEnabledFlag[i]);
-    }
+    sps.setSubPicCtuTopLeftX(m_subPicCtuTopLeftX);
+    sps.setSubPicCtuTopLeftY(m_subPicCtuTopLeftY);
+    sps.setSubPicWidth(m_subPicWidth);
+    sps.setSubPicHeight(m_subPicHeight);
+    sps.setSubPicTreatedAsPicFlag(m_subPicTreatedAsPicFlag);
+    sps.setLoopFilterAcrossSubpicEnabledFlag(m_loopFilterAcrossSubpicEnabledFlag);
+    sps.setSubPicIdLen(m_subPicIdLen);
   }
 #if JVET_Q0044_SLICE_IDX_WITH_SUBPICS
   else   //In that case, there is only one subpicture that contains the whole picture
@@ -1552,6 +1550,7 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
     sps.setSubPicHeight(0, m_iSourceHeight);
     sps.setSubPicTreatedAsPicFlag(0, 1);
     sps.setLoopFilterAcrossSubpicEnabledFlag(0, 0);
+    sps.setSubPicIdLen(0);
   }
 #endif
 #if JVET_Q0119_CLEANUPS
@@ -1561,11 +1560,7 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
     sps.setSubPicIdMappingInSpsFlag(m_subPicIdMappingInSpsFlag);
     if (m_subPicIdMappingInSpsFlag)
     {
-      sps.setSubPicIdLen(m_subPicIdLen);
-      for (int i = 0; i < m_numSubPics; i++)
-      {
-        sps.setSubPicId(i, m_subPicId[i]);
-      }
+      sps.setSubPicId(m_subPicId);
     }
   }
 #else
@@ -1575,11 +1570,7 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
     sps.setSubPicIdSignallingPresentFlag(m_subPicIdSignallingPresentFlag);
     if (m_subPicIdSignallingPresentFlag)
     {
-      sps.setSubPicIdLen(m_subPicIdLen);
-      for (int i = 0; i < m_numSubPics; i++)
-  {
-        sps.setSubPicId(i, m_subPicId[i]);
-      }
+      sps.setSubPicId(m_subPicId);
     }
   }
 #endif

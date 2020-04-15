@@ -303,8 +303,10 @@ void HLSWriter::codePPS( const PPS* pcPPS )
   if( pcPPS->getSubPicIdSignallingPresentFlag() )
 #endif
   {
+    CHECK(pcPPS->getNumSubPics() < 1, "PPS: NumSubPics cannot be less than 1");
     WRITE_UVLC( pcPPS->getNumSubPics() - 1, "pps_num_subpics_minus1" );
 
+    CHECK(pcPPS->getSubPicIdLen() < 1, "PPS: SubPicIdLen cannot be less than 1");
     WRITE_UVLC( pcPPS->getSubPicIdLen() - 1, "pps_subpic_id_len_minus1" );
 
 #if JVET_Q0169_SUBPIC_LEN_CONFORM    
@@ -1079,6 +1081,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   if(pcSPS->getSubPicPresentFlag())
 #endif
   {
+    CHECK(pcSPS->getNumSubPics() < 1, "SPS: NumSubPics cannot be less than 1");
 #if JVET_Q0119_CLEANUPS
     WRITE_UVLC(pcSPS->getNumSubPics() - 1, "sps_num_subpics_minus1");
 #else
@@ -1144,6 +1147,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 #endif
 
 #if JVET_Q0119_CLEANUPS
+    CHECK(pcSPS->getSubPicIdLen() < 1, "SPS: SubPicIdLen cannot be less than 1");
     WRITE_UVLC(pcSPS->getSubPicIdLen() - 1, "sps_subpic_id_len_minus1");
     WRITE_FLAG(pcSPS->getSubPicIdMappingExplicitlySignalledFlag(), "subpic_id_mapping_explicitly_signalled_flag");
     if (pcSPS->getSubPicIdMappingExplicitlySignalledFlag())

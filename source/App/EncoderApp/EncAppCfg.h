@@ -295,8 +295,8 @@ protected:
   std::vector<uint32_t> m_subPicCtuTopLeftY;
   std::vector<uint32_t> m_subPicWidth;
   std::vector<uint32_t> m_subPicHeight;
-  std::vector<uint32_t> m_subPicTreatedAsPicFlag;
-  std::vector<uint32_t> m_loopFilterAcrossSubpicEnabledFlag;
+  std::vector<bool>     m_subPicTreatedAsPicFlag;
+  std::vector<bool>     m_loopFilterAcrossSubpicEnabledFlag;
 #if JVET_Q0119_CLEANUPS
   bool m_subPicIdMappingExplicitlySignalledFlag;
   bool m_subPicIdMappingInSpsFlag;
@@ -305,7 +305,7 @@ protected:
   bool m_subPicIdSignallingPresentFlag;
 #endif
   unsigned m_subPicIdLen;
-  std::vector<uint32_t> m_subPicId;
+  std::vector<uint16_t> m_subPicId;
   bool      m_SplitConsOverrideEnabledFlag;
   unsigned  m_uiMinQT[3]; // 0: I slice luma; 1: P/B slice; 2: I slice chroma
   unsigned  m_uiMaxMTTHierarchyDepth;

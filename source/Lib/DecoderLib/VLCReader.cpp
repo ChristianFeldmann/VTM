@@ -497,13 +497,6 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
       READ_CODE( pcPPS->getSubPicIdLen( ), uiCode, "pps_subpic_id[i]" );   pcPPS->setSubPicId( picIdx, uiCode );
     }
   }
-  else 
-  {
-    for( int picIdx = 0; picIdx < MAX_NUM_SUB_PICS; picIdx++ )
-    {
-      pcPPS->setSubPicId( picIdx, picIdx );
-    }
-  }
 
   READ_FLAG( uiCode, "no_pic_partition_flag" );                       pcPPS->setNoPicPartitionFlag( uiCode == 1 );
   if(!pcPPS->getNoPicPartitionFlag())
@@ -1775,7 +1768,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 #if JVET_Q0119_CLEANUPS
     READ_UVLC( uiCode, "sps_subpic_id_len_minus1" );                       pcSPS->setSubPicIdLen( uiCode + 1 );
     CHECK( uiCode > 15, "Invalid sps_subpic_id_len_minus1 value" );
-    CHECK( (1 << (uiCode + 1)) < pcSPS->getNumSubPics() + 1, "Invalid sps_subpic_id_len_minus1 value" );
+    CHECK( (1 << (uiCode + 1)) < pcSPS->getNumSubPics(), "Invalid sps_subpic_id_len_minus1 value" );
     READ_FLAG( uiCode, "subpic_id_mapping_explicitly_signalled_flag" );    pcSPS->setSubPicIdMappingExplicitlySignalledFlag( uiCode != 0 );
     if (pcSPS->getSubPicIdMappingExplicitlySignalledFlag())
     {

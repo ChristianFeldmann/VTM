@@ -751,9 +751,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   SMultiValueInput<uint32_t>  cfg_subPicCtuTopLeftY(0, std::numeric_limits<uint32_t>::max(), 0, MAX_NUM_SUB_PICS);
   SMultiValueInput<uint32_t>  cfg_subPicWidth(1, std::numeric_limits<uint32_t>::max(), 0, MAX_NUM_SUB_PICS);
   SMultiValueInput<uint32_t>  cfg_subPicHeight(1, std::numeric_limits<uint32_t>::max(), 0, MAX_NUM_SUB_PICS);
-  SMultiValueInput<uint32_t>  cfg_subPicTreatedAsPicFlag(0, 1, 0, MAX_NUM_SUB_PICS);
-  SMultiValueInput<uint32_t>  cfg_loopFilterAcrossSubpicEnabledFlag(0, 1, 0, MAX_NUM_SUB_PICS);
-  SMultiValueInput<uint32_t>  cfg_subPicId(0, std::numeric_limits<uint32_t>::max(), 0, MAX_NUM_SUB_PICS);
+  SMultiValueInput<bool>      cfg_subPicTreatedAsPicFlag(0, 1, 0, MAX_NUM_SUB_PICS);
+  SMultiValueInput<bool>      cfg_loopFilterAcrossSubpicEnabledFlag(0, 1, 0, MAX_NUM_SUB_PICS);
+  SMultiValueInput<uint32_t>  cfg_subPicId(0, std::numeric_limits<uint16_t>::max(), 0, MAX_NUM_SUB_PICS);
 
 #if JVET_SUBPIC_LEVEL_CFG
   SMultiValueInput<int>          cfg_sliFractions(0, 100, 0, std::numeric_limits<int>::max());
@@ -1687,32 +1687,52 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   if ( m_subPicPresentFlag )
 #endif
   {
-    CHECK( m_numSubPics > 255 || m_numSubPics < 1, "Number of subpicture must be within 1 to 255" );
+    CHECK( m_numSubPics > MAX_NUM_SUB_PICS || m_numSubPics < 1, "Number of subpicture must be within 1 to 2^16" );
+    CHECK( cfg_subPicCtuTopLeftX.values.size() != m_numSubPics, "Number of SubPicCtuTopLeftX values must be equal to NumSubPics");
+    CHECK( cfg_subPicCtuTopLeftY.values.size() != m_numSubPics, "Number of SubPicCtuTopLeftY values must be equal to NumSubPics");
+    CHECK( cfg_subPicWidth.values.size() != m_numSubPics, "Number of SubPicWidth values must be equal to NumSubPics");
+    CHECK( cfg_subPicHeight.values.size() != m_numSubPics, "Number of SubPicHeight values must be equal to NumSubPics");
+    CHECK( cfg_subPicTreatedAsPicFlag.values.size() != m_numSubPics, "Number of SubPicTreatedAsPicFlag values must be equal to NumSubPics");
+    CHECK( cfg_loopFilterAcrossSubpicEnabledFlag.values.size() != m_numSubPics, "Number of LoopFilterAcrossSubpicEnabledFlag values must be equal to NumSubPics");
+    if (m_subPicIdMappingExplicitlySignalledFlag)
+    {
+      CHECK( cfg_subPicId.values.size() != m_numSubPics, "Number of SubPicId values must be equal to NumSubPics");
+    }
     m_subPicCtuTopLeftX                 = cfg_subPicCtuTopLeftX.values;
     m_subPicCtuTopLeftY                 = cfg_subPicCtuTopLeftY.values;
     m_subPicWidth                       = cfg_subPicWidth.values;
     m_subPicHeight                      = cfg_subPicHeight.values;
     m_subPicTreatedAsPicFlag            = cfg_subPicTreatedAsPicFlag.values;
     m_loopFilterAcrossSubpicEnabledFlag = cfg_loopFilterAcrossSubpicEnabledFlag.values;
-    m_subPicId                          = cfg_subPicId.values;
-    for(int i = 0; i < m_numSubPics; i++)
-    {
-      CHECK(m_subPicCtuTopLeftX[i] + m_subPicWidth[i] > (m_iSourceWidth + m_uiCTUSize - 1) / m_uiCTUSize, "subpicture must not exceed picture boundary");
-      CHECK(m_subPicCtuTopLeftY[i] + m_subPicHeight[i] > (m_iSourceHeight + m_uiCTUSize - 1) / m_uiCTUSize, "subpicture must not exceed picture boundary");
-    }
-#if JVET_Q0119_CLEANUPS
     if (m_subPicIdMappingExplicitlySignalledFlag)
     {
-      if (m_subPicIdMappingInSpsFlag)
-#else
-    if (m_subPicIdPresentFlag) 
-    {
-      if (m_subPicIdSignallingPresentFlag) 
-#endif
+      for (int i=0; i < m_numSubPics; i++)
       {
-        CHECK( m_subPicIdLen > 16, "sibpic ID length must not exceed 16 bits" );
+        m_subPicId[i]                   = cfg_subPicId.values[i];
       }
     }
+    for(int i = 0; i < m_numSubPics; i++)
+    {
+      CHECK(m_subPicCtuTopLeftX[i] + m_subPicWidth[i] > (m_iSourceWidth + m_uiCTUSize - 1) / m_uiCTUSize, "Subpicture must not exceed picture boundary");
+      CHECK(m_subPicCtuTopLeftY[i] + m_subPicHeight[i] > (m_iSourceHeight + m_uiCTUSize - 1) / m_uiCTUSize, "Subpicture must not exceed picture boundary");
+    }
+    // automatically determine subpicture ID lenght in case it is not specified
+    if (m_subPicIdLen == 0)
+    {
+      if (m_subPicIdMappingExplicitlySignalledFlag)
+      {
+        // use the heighest specified ID
+        auto maxIdVal = std::max_element(m_subPicId.begin(),m_subPicId.end());
+        m_subPicIdLen = ceilLog2(*maxIdVal);
+      }
+      else
+      {
+        // use the number of subpictures
+        m_subPicIdLen = ceilLog2(m_numSubPics);
+      }
+    }
+
+    CHECK( m_subPicIdLen > 16, "SubPicIdLen must not exceed 16 bits" );
 #if JVET_Q0043_RPR_and_Subpics
     CHECK( m_rprEnabled, "RPR and subpictures cannot be enabled together" );
 #endif

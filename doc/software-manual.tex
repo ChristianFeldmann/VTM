@@ -2107,6 +2107,7 @@ Specifies wheter to signal the subpicture ID map in SPS or PPS. If SubPicIdMappi
 %\ShortOption{\None} &
 \Default{0} &
 Length of the subpicture IDs in bits. (1<<SubPicIdLen) must be bigger than the number of subpictures and the highes subpicture ID specifid in SubPicId. 
+If the value "0" is used, the encoder tries to determine the number of required bits from the number of subpictures or the highest subpicture ID. This mode should not be used, if merging of bistreams is intended. 
 \\
 
 \Option{SubPicId} &

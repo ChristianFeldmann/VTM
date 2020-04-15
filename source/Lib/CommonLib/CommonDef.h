@@ -287,7 +287,7 @@ static const int LUMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS_SIGNAL = 1 << MV
 static const int LUMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS = 1 << MV_FRACTIONAL_BITS_INTERNAL;
 static const int CHROMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS = 1 << (MV_FRACTIONAL_BITS_INTERNAL + 1);
 
-static const int MAX_NUM_SUB_PICS =                               255;
+static const int MAX_NUM_SUB_PICS =                         (1 << 16);
 static const int MAX_NUM_LONG_TERM_REF_PICS =                      33;
 static const int NUM_LONG_TERM_REF_PIC_SPS =                        0;
 

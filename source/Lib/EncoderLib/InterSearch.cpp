@@ -8072,7 +8072,7 @@ void InterSearch::xClipMv( Mv& rcMv, const Position& pos, const struct Size& siz
   int verMax = ( pps.getPicHeightInLumaSamples() + offset - (int)pos.y - 1 ) << mvShift;
   int verMin = ( -( int ) sps.getMaxCUHeight()   - offset - ( int ) pos.y + 1 ) << mvShift;
 #if JVET_O1143_MV_ACROSS_SUBPIC_BOUNDARY
-  SubPic curSubPic = pps.getSubPicFromPos(pos);
+  const SubPic &curSubPic = pps.getSubPicFromPos(pos);
   if (curSubPic.getTreatedAsPicFlag()) 
   {
     horMax = ((curSubPic.getSubPicRight() + 1)  + offset - (int)pos.x - 1) << mvShift;

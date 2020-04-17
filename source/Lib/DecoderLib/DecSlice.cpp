@@ -149,7 +149,7 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
     Position pos( ctuXPosInCtus*maxCUSize, ctuYPosInCtus*maxCUSize) ;
     UnitArea ctuArea(cs.area.chromaFormat, Area( pos.x, pos.y, maxCUSize, maxCUSize ) );
 #if JVET_O1143_MV_ACROSS_SUBPIC_BOUNDARY
-    SubPic curSubPic = slice->getPPS()->getSubPicFromPos(pos);
+    const SubPic &curSubPic = slice->getPPS()->getSubPicFromPos(pos);
     // padding/restore at slice level
     if (slice->getPPS()->getNumSubPics()>=2 && curSubPic.getTreatedAsPicFlag() && ctuIdx==0)
     {

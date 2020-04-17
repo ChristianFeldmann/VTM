@@ -2779,7 +2779,7 @@ void DecLib::xCheckMixedNalUnit(Slice* pcSlice, SPS *sps, InputNALUnit &nalu)
     const unsigned  ctuYPosInCtus = ctuRsAddr / pcSlice->getPPS()->getPicWidthInCtu();
     const unsigned  maxCUSize = sps->getMaxCUWidth();
     Position pos(ctuXPosInCtus*maxCUSize, ctuYPosInCtus*maxCUSize);
-    SubPic curSubPic = pcSlice->getPPS()->getSubPicFromPos(pos);
+    const SubPic &curSubPic = pcSlice->getPPS()->getSubPicFromPos(pos);
 
     // check subpicture constraints
     if ((pcSlice->getNalUnitType() >= NAL_UNIT_CODED_SLICE_IDR_W_RADL) && (pcSlice->getNalUnitType() <= NAL_UNIT_CODED_SLICE_CRA))

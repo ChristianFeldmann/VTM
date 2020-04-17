@@ -1476,7 +1476,7 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
     }
 
 #if JVET_O1143_MV_ACROSS_SUBPIC_BOUNDARY
-    SubPic curSubPic = pcSlice->getPPS()->getSubPicFromPos(pos);
+    const SubPic &curSubPic = pcSlice->getPPS()->getSubPicFromPos(pos);
     // padding/restore at slice level
     if (pcSlice->getPPS()->getNumSubPics() >= 2 && curSubPic.getTreatedAsPicFlag() && ctuIdx == 0)
     {

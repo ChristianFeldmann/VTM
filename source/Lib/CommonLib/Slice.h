@@ -2335,8 +2335,8 @@ public:
   SubPic                 getSubPic(uint32_t idx) const                                    { return m_subPics[idx]; }
 #endif
   void                   initSubPic(const SPS &sps);
-  SubPic                 getSubPicFromPos(const Position& pos)  const;
-  SubPic                 getSubPicFromCU (const CodingUnit& cu) const;
+  const SubPic&          getSubPicFromPos(const Position& pos)  const;
+  const SubPic&          getSubPicFromCU (const CodingUnit& cu) const;
 #endif
   void                   initRasterSliceMap( std::vector<uint32_t> sizes );
   void                   checkSliceMap(); 

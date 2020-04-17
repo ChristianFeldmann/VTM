@@ -396,73 +396,21 @@ static inline istream& operator >> (std::istream &in, SMultiValueInput<T> &value
   return values.readValues(in);
 }
 
-template<>
-uint32_t SMultiValueInput<uint32_t>::readValue(const char *&pStr, bool &bSuccess)
+template <class T>
+T SMultiValueInput<T>::readValue(const char *&pStr, bool &bSuccess)
 {
-  char *eptr;
-  uint32_t val=strtoul(pStr, &eptr, 0);
-  pStr=eptr;
-  bSuccess=!(*eptr!=0 && !isspace(*eptr) && *eptr!=',') && !(val<minValIncl || val>maxValIncl);
+  T val=T();
+  std::string s(pStr);
+  std::replace(s.begin(), s.end(), ',', ' '); // make comma separated into space separated
+  std::istringstream iss(s);
+  iss>>val;
+  bSuccess=!iss.fail() // check nothing has gone wrong
+                       && !(val<minValIncl || val>maxValIncl) // check value is within range
+                       && iss.tellg() != 0 // check we've actually read something
+                       && (iss.eof() || iss.peek()==' '); // check next character is a space, or eof
+  pStr+= (iss.eof() ? s.size() : (std::size_t)iss.tellg());
   return val;
 }
-
-template<>
-uint8_t SMultiValueInput<uint8_t>::readValue(const char *&pStr, bool &bSuccess)
-{
-  char *eptr;
-  uint32_t val = strtoul(pStr, &eptr, 0);
-  pStr = eptr;
-  bSuccess = !(*eptr != 0 && !isspace(*eptr) && *eptr != ',') && !(val<minValIncl || val>maxValIncl);
-  return val;
-}
-
-template<>
-int SMultiValueInput<int>::readValue(const char *&pStr, bool &bSuccess)
-{
-  char *eptr;
-  int val=strtol(pStr, &eptr, 0);
-  pStr=eptr;
-  bSuccess=!(*eptr!=0 && !isspace(*eptr) && *eptr!=',') && !(val<minValIncl || val>maxValIncl);
-  return val;
-}
-
-template<>
-double SMultiValueInput<double>::readValue(const char *&pStr, bool &bSuccess)
-{
-  char *eptr;
-  double val=strtod(pStr, &eptr);
-  pStr=eptr;
-  bSuccess=!(*eptr!=0 && !isspace(*eptr) && *eptr!=',') && !(val<minValIncl || val>maxValIncl);
-  return val;
-}
-
-template<>
-bool SMultiValueInput<bool>::readValue(const char *&pStr, bool &bSuccess)
-{
-  char *eptr;
-  int val=strtol(pStr, &eptr, 0);
-  pStr=eptr;
-  bSuccess=!(*eptr!=0 && !isspace(*eptr) && *eptr!=',') && !(val<int(minValIncl) || val>int(maxValIncl));
-  return val!=0;
-}
-
-template<>
-Level::Name SMultiValueInput<Level::Name>::readValue(const char *&cStr, bool &success)
-{
-  // first parse the value from the map, using iostreams
-  std::istringstream str (cStr);
-  Level::Name val = Level::NONE;
-  readStrToEnum(strToLevel, sizeof(strToLevel)/sizeof(*strToLevel), str, val);
-
-  // now read a double to forward the string pointer ignoring the returned value
-  char *eptr;
-  strtod(cStr, &eptr);
-  cStr=eptr;
-
-  success=!(*eptr!=0 && !isspace(*eptr) && *eptr!=',') && !((int)val<int(minValIncl) || (int)val>int(maxValIncl));
-  return val;
-}
-
 
 template <class T>
 istream& SMultiValueInput<T>::readValues(std::istream &in)

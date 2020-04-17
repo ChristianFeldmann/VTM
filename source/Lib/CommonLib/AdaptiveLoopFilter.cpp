@@ -127,7 +127,7 @@ bool AdaptiveLoopFilter::isCrossedByVirtualBoundaries( const CodingStructure& cs
   const Position currCtuPos(xPos, yPos);
   const CodingUnit *currCtu = cs.getCU(currCtuPos, CHANNEL_TYPE_LUMA);
 #if JVET_O1143_LPF_ACROSS_SUBPIC_BOUNDARY
-  SubPic curSubPic = slice.getPPS()->getSubPicFromPos(currCtuPos);
+  const SubPic& curSubPic = slice.getPPS()->getSubPicFromPos(currCtuPos);
   bool loopFilterAcrossSubPicEnabledFlag = curSubPic.getloopFilterAcrossEnabledFlag();
 #endif
   //top

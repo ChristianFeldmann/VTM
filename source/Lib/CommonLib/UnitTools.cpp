@@ -1123,7 +1123,7 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
     bool C0Avail = false;
 #if JVET_O1143_MV_ACROSS_SUBPIC_BOUNDARY
     bool boundaryCond = ((posRB.x + pcv.minCUWidth) < pcv.lumaWidth) && ((posRB.y + pcv.minCUHeight) < pcv.lumaHeight);
-    SubPic curSubPic = pu.cs->slice->getPPS()->getSubPicFromPos(pu.lumaPos());
+    const SubPic& curSubPic = pu.cs->slice->getPPS()->getSubPicFromPos(pu.lumaPos());
     if (curSubPic.getTreatedAsPicFlag())
     {
       boundaryCond = ((posRB.x + pcv.minCUWidth) <= curSubPic.getSubPicRight() &&
@@ -1467,7 +1467,7 @@ bool PU::getColocatedMVP(const PredictionUnit &pu, const RefPicList &eRefPicList
 
 #if JVET_O1143_MV_ACROSS_SUBPIC_BOUNDARY
   // Check the position of colocated block is within a subpicture
-  SubPic curSubPic = pu.cs->slice->getPPS()->getSubPicFromPos(pu.lumaPos());
+  const SubPic &curSubPic = pu.cs->slice->getPPS()->getSubPicFromPos(pu.lumaPos());
   if (curSubPic.getTreatedAsPicFlag())
   {
     if (!curSubPic.isContainingPos(pos))
@@ -1860,7 +1860,7 @@ void PU::fillMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, const in
 
 #if JVET_O1143_MV_ACROSS_SUBPIC_BOUNDARY
     bool boundaryCond = ((posRB.x + pcv.minCUWidth) < pcv.lumaWidth) && ((posRB.y + pcv.minCUHeight) < pcv.lumaHeight);
-    SubPic curSubPic = pu.cs->slice->getPPS()->getSubPicFromPos(pu.lumaPos());
+    const SubPic &curSubPic = pu.cs->slice->getPPS()->getSubPicFromPos(pu.lumaPos());
     if (curSubPic.getTreatedAsPicFlag())
     {
       boundaryCond = ((posRB.x + pcv.minCUWidth) <= curSubPic.getSubPicRight() &&
@@ -2186,7 +2186,7 @@ void PU::fillAffineMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, co
       Mv cColMv;
 #if JVET_O1143_MV_ACROSS_SUBPIC_BOUNDARY
       bool boundaryCond = ((posRB.x + pcv.minCUWidth) < pcv.lumaWidth) && ((posRB.y + pcv.minCUHeight) < pcv.lumaHeight);
-      SubPic curSubPic = pu.cs->slice->getPPS()->getSubPicFromPos(pu.lumaPos());
+      const SubPic &curSubPic = pu.cs->slice->getPPS()->getSubPicFromPos(pu.lumaPos());
       if (curSubPic.getTreatedAsPicFlag())
       {
         boundaryCond = ((posRB.x + pcv.minCUWidth) <= curSubPic.getSubPicRight() &&
@@ -2787,7 +2787,7 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
 
 #if JVET_O1143_MV_ACROSS_SUBPIC_BOUNDARY
         bool boundaryCond = ((posRB.x + pcv.minCUWidth) < pcv.lumaWidth) && ((posRB.y + pcv.minCUHeight) < pcv.lumaHeight);
-        SubPic curSubPic = pu.cs->slice->getPPS()->getSubPicFromPos(pu.lumaPos());
+        const SubPic &curSubPic = pu.cs->slice->getPPS()->getSubPicFromPos(pu.lumaPos());
         if (curSubPic.getTreatedAsPicFlag())
         {
           boundaryCond = ((posRB.x + pcv.minCUWidth) <= curSubPic.getSubPicRight() &&
@@ -2988,7 +2988,7 @@ void clipColPos(int& posX, int& posY, const PredictionUnit& pu)
   int ctuY = ((puPos.y >> log2CtuSize) << log2CtuSize);
 #if JVET_O1143_MV_ACROSS_SUBPIC_BOUNDARY
   int horMax;
-  SubPic curSubPic = pu.cu->slice->getPPS()->getSubPicFromPos(puPos);
+  const SubPic &curSubPic = pu.cu->slice->getPPS()->getSubPicFromPos(puPos);
   if (curSubPic.getTreatedAsPicFlag())
   {
     horMax = std::min((int)curSubPic.getSubPicRight(), ctuX + (int)pu.cs->sps->getCTUSize() + 3);

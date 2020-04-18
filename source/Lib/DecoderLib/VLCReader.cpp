@@ -3160,7 +3160,10 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   else 
   {
     CHECK(pps->getCtuSize() != sps->getCTUSize(), "PPS CTU size does not match CTU size in SPS");
-    pps->initRectSliceMap(sps);
+    if (pps->getRectSliceFlag())
+    {
+      pps->initRectSliceMap(sps);
+    }
   }
 
 #if JVET_Q0044_SLICE_IDX_WITH_SUBPICS

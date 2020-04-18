@@ -1873,14 +1873,14 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
       pps.setTileIdxDeltaPresentFlag( m_tileIdxDeltaPresentFlag );
       pps.setRectSlices( m_rectSlices );
       pps.initRectSliceMap(&sps);
-#if JVET_O1143_SUBPIC_BOUNDARY
-      pps.initSubPic(sps);
-#endif
     }
     else
     {
       pps.initRasterSliceMap( m_rasterSliceSize );
     }
+    #if JVET_O1143_SUBPIC_BOUNDARY
+    pps.initSubPic(sps);
+    #endif
     pps.setLoopFilterAcrossTilesEnabledFlag( m_bLFCrossTileBoundaryFlag );
     pps.setLoopFilterAcrossSlicesEnabledFlag( m_bLFCrossSliceBoundaryFlag );
   }

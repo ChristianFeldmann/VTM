@@ -1580,6 +1580,10 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
   {
     sps.setSignDataHidingEnabledFlag( m_SignDataHidingEnabledFlag );
   }
+  else
+  {
+    sps.setSignDataHidingEnabledFlag(false);
+  }
 #endif
 #if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
   sps.setVirtualBoundariesEnabledFlag( m_virtualBoundariesEnabledFlag );

@@ -1922,6 +1922,7 @@ void EncGOP::xPicInitLMCS(Picture *pic, PicHeader *picHeader, Slice *slice)
 
       m_pcReshaper->setCTUFlag(false);
 
+#if !JVET_Q0346_LMCS_ENABLE_IN_SH
       //reshape original signal
       if (m_pcReshaper->getSliceReshaperInfo().getUseSliceReshaper())
       {
@@ -1929,6 +1930,7 @@ void EncGOP::xPicInitLMCS(Picture *pic, PicHeader *picHeader, Slice *slice)
         m_pcReshaper->setSrcReshaped(true);
         m_pcReshaper->setRecReshaped(true);
       }
+#endif
     }
     else
     {
@@ -2865,6 +2867,28 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
           pcSlice->setSliceSubPicId( pcPic->cs->pps->getSubPic( subPicIdx ).getSubPicID() );
         }
 #endif
+#if JVET_Q0346_LMCS_ENABLE_IN_SH
+        if (pcPic->cs->sps->getUseLmcs())
+        {
+          pcSlice->setLmcsEnabledFlag(picHeader->getLmcsEnabledFlag());
+          if (pcSlice->getSliceType() == I_SLICE)
+          {
+            //reshape original signal
+            if (pcSlice->getLmcsEnabledFlag())
+            {
+              pcPic->getOrigBuf(COMPONENT_Y).rspSignal(m_pcReshaper->getFwdLUT());
+              m_pcReshaper->setSrcReshaped(true);
+              m_pcReshaper->setRecReshaped(true);
+            }
+            else
+            {
+              pcPic->getOrigBuf().copyFrom(pcPic->getTrueOrigBuf());
+              m_pcReshaper->setSrcReshaped(false);
+              m_pcReshaper->setRecReshaped(false);
+            }
+          }
+        }
+#endif
         m_pcSliceEncoder->precompressSlice( pcPic );
         m_pcSliceEncoder->compressSlice   ( pcPic, false, false );
 
@@ -2889,6 +2913,32 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       CodingStructure& cs = *pcPic->cs;
       pcSlice = pcPic->slices[0];
 
+#if JVET_Q0346_LMCS_ENABLE_IN_SH
+      if (cs.sps->getUseLmcs() && m_pcReshaper->getSliceReshaperInfo().getUseSliceReshaper())
+      {
+        picHeader->setLmcsEnabledFlag(true);
+        int apsId = std::min<int>(3, m_pcEncLib->getVPS() == nullptr ? 0 : m_pcEncLib->getVPS()->getGeneralLayerIdx(m_pcEncLib->getLayerId()));
+        picHeader->setLmcsAPSId(apsId);
+
+        const PreCalcValues& pcv = *cs.pcv;
+        for (uint32_t yPos = 0; yPos < pcv.lumaHeight; yPos += pcv.maxCUHeight)
+        {
+          for (uint32_t xPos = 0; xPos < pcv.lumaWidth; xPos += pcv.maxCUWidth)
+          {
+            const CodingUnit* cu = cs.getCU(Position(xPos, yPos), CHANNEL_TYPE_LUMA);
+            if (cu->slice->getLmcsEnabledFlag())
+            {
+              const uint32_t width = (xPos + pcv.maxCUWidth > pcv.lumaWidth) ? (pcv.lumaWidth - xPos) : pcv.maxCUWidth;
+              const uint32_t height = (yPos + pcv.maxCUHeight > pcv.lumaHeight) ? (pcv.lumaHeight - yPos) : pcv.maxCUHeight;
+              const UnitArea area(cs.area.chromaFormat, Area(xPos, yPos, width, height));
+              cs.getRecoBuf(area).get(COMPONENT_Y).rspSignal(m_pcReshaper->getInvLUT());
+            }
+          }
+        }
+        m_pcReshaper->setRecReshaped(false);
+        pcPic->getOrigBuf().copyFrom(pcPic->getTrueOrigBuf());
+      }
+#else
       if (pcSlice->getSPS()->getUseLmcs() && m_pcReshaper->getSliceReshaperInfo().getUseSliceReshaper())
       {
         picHeader->setLmcsEnabledFlag(true);
@@ -2904,6 +2954,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
           pcPic->getOrigBuf().copyFrom(pcPic->getTrueOrigBuf());
       }
+#endif
 
       // create SAO object based on the picture size
       if( pcSlice->getSPS()->getSAOEnabledFlag() )

@@ -2838,10 +2838,10 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
       {
         WRITE_SVLC( picHeader->getDeblockingFilterBetaOffsetDiv2(), "ph_beta_offset_div2" );
         WRITE_SVLC( picHeader->getDeblockingFilterTcOffsetDiv2(), "ph_tc_offset_div2" );
-        WRITE_SVLC( picHeader->getDeblockingFilterBetaOffsetDiv2(), "ph_cb_beta_offset_div2" );
-        WRITE_SVLC( picHeader->getDeblockingFilterTcOffsetDiv2(), "ph_cb_tc_offset_div2" );
-        WRITE_SVLC( picHeader->getDeblockingFilterBetaOffsetDiv2(), "ph_cr_beta_offset_div2" );
-        WRITE_SVLC( picHeader->getDeblockingFilterTcOffsetDiv2(), "ph_cr_tc_offset_div2" );
+        WRITE_SVLC( picHeader->getDeblockingFilterCbBetaOffsetDiv2(), "ph_cb_beta_offset_div2" );
+        WRITE_SVLC( picHeader->getDeblockingFilterCbTcOffsetDiv2(), "ph_cb_tc_offset_div2" );
+        WRITE_SVLC( picHeader->getDeblockingFilterCrBetaOffsetDiv2(), "ph_cr_beta_offset_div2" );
+        WRITE_SVLC( picHeader->getDeblockingFilterCrTcOffsetDiv2(), "ph_cr_tc_offset_div2" );
       }
 #else
       WRITE_FLAG ( picHeader->getDeblockingFilterDisable(), "pic_deblocking_filter_disabled_flag" );

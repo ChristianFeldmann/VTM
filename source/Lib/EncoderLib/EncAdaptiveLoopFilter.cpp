@@ -4156,7 +4156,7 @@ void EncAdaptiveLoopFilter::getBlkStatsCcAlf(AlfCovariance &alfCovariance, const
 
   for (int i = 0; i < compArea.height; i++)
   {
-    int vbDistance = ((i << getComponentScaleX(compID, m_chromaFormat)) % vbCTUHeight) - vbPos;
+    int vbDistance = ((i << getComponentScaleY(compID, m_chromaFormat)) % vbCTUHeight) - vbPos;
     for (int j = 0; j < compArea.width; j++)
     {
       std::memset(ELocal, 0, sizeof(ELocal));

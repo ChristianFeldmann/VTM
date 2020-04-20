@@ -729,7 +729,7 @@ void SampleAdaptiveOffset::deriveLoopFilterBoundaryAvailibility(CodingStructure&
 
 #if JVET_O1143_LPF_ACROSS_SUBPIC_BOUNDARY
   // check cross subpic flags
-  SubPic curSubPic = cs.pps->getSubPicFromCU(*cuCurr);
+  const SubPic& curSubPic = cs.pps->getSubPicFromCU(*cuCurr);
   if (!curSubPic.getloopFilterAcrossEnabledFlag())
   {
     isLeftAvail       = (!isLeftAvail)       ? false : CU::isSameSubPic(*cuCurr, *cuLeft);

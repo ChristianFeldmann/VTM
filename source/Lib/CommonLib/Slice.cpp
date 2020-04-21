@@ -2618,7 +2618,7 @@ SPS::SPS()
 , m_maxWidthInLumaSamples     (352)
 , m_maxHeightInLumaSamples    (288)
 #if JVET_Q0119_CLEANUPS
-, m_subPicInfoPresentFlag         (0)
+, m_subPicInfoPresentFlag     (false)
 #else
 , m_subPicPresentFlag         (0)
 #endif

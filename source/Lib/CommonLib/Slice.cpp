@@ -3196,41 +3196,59 @@ void PPS::initRectSliceMap(const SPS  *sps)
     // allocate new memory for slice list
     CHECK(m_numSlicesInPic > MAX_SLICES, "Number of slices in picture exceeds valid range");
     m_sliceMap.resize( m_numSlicesInPic );
-    
+
+    // Q2001 v15 equation 29
+    std::vector<uint32_t> subpicWidthInTiles;
+    std::vector<uint32_t> subpicHeightInTiles;
+    std::vector<uint32_t> subpicHeightLessThanOneTileFlag;
+    subpicWidthInTiles.resize(sps->getNumSubPics());
+    subpicHeightInTiles.resize(sps->getNumSubPics());
+    subpicHeightLessThanOneTileFlag.resize(sps->getNumSubPics());
+    for (uint32_t i = 0; i <sps->getNumSubPics(); i++)
+    {
+      uint32_t leftX = sps->getSubPicCtuTopLeftX(i);
+      uint32_t rightX = leftX + sps->getSubPicWidth(i) - 1;
+      subpicWidthInTiles[i] = m_ctuToTileCol[rightX] + 1 - m_ctuToTileCol[leftX];
+      
+      uint32_t topY = sps->getSubPicCtuTopLeftY(i);
+      uint32_t bottomY = topY + sps->getSubPicHeight(i) - 1;
+      subpicHeightInTiles[i] = m_ctuToTileRow[bottomY] + 1 - m_ctuToTileRow[topY];
+
+      if (subpicHeightInTiles[i] == 1 && sps->getSubPicHeight(i) < m_tileRowHeight[m_ctuToTileRow[topY]] )
+      {
+        subpicHeightLessThanOneTileFlag[i] = 1;
+      }
+      else
+      {
+        subpicHeightLessThanOneTileFlag[i] = 0;
+      }
+    }
+
     for( int i = 0; i < m_numSlicesInPic; i++ )
     {
+      CHECK(m_numSlicesInPic != sps->getNumSubPics(), "in single slice per subpic mode, number of slice and subpic shall be equal");
       m_sliceMap[ i ].initSliceMap();
-    }
-    for (int row = 0; row < m_numTileRows; row++)
-    {
-      for (int col = 0; col < m_numTileCols; col++)
+      if (subpicHeightLessThanOneTileFlag[i])
       {
-        const int tileTopLeftCtu = getTileColumnBd(col) + getTileRowBd(row) * getPicWidthInCtu();
-        const int sliceIdx = getCtuToSubPicIdx(tileTopLeftCtu);
-        const int tileSizeInCtus = (getTileColumnBd(col + 1) - getTileColumnBd(col)) * (getTileRowBd(row + 1) - getTileRowBd(row));
-        const int subPicSizeInCtus = sps->getSubPicHeight(sliceIdx) * sps->getSubPicWidth(sliceIdx);
-        if (subPicSizeInCtus >= tileSizeInCtus)
-        {
-          m_sliceMap[sliceIdx].addCtusToSlice(getTileColumnBd(col), getTileColumnBd(col + 1),
-            getTileRowBd(row), getTileRowBd(row + 1), m_picWidthInCtu);
-        }
-        else
-        {
-          int sliceIdxInTile = sliceIdx;
-          do
+        m_sliceMap[i].addCtusToSlice(sps->getSubPicCtuTopLeftX(i), sps->getSubPicCtuTopLeftX(i) + sps->getSubPicWidth(i), 
+                                     sps->getSubPicCtuTopLeftY(i), sps->getSubPicCtuTopLeftY(i) + sps->getSubPicHeight(i), m_picWidthInCtu);
+      }
+      else
+      {
+        tileX = m_ctuToTileCol[sps->getSubPicCtuTopLeftX(i)];
+        tileY = m_ctuToTileRow[sps->getSubPicCtuTopLeftY(i)];
+        for (uint32_t j = 0; j< subpicHeightInTiles[i]; j++)
+        { 
+          for (uint32_t k = 0; k < subpicWidthInTiles[i]; k++)
           {
-            // subpicture vertical boundary must be a tile boundary, so tile column parameter doesn't change
-            m_sliceMap[sliceIdxInTile].addCtusToSlice(getTileColumnBd(col), getTileColumnBd(col + 1),
-              sps->getSubPicCtuTopLeftY(sliceIdxInTile), sps->getSubPicCtuTopLeftY(sliceIdxInTile) +  sps->getSubPicHeight(sliceIdxInTile), m_picWidthInCtu);
-            sliceIdxInTile++;
-            if (sliceIdxInTile == sps->getNumSubPics())
-            {
-              break;
-            }
-          } while (sps->getSubPicCtuTopLeftY(sliceIdxInTile) < getTileRowBd(row + 1));
+            m_sliceMap[i].addCtusToSlice(getTileColumnBd(tileX + k), getTileColumnBd(tileX + k + 1), getTileRowBd(tileY + j), getTileRowBd(tileY + j + 1), m_picWidthInCtu);
+          }
         }
       }
-    }    
+    }
+    subpicWidthInTiles.clear();
+    subpicHeightInTiles.clear();
+    subpicHeightLessThanOneTileFlag.clear();
   }
   else
   {

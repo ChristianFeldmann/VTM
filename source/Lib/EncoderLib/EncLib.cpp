@@ -1539,6 +1539,27 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
     sps.setSubPicTreatedAsPicFlag(m_subPicTreatedAsPicFlag);
     sps.setLoopFilterAcrossSubpicEnabledFlag(m_loopFilterAcrossSubpicEnabledFlag);
     sps.setSubPicIdLen(m_subPicIdLen);
+#if JVET_Q0119_CLEANUPS
+    sps.setSubPicIdMappingExplicitlySignalledFlag(m_subPicIdMappingExplicitlySignalledFlag);
+    if (m_subPicIdMappingExplicitlySignalledFlag)
+    {
+      sps.setSubPicIdMappingInSpsFlag(m_subPicIdMappingInSpsFlag);
+      if (m_subPicIdMappingInSpsFlag)
+      {
+        sps.setSubPicId(m_subPicId);
+      }
+    }
+#else
+    sps.setSubPicIdPresentFlag(m_subPicIdPresentFlag);
+    if (m_subPicIdPresentFlag)
+    {
+      sps.setSubPicIdSignallingPresentFlag(m_subPicIdSignallingPresentFlag);
+      if (m_subPicIdSignallingPresentFlag)
+      {
+        sps.setSubPicId(m_subPicId);
+      }
+    }
+#endif
   }
 #if JVET_Q0044_SLICE_IDX_WITH_SUBPICS
   else   //In that case, there is only one subpicture that contains the whole picture
@@ -1551,27 +1572,11 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
     sps.setSubPicTreatedAsPicFlag(0, 1);
     sps.setLoopFilterAcrossSubpicEnabledFlag(0, 0);
     sps.setSubPicIdLen(0);
-  }
-#endif
 #if JVET_Q0119_CLEANUPS
-  sps.setSubPicIdMappingExplicitlySignalledFlag(m_subPicIdMappingExplicitlySignalledFlag);
-  if (m_subPicIdMappingExplicitlySignalledFlag)
-  {
-    sps.setSubPicIdMappingInSpsFlag(m_subPicIdMappingInSpsFlag);
-    if (m_subPicIdMappingInSpsFlag)
-    {
-      sps.setSubPicId(m_subPicId);
-    }
-  }
+    sps.setSubPicIdMappingExplicitlySignalledFlag(false);
 #else
-  sps.setSubPicIdPresentFlag(m_subPicIdPresentFlag);
-  if (m_subPicIdPresentFlag) 
-  {
-    sps.setSubPicIdSignallingPresentFlag(m_subPicIdSignallingPresentFlag);
-    if (m_subPicIdSignallingPresentFlag)
-    {
-      sps.setSubPicId(m_subPicId);
-    }
+    sps.setSubPicIdPresentFlag(false);
+#endif
   }
 #endif
 #if DQ_SDH_SIGNALLING

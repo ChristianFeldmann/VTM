@@ -444,6 +444,11 @@ void EncApp::xInitLibCfg()
       m_cEncLib.setSubPicId                                      ( m_subPicId );
     }
   }
+  else
+  {
+    m_cEncLib.setNumSubPics                                      ( 1 );
+    m_cEncLib.setSubPicIdMappingExplicitlySignalledFlag          ( false );
+  }
 
   m_cEncLib.setUseSplitConsOverride                              ( m_SplitConsOverrideEnabledFlag );
   m_cEncLib.setMinQTSizes                                        ( m_uiMinQT );

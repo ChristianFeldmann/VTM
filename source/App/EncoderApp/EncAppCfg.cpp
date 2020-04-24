@@ -406,7 +406,7 @@ T SMultiValueInput<T>::readValue(const char *&pStr, bool &bSuccess)
   iss>>val;
   bSuccess=!iss.fail() // check nothing has gone wrong
                        && !(val<minValIncl || val>maxValIncl) // check value is within range
-                       && iss.tellg() != 0 // check we've actually read something
+                       && (int)iss.tellg() !=  0 // check we've actually read something
                        && (iss.eof() || iss.peek()==' '); // check next character is a space, or eof
   pStr+= (iss.eof() ? s.size() : (std::size_t)iss.tellg());
   return val;

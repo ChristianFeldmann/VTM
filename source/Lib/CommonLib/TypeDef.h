@@ -119,7 +119,6 @@
 
 
 
-#define JVET_Q0751_MIXED_NAL_UNIT_TYPES                   1 // JVET-Q0751: Constraints and properties of mixed nal unit types
 
 #define JVET_Q0353_ACT_SW_FIX                             1 // JVET-Q0353: Bug fix of ACT 
 

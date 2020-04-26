@@ -62,7 +62,6 @@
 
 
 
-#define JVET_P0115_LAYER_TID_CONSTRAINT                   1 // JVET-P0115: bitstream shall not contain any other layers than included in the OLS with OlsIdx and shall not include any NAL unit with TemporalId greater than HighestTid
 
 #define JVET_Q0359_TILE_SIZE_CONSTRAINT                   1 // JVET-Q0359: sum of the explicit signaled tile size shall less than or equal to pic size
 

@@ -1199,33 +1199,11 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   if (pcSPS->getTransformSkipEnabledFlag())
   {
     WRITE_UVLC(pcSPS->getLog2MaxTransformSkipBlockSize() - 2, "log2_transform_skip_max_size_minus2");
-#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
     WRITE_FLAG(pcSPS->getBDPCMEnabledFlag() ? 1 : 0, "sps_bdpcm_enabled_flag");
-#else
-      WRITE_FLAG(pcSPS->getBDPCMEnabled() ? 1 : 0, "sps_bdpcm_enabled_flag");
-#if JVET_Q0110_Q0785_CHROMA_BDPCM_420
-      if( pcSPS->getBDPCMEnabled() )
-#else
-      if (pcSPS->getBDPCMEnabled() && pcSPS->getChromaFormatIdc() == CHROMA_444)
-#endif
-      {
-          WRITE_FLAG(pcSPS->getBDPCMEnabled() == BDPCM_LUMACHROMA ? 1 : 0, "sps_bdpcm_enabled_chroma_flag");
-      }
-#if !JVET_Q0110_Q0785_CHROMA_BDPCM_420
-      else 
-      {
-        CHECK(pcSPS->getBDPCMEnabled() == BDPCM_LUMACHROMA, "BDPCM for chroma can be used for 444 only.")
-      }
-#endif
-#endif
   }
   else
   {
-#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
     CHECK(pcSPS->getBDPCMEnabledFlag(), "BDPCM cannot be used when transform skip is disabled");
-#else
-    CHECK(pcSPS->getBDPCMEnabled()!=0, "BDPCM cannot be used when transform skip is disabled");
-#endif
   }
 
   WRITE_FLAG( pcSPS->getWrapAroundEnabledFlag() ? 1 : 0,                              "sps_ref_wraparound_enabled_flag" );
@@ -3056,9 +3034,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
 #endif
     }
 
-#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
 	WRITE_FLAG(pcSlice->getTSResidualCodingDisabledFlag() ? 1 : 0, "slice_ts_residual_coding_disabled_flag");
-#endif
 
 #if JVET_Q0346_LMCS_ENABLE_IN_SH
   if (picHeader->getLmcsEnabledFlag())

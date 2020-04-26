@@ -1860,21 +1860,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   {
     READ_UVLC(uiCode, "log2_transform_skip_max_size_minus2");
     pcSPS->setLog2MaxTransformSkipBlockSize(uiCode + 2);
-#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
     READ_FLAG(uiCode, "sps_bdpcm_enabled_flag"); pcSPS->setBDPCMEnabledFlag(uiCode ? true : false);
-#else
-      READ_FLAG(uiCode, "sps_bdpcm_enabled_flag");
-#if JVET_Q0110_Q0785_CHROMA_BDPCM_420
-      if( uiCode )
-#else
-      if (uiCode && pcSPS->getChromaFormatIdc() == CHROMA_444 )
-#endif
-      {
-          READ_FLAG(uiCode, "sps_bdpcm_enabled_chroma_flag");
-          uiCode++;
-      }
-      pcSPS->setBDPCMEnabled(uiCode);
-#endif
   }
 
   READ_FLAG(uiCode, "sps_ref_wraparound_enabled_flag");                  pcSPS->setWrapAroundEnabledFlag( uiCode ? true : false );
@@ -4628,10 +4614,8 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
 #endif
     }
 
-#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
 	READ_FLAG(uiCode, "slice_ts_residual_coding_disabled_flag");
 	pcSlice->setTSResidualCodingDisabledFlag(uiCode != 0);
-#endif
 
 #if JVET_Q0346_LMCS_ENABLE_IN_SH
   if (picHeader->getLmcsEnabledFlag())

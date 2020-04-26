@@ -1316,11 +1316,7 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
 
   sps.setTransformSkipEnabledFlag(m_useTransformSkip);
   sps.setLog2MaxTransformSkipBlockSize(m_log2MaxTransformSkipBlockSize);
-#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
   sps.setBDPCMEnabledFlag(m_useBDPCM);
-#else
-  sps.setBDPCMEnabled(m_useBDPCM);
-#endif
 
   sps.setSPSTemporalMVPEnabledFlag((getTMVPModeId() == 2 || getTMVPModeId() == 1));
 

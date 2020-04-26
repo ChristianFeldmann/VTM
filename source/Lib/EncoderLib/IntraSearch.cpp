@@ -449,11 +449,7 @@ bool IntraSearch::estIntraPredLumaQT(CodingUnit &cu, Partitioner &partitioner, c
     }
   }
 
-#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
   const bool testBDPCM = sps.getBDPCMEnabledFlag() && CU::bdpcmAllowed(cu, ComponentID(partitioner.chType)) && cu.mtsFlag == 0 && cu.lfnstIdx == 0;
-#else
-  const bool testBDPCM = (sps.getBDPCMEnabled()!=0) && CU::bdpcmAllowed(cu, ComponentID(partitioner.chType)) && cu.mtsFlag == 0 && cu.lfnstIdx == 0;
-#endif
   static_vector<ModeInfo, FAST_UDI_MAX_RDMODE_NUM> uiHadModeList;
   static_vector<double, FAST_UDI_MAX_RDMODE_NUM> CandCostList;
   static_vector<double, FAST_UDI_MAX_RDMODE_NUM> CandHadList;

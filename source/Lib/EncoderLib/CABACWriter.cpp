@@ -833,11 +833,7 @@ void CABACWriter::pred_mode( const CodingUnit& cu )
 }
 void CABACWriter::bdpcm_mode( const CodingUnit& cu, const ComponentID compID )
 {
-#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
   if( !cu.cs->sps->getBDPCMEnabledFlag() ) return;
-#else
-  if( cu.cs->sps->getBDPCMEnabled() == 0 ) return;
-#endif
   if( !CU::bdpcmAllowed( cu, compID ) ) return;
 
   int bdpcmMode = isLuma(compID) ? cu.bdpcmMode : cu.bdpcmModeChroma;
@@ -2751,11 +2747,7 @@ void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID, 
   ts_flag            ( tu, compID );
   explicit_rdpcm_mode( tu, compID );
 
-#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
   if( tu.mtsIdx[compID] == MTS_SKIP && !tu.cs->slice->getTSResidualCodingDisabledFlag() )
-#else
-  if (tu.mtsIdx[compID] == MTS_SKIP)
-#endif
   {
     residual_codingTS( tu, compID );
     return;

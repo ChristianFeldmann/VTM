@@ -3000,11 +3000,7 @@ void CABACReader::residual_coding( TransformUnit& tu, ComponentID compID, CUCtx&
   ts_flag            ( tu, compID );
   explicit_rdpcm_mode( tu, compID );
 
-#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
   if( tu.mtsIdx[compID] == MTS_SKIP && !tu.cs->slice->getTSResidualCodingDisabledFlag() )
-#else
-  if (tu.mtsIdx[compID] == MTS_SKIP)
-#endif
   {
     residual_codingTS( tu, compID );
     return;

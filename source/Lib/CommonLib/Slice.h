@@ -1358,11 +1358,7 @@ private:
 
   bool              m_transformSkipEnabledFlag;
   int               m_log2MaxTransformSkipBlockSize;
-#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
   bool              m_BDPCMEnabledFlag;
-#else
-  int               m_BDPCMEnabled;
-#endif
   bool              m_JointCbCrEnabledFlag;
   // Parameter
   BitDepths         m_bitDepths;
@@ -1627,13 +1623,8 @@ public:
   void                    setTransformSkipEnabledFlag( bool b )                                               { m_transformSkipEnabledFlag = b;                                      }
   uint32_t                getLog2MaxTransformSkipBlockSize() const                                            { return m_log2MaxTransformSkipBlockSize;                              }
   void                    setLog2MaxTransformSkipBlockSize(uint32_t u)                                        { m_log2MaxTransformSkipBlockSize = u;                                 }
-#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
   bool                    getBDPCMEnabledFlag() const                                                         { return m_BDPCMEnabledFlag;                                           }
   void                    setBDPCMEnabledFlag( bool b )                                                       { m_BDPCMEnabledFlag = b;                                              }
-#else
-  int                     getBDPCMEnabled() const                                                             { return m_BDPCMEnabled;                                               }
-  void                    setBDPCMEnabled(int val)                                                            { m_BDPCMEnabled = val;                                                }
-#endif
   void                    setBitsForPOC( uint32_t u )                                                         { m_uiBitsForPOC = u;                                                  }
   uint32_t                    getBitsForPOC() const                                                           { return m_uiBitsForPOC;                                               }
   void                    setPocMsbFlag(bool b)                                                               { m_pocMsbFlag = b;                                                    }
@@ -2773,9 +2764,7 @@ private:
   int                        m_deblockingFilterCrBetaOffsetDiv2;  //< beta offset for deblocking filter
   int                        m_deblockingFilterCrTcOffsetDiv2;    //< tc offset for deblocking filter
 #endif
-#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
   bool                       m_tsResidualCodingDisabledFlag;
-#endif
   int                        m_list1IdxToList0Idx[MAX_NUM_REF];
   int                        m_aiNumRefIdx   [NUM_REF_PIC_LIST_01];    //  for multiple reference of current slice
   bool                       m_pendingRasInit;
@@ -2990,10 +2979,8 @@ public:
   void                        setDeblockingFilterCrBetaOffsetDiv2( int i )           { m_deblockingFilterCrBetaOffsetDiv2 = i;                         }
   void                        setDeblockingFilterCrTcOffsetDiv2( int i )             { m_deblockingFilterCrTcOffsetDiv2 = i;                           }
 #endif
-#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
   void                        setTSResidualCodingDisabledFlag(bool b) { m_tsResidualCodingDisabledFlag = b; }
   bool                        getTSResidualCodingDisabledFlag() const { return m_tsResidualCodingDisabledFlag; }
-#endif
 
   void                        setNumRefIdx( RefPicList e, int i )                    { m_aiNumRefIdx[e]    = i;                                      }
   void                        setPic( Picture* p )                                   { m_pcPic             = p;                                      }

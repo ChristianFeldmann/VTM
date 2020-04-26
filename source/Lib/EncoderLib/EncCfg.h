@@ -484,11 +484,7 @@ protected:
   bool      m_useTransformSkip;
   bool      m_useTransformSkipFast;
   bool      m_useChromaTS;
-#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
   bool      m_useBDPCM;
-#else
-  int       m_useBDPCM;
-#endif
   uint32_t      m_log2MaxTransformSkipBlockSize;
   bool      m_transformSkipRotationEnabledFlag;
   bool      m_transformSkipContextEnabledFlag;
@@ -1438,13 +1434,8 @@ public:
   void setTransformSkipContextEnabledFlag              (const bool value)  { m_transformSkipContextEnabledFlag = value; }
   bool getUseChromaTS                                  ()       { return m_useChromaTS; }
   void setUseChromaTS                                  (bool b) { m_useChromaTS = b; }
-#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
   bool getUseBDPCM                                     ()         { return m_useBDPCM; }
   void setUseBDPCM                                     ( bool b ) { m_useBDPCM  = b;   }
-#else
-  int  getUseBDPCM                                     ()         { return m_useBDPCM; }
-  void setUseBDPCM                                     ( int b )  { m_useBDPCM = b;    }
-#endif
   bool getUseJointCbCr                                 ()         { return m_JointCbCrMode; }
   void setUseJointCbCr                                 (bool b)   { m_JointCbCrMode = b; }
   bool getPersistentRiceAdaptationEnabledFlag          ()                 const { return m_persistentRiceAdaptationEnabledFlag;  }

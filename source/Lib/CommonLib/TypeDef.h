@@ -77,7 +77,6 @@
 
 
 
-#define JVET_P0116_POC_MSB                                1 // JVET-P0116: use POC MSB cycle signalling for independent layers,to support of mixed IRAP and non-IRAP pictures within an AU
 
 #define JVET_P0978_RPL_RESTRICTIONS                       1 // JVET-P0978: A set of RPL-related bitstream conformance restrictions
 

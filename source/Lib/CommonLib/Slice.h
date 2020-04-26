@@ -1390,10 +1390,8 @@ private:
   bool              m_DmvrControlPresentFlag;
   bool              m_ProfControlPresentFlag;
   uint32_t          m_uiBitsForPOC;
-#if JVET_P0116_POC_MSB
   bool              m_pocMsbFlag;
   uint32_t          m_pocMsbLen;
-#endif
 #if JVET_Q0400_EXTRA_BITS
   int               m_numExtraPHBitsBytes;
   int               m_numExtraSHBitsBytes;
@@ -1662,12 +1660,10 @@ public:
 #endif
   void                    setBitsForPOC( uint32_t u )                                                         { m_uiBitsForPOC = u;                                                  }
   uint32_t                    getBitsForPOC() const                                                           { return m_uiBitsForPOC;                                               }
-#if JVET_P0116_POC_MSB
   void                    setPocMsbFlag(bool b)                                                               { m_pocMsbFlag = b;                                                    }
   bool                    getPocMsbFlag() const                                                               { return m_pocMsbFlag;                                                 }
   void                    setPocMsbLen(uint32_t u)                                                            { m_pocMsbLen = u;                                                     }
   uint32_t                getPocMsbLen() const                                                                { return m_pocMsbLen;                                                  }
-#endif
 #if JVET_Q0400_EXTRA_BITS
   void                    setNumExtraPHBitsBytes(int i)                                                       { m_numExtraPHBitsBytes = i;                                           }
   int                     getNumExtraPHBitsBytes() const                                                      { return m_numExtraPHBitsBytes;                                        }
@@ -2420,10 +2416,8 @@ private:
 #endif
   int                         m_spsId;                                                  //!< sequence parameter set ID
   int                         m_ppsId;                                                  //!< picture parameter set ID
-#if JVET_P0116_POC_MSB
   bool                        m_pocMsbPresentFlag;                                      //!< ph_poc_msb_present_flag
   int                         m_pocMsbVal;                                              //!< poc_msb_val
-#endif
 #if !JVET_Q0119_CLEANUPS
   bool                        m_subPicIdSignallingPresentFlag;                          //!< indicates the presence of sub-picture ID signalling in the SPS
   uint32_t                    m_subPicIdLen;                                            //!< sub-picture ID length in bits
@@ -2551,12 +2545,10 @@ public:
   uint32_t                    getSPSId() const                                          { return m_spsId;                                                                              }
   void                        setPPSId( uint32_t u )                                    { m_ppsId = u;                                                                                 }
   uint32_t                    getPPSId() const                                          { return m_ppsId;                                                                              }
-#if JVET_P0116_POC_MSB
   void                        setPocMsbPresentFlag(bool b)                              { m_pocMsbPresentFlag = b;                                                                     }
   bool                        getPocMsbPresentFlag() const                              { return m_pocMsbPresentFlag;                                                                  }
   void                        setPocMsbVal(int i)                                       { m_pocMsbVal = i;                                                                             }
   int                         getPocMsbVal()                                            { return m_pocMsbVal;                                                                          }
-#endif
 #if !JVET_Q0119_CLEANUPS
   void                        setSubPicIdSignallingPresentFlag( bool b )                { m_subPicIdSignallingPresentFlag = b;                                                         }
   bool                        getSubPicIdSignallingPresentFlag() const                  { return  m_subPicIdSignallingPresentFlag;                                                     }

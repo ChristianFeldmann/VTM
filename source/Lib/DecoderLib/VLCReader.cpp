@@ -1708,14 +1708,12 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_CODE(4, uiCode, "log2_max_pic_order_cnt_lsb_minus4");     pcSPS->setBitsForPOC( 4 + uiCode );
   CHECK(uiCode > 12, "Invalid code");
 
-#if JVET_P0116_POC_MSB
   READ_FLAG(uiCode, "sps_poc_msb_flag");                    pcSPS->setPocMsbFlag(uiCode ? true : false);
   if (pcSPS->getPocMsbFlag())
   {
     READ_UVLC(uiCode, "poc_msb_len_minus1");                  pcSPS->setPocMsbLen(1 + uiCode);
     CHECK(uiCode > (32 - ( pcSPS->getBitsForPOC() - 4 )- 5), "The value of poc_msb_len_minus1 shall be in the range of 0 to 32 - log2_max_pic_order_cnt_lsb_minus4 - 5, inclusive");
   }
-#endif
 
 #if JVET_Q0400_EXTRA_BITS
   // extra bits are for future extensions, we will read, but ignore them,
@@ -2712,7 +2710,6 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   }
 #endif
   
-#if JVET_P0116_POC_MSB
   if (sps->getPocMsbFlag())
   {
     READ_FLAG(uiCode, "ph_poc_msb_present_flag"); picHeader->setPocMsbPresentFlag(uiCode != 0);
@@ -2722,7 +2719,6 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
       picHeader->setPocMsbVal(uiCode);
     }
   }
-#endif
 
 #if !JVET_Q0819_PH_CHANGES
   // parameter sets
@@ -3838,14 +3834,11 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
 #else
   READ_CODE(sps->getBitsForPOC(), uiCode, "slice_pic_order_cnt_lsb");
 #endif
-#if JVET_P0116_POC_MSB
   int iPOClsb = uiCode;
   int iMaxPOClsb = 1 << sps->getBitsForPOC();
   int iPOCmsb;
-#endif
   if (pcSlice->getIdrPicFlag())
   {
-#if JVET_P0116_POC_MSB
     if (picHeader->getPocMsbPresentFlag())
     {
       iPOCmsb = picHeader->getPocMsbVal()*iMaxPOClsb;
@@ -3855,32 +3848,18 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
       iPOCmsb = 0;
     }
     pcSlice->setPOC(iPOCmsb + iPOClsb);
-#else
-    pcSlice->setPOC(uiCode);
-#endif
   }
   else
   {
-#if !JVET_P0116_POC_MSB
-    int iPOClsb = uiCode;
-#endif
     int iPrevPOC = prevTid0POC;
-#if !JVET_P0116_POC_MSB
-    int iMaxPOClsb = 1 << sps->getBitsForPOC();
-#endif
     int iPrevPOClsb = iPrevPOC & (iMaxPOClsb - 1);
     int iPrevPOCmsb = iPrevPOC - iPrevPOClsb;
-#if !JVET_P0116_POC_MSB
-    int iPOCmsb;
-#endif
-#if JVET_P0116_POC_MSB
     if (picHeader->getPocMsbPresentFlag())
     {
       iPOCmsb = picHeader->getPocMsbVal()*iMaxPOClsb;
     }
     else
     {
-#endif
       if ((iPOClsb < iPrevPOClsb) && ((iPrevPOClsb - iPOClsb) >= (iMaxPOClsb / 2)))
       {
         iPOCmsb = iPrevPOCmsb + iMaxPOClsb;
@@ -3893,9 +3872,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
       {
         iPOCmsb = iPrevPOCmsb;
       }
-#if JVET_P0116_POC_MSB
     }
-#endif
     pcSlice->setPOC(iPOCmsb + iPOClsb);
   }
 
@@ -4885,16 +4862,13 @@ void HLSyntaxReader::parseSliceHeaderToPoc (Slice* pcSlice, PicHeader* picHeader
   // picture order count
   READ_CODE(sps->getBitsForPOC(), uiCode, "slice_pic_order_cnt_lsb");
 #endif
-#if JVET_P0116_POC_MSB
 #if !JVET_Q0819_PH_CHANGES
   int pocLsb = uiCode;
 #endif
   int maxPocLsb = 1 << sps->getBitsForPOC();
   int pocMsb;
-#endif
   if (pcSlice->getIdrPicFlag())
   {
-#if JVET_P0116_POC_MSB
     if (picHeader->getPocMsbPresentFlag())
     {
       pocMsb = picHeader->getPocMsbVal()*maxPocLsb;
@@ -4904,38 +4878,18 @@ void HLSyntaxReader::parseSliceHeaderToPoc (Slice* pcSlice, PicHeader* picHeader
       pocMsb = 0;
     }
     pcSlice->setPOC(pocMsb + pocLsb);
-#else
-#if JVET_Q0819_PH_CHANGES
-    pcSlice->setPOC(pocLsb);
-#else
-    pcSlice->setPOC(uiCode);
-#endif
-#endif
   }
   else
   {
-#if !JVET_P0116_POC_MSB
-#if !JVET_Q0819_PH_CHANGES
-    int pocLsb = uiCode;
-#endif
-#endif
     int prevPoc = prevTid0POC;
-#if !JVET_P0116_POC_MSB
-    int maxPocLsb = 1 << sps->getBitsForPOC();
-#endif
     int prevPocLsb = prevPoc & (maxPocLsb - 1);
     int prevPocMsb = prevPoc - prevPocLsb;
-#if !JVET_P0116_POC_MSB
-    int pocMsb;
-#endif
-#if JVET_P0116_POC_MSB
     if (picHeader->getPocMsbPresentFlag())
     {
       pocMsb = picHeader->getPocMsbVal()*maxPocLsb;
     }
     else
     {
-#endif
       if ((pocLsb < prevPocLsb) && ((prevPocLsb - pocLsb) >= (maxPocLsb / 2)))
       {
         pocMsb = prevPocMsb + maxPocLsb;
@@ -4948,9 +4902,7 @@ void HLSyntaxReader::parseSliceHeaderToPoc (Slice* pcSlice, PicHeader* picHeader
       {
         pocMsb = prevPocMsb;
       }
-#if JVET_P0116_POC_MSB
     }
-#endif
     pcSlice->setPOC(pocMsb + pocLsb);
   }
 }

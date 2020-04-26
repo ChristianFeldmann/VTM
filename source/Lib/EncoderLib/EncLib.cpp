@@ -264,20 +264,12 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
   {
     PPS &pps = *( m_ppsMap.allocatePS( ENC_PPS_ID_RPR ) );
     Window& inputScalingWindow = pps0.getScalingWindow();
-#if JVET_Q0487_SCALING_WINDOW_ISSUES
     int scaledWidth = int( ( pps0.getPicWidthInLumaSamples() - SPS::getWinUnitX( sps0.getChromaFormatIdc() ) * ( inputScalingWindow.getWindowLeftOffset() + inputScalingWindow.getWindowRightOffset() ) ) / m_scalingRatioHor );
-#else
-    int scaledWidth = int( ( pps0.getPicWidthInLumaSamples() - inputScalingWindow.getWindowLeftOffset() - inputScalingWindow.getWindowRightOffset() ) / m_scalingRatioHor );
-#endif
     int minSizeUnit = std::max(8, 1 << sps0.getLog2MinCodingBlockSize());
     int temp = scaledWidth / minSizeUnit;
     int width = ( scaledWidth - ( temp * minSizeUnit) > 0 ? temp + 1 : temp ) * minSizeUnit;
 
-#if JVET_Q0487_SCALING_WINDOW_ISSUES
     int scaledHeight = int( ( pps0.getPicHeightInLumaSamples() - SPS::getWinUnitY( sps0.getChromaFormatIdc() ) * ( inputScalingWindow.getWindowTopOffset() + inputScalingWindow.getWindowBottomOffset() ) ) / m_scalingRatioVer );
-#else
-    int scaledHeight = int( ( pps0.getPicHeightInLumaSamples() - inputScalingWindow.getWindowTopOffset() - inputScalingWindow.getWindowBottomOffset() ) / m_scalingRatioVer );
-#endif
     temp = scaledHeight / minSizeUnit;
     int height = ( scaledHeight - ( temp * minSizeUnit) > 0 ? temp + 1 : temp ) * minSizeUnit;
 
@@ -289,11 +281,7 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
     pps.setConformanceWindow( conformanceWindow );
 
     Window scalingWindow;
-#if JVET_Q0487_SCALING_WINDOW_ISSUES
     scalingWindow.setWindow( 0, ( width - scaledWidth ) / SPS::getWinUnitX( sps0.getChromaFormatIdc() ), 0, ( height - scaledHeight ) / SPS::getWinUnitY( sps0.getChromaFormatIdc() ) );
-#else
-    scalingWindow.setWindow( 0, width - scaledWidth, 0, height - scaledHeight );
-#endif
     pps.setScalingWindow( scalingWindow );
 
     //register the width/height of the current pic into reference SPS
@@ -661,22 +649,12 @@ bool EncLib::encodePrep( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYu
 
       const PPS *refPPS = m_ppsMap.getPS( 0 );
       const Window& curScalingWindow = pPPS->getScalingWindow();
-#if JVET_Q0487_SCALING_WINDOW_ISSUES
       int curPicWidth = pPPS->getPicWidthInLumaSamples()   - SPS::getWinUnitX( pSPS->getChromaFormatIdc() ) * ( curScalingWindow.getWindowLeftOffset() + curScalingWindow.getWindowRightOffset() );
       int curPicHeight = pPPS->getPicHeightInLumaSamples() - SPS::getWinUnitY( pSPS->getChromaFormatIdc() ) * ( curScalingWindow.getWindowTopOffset()  + curScalingWindow.getWindowBottomOffset() );
-#else
-      int curPicWidth = pPPS->getPicWidthInLumaSamples() - curScalingWindow.getWindowLeftOffset() - curScalingWindow.getWindowRightOffset();
-      int curPicHeight = pPPS->getPicHeightInLumaSamples() - curScalingWindow.getWindowTopOffset() - curScalingWindow.getWindowBottomOffset();
-#endif
 
       const Window& refScalingWindow = refPPS->getScalingWindow();
-#if JVET_Q0487_SCALING_WINDOW_ISSUES
       int refPicWidth = refPPS->getPicWidthInLumaSamples()   - SPS::getWinUnitX( pSPS->getChromaFormatIdc() ) * ( refScalingWindow.getWindowLeftOffset() + refScalingWindow.getWindowRightOffset() );
       int refPicHeight = refPPS->getPicHeightInLumaSamples() - SPS::getWinUnitY( pSPS->getChromaFormatIdc() ) * ( refScalingWindow.getWindowTopOffset()  + refScalingWindow.getWindowBottomOffset() );
-#else
-      int refPicWidth = refPPS->getPicWidthInLumaSamples() - refScalingWindow.getWindowLeftOffset() - refScalingWindow.getWindowRightOffset();
-      int refPicHeight = refPPS->getPicHeightInLumaSamples() - refScalingWindow.getWindowTopOffset() - refScalingWindow.getWindowBottomOffset();
-#endif
 
       int xScale = ( ( refPicWidth << SCALE_RATIO_BITS ) + ( curPicWidth >> 1 ) ) / curPicWidth;
       int yScale = ( ( refPicHeight << SCALE_RATIO_BITS ) + ( curPicHeight >> 1 ) ) / curPicHeight;

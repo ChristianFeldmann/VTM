@@ -1296,11 +1296,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     {
     for (int picIdx = 0; picIdx < pcSPS->getNumSubPics(); picIdx++)
     {
-#if JVET_Q0222_SUBPICTURE_SIGNALLING
       if ((picIdx > 0) && (pcSPS->getMaxPicWidthInLumaSamples() > pcSPS->getCTUSize()))
-#else
-      if (pcSPS->getMaxPicWidthInLumaSamples() > pcSPS->getCTUSize())
-#endif
       {
         READ_CODE(ceilLog2((pcSPS->getMaxPicWidthInLumaSamples() + pcSPS->getCTUSize() - 1) / pcSPS->getCTUSize()), uiCode, "subpic_ctu_top_left_x[ i ]");
         pcSPS->setSubPicCtuTopLeftX(picIdx, uiCode);
@@ -1309,11 +1305,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
       {
         pcSPS->setSubPicCtuTopLeftX(picIdx, 0);
       }
-#if JVET_Q0222_SUBPICTURE_SIGNALLING
       if ((picIdx > 0) && (pcSPS->getMaxPicHeightInLumaSamples() > pcSPS->getCTUSize()))
-#else
-      if (pcSPS->getMaxPicHeightInLumaSamples() > pcSPS->getCTUSize())
-#endif
       {
         READ_CODE(ceilLog2((pcSPS->getMaxPicHeightInLumaSamples() + pcSPS->getCTUSize() - 1) / pcSPS->getCTUSize()), uiCode, "subpic_ctu_top_left_y[ i ]");
         pcSPS->setSubPicCtuTopLeftY(picIdx, uiCode);

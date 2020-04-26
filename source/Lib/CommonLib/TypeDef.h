@@ -186,7 +186,6 @@ typedef std::pair<int, int>  TrCost;
 // clang-format on
 
 
-#define JVET_Q0222_SUBPICTURE_SIGNALLING                  1 // JVET-Q0222_Proposal1: Inference rule to signal horizontal and vertical position of the top left CTU of 0-th subpicture
 
 #ifndef JVET_J0090_MEMORY_BANDWITH_MEASURE
 #define JVET_J0090_MEMORY_BANDWITH_MEASURE                0

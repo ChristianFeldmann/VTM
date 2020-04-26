@@ -1490,9 +1490,7 @@ bool PU::getColocatedMVP(const PredictionUnit &pu, const RefPicList &eRefPicList
   if (bIsCurrRefLongTerm /*|| bIsColRefLongTerm*/)
   {
     rcMv = cColMv;
-#if JVET_Q0483_CLIP_TMVP
     rcMv.clipToStorageBitDepth();
-#endif
   }
   else
   {
@@ -1505,9 +1503,7 @@ bool PU::getColocatedMVP(const PredictionUnit &pu, const RefPicList &eRefPicList
     if (distscale == 4096)
     {
       rcMv = cColMv;
-#if JVET_Q0483_CLIP_TMVP
       rcMv.clipToStorageBitDepth();
-#endif
     }
     else
     {

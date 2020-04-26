@@ -1087,11 +1087,7 @@ void CABACReader::pred_mode( CodingUnit& cu )
         cu.predMode = MODE_IBC;
       }
       }
-#if JVET_Q0629_REMOVAL_PLT_4X4
       if (!CU::isIBC(cu) && cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64 && (cu.lumaSize().width * cu.lumaSize().height > 16) )
-#else
-      if (!CU::isIBC(cu) && cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
-#endif                 
       {
         if (m_BinDecoder.decodeBin(Ctx::PLTFlag(0)))
         {
@@ -1104,11 +1100,7 @@ void CABACReader::pred_mode( CodingUnit& cu )
       if (m_BinDecoder.decodeBin(Ctx::PredMode(DeriveCtx::CtxPredModeFlag(cu))))
       {
         cu.predMode = MODE_INTRA;
-#if JVET_Q0629_REMOVAL_PLT_4X4
         if (cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64 && (cu.lumaSize().width * cu.lumaSize().height > 16) )
-#else
-        if (cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
-#endif           
         {
           if (m_BinDecoder.decodeBin(Ctx::PLTFlag(0)))
           {
@@ -1141,11 +1133,7 @@ void CABACReader::pred_mode( CodingUnit& cu )
     if ( cu.cs->slice->isIntra() || (cu.lwidth() == 4 && cu.lheight() == 4) || cu.isConsIntra() )
     {
       cu.predMode = MODE_INTRA;
-#if JVET_Q0629_REMOVAL_PLT_4X4
       if (cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64 && ( ( (!isLuma(cu.chType)) && (cu.chromaSize().width * cu.chromaSize().height > 16) ) || ((isLuma(cu.chType)) && ((cu.lumaSize().width * cu.lumaSize().height) > 16 ) )  ) )
-#else
-      if (cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
-#endif                 
       {
         if (m_BinDecoder.decodeBin(Ctx::PLTFlag(0)))
         {
@@ -1156,11 +1144,7 @@ void CABACReader::pred_mode( CodingUnit& cu )
     else
     {
       cu.predMode = m_BinDecoder.decodeBin(Ctx::PredMode(DeriveCtx::CtxPredModeFlag(cu))) ? MODE_INTRA : MODE_INTER;
-#if JVET_Q0629_REMOVAL_PLT_4X4
       if (CU::isIntra(cu) && cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && ( ( (!isLuma(cu.chType)) && (cu.chromaSize().width * cu.chromaSize().height > 16) ) || ((isLuma(cu.chType)) && ((cu.lumaSize().width * cu.lumaSize().height) > 16 ) )  ) )
-#else
-      if (CU::isIntra(cu) && cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
-#endif        
       {
         if (m_BinDecoder.decodeBin(Ctx::PLTFlag(0)))
         {

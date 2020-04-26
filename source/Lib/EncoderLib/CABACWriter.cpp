@@ -787,11 +787,7 @@ void CABACWriter::pred_mode( const CodingUnit& cu )
       unsigned ctxidx = DeriveCtx::CtxIBCFlag(cu);
       m_BinEncoder.encodeBin(CU::isIBC(cu), Ctx::IBCFlag(ctxidx));
       }
-#if JVET_Q0629_REMOVAL_PLT_4X4
       if (!CU::isIBC(cu) && cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64 && (cu.lumaSize().width * cu.lumaSize().height > 16) ) 
-#else
-      if (!CU::isIBC(cu) && cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
-#endif           
       {
         m_BinEncoder.encodeBin(CU::isPLT(cu), Ctx::PLTFlag(0));
       }
@@ -805,11 +801,7 @@ void CABACWriter::pred_mode( const CodingUnit& cu )
       m_BinEncoder.encodeBin((CU::isIntra(cu) || CU::isPLT(cu)), Ctx::PredMode(DeriveCtx::CtxPredModeFlag(cu)));
       if (CU::isIntra(cu) || CU::isPLT(cu))
       {
-#if JVET_Q0629_REMOVAL_PLT_4X4
         if (cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64 && (cu.lumaSize().width * cu.lumaSize().height > 16) ) 
-#else
-        if (cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
-#endif                      
           m_BinEncoder.encodeBin(CU::isPLT(cu), Ctx::PLTFlag(0));
       }
       else
@@ -832,20 +824,12 @@ void CABACWriter::pred_mode( const CodingUnit& cu )
 
     if ( cu.cs->slice->isIntra() || ( cu.lwidth() == 4 && cu.lheight() == 4 ) || cu.isConsIntra() )
     {
-#if JVET_Q0629_REMOVAL_PLT_4X4
       if (cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64 && ( ( (!isLuma(cu.chType)) && (cu.chromaSize().width * cu.chromaSize().height > 16) ) || ((isLuma(cu.chType)) && ((cu.lumaSize().width * cu.lumaSize().height) > 16 ) )  ) )
-#else
-      if (cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
-#endif           
         m_BinEncoder.encodeBin((CU::isPLT(cu)), Ctx::PLTFlag(0));
       return;
     }
     m_BinEncoder.encodeBin((CU::isIntra(cu) || CU::isPLT(cu)), Ctx::PredMode(DeriveCtx::CtxPredModeFlag(cu)));
-#if JVET_Q0629_REMOVAL_PLT_4X4    
     if ((CU::isIntra(cu) || CU::isPLT(cu)) && cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64 && ( ( (!isLuma(cu.chType)) && (cu.chromaSize().width * cu.chromaSize().height > 16) ) || ((isLuma(cu.chType)) && ((cu.lumaSize().width * cu.lumaSize().height) > 16 ) )  ) )
-#else
-    if ((CU::isIntra(cu) || CU::isPLT(cu)) && cu.cs->slice->getSPS()->getPLTMode() && cu.lwidth() <= 64 && cu.lheight() <= 64)
-#endif         
     {
       m_BinEncoder.encodeBin((CU::isPLT(cu)), Ctx::PLTFlag(0));
     }

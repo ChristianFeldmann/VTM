@@ -1598,13 +1598,9 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
   }
   else if (encTestmode.type == ETM_PALETTE)
   {
-#if JVET_Q0629_REMOVAL_PLT_4X4
     if (partitioner.currArea().lumaSize().width > 64 || partitioner.currArea().lumaSize().height > 64
         || ((partitioner.currArea().lumaSize().width * partitioner.currArea().lumaSize().height <= 16) && (isLuma(partitioner.chType)) )
         || ((partitioner.currArea().chromaSize().width * partitioner.currArea().chromaSize().height <= 16) && (!isLuma(partitioner.chType)) && partitioner.isSepTree(cs) ) )
-#else
-    if (partitioner.currArea().lumaSize().width > 64 || partitioner.currArea().lumaSize().height > 64)
-#endif            
     {
       return false;
     }

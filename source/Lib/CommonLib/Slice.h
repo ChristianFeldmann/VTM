@@ -1529,12 +1529,10 @@ private:
   bool              m_ppsValidFlag[64];
   Size              m_scalingWindowSizeInPPS[64];
 #endif
-#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
   uint32_t          m_maxNumMergeCand;
   uint32_t          m_maxNumAffineMergeCand;
   uint32_t          m_maxNumIBCMergeCand;
   uint32_t          m_maxNumGeoCand;
-#endif
 public:
 
   SPS();
@@ -1832,7 +1830,6 @@ void                    setCCALFEnabledFlag( bool b )                           
   void                    setMaxDecPicBuffering( uint32_t ui, uint32_t tlayer )                           { CHECK(tlayer >= MAX_TLAYER, "Invalid T-layer"); m_uiMaxDecPicBuffering[tlayer] = ui;    }
   uint32_t                getMaxLatencyIncreasePlus1(uint32_t tlayer) const                               { return m_uiMaxLatencyIncreasePlus1[tlayer];                          }
   void                    setMaxLatencyIncreasePlus1( uint32_t ui , uint32_t tlayer)                      { m_uiMaxLatencyIncreasePlus1[tlayer] = ui;                            }
-#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
   uint32_t                getMaxNumMergeCand() const { return m_maxNumMergeCand; }
   void                    setMaxNumMergeCand(uint32_t u) { m_maxNumMergeCand = u; }
   uint32_t                getMaxNumAffineMergeCand() const { return m_maxNumAffineMergeCand; }
@@ -1841,7 +1838,6 @@ void                    setCCALFEnabledFlag( bool b )                           
   void                    setMaxNumIBCMergeCand(uint32_t u) { m_maxNumIBCMergeCand = u; }
   uint32_t                getMaxNumGeoCand() const { return m_maxNumGeoCand; }
   void                    setMaxNumGeoCand(uint32_t u) { m_maxNumGeoCand = u; }
-#endif
   void                    setAffineAmvrEnabledFlag( bool val )                                            { m_affineAmvrEnabledFlag = val;                                       }
   bool                    getAffineAmvrEnabledFlag() const                                                { return m_affineAmvrEnabledFlag;                                      }
 #if !JVET_P0118_HRD_ASPECTS
@@ -2574,22 +2570,11 @@ private:
   uint32_t                    m_colRefIdx;
 #endif
   bool                        m_mvdL1ZeroFlag;                                          //!< L1 MVD set to zero flag  
-#if !JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
-  uint32_t                    m_maxNumMergeCand;                                        //!< max number of merge candidates
-#endif
   uint32_t                    m_maxNumAffineMergeCand;                                  //!< max number of sub-block merge candidates
   bool                        m_disFracMMVD;                                            //!< fractional MMVD offsets disabled flag
   bool                        m_disBdofFlag;                                            //!< picture level BDOF disable flag
   bool                        m_disDmvrFlag;                                            //!< picture level DMVR disable flag
   bool                        m_disProfFlag;                                            //!< picture level PROF disable flag
-#if !JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE 
-#if !JVET_Q0806
-  uint32_t                    m_maxNumTriangleCand;                                     //!< max number of triangle merge candidates
-#else
-  uint32_t                    m_maxNumGeoCand;                                          //!< max number of geometric merge candidates
-#endif
-  uint32_t                    m_maxNumIBCMergeCand;                                     //!< max number of IBC merge candidates
-#endif
   bool                        m_jointCbCrSignFlag;                                      //!< joint Cb/Cr residual sign flag  
 #if JVET_Q0819_PH_CHANGES 
   int                         m_qpDelta;                                                //!< value of Qp delta
@@ -2758,10 +2743,6 @@ public:
 #endif
   void                        setMvdL1ZeroFlag( bool b )                                { m_mvdL1ZeroFlag = b;                                                                         }
   bool                        getMvdL1ZeroFlag() const                                  { return m_mvdL1ZeroFlag;                                                                      }  
-#if !JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
-  void                        setMaxNumMergeCand(uint32_t val )                         { m_maxNumMergeCand = val;                                                                     }
-  uint32_t                    getMaxNumMergeCand() const                                { return m_maxNumMergeCand;                                                                    }  
-#endif
   void                        setMaxNumAffineMergeCand( uint32_t val )                  { m_maxNumAffineMergeCand = val;                                                               }
   uint32_t                    getMaxNumAffineMergeCand() const                          { return m_maxNumAffineMergeCand;                                                              }
   void                        setDisFracMMVD( bool val )                                { m_disFracMMVD = val;                                                                         }
@@ -2772,17 +2753,6 @@ public:
   bool                        getDisDmvrFlag() const                                    { return m_disDmvrFlag;                                                                        }
   void                        setDisProfFlag( bool val )                                { m_disProfFlag = val;                                                                         }
   bool                        getDisProfFlag() const                                    { return m_disProfFlag;                                                                        }
-#if !JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
-#if !JVET_Q0806
-  void                        setMaxNumTriangleCand(uint32_t b)                         { m_maxNumTriangleCand = b;                                                                    }
-  uint32_t                    getMaxNumTriangleCand() const                             { return m_maxNumTriangleCand;                                                                 }
-#else
-  void                        setMaxNumGeoCand(uint32_t b)                              { m_maxNumGeoCand = b; }
-  uint32_t                    getMaxNumGeoCand() const                                  { return m_maxNumGeoCand; }
-#endif
-  void                        setMaxNumIBCMergeCand( uint32_t b )                       { m_maxNumIBCMergeCand = b;                                                                    }
-  uint32_t                    getMaxNumIBCMergeCand() const                             { return m_maxNumIBCMergeCand;                                                                 } 
-#endif
   void                        setJointCbCrSignFlag( bool b )                            { m_jointCbCrSignFlag = b;                                                                     }
   bool                        getJointCbCrSignFlag() const                              { return m_jointCbCrSignFlag;                                                                  }
 #if JVET_Q0819_PH_CHANGES 

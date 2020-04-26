@@ -1843,11 +1843,7 @@ void CABACWriter::prediction_unit( const PredictionUnit& pu )
     Mv mvd = pu.mvd[REF_PIC_LIST_0];
     mvd.changeIbcPrecInternal2Amvr(pu.cu->imv);
     mvd_coding(mvd, 0); // already changed to signaling precision
-#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
     if (pu.cs->sps->getMaxNumIBCMergeCand() == 1)
-#else
-    if ( pu.cu->slice->getPicHeader()->getMaxNumIBCMergeCand() == 1 )
-#endif
     {
       CHECK( pu.mvpIdx[REF_PIC_LIST_0], "mvpIdx for IBC mode should be 0" );
     }
@@ -1989,22 +1985,14 @@ void CABACWriter::merge_data(const PredictionUnit& pu)
 #if JVET_Q0806
   const bool ciipAvailable = pu.cs->sps->getUseCiip() && !pu.cu->skip && pu.cu->lwidth() < MAX_CU_SIZE && pu.cu->lheight() < MAX_CU_SIZE && pu.cu->lwidth() * pu.cu->lheight() >= 64;
   const bool geoAvailable = pu.cu->cs->slice->getSPS()->getUseGeo() && pu.cu->cs->slice->isInterB() && 
-#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
     pu.cs->sps->getMaxNumGeoCand() > 1
-#else
-    pu.cu->cs->picHeader->getMaxNumGeoCand() > 1
-#endif
                                                                     && pu.cu->lwidth() >= GEO_MIN_CU_SIZE && pu.cu->lheight() >= GEO_MIN_CU_SIZE
                                                                     && pu.cu->lwidth() <= GEO_MAX_CU_SIZE && pu.cu->lheight() <= GEO_MAX_CU_SIZE
                                                                     && pu.cu->lwidth() < 8 * pu.cu->lheight() && pu.cu->lheight() < 8 * pu.cu->lwidth();
   if (geoAvailable || ciipAvailable)
 #else
   const bool triangleAvailable = pu.cu->cs->slice->getSPS()->getUseTriangle() && pu.cu->cs->slice->isInterB() &&
-#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
     pu.cs->sps->getMaxNumGeoCand() > 1;
-#else
-    pu.cu->cs->picHeader->getMaxNumTriangleCand() > 1;
-#endif
   const bool ciipAvailable = pu.cs->sps->getUseCiip() && !pu.cu->skip && pu.cu->lwidth() < MAX_CU_SIZE && pu.cu->lheight() < MAX_CU_SIZE;
   if (pu.cu->lwidth() * pu.cu->lheight() >= 64
     && (triangleAvailable || ciipAvailable))
@@ -2177,11 +2165,7 @@ void CABACWriter::merge_idx( const PredictionUnit& pu )
         }
       };
       m_BinEncoder.encodeBinEP(splitDir);
-#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
       const int maxNumTriangleCand = pu.cs->sps->getMaxNumGeoCand();
-#else
-      const int maxNumTriangleCand = pu.cs->picHeader->getMaxNumTriangleCand();
-#endif
       CHECK(maxNumTriangleCand < 2, "Incorrect max number of triangle candidates");
       CHECK(candIdx0 >= maxNumTriangleCand, "Incorrect candIdx0");
       CHECK(candIdx1 >= maxNumTriangleCand, "Incorrect candIdx1");
@@ -2200,11 +2184,7 @@ void CABACWriter::merge_idx( const PredictionUnit& pu )
       DTRACE( g_trace_ctx, D_SYNTAX, "merge_idx() geo_idx1=%d\n", candIdx1 );
       xWriteTruncBinCode(splitDir, GEO_NUM_PARTITION_MODE);
       candIdx1 -= candIdx1 < candIdx0 ? 0 : 1;
-#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
       const int maxNumGeoCand = pu.cs->sps->getMaxNumGeoCand();
-#else
-      const int maxNumGeoCand = pu.cs->picHeader->getMaxNumGeoCand();
-#endif
       CHECK(maxNumGeoCand < 2, "Incorrect max number of geo candidates");
       CHECK(candIdx0 >= maxNumGeoCand, "Incorrect candIdx0");
       CHECK(candIdx1 >= maxNumGeoCand, "Incorrect candIdx1");
@@ -2227,15 +2207,9 @@ void CABACWriter::merge_idx( const PredictionUnit& pu )
 #endif
     int numCandminus1;
     if (pu.cu->predMode == MODE_IBC)
-#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
       numCandminus1 = int(pu.cs->sps->getMaxNumIBCMergeCand()) - 1;
     else
       numCandminus1 = int(pu.cs->sps->getMaxNumMergeCand()) - 1;
-#else
-      numCandminus1 = int(pu.cs->picHeader->getMaxNumIBCMergeCand()) - 1;
-    else
-      numCandminus1 = int(pu.cs->picHeader->getMaxNumMergeCand()) - 1;
-#endif
   if( numCandminus1 > 0 )
   {
     if( pu.mergeIdx == 0 )
@@ -2267,11 +2241,7 @@ void CABACWriter::mmvd_merge_idx(const PredictionUnit& pu)
   var0 = mvpIdx / MMVD_MAX_REFINE_NUM;
   var1 = (mvpIdx - (var0 * MMVD_MAX_REFINE_NUM)) / 4;
   var2 = mvpIdx - (var0 * MMVD_MAX_REFINE_NUM) - var1 * 4;
-#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
   if (pu.cs->sps->getMaxNumMergeCand() > 1)
-#else
-  if (pu.cs->picHeader->getMaxNumMergeCand() > 1)
-#endif
   {
     static_assert(MMVD_BASE_MV_NUM == 2, "");
     assert(var0 < 2);

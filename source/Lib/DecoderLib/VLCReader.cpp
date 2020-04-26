@@ -2180,20 +2180,16 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     READ_FLAG( uiCode,    "sps_explicit_mts_intra_enabled_flag" );               pcSPS->setUseIntraMTS            ( uiCode != 0 );
     READ_FLAG( uiCode,    "sps_explicit_mts_inter_enabled_flag" );               pcSPS->setUseInterMTS            ( uiCode != 0 );
   }
-#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
   READ_UVLC(uiCode, "six_minus_max_num_merge_cand");
   CHECK(MRG_MAX_NUM_CANDS <= uiCode, "Incorrrect max number of merge candidates!");
   pcSPS->setMaxNumMergeCand(MRG_MAX_NUM_CANDS - uiCode);
-#endif
   READ_FLAG(uiCode, "sps_sbt_enabled_flag");                        pcSPS->setUseSBT                 ( uiCode != 0 );
   READ_FLAG( uiCode,    "sps_affine_enabled_flag" );                            pcSPS->setUseAffine              ( uiCode != 0 );
   if ( pcSPS->getUseAffine() )
   {
-#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
     READ_UVLC(uiCode, "five_minus_max_num_subblock_merge_cand");
     CHECK(AFFINE_MRG_MAX_NUM_CANDS < uiCode, "Incorrrect max number of affine merge candidates!");
     pcSPS->setMaxNumAffineMergeCand(AFFINE_MRG_MAX_NUM_CANDS - uiCode);
-#endif
     READ_FLAG( uiCode,  "sps_affine_type_flag" );                       pcSPS->setUseAffineType          ( uiCode != 0 );
 #if JVET_Q0444_AMVR_SIGNALLING
     if( pcSPS->getAMVREnabledFlag())
@@ -2263,7 +2259,6 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 #endif
   READ_FLAG( uiCode,    "sps_bcw_enabled_flag" );                   pcSPS->setUseBcw( uiCode != 0 );
   READ_FLAG(uiCode, "sps_ibc_enabled_flag");                                    pcSPS->setIBCFlag(uiCode);
-#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
   if (pcSPS->getIBCFlag())
   {
     READ_UVLC(uiCode, "six_minus_max_num_ibc_merge_cand");
@@ -2272,7 +2267,6 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   }
   else
     pcSPS->setMaxNumIBCMergeCand(0);
-#endif
   // KJS: sps_ciip_enabled_flag
   READ_FLAG( uiCode,     "sps_ciip_enabled_flag" );                           pcSPS->setUseCiip             ( uiCode != 0 );
 
@@ -2282,7 +2276,6 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   }
 
 #if !JVET_Q0806
-#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
   if (pcSPS->getMaxNumMergeCand() >= 2)
   {
     READ_FLAG(uiCode, "triangle_flag");
@@ -2302,10 +2295,6 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     pcSPS->setMaxNumGeoCand(0);
   }
 #else
-  READ_FLAG( uiCode,    "triangle_flag" );                          pcSPS->setUseTriangle            ( uiCode != 0 );
-#endif
-#else
-#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
   if (pcSPS->getMaxNumMergeCand() >= 2)
   {
     READ_FLAG(uiCode, "sps_gpm_enabled_flag");
@@ -2324,9 +2313,6 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     pcSPS->setUseGeo(0);
     pcSPS->setMaxNumGeoCand(0);
   }
-#else
-  READ_FLAG( uiCode,    "sps_gpm_enabled_flag" );                               pcSPS->setUseGeo                 ( uiCode != 0 );
-#endif
 #endif
   READ_FLAG(uiCode, "sps_lmcs_enable_flag");                   pcSPS->setUseLmcs(uiCode == 1);
   READ_FLAG( uiCode, "sps_lfnst_enabled_flag" );                    pcSPS->setUseLFNST( uiCode != 0 );
@@ -3643,32 +3629,10 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
     picHeader->setMvdL1ZeroFlag( uiCode != 0 );
      
   // merge candidate list size
-#if !JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
-#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
-    if (!pps->getPPSSixMinusMaxNumMergeCandPlus1())
-    {
-      READ_UVLC(uiCode, "pic_six_minus_max_num_merge_cand");
-    }
-    else
-    {
-      uiCode = pps->getPPSSixMinusMaxNumMergeCandPlus1() - 1;
-    }
-#else
-    READ_UVLC(uiCode, "pic_six_minus_max_num_merge_cand");
-#endif
-    CHECK(MRG_MAX_NUM_CANDS <= uiCode, "Incorrrect max number of merge candidates!");
-    picHeader->setMaxNumMergeCand(MRG_MAX_NUM_CANDS - uiCode);
-#endif
   // subblock merge candidate list size
     if ( sps->getUseAffine() )
     {
-#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE 
       picHeader->setMaxNumAffineMergeCand(sps->getMaxNumAffineMergeCand());
-#else
-      READ_UVLC(uiCode, "pic_five_minus_max_num_subblock_merge_cand");
-      CHECK(AFFINE_MRG_MAX_NUM_CANDS < uiCode, "Incorrrect max number of affine merge candidates!");
-      picHeader->setMaxNumAffineMergeCand( AFFINE_MRG_MAX_NUM_CANDS - uiCode );
-#endif
     }
     else
     {
@@ -3722,55 +3686,6 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
       parsePredWeightTable(picHeader, sps);
     }
 #endif
-#if !JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
-#if !JVET_Q0806
-  // triangle merge candidate list size
-    if (sps->getUseTriangle() && picHeader->getMaxNumMergeCand() >= 2)
-    {
-#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
-      if (!pps->getPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1())
-      {
-        READ_UVLC(uiCode, "pic_max_num_merge_cand_minus_max_num_triangle_cand");
-      }
-      else
-      {
-        uiCode = pps->getPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1() - 1;
-      }
-#else
-    READ_UVLC(uiCode, "pic_max_num_merge_cand_minus_max_num_triangle_cand");
-#endif
-      CHECK(picHeader->getMaxNumMergeCand() < uiCode, "Incorrrect max number of triangle candidates!");
-      picHeader->setMaxNumTriangleCand((uint32_t)(picHeader->getMaxNumMergeCand() - uiCode));
-    }
-    else
-    {
-      picHeader->setMaxNumTriangleCand(0);
-    }
-#else
-  // geometric merge candidate list size
-    if (sps->getUseGeo() && picHeader->getMaxNumMergeCand() >= 2)
-    {
-#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
-      if (!pps->getPPSMaxNumMergeCandMinusMaxNumGeoCandPlus1())
-      {
-        READ_UVLC(uiCode, "pic_max_num_merge_cand_minus_max_num_gpm_cand");
-      }
-      else
-      {
-        uiCode = pps->getPPSMaxNumMergeCandMinusMaxNumGeoCandPlus1() - 1;
-      }
-#else
-      READ_UVLC(uiCode, "pic_max_num_merge_cand_minus_max_num_gpm_cand");
-#endif
-      CHECK(picHeader->getMaxNumMergeCand() < uiCode, "Incorrrect max number of gpm candidates!");
-      picHeader->setMaxNumGeoCand((uint32_t)(picHeader->getMaxNumMergeCand() - uiCode));
-    }
-    else
-    {
-      picHeader->setMaxNumGeoCand(0);
-    }
-#endif
-#endif
 #if JVET_Q0819_PH_CHANGES
   }
   // inherit constraint values from SPS
@@ -3790,18 +3705,6 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   }
 #endif
   // ibc merge candidate list size
-#if !JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
-  if (sps->getIBCFlag())
-  {
-    READ_UVLC(uiCode, "pic_six_minus_max_num_ibc_merge_cand");
-    CHECK(IBC_MRG_MAX_NUM_CANDS <= uiCode, "Incorrrect max number of IBC merge candidates!");
-    picHeader->setMaxNumIBCMergeCand(IBC_MRG_MAX_NUM_CANDS - uiCode);
-  }
-  else 
-   {
-    picHeader->setMaxNumIBCMergeCand(0);
-  }
-#endif
 #if JVET_Q0819_PH_CHANGES
   if (pps->getQpDeltaInfoInPhFlag())
   {

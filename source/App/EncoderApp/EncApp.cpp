@@ -608,11 +608,7 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setMaxNumMergeCand                                   ( m_maxNumMergeCand );
   m_cEncLib.setMaxNumAffineMergeCand                             ( m_maxNumAffineMergeCand );
 #if !JVET_Q0806
-#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
   m_cEncLib.setMaxNumGeoCand(m_maxNumGeoCand);
-#else
-  m_cEncLib.setMaxNumTriangleCand                                ( m_maxNumTriangleCand );
-#endif
 #else
   m_cEncLib.setMaxNumGeoCand                                     ( m_maxNumGeoCand );
 #endif

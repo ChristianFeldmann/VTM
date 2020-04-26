@@ -655,11 +655,7 @@ protected:
   uint32_t      m_maxNumMergeCand;                                ///< Max number of merge candidates
   uint32_t      m_maxNumAffineMergeCand;                          ///< Max number of affine merge candidates
 #if !JVET_Q0806
-#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
   uint32_t      m_maxNumGeoCand;
-#else
-  uint32_t      m_maxNumTriangleCand;
-#endif
 #else
   uint32_t      m_maxNumGeoCand;
 #endif

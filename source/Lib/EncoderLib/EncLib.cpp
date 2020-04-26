@@ -1334,12 +1334,10 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
   sps.setSBTMVPEnabledFlag                  ( m_SubPuMvpMode );
   sps.setAMVREnabledFlag                ( m_ImvMode != IMV_OFF );
   sps.setBDOFEnabledFlag                    ( m_BIO );
-#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
   sps.setMaxNumMergeCand(getMaxNumMergeCand());
   sps.setMaxNumAffineMergeCand(getMaxNumAffineMergeCand());
   sps.setMaxNumIBCMergeCand(getMaxNumIBCMergeCand());
   sps.setMaxNumGeoCand(getMaxNumGeoCand());
-#endif
   sps.setUseAffine             ( m_Affine );
   sps.setUseAffineType         ( m_AffineType );
   sps.setUsePROF               ( m_PROF );
@@ -2025,18 +2023,7 @@ void EncLib::xInitPicHeader(PicHeader &picHeader, const SPS &sps, const PPS &pps
   picHeader.setPPSId( pps.getPPSId() );  
   
   // merge list sizes
-#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
   picHeader.setMaxNumAffineMergeCand(getMaxNumAffineMergeCand());
-#else
-  picHeader.setMaxNumMergeCand      ( getMaxNumMergeCand()       );
-  picHeader.setMaxNumAffineMergeCand( getMaxNumAffineMergeCand() );
-#if !JVET_Q0806
-  picHeader.setMaxNumTriangleCand   ( getMaxNumTriangleCand()    );
-#else
-  picHeader.setMaxNumGeoCand        ( getMaxNumGeoCand()         );
-#endif
-  picHeader.setMaxNumIBCMergeCand   ( getMaxNumIBCMergeCand()    );
-#endif
   // copy partitioning constraints from SPS
   picHeader.setSplitConsOverrideFlag(false);
   picHeader.setMinQTSizes( sps.getMinQTSizes() );

@@ -152,11 +152,7 @@ void EncCu::create( EncCfg* encCfg )
     m_acMergeTmpBuffer[ui].create(chromaFormat, Area(0, 0, uiMaxWidth, uiMaxHeight));
   }
 #if !JVET_Q0806
-#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
   const unsigned maxNumTriangleCand = encCfg->getMaxNumGeoCand();
-#else
-  const unsigned maxNumTriangleCand = encCfg->getMaxNumTriangleCand();
-#endif
   for (unsigned i = 0; i < maxNumTriangleCand; i++)
   {
     for (unsigned j = 0; j < maxNumTriangleCand; j++)
@@ -2989,11 +2985,7 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
 {
   const Slice &slice = *tempCS->slice;
   const SPS &sps = *tempCS->sps;
-#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
   if (sps.getMaxNumGeoCand() < 2)
-#else
-  if (slice.getPicHeader()->getMaxNumTriangleCand() < 2)
-#endif
     return;
 
   CHECK( slice.getSliceType() != B_SLICE, "Triangle mode is only applied to B-slices" );
@@ -3013,11 +3005,7 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
   PelUnitBuf                                      triangleWeightedBuffer[TRIANGLE_MAX_NUM_CANDS];
   static_vector<uint8_t, TRIANGLE_MAX_NUM_CANDS> triangleRdModeList;
   static_vector<double,  TRIANGLE_MAX_NUM_CANDS> tianglecandCostList;
-#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
   uint8_t                                         numTriangleCandComb = sps.getMaxNumGeoCand() * (sps.getMaxNumGeoCand() - 1) * 2;
-#else
-  uint8_t                                         numTriangleCandComb = slice.getPicHeader()->getMaxNumTriangleCand() * (slice.getPicHeader()->getMaxNumTriangleCand() - 1) * 2;
-#endif
 
   DistParam distParam;
   const bool useHadamard = !tempCS->slice->getDisableSATDForRD();
@@ -3044,11 +3032,7 @@ void EncCu::xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStru
     pu.regularMergeFlag = false;
 
     PU::getTriangleMergeCandidates( pu, triangleMrgCtx );
-#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
     const uint8_t maxNumTriangleCand = pu.cs->sps->getMaxNumGeoCand();
-#else
-    const uint8_t maxNumTriangleCand = pu.cs->picHeader->getMaxNumTriangleCand();
-#endif
     for (uint8_t mergeCand = 0; mergeCand < maxNumTriangleCand; mergeCand++)
     {
       triangleBuffer[mergeCand] = m_acMergeBuffer[mergeCand].getBuf(localUnitArea);
@@ -3270,11 +3254,7 @@ void EncCu::xCheckRDCostMergeGeo2Nx2N(CodingStructure *&tempCS, CodingStructure 
 
   const UnitArea localUnitArea(tempCS->area.chromaFormat, Area(0, 0, tempCS->area.Y().width, tempCS->area.Y().height));
   const double sqrtLambdaForFirstPass = m_pcRdCost->getMotionLambda();
-#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
   uint8_t maxNumMergeCandidates = cu.cs->sps->getMaxNumGeoCand();
-#else
-  uint8_t maxNumMergeCandidates = cu.cs->picHeader->getMaxNumGeoCand();
-#endif
   DistParam distParamWholeBlk;
   m_pcRdCost->setDistParam(distParamWholeBlk, tempCS->getOrgBuf().Y(), m_acMergeBuffer[0].Y().buf, m_acMergeBuffer[0].Y().stride, sps.getBitDepth(CHANNEL_TYPE_LUMA), COMPONENT_Y);
   Distortion bestWholeBlkSad = MAX_UINT64;
@@ -3921,11 +3901,7 @@ void EncCu::xCheckRDCostIBCModeMerge2Nx2N(CodingStructure *&tempCS, CodingStruct
 
         Distortion sad = distParam.distFunc(distParam);
         unsigned int bitsCand = mergeCand + 1;
-#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
         if (mergeCand == tempCS->sps->getMaxNumMergeCand() - 1)
-#else
-        if (mergeCand == tempCS->picHeader->getMaxNumMergeCand() - 1)
-#endif
         {
           bitsCand--;
         }

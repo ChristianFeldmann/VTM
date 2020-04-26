@@ -1586,12 +1586,10 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
     bUseDQP = true;
   }
 #endif
-#if JVET_Q0420_PPS_CHROMA_TOOL_FLAG
   if (sps.getChromaFormatIdc() != CHROMA_400)
   {
     pps.setPPSChromaToolFlag (true);
   }
-#endif
 #if ENABLE_QPA
   if (getUsePerceptQPA() && !bUseDQP)
   {

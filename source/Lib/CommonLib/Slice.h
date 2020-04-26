@@ -1938,9 +1938,7 @@ private:
   int              m_SPSId;                    // seq_parameter_set_id
   int              m_picInitQPMinus26;
   bool             m_useDQP;
-#if JVET_Q0420_PPS_CHROMA_TOOL_FLAG
   bool             m_usePPSChromaTool;
-#endif
   bool             m_bSliceChromaQpFlag;       // slicelevel_chroma_qp_flag
 
   int              m_layerId;
@@ -2067,10 +2065,8 @@ public:
   void                   setPicInitQPMinus26( int i )                                     { m_picInitQPMinus26 = i;                       }
   bool                   getUseDQP() const                                                { return m_useDQP;                              }
   void                   setUseDQP( bool b )                                              { m_useDQP   = b;                               }
-#if JVET_Q0420_PPS_CHROMA_TOOL_FLAG
   bool                   getPPSChromaToolFlag()                                     const { return  m_usePPSChromaTool;                   }
   void                   setPPSChromaToolFlag(bool b)                                     { m_usePPSChromaTool = b;                       }
-#endif
   bool                   getSliceChromaQpFlag() const                                     { return  m_bSliceChromaQpFlag;                 }
   void                   setSliceChromaQpFlag( bool b )                                   { m_bSliceChromaQpFlag = b;                     }
 

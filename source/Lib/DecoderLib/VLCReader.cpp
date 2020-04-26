@@ -708,12 +708,10 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
   pcPPS->setLog2MaxTransformSkipBlockSize(uiCode + 2);
 #endif
   READ_FLAG( uiCode, "cu_qp_delta_enabled_flag" );            pcPPS->setUseDQP( uiCode ? true : false );
-#if JVET_Q0420_PPS_CHROMA_TOOL_FLAG
   READ_FLAG(uiCode, "pps_chroma_tool_offsets_present_flag");
   pcPPS->setPPSChromaToolFlag(uiCode ? true : false);
   if (pcPPS->getPPSChromaToolFlag())
   {
-#endif
   READ_SVLC( iCode, "pps_cb_qp_offset");
   pcPPS->setQpOffset(COMPONENT_Cb, iCode);
   CHECK( pcPPS->getQpOffset(COMPONENT_Cb) < -12, "Invalid Cb QP offset" );
@@ -779,7 +777,6 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
     }
     CHECK(pcPPS->getChromaQpOffsetListLen() != tableSizeMinus1 + 1, "Invalid chroma QP offset list length");
   }
-#if JVET_Q0420_PPS_CHROMA_TOOL_FLAG
   }
   else
   {
@@ -789,7 +786,6 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
     pcPPS->setSliceChromaQpFlag(0);
     pcPPS->clearChromaQpOffsetList();
   }
-#endif
 
   READ_FLAG( uiCode, "weighted_pred_flag" );          // Use of Weighting Prediction (P_SLICE)
   pcPPS->setUseWP( uiCode==1 );

@@ -135,7 +135,6 @@
 
 
 
-#define JVET_Q0293_REMOVAL_PDPC_CHROMA_NX2                1 // JVET-Q0293: Removal of chroma Nx2 blocks in PDPC 
 
 #define JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS          1 // JVET-Q0121: Add deblocking control parameters for Cb and Cr and extend the parameter ranges
 

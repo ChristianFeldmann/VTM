@@ -581,7 +581,6 @@ void SEIReader::xParseSEIDecodingUnitInfo(SEIDecodingUnitInfo& sei, uint32_t pay
       sei.m_duSptCpbRemovalDelayIncrement[i] = 0;
     }
   }
-#if JVET_Q0221
   if (bp.m_decodingUnitDpbDuParamsInPicTimingSeiFlag)
   {
     sei_read_flag(pDecodedMessageOutputStream, val, "dpb_output_du_delay_present_flag"); sei.m_dpbOutputDuDelayPresentFlag = (val != 0);
@@ -590,9 +589,6 @@ void SEIReader::xParseSEIDecodingUnitInfo(SEIDecodingUnitInfo& sei, uint32_t pay
   {
     sei.m_dpbOutputDuDelayPresentFlag = false;
   }
-#else
-  sei_read_flag(pDecodedMessageOutputStream, val, "dpb_output_du_delay_present_flag"); sei.m_dpbOutputDuDelayPresentFlag = (val != 0);
-#endif
   if(sei.m_dpbOutputDuDelayPresentFlag)
   {
     sei_read_code( pDecodedMessageOutputStream, bp.getDpbOutputDelayDuLength(), val, "pic_spt_dpb_output_du_delay");
@@ -621,17 +617,13 @@ void SEIReader::xParseSEIBufferingPeriod(SEIBufferingPeriod& sei, uint32_t paylo
     sei_read_code( pDecodedMessageOutputStream, 5, code, "du_cpb_removal_delay_increment_length_minus1" );  sei.m_duCpbRemovalDelayIncrementLength = code + 1;
     sei_read_code( pDecodedMessageOutputStream, 5, code, "dpb_output_delay_du_length_minus1" );             sei.m_dpbOutputDelayDuLength = code + 1;
     sei_read_flag( pDecodedMessageOutputStream, code, "decoding_unit_cpb_params_in_pic_timing_sei_flag" );  sei.m_decodingUnitCpbParamsInPicTimingSeiFlag = code;
-#if JVET_Q0221
     sei_read_flag(pDecodedMessageOutputStream, code, "decoding_unit_dpb_du_params_in_pic_timing_sei_flag");  sei.m_decodingUnitDpbDuParamsInPicTimingSeiFlag = code;
-#endif
   }
   else
   {
     sei.m_duCpbRemovalDelayIncrementLength = 24;
     sei.m_dpbOutputDelayDuLength = 24;
-#if JVET_Q0221
     sei.m_decodingUnitDpbDuParamsInPicTimingSeiFlag = false;
-#endif
   }
 
   sei_read_flag( pDecodedMessageOutputStream, code, "concatenation_flag");
@@ -792,11 +784,7 @@ void SEIReader::xParseSEIPictureTiming(SEIPictureTiming& sei, uint32_t payloadSi
   }
   sei_read_code( pDecodedMessageOutputStream, bp.m_dpbOutputDelayLength,  symbol, "dpb_output_delay" );
   sei.m_picDpbOutputDelay = symbol;
-#if JVET_Q0221
   if ( bp.m_bpDecodingUnitHrdParamsPresentFlag && bp.m_decodingUnitDpbDuParamsInPicTimingSeiFlag )
-#else
-  if (bp.m_bpDecodingUnitHrdParamsPresentFlag)
-#endif
   {
     sei_read_code( pDecodedMessageOutputStream, bp.getDpbOutputDelayDuLength(), symbol, "pic_dpb_output_du_delay" );
     sei.m_picDpbOutputDuDelay = symbol;

@@ -161,7 +161,6 @@
 
 #define JVET_M0497_MATRIX_MULT                            0 // 0: Fast method; 1: Matrix multiplication
 
-#define JVET_Q0221                                        1 // JVET-Q0221: Decoding unit parameter signalling
 
 #define JVET_Q0216                                        1 // JVET-Q0216: modification to picture timing SEI message
 

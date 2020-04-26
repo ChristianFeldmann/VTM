@@ -1054,9 +1054,6 @@ void EncLib::xInitVPS( const SPS& sps )
 {
   // The SPS must have already been set up.
   // set the VPS profile information.
-#if !JVET_Q0786_PTL_only
-  m_vps->setMaxSubLayers( sps.getMaxTLayers() );
-#endif
 
   m_vps->m_olsHrdParams.clear();
   m_vps->m_olsHrdParams.resize(m_vps->getNumOlsHrdParamsMinus1(), std::vector<OlsHrdParams>(m_vps->getMaxSubLayers()));
@@ -1140,9 +1137,6 @@ void EncLib::xInitVPS(VPS& vps, const SPS& sps)
 {
   // The SPS must have already been set up.
   // set the VPS profile information.
-#if !JVET_Q0786_PTL_only
-  vps.setMaxSubLayers(sps.getMaxTLayers());
-#endif
 }
 #endif
 
@@ -1594,11 +1588,9 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
   
   for( int i = 0; i < m_vps->getMaxLayers(); ++i )
   {
-#if JVET_Q0786_PTL_only
     //Bug fix to make the decoder run with configfile layers.cfg
     if(m_vps->getIndependentLayerFlag(i) == 1)
       sps.setInterLayerPresentFlag(0);
-#endif
     CHECK((m_vps->getIndependentLayerFlag(i) == 1) && (sps.getInterLayerPresentFlag() != 0), " When vps_independent_layer_flag[GeneralLayerIdx[nuh_layer_id ]]  is equal to 1, the value of inter_layer_ref_pics_present_flag shall be equal to 0.");
   }
 #endif  
@@ -1610,11 +1602,9 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
   sps.setInterLayerPresentFlag( vps.getMaxLayers() > 1 && !vps.getAllIndependentLayersFlag() );
   for (unsigned int i = 0; i < vps.getMaxLayers(); ++i)
   {
-#if JVET_Q0786_PTL_only
     //Bug fix to make the decoder run with configfile layers.cfg
     if(vps.getIndependentLayerFlag(i) == 1)
       sps.setInterLayerPresentFlag(0);
-#endif
     CHECK((vps.getIndependentLayerFlag(i) == 1) && (sps.getInterLayerPresentFlag() != 0), " When vps_independent_layer_flag[GeneralLayerIdx[nuh_layer_id ]]  is equal to 1, the value of inter_layer_ref_pics_present_flag shall be equal to 0.");
   }
 #endif

@@ -934,13 +934,11 @@ private:
   uint32_t              m_directRefLayerIdx[MAX_VPS_LAYERS][MAX_VPS_LAYERS];
   uint32_t              m_generalLayerIdx[MAX_VPS_LAYERS];
 
-#if JVET_Q0786_PTL_only
   uint32_t              m_vpsNumPtls;
   bool                  m_ptPresentFlag[MAX_NUM_OLSS];
   uint32_t              m_ptlMaxTemporalId[MAX_NUM_OLSS];
   std::vector<ProfileTierLevel> m_vpsProfileTierLevel;
   uint32_t              m_olsPtlIdx[MAX_NUM_OLSS];
-#endif
 
   // stores index ( ilrp_idx within 0 .. NumDirectRefLayers ) of the dependent reference layers 
   uint32_t              m_interLayerRefIdx[MAX_VPS_LAYERS][MAX_VPS_LAYERS];
@@ -1022,7 +1020,6 @@ public:
   bool              getOlsOutputLayerFlag(uint32_t ols, uint32_t layer) const { return m_vpsOlsOutputLayerFlag[ols][layer]; }
   void              setOlsOutputLayerFlag(uint32_t ols, uint32_t layer, bool t) { m_vpsOlsOutputLayerFlag[ols][layer] = t; }
 
-#if JVET_Q0786_PTL_only
   uint32_t          getNumPtls()                                   const { return m_vpsNumPtls; }
   void              setNumPtls(uint32_t val)                             { m_vpsNumPtls = val; }
 
@@ -1037,7 +1034,6 @@ public:
 
   uint32_t          getOlsPtlIdx(int idx)                          const { return m_olsPtlIdx[idx]; }
   void              setOlsPtlIdx(int idx, uint32_t val)                  { m_olsPtlIdx[idx] = val; }
-#endif
 
   bool              getVPSExtensionFlag() const                          { return m_vpsExtensionFlag;                                 }
   void              setVPSExtensionFlag(bool t)                          { m_vpsExtensionFlag = t;                                    }

@@ -175,7 +175,6 @@ void EncApp::xInitLibCfg()
       }
     }
   }
-#if JVET_Q0786_PTL_only
   CHECK( m_numPtlsInVps == 0, "There has to be at least one PTL structure in the VPS." );
   vps.setNumPtls                                                 ( m_numPtlsInVps );
   vps.setPtPresentFlag                                           (0, 1);
@@ -205,7 +204,6 @@ void EncApp::xInitLibCfg()
     ptls[i].setLevelIdc                                          (m_levelPtl[i]);
   }
   vps.setProfileTierLevel(ptls);
-#endif
   vps.setVPSExtensionFlag                                        ( false );
 #if !JVET_Q0814_DPB
   m_cEncLib.setVPS(&vps);

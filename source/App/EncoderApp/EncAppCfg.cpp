@@ -1422,9 +1422,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ( "OlsModeIdc",                                     m_olsModeIdc,                                 0, "Output layer set mode")
   ( "NumOutputLayerSets",                             m_numOutputLayerSets,                         1, "Number of output layer sets")
   ( "OlsOutputLayer%d",                               m_olsOutputLayerStr, string(""), MAX_VPS_LAYERS, "Output layer index of i-th OLS")
-#if JVET_Q0786_PTL_only
   ( "NumPTLsInVPS",                                   m_numPtlsInVps,                               1, "Number of profile_tier_level structures in VPS" )
-#endif
     ;
 
   opts.addOptions()
@@ -1445,7 +1443,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     opts.addOptions()(cOSS.str(), m_GOPList[i-1], GOPEntry());
   }
 
-#if JVET_Q0786_PTL_only
   for(int i = 0; i < MAX_NUM_OLSS; i++)
   {
     std::ostringstream cOSS1;
@@ -1456,7 +1453,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     cOSS2<<"OlsPTLIdx"<<i;
     opts.addOptions()(cOSS2.str(), m_olsPtlIdx[i], 0);
   }
-#endif
 
   po::setDefaults(opts);
   po::ErrorReporter err;

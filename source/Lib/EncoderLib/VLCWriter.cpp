@@ -921,11 +921,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 
   if (pcSPS->getPtlDpbHrdParamsPresentFlag())
   {
-#if JVET_Q0786_PTL_only
     codeProfileTierLevel(pcSPS->getProfileTierLevel(), true, pcSPS->getMaxTLayers() - 1);
-#else
-    codeProfileTierLevel(pcSPS->getProfileTierLevel(), pcSPS->getMaxTLayers() - 1);
-#endif
   }
   
   WRITE_FLAG(pcSPS->getGDREnabledFlag(), "gdr_enabled_flag");
@@ -1551,11 +1547,7 @@ void HLSWriter::codeDCI(const DCI* dci)
   for (int i = 0; i < numPTLs; i++)
   {
     ProfileTierLevel ptl = dci->getProfileTierLevel(i);
-#if JVET_Q0786_PTL_only
     codeProfileTierLevel(&ptl, true, 0);
-#else
-    codeProfileTierLevel(&ptl, 0);
-#endif
 
   }
   WRITE_FLAG(0, "dci_extension_flag");
@@ -1578,11 +1570,7 @@ void HLSWriter::codeDPS( const DPS* dps )
   for (int i=0; i< numPTLs; i++)
   {
     ProfileTierLevel ptl = dps->getProfileTierLevel(i);
-#if JVET_Q0786_PTL_only
     codeProfileTierLevel( &ptl, true, 0 );
-#else
-    codeProfileTierLevel( &ptl, dps->getMaxSubLayersMinus1() );
-#endif
   }
   WRITE_FLAG( 0,                                              "dps_extension_flag" );
   xWriteRbspTrailingBits();
@@ -1644,7 +1632,6 @@ void HLSWriter::codeVPS(const VPS* pcVPS)
     }
   }
 
-#if JVET_Q0786_PTL_only
   int totalNumOlss = pcVPS->getTotalNumOLSs();
   WRITE_CODE(pcVPS->getNumPtls() - 1, 8, "vps_num_ptls_minus1");
   for (int i = 0; i < pcVPS->getNumPtls(); i++)
@@ -1670,7 +1657,6 @@ void HLSWriter::codeVPS(const VPS* pcVPS)
     if(pcVPS->getNumPtls() > 1)
       WRITE_CODE(pcVPS->getOlsPtlIdx(i), 8, "ols_ptl_idx");
   }
-#endif
 
 #if JVET_Q0814_DPB
   if( !pcVPS->getAllIndependentLayersFlag() )
@@ -3213,29 +3199,17 @@ void  HLSWriter::codeConstraintInfo  ( const ConstraintInfo* cinfo )
   WRITE_FLAG(cinfo->getNoApsConstraintFlag() ? 1 : 0, "no_aps_constraint_flag");
 }
 
-#if JVET_Q0786_PTL_only
 void  HLSWriter::codeProfileTierLevel    ( const ProfileTierLevel* ptl, bool profileTierPresentFlag, int maxNumSubLayersMinus1 )
-#else
-void  HLSWriter::codeProfileTierLevel    ( const ProfileTierLevel* ptl, int maxNumSubLayersMinus1 )
-#endif
 {
-#if JVET_Q0786_PTL_only
   if(profileTierPresentFlag)
   {
     WRITE_CODE( int(ptl->getProfileIdc()), 7 ,   "general_profile_idc"                     );
     WRITE_FLAG( ptl->getTierFlag()==Level::HIGH, "general_tier_flag"                       );
     codeConstraintInfo( ptl->getConstraintInfo() );
   }
-#else
-  WRITE_CODE( int(ptl->getProfileIdc()), 7 ,   "general_profile_idc"                     );
-  WRITE_FLAG( ptl->getTierFlag()==Level::HIGH, "general_tier_flag"                       );
-
-  codeConstraintInfo( ptl->getConstraintInfo() );
-#endif
 
   WRITE_CODE( int( ptl->getLevelIdc() ), 8, "general_level_idc" );
 
-#if JVET_Q0786_PTL_only
   if(profileTierPresentFlag)
   {
     WRITE_CODE(ptl->getNumSubProfile(), 8, "num_sub_profiles");
@@ -3244,13 +3218,6 @@ void  HLSWriter::codeProfileTierLevel    ( const ProfileTierLevel* ptl, int maxN
       WRITE_CODE(ptl->getSubProfileIdc(i) , 32, "general_sub_profile_idc[i]");
     }
   }
-#else
-  WRITE_CODE(ptl->getNumSubProfile(), 8, "num_sub_profiles");
-  for (int i = 0; i < ptl->getNumSubProfile(); i++)
-  {
-    WRITE_CODE(ptl->getSubProfileIdc(i) , 32, "general_sub_profile_idc[i]");
-  }
-#endif
 
   for (int i = 0; i < maxNumSubLayersMinus1; i++)
   {

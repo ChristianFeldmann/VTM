@@ -1429,11 +1429,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   if (pcSPS->getPtlDpbHrdParamsPresentFlag())
   {
 
-#if JVET_Q0786_PTL_only
     parseProfileTierLevel(pcSPS->getProfileTierLevel(), true, pcSPS->getMaxTLayers() - 1);
-#else
-    parseProfileTierLevel(pcSPS->getProfileTierLevel(), pcSPS->getMaxTLayers() - 1);
-#endif
 
   }
 
@@ -2311,11 +2307,7 @@ void HLSyntaxReader::parseDCI(DCI* dci)
   ptls.resize(numPTLs);
   for (int i = 0; i < numPTLs; i++)
   {
-#if JVET_Q0786_PTL_only
     parseProfileTierLevel(&ptls[i], true, 0);
-#else
-    parseProfileTierLevel(&ptls[i], 0);
-#endif
   }
   dci->setProfileTierLevel(ptls);
 
@@ -2352,11 +2344,7 @@ void HLSyntaxReader::parseDPS(DPS* dps)
   ptls.resize(numPTLs);
   for (int i=0; i<numPTLs; i++)
   {
-#if JVET_Q0786_PTL_only
      parseProfileTierLevel(&ptls[i], true, 0);
-#else
-     parseProfileTierLevel(&ptls[i], dps->getMaxSubLayersMinus1());
-#endif
   }
   dps->setProfileTierLevel(ptls);
 
@@ -2461,7 +2449,6 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
     }
   }
 
-#if JVET_Q0786_PTL_only
   pcVPS->deriveOutputLayerSets();
   READ_CODE(8, uiCode, "vps_num_ptls_minus1");        pcVPS->setNumPtls(uiCode + 1);
   for (int i = 0; i < pcVPS->getNumPtls(); i++)
@@ -2508,7 +2495,6 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
     else
       pcVPS->setOlsPtlIdx(i, 0);
   }
-#endif
 
 #if JVET_Q0814_DPB
   if( !pcVPS->getAllIndependentLayersFlag() )
@@ -2563,9 +2549,6 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
     }
   }
 
-#if !JVET_Q0786_PTL_only
-  pcVPS->deriveOutputLayerSets();
-#endif
 
   for( int i = 0; i < pcVPS->getTotalNumOLSs(); i++ )
   {
@@ -5045,30 +5028,18 @@ void HLSyntaxReader::parseConstraintInfo(ConstraintInfo *cinfo)
 }
 
 
-#if JVET_Q0786_PTL_only
 void HLSyntaxReader::parseProfileTierLevel(ProfileTierLevel *ptl, bool profileTierPresentFlag, int maxNumSubLayersMinus1)
-#else
-void HLSyntaxReader::parseProfileTierLevel(ProfileTierLevel *ptl, int maxNumSubLayersMinus1)
-#endif
 {
   uint32_t symbol;
-#if JVET_Q0786_PTL_only
   if(profileTierPresentFlag)
   {
     READ_CODE(7 , symbol,   "general_profile_idc"              ); ptl->setProfileIdc  (Profile::Name(symbol));
     READ_FLAG(    symbol,   "general_tier_flag"                ); ptl->setTierFlag    (symbol ? Level::HIGH : Level::MAIN);
     parseConstraintInfo( ptl->getConstraintInfo() );
   }
-#else
-  READ_CODE(7 , symbol,   "general_profile_idc"              ); ptl->setProfileIdc  (Profile::Name(symbol));
-  READ_FLAG(    symbol,   "general_tier_flag"                ); ptl->setTierFlag    (symbol ? Level::HIGH : Level::MAIN);
-
-  parseConstraintInfo( ptl->getConstraintInfo() );
-#endif
 
   READ_CODE( 8, symbol, "general_level_idc" ); ptl->setLevelIdc( Level::Name( symbol ) );
 
-#if JVET_Q0786_PTL_only
   if(profileTierPresentFlag)
   {
     READ_CODE(8, symbol, "num_sub_profiles");
@@ -5079,15 +5050,6 @@ void HLSyntaxReader::parseProfileTierLevel(ProfileTierLevel *ptl, int maxNumSubL
       READ_CODE(32, symbol, "general_sub_profile_idc[i]"); ptl->setSubProfileIdc(i, symbol);
     }
   }
-#else
-  READ_CODE(8, symbol, "num_sub_profiles");
-  uint8_t numSubProfiles = symbol;
-  ptl->setNumSubProfile( numSubProfiles );
-  for (int i = 0; i < numSubProfiles; i++)
-  {
-    READ_CODE(32, symbol, "general_sub_profile_idc[i]"); ptl->setSubProfileIdc(i, symbol);
-  }
-#endif
 
   for (int i = 0; i < maxNumSubLayersMinus1; i++)
   {

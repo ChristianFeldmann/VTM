@@ -96,7 +96,6 @@
 
 
 
-#define JVET_Q0817                                        1 // JVET_Q0817: Remove the constraint on single_slice_per_subpic_flag
 
 #define JVET_Q0413_SKIP_LAST_SUBPIC_SIG                   1  //JVET-Q0413 modification 2: skip the width and height signaling of last subpicture
 

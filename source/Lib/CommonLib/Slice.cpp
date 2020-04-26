@@ -3067,11 +3067,7 @@ void PPS::initRectSliceMap(const SPS  *sps)
     }
   }
 
-#if JVET_Q0817
   if( getSingleSlicePerSubPicFlag() )
-#else
-  if ((getNumSubPics() > 0) && getSingleSlicePerSubPicFlag())
-#endif
   {
     CHECK (sps==nullptr, "RectSliceMap can only be initialized for slice_per_sub_pic_flag with a valid SPS");
     m_numSlicesInPic = sps->getNumSubPics();

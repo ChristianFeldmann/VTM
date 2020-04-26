@@ -114,12 +114,8 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
   }
 
   const unsigned  widthInCtus             = cs.pcv->widthInCtus;
-#if JVET_Q0151_Q0205_ENTRYPOINTS
   const bool     wavefrontsEnabled           = cs.sps->getEntropyCodingSyncEnabledFlag();
   const bool     wavefrontsEntryPointPresent = cs.sps->getEntropyCodingSyncEntryPointsPresentFlag();
-#else
-  const bool      wavefrontsEnabled       = cs.pps->getEntropyCodingSyncEnabledFlag();
-#endif
 
   cabacReader.initBitstream( ppcSubstreams[0] );
   cabacReader.initCtxModels( *slice );
@@ -148,7 +144,6 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
     const unsigned  maxCUSize             = sps->getMaxCUWidth();
     Position pos( ctuXPosInCtus*maxCUSize, ctuYPosInCtus*maxCUSize) ;
     UnitArea ctuArea(cs.area.chromaFormat, Area( pos.x, pos.y, maxCUSize, maxCUSize ) );
-#if JVET_O1143_MV_ACROSS_SUBPIC_BOUNDARY
     const SubPic &curSubPic = slice->getPPS()->getSubPicFromPos(pos);
     // padding/restore at slice level
     if (slice->getPPS()->getNumSubPics()>=2 && curSubPic.getTreatedAsPicFlag() && ctuIdx==0)
@@ -172,7 +167,6 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
         }
       }
     }
-#endif
 
     DTRACE_UPDATE( g_trace_ctx, std::make_pair( "ctu", ctuRsAddr ) );
 
@@ -200,9 +194,7 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
       {
         // Top is available, so use it.
         cabacReader.getCtx() = m_entropyCodingSyncContextState;
-#if JVET_Q0501_PALETTE_WPP_INIT_ABOVECTU
         cs.setPrevPLT(m_palettePredictorSyncState);
-#endif
       }
       pic->m_prevQP[0] = pic->m_prevQP[1] = slice->getSliceQp();
     }
@@ -236,9 +228,7 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
     if( ctuXPosInCtus == tileXPosInCtus && wavefrontsEnabled )
     {
       m_entropyCodingSyncContextState = cabacReader.getCtx();
-#if JVET_Q0501_PALETTE_WPP_INIT_ABOVECTU
       cs.storePrevPLT(m_palettePredictorSyncState);
-#endif
     }
 
 
@@ -257,7 +247,6 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
       // (end of slice-segment, end of tile, end of wavefront-CTU-row)
       unsigned binVal = cabacReader.terminating_bit();
       CHECK( !binVal, "Expecting a terminating bit" );
-#if JVET_Q0151_Q0205_ENTRYPOINTS
       bool isLastTileCtu = (ctuXPosInCtus + 1 == tileXPosInCtus + tileColWidth) && (ctuYPosInCtus + 1 == tileYPosInCtus + tileRowHeight);
       if( isLastTileCtu || wavefrontsEntryPointPresent ) 
       {
@@ -266,14 +255,7 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
 #endif
         subStrmId++;
       }
-#else
-#if DECODER_CHECK_SUBSTREAM_AND_SLICE_TRAILING_BYTES
-      cabacReader.remaining_bytes( true );
-#endif
-      subStrmId++;
-#endif
     }
-#if JVET_O1143_MV_ACROSS_SUBPIC_BOUNDARY
     if (slice->getPPS()->getNumSubPics() >= 2 && curSubPic.getTreatedAsPicFlag() && ctuIdx == (slice->getNumCtuInSlice() - 1))
     // for last Ctu in the slice
     {
@@ -295,7 +277,6 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
         }
       }
     }
-#endif
   }
 
   // deallocate all created substreams, including internal buffers.

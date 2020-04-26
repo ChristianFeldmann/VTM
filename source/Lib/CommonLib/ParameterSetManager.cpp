@@ -38,13 +38,7 @@ ParameterSetManager::ParameterSetManager()
 : m_spsMap(MAX_NUM_SPS)
 , m_ppsMap(MAX_NUM_PPS)
 , m_apsMap(MAX_NUM_APS * MAX_NUM_APS_TYPE)
-#if !JVET_Q0117_PARAMETER_SETS_CLEANUP
-, m_dpsMap(MAX_NUM_DPS)
-#endif
 , m_vpsMap(MAX_NUM_VPS)
-#if !JVET_Q0117_PARAMETER_SETS_CLEANUP
-, m_activeDPSId(-1)
-#endif
 , m_activeSPSId(-1)
 , m_activeVPSId(-1)
 {
@@ -63,47 +57,11 @@ bool ParameterSetManager::activatePPS(int ppsId, bool isIRAP)
   if (pps)
   {
     int spsId = pps->getSPSId();
-#if !ENABLING_MULTI_SPS
-    if (!isIRAP && (spsId != m_activeSPSId ))
-    {
-      msg( WARNING, "Warning: tried to activate a PPS referring to an inactive SPS at non-IDR.");
-    }
-    else
-#endif
     {
       SPS *sps = m_spsMap.getPS(spsId);
 
       if (sps)
       {
-#if !JVET_Q0117_PARAMETER_SETS_CLEANUP
-        int dpsId = sps->getDecodingParameterSetId();
-        if ((m_activeDPSId!=-1) && (dpsId != m_activeDPSId ))
-        {
-          msg( WARNING, "Warning: tried to activate a DPS with different ID than the currently active DPS. This should not happen within the same bitstream!");
-        }
-        else
-        {
-          if (dpsId != 0)
-          {
-            DPS *dps =m_dpsMap.getPS(dpsId);
-            if (dps)
-            {
-              m_activeDPSId = dpsId;
-              m_dpsMap.setActive(dpsId);
-            }
-            else
-            {
-              msg( WARNING, "Warning: tried to activate a PPS that refers to a non-existing DPS.");
-            }
-          }
-          else
-          {
-            // set zero as active DPS ID (special reserved value, no actual DPS)
-            m_activeDPSId = dpsId;
-            m_dpsMap.setActive(dpsId);
-          }
-        }
-#endif
         int vpsId = sps->getVPSId();
         if(vpsId != 0)
         {
@@ -146,9 +104,6 @@ bool ParameterSetManager::activatePPS(int ppsId, bool isIRAP)
 
   // Failed to activate if reach here.
   m_activeSPSId=-1;
-#if !JVET_Q0117_PARAMETER_SETS_CLEANUP
-  m_activeDPSId=-1;
-#endif
   return false;
 }
 

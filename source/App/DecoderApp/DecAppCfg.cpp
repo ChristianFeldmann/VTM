@@ -77,9 +77,7 @@ bool DecAppCfg::parseCfg( int argc, char* argv[] )
   ("BitstreamFile,b",           m_bitstreamFileName,                   string(""), "bitstream input file name")
   ("ReconFile,o",               m_reconFileName,                       string(""), "reconstructed YUV output file name\n")
 
-#if JVET_P2008_OUTPUT_LOG
   ("OplFile,-opl",              m_oplFilename ,                        string(""), "opl-file name without extension for conformance testing\n")
-#endif //JVET_P2008_OUTPUT_LOG
 
 #if ENABLE_SIMD_OPT
   ("SIMD",                      ignore,                                string(""), "SIMD extension to use (SCALAR, SSE41, SSE42, AVX, AVX2, AVX512), default: the highest supported extension\n")
@@ -117,9 +115,7 @@ bool DecAppCfg::parseCfg( int argc, char* argv[] )
                                                                                    "\t3: enable bit and tool statistic\n")
 #endif
   ("MCTSCheck",                m_mctsCheck,                           false,       "If enabled, the decoder checks for violations of mc_exact_sample_value_match_flag in Temporal MCTS ")
-#if JVET_O1143_SUBPIC_BOUNDARY
   ("targetSubPicIdx",          m_targetSubPicIdx,                     0,           "Specify which subpicture shall be written to output, using subpic index, 0: disabled, subpicIdx=m_targetSubPicIdx-1 \n" )
-#endif
   ( "UpscaledOutput",          m_upscaledOutput,                          0,       "Upscaled output for RPR" )
   ;
 
@@ -227,9 +223,7 @@ bool DecAppCfg::parseCfg( int argc, char* argv[] )
 DecAppCfg::DecAppCfg()
 : m_bitstreamFileName()
 , m_reconFileName()
-#if JVET_P2008_OUTPUT_LOG
 , m_oplFilename()
-#endif //JVET_P2008_OUTPUT_LOG
 
 , m_iSkipFrame(0)
 // m_outputBitDepth array initialised below

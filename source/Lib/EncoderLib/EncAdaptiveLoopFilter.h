@@ -203,24 +203,17 @@ struct AlfCovariance
   double calculateError( const int *clip, const double *coeff ) const { return calculateError(clip, coeff, numCoeff); }
   double calculateError( const int *clip, const double *coeff, const int numCoeff ) const;
   double calcErrorForCoeffs( const int *clip, const int *coeff, const int numCoeff, const int bitDepth ) const;
-#if JVET_Q0795_CCALF
   double calcErrorForCcAlfCoeffs(const int* coeff, const int numCoeff, const int bitDepth) const;
-#endif
 
   void getClipMax(const AlfFilterShape& alfShape, int *clip_max) const;
   void reduceClipCost(const AlfFilterShape& alfShape, int *clip) const;
 
-#if JVET_Q0795_CCALF
   int  gnsSolveByChol( TE LHS, double* rhs, double *x, int numEq ) const;
-#endif
 
 private:
   // Cholesky decomposition
 
   int  gnsSolveByChol( const int *clip, double *x, int numEq ) const;
-#if !JVET_Q0795_CCALF
-  int  gnsSolveByChol( TE LHS, double* rhs, double *x, int numEq ) const;
-#endif
   void gnsBacksubstitution( TE R, double* z, int size, double* A ) const;
   void gnsTransposeBacksubstitution( TE U, double* rhs, double* x, int order ) const;
   int  gnsCholeskyDec( TE inpMatr, TE outMatr, int numEq ) const;
@@ -241,10 +234,8 @@ private:
   uint8_t*               m_ctuEnableFlagTmp[MAX_NUM_COMPONENT];
   uint8_t*               m_ctuEnableFlagTmp2[MAX_NUM_COMPONENT];
   uint8_t*               m_ctuAlternativeTmp[MAX_NUM_COMPONENT];
-#if JVET_Q0795_CCALF
   AlfCovariance***       m_alfCovarianceCcAlf[2];           // [compIdx-1][shapeIdx][ctbAddr][filterIdx]
   AlfCovariance**        m_alfCovarianceFrameCcAlf[2];      // [compIdx-1][shapeIdx][filterIdx]
-#endif
 
   //for RDO
   AlfParam               m_alfParamTemp;
@@ -269,7 +260,6 @@ private:
   int                    m_filterTmp[MAX_NUM_ALF_LUMA_COEFF];
   int                    m_clipTmp[MAX_NUM_ALF_LUMA_COEFF];
 
-#if JVET_Q0795_CCALF
   int m_apsIdCcAlfStart[2];
 
   short                  m_bestFilterCoeffSet[MAX_NUM_CC_ALF_FILTERS][MAX_NUM_CC_ALF_CHROMA_COEFF];
@@ -286,7 +276,6 @@ private:
   uint8_t*               m_bestFilterControl;     // best saved filter control
   int                    m_reuseApsId[2];
   bool                   m_limitCcAlf;
-#endif
 
 public:
   EncAdaptiveLoopFilter( int& apsIdStart );
@@ -304,15 +293,10 @@ public:
     , const double lambdaChromaWeight
 #endif
   );
-#if JVET_Q0795_CCALF
   int getNewCcAlfApsId(CodingStructure &cs, int cIdx);
-#endif
   void initCABACEstimator( CABACEncoder* cabacEncoder, CtxCache* ctxCache, Slice* pcSlice, ParameterSetMap<APS>* apsMap );
   void create( const EncCfg* encCfg, const int picWidth, const int picHeight, const ChromaFormat chromaFormatIDC, const int maxCUWidth, const int maxCUHeight, const int maxCUDepth, const int inputBitDepth[MAX_NUM_CHANNEL_TYPE], const int internalBitDepth[MAX_NUM_CHANNEL_TYPE] );
   void destroy();
-#if !JVET_Q0210_UEK_REMOVAL 
-  static int lengthGolomb( int coeffVal, int k, bool signed_coeff = true );
-#endif
   void setApsIdStart( int i) { m_apsIdStart = i; }
 
 private:
@@ -330,14 +314,12 @@ private:
   void   deriveStatsForFiltering( PelUnitBuf& orgYuv, PelUnitBuf& recYuv, CodingStructure& cs );
   void   getBlkStats(AlfCovariance* alfCovariace, const AlfFilterShape& shape, AlfClassifier** classifier, Pel* org, const int orgStride, Pel* rec, const int recStride, const CompArea& areaDst, const CompArea& area, const ChannelType channel, int vbCTUHeight, int vbPos);
   void   calcCovariance(int ELocal[MAX_NUM_ALF_LUMA_COEFF][MaxAlfNumClippingValues], const Pel *rec, const int stride, const AlfFilterShape& shape, const int transposeIdx, const ChannelType channel, int vbDistance);
-#if JVET_Q0795_CCALF
   void   deriveStatsForCcAlfFiltering(const PelUnitBuf &orgYuv, const PelUnitBuf &recYuv, const int compIdx,
                                       const int maskStride, const uint8_t filterIdc, CodingStructure &cs);
   void   getBlkStatsCcAlf(AlfCovariance &alfCovariance, const AlfFilterShape &shape, const PelUnitBuf &orgYuv,
                           const PelUnitBuf &recYuv, const UnitArea &areaDst, const UnitArea &area,
                           const ComponentID compID, const int yPos);
   void   calcCovarianceCcAlf(int ELocal[MAX_NUM_CC_ALF_CHROMA_COEFF][1], const Pel* rec, const int stride, const AlfFilterShape& shape, int vbDistance);
-#endif
   void   mergeClasses(const AlfFilterShape& alfShape, AlfCovariance* cov, AlfCovariance* covMerged, int clipMerged[MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_LUMA_COEFF], const int numClasses, short filterIndices[MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_CLASSES]);
 
 
@@ -351,9 +333,7 @@ private:
 #endif
                                   const int numClasses, const int numCoeff, double& distUnfilter );
   void   roundFiltCoeff( int *filterCoeffQuant, double *filterCoeff, const int numCoeff, const int factor );
-#if JVET_Q0795_CCALF
   void   roundFiltCoeffCCALF( int *filterCoeffQuant, double *filterCoeff, const int numCoeff, const int factor );
-#endif
 
   double getDistCoeffForce0( bool* codedVarBins, double errorForce0CoeffTab[MAX_NUM_ALF_CLASSES][2], int* bitsVarBin, int zeroBitsVarBin, const int numFilters);
   int    lengthUvlc( int uiCode );
@@ -378,7 +358,6 @@ private:
   void setCtuAlternativeChroma( uint8_t* ctuAlts[MAX_NUM_COMPONENT], uint8_t val );
   void copyCtuAlternativeChroma( uint8_t* ctuAltsDst[MAX_NUM_COMPONENT], uint8_t* ctuAltsSrc[MAX_NUM_COMPONENT] );
   int getMaxNumAlternativesChroma( );
-#if JVET_Q0795_CCALF
   int  getCoeffRateCcAlf(short chromaCoeff[MAX_NUM_CC_ALF_FILTERS][MAX_NUM_CC_ALF_CHROMA_COEFF], bool filterEnabled[MAX_NUM_CC_ALF_FILTERS], uint8_t filterCount, ComponentID compID);
   void deriveCcAlfFilterCoeff( ComponentID compID, const PelUnitBuf& recYuv, const PelUnitBuf& recYuvExt, short filterCoeff[MAX_NUM_CC_ALF_FILTERS][MAX_NUM_CC_ALF_CHROMA_COEFF], const uint8_t filterIdx );
   void computeLog2BlockSizeDistortion(const Pel *org, int orgStride, const Pel *dec, int decStride, int height,
@@ -399,7 +378,6 @@ private:
   void xSetupCcAlfAPS( CodingStructure& cs );
   void countLumaSwingGreaterThanThreshold(const Pel* luma, int lumaStride, int height, int width, int log2BlockWidth, int log2BlockHeight, uint64_t* lumaSwingGreaterThanThresholdCount, int lumaCountStride);
   void countChromaSampleValueNearMidPoint(const Pel* chroma, int chromaStride, int height, int width, int log2BlockWidth, int log2BlockHeight, uint64_t* chromaSampleCountNearMidPoint, int chromaSampleCountNearMidPointStride);
-#endif
 };
 
 

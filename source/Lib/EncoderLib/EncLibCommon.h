@@ -49,9 +49,7 @@ private:
   ParameterSetMap<PPS>      m_ppsMap;             ///< PPS, it is shared across all layers
   ParameterSetMap<APS>      m_apsMap;             ///< APS, it is shared across all layers
   PicList                   m_cListPic;           ///< DPB, it is shared across all layers
-#if JVET_Q0814_DPB
   VPS                       m_vps;
-#endif
 
 public:
   EncLibCommon();
@@ -62,8 +60,6 @@ public:
   ParameterSetMap<SPS>&    getSpsMap()             { return m_spsMap;     }
   ParameterSetMap<PPS>&    getPpsMap()             { return m_ppsMap;     }
   ParameterSetMap<APS>&    getApsMap()             { return m_apsMap;     }
-#if JVET_Q0814_DPB
   VPS*                     getVPS()                { return &m_vps;       }
-#endif
 };
 

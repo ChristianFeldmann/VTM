@@ -126,7 +126,6 @@ uint64_t ProfileLevelTierFeatures::getCpbSizeInBits() const
   return (m_pLevelTier!=0 && m_pProfile!=0) ? uint64_t(m_pProfile->cpbVclFactor) * m_pLevelTier->maxCpb[m_tier?1:0] : uint64_t(0);
 }
 
-#if JVET_Q0814_DPB
 uint32_t ProfileLevelTierFeatures::getMaxDpbSize( uint32_t picSizeMaxInSamplesY ) const
 {
   const uint32_t maxDpbPicBuf = 8;
@@ -147,4 +146,3 @@ uint32_t ProfileLevelTierFeatures::getMaxDpbSize( uint32_t picSizeMaxInSamplesY 
 
   return maxDpbSize;
 }
-#endif

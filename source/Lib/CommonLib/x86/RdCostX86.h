@@ -1973,7 +1973,6 @@ static uint32_t xCalcHAD8x16_AVX2( const Pel* piOrg, const Pel* piCur, const int
   return (sad);
 }
 
-#if JVET_Q0806
 template< X86_VEXT vext >
 Distortion RdCost::xGetSADwMask_SIMD( const DistParam &rcDtParam )
 {
@@ -2063,7 +2062,6 @@ Distortion RdCost::xGetSADwMask_SIMD( const DistParam &rcDtParam )
 
   return sum >> DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth);
 }
-#endif
 
 template<X86_VEXT vext>
 Distortion RdCost::xGetHADs_SIMD( const DistParam &rcDtParam )
@@ -2242,9 +2240,7 @@ void RdCost::_initRdCostX86()
 
   m_afpDistortFunc[DF_SAD_INTERMEDIATE_BITDEPTH] = RdCost::xGetSAD_IBD_SIMD<vext>;
 
-#if JVET_Q0806
   m_afpDistortFunc[DF_SAD_WITH_MASK] = xGetSADwMask_SIMD<vext>;
-#endif
 }
 
 template void RdCost::_initRdCostX86<SIMDX86>();

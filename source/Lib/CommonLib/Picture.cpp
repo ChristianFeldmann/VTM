@@ -173,9 +173,7 @@ int Scheduler::getNumPicInstances() const
 Picture::Picture()
 {
   cs                   = nullptr;
-#if JVET_O1143_MV_ACROSS_SUBPIC_BOUNDARY
   m_isSubPicBorderSaved = false;
-#endif
   m_bIsBorderExtended  = false;
   usedByCurr           = false;
   longTerm             = false;
@@ -725,19 +723,13 @@ void Picture::rescalePicture( const std::pair<int, int> scalingRatio,
     const PelBuf& afterScale = afterScaling.get( compID );
 
     sampleRateConv( scalingRatio, std::pair<int, int>( ::getComponentScaleX( compID, chromaFormatIDC ), ::getComponentScaleY( compID, chromaFormatIDC ) ),
-#if JVET_Q0487_SCALING_WINDOW_ISSUES
                     beforeScale, scalingWindowBefore.getWindowLeftOffset() * SPS::getWinUnitX( chromaFormatIDC ), scalingWindowBefore.getWindowTopOffset() * SPS::getWinUnitY( chromaFormatIDC ), 
                     afterScale, scalingWindowAfter.getWindowLeftOffset() * SPS::getWinUnitX( chromaFormatIDC ), scalingWindowAfter.getWindowTopOffset() * SPS::getWinUnitY( chromaFormatIDC ), 
-#else
-                    beforeScale, scalingWindowBefore.getWindowLeftOffset(), scalingWindowBefore.getWindowTopOffset(), 
-                    afterScale, scalingWindowAfter.getWindowLeftOffset(), scalingWindowAfter.getWindowTopOffset(), 
-#endif              
                     bitDepths.recon[toChannelType(compID)], downsampling || useLumaFilter ? true : isLuma( compID ), downsampling,
                     isLuma( compID ) ? 1 : horCollocatedChromaFlag, isLuma( compID ) ? 1 : verCollocatedChromaFlag );
   }
 }
 
-#if JVET_O1143_MV_ACROSS_SUBPIC_BOUNDARY
 void Picture::saveSubPicBorder(int POC, int subPicX0, int subPicY0, int subPicWidth, int subPicHeight)
 {
 
@@ -948,7 +940,6 @@ void Picture::restoreSubPicBorder(int POC, int subPicX0, int subPicY0, int subPi
   m_bufSubPicLeft.destroy();
   m_bufSubPicRight.destroy();
 }
-#endif
 
 void Picture::extendPicBorder()
 {

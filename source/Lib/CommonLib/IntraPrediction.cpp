@@ -365,11 +365,7 @@ void IntraPrediction::initPredIntraParams(const PredictionUnit & pu, const CompA
   m_ipaParam.multiRefIndex        = isLuma (chType) ? pu.multiRefIdx : 0 ;
   m_ipaParam.refFilterFlag        = false;
   m_ipaParam.interpolationFlag    = false;
-#if JVET_Q0293_REMOVAL_PDPC_CHROMA_NX2
   m_ipaParam.applyPDPC            = (puSize.width >= MIN_TB_SIZEY && puSize.height >= MIN_TB_SIZEY) && m_ipaParam.multiRefIndex == 0;
-#else
-  m_ipaParam.applyPDPC            = ((puSize.width >= MIN_TB_SIZEY && puSize.height >= MIN_TB_SIZEY) || !isLuma(compId)) && m_ipaParam.multiRefIndex == 0;
-#endif
 
   const int    intraPredAngleMode = (m_ipaParam.isModeVer) ? predMode - VER_IDX : -(predMode - HOR_IDX);
 
@@ -743,12 +739,10 @@ void IntraPrediction::geneIntrainterPred(const CodingUnit &cu)
 
   initIntraPatternChType(cu, pu->Y());
   predIntraAng(COMPONENT_Y, cu.cs->getPredBuf(*pu).Y(), *pu);
-#if JVET_Q0438_MONOCHROME_BUGFIXES
   int maxCompID = 1;
   if (isChromaEnabled(pu->chromaFormat))
   {
     maxCompID = MAX_NUM_COMPONENT;
-#endif
   if (pu->chromaSize().width > 2)
   {
     initIntraPatternChType(cu, pu->Cb());
@@ -757,7 +751,6 @@ void IntraPrediction::geneIntrainterPred(const CodingUnit &cu)
     initIntraPatternChType(cu, pu->Cr());
     predIntraAng(COMPONENT_Cr, cu.cs->getPredBuf(*pu).Cr(), *pu);
   }
-#if JVET_Q0438_MONOCHROME_BUGFIXES
   }
   for (int currCompID = 0; currCompID < maxCompID; currCompID++)
   {
@@ -765,12 +758,6 @@ void IntraPrediction::geneIntrainterPred(const CodingUnit &cu)
     {
       continue;
     }
-#else
-  for (int currCompID = 0; currCompID < 3; currCompID++)
-  {
-    if (pu->chromaSize().width <= 2 && currCompID > 0)
-      continue;
-#endif
     ComponentID currCompID2 = (ComponentID)currCompID;
     PelBuf tmpBuf = currCompID == 0 ? cu.cs->getPredBuf(*pu).Y() : (currCompID == 1 ? cu.cs->getPredBuf(*pu).Cb() : cu.cs->getPredBuf(*pu).Cr());
     switchBuffer(*pu, currCompID2, tmpBuf, getPredictorPtr2(currCompID2, 0));
@@ -1422,9 +1409,6 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
 
   bool isFirstRowOfCtu = ( lumaArea.y & ((pu.cs->sps)->getCTUSize() - 1) ) == 0;
   const int strOffset = (CHROMA_444 == pu.chromaFormat) ? 0 : iRecStride;
-#if !JVET_Q0500_CCLM_REF_PADDING
-  int c0_2tap = 1, c1_2tap = 1,                                                     offset_2tap = 1, shift_2tap = 1; //sum = 2
-#endif
   int c0_3tap = 2, c1_3tap = 1, c2_3tap = 1,                                        offset_3tap = 2, shift_3tap = 2; //sum = 4
   int c0_5tap = 1, c1_5tap = 4, c2_5tap = 1, c3_5tap = 1, c4_5tap = 1,              offset_5tap = 4, shift_5tap = 3; //sum = 8
   int c0_6tap = 2, c1_6tap = 1, c2_6tap = 1, c3_6tap = 2, c4_6tap = 1, c5_6tap = 1, offset_6tap = 4, shift_6tap = 3; //sum = 8
@@ -1432,18 +1416,12 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
   switch (pu.chromaFormat)
   {
     case CHROMA_422: //overwrite filter coefficient values for 422
-#if !JVET_Q0500_CCLM_REF_PADDING
-      c0_2tap = 1, c1_2tap = 0,                                                     offset_2tap = 0, shift_2tap = 0; //sum = 1
-#endif
       c0_3tap = 2, c1_3tap = 1, c2_3tap = 1,                                        offset_3tap = 2, shift_3tap = 2; //sum = 4
       c0_5tap = 0, c1_5tap = 1, c2_5tap = 0, c3_5tap = 0, c4_5tap = 0,              offset_5tap = 0, shift_5tap = 0; //sum = 1
       c0_6tap = 2, c1_6tap = 1, c2_6tap = 1, c3_6tap = 0, c4_6tap = 0, c5_6tap = 0, offset_6tap = 2, shift_6tap = 2; //sum = 4
       break;
 
     case CHROMA_444:  //overwrite filter coefficient values for 422
-#if !JVET_Q0500_CCLM_REF_PADDING
-      c0_2tap = 1, c1_2tap = 0,                                                     offset_2tap = 0, shift_2tap = 0; //sum = 1
-#endif
       c0_3tap = 1, c1_3tap = 0, c2_3tap = 0,                                        offset_3tap = 0, shift_3tap = 0; //sum = 1
       c0_5tap = 0, c1_5tap = 1, c2_5tap = 0, c3_5tap = 0, c4_5tap = 0,              offset_5tap = 0, shift_5tap = 0; //sum = 1
       c0_6tap = 1, c1_6tap = 0, c2_6tap = 0, c3_6tap = 0, c4_6tap = 0, c5_6tap = 0, offset_6tap = 0, shift_6tap = 0; //sum = 1
@@ -1469,11 +1447,7 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
 
         if ((i == 0 && !bLeftAvaillable) || (i == uiCWidth + addedAboveRight - 1 + logSubWidthC))
         {
-#if JVET_Q0500_CCLM_REF_PADDING
           pDst[i] = (piSrc[mult * i] * c0_3tap + piSrc[mult * i] * c1_3tap + piSrc[mult * i + 1] * c2_3tap + offset_3tap) >> shift_3tap;          
-#else
-          pDst[i] = piSrc[mult * i];
-#endif
         }
         else
         {
@@ -1486,14 +1460,10 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
 
         if ((i == 0 && !bLeftAvaillable) || (i == uiCWidth + addedAboveRight - 1 + logSubWidthC))
         {
-#if JVET_Q0500_CCLM_REF_PADDING
           pDst[i] = (piSrc[mult * i - strOffset] * c0_5tap
                   +  piSrc[mult * i]             * c1_5tap + piSrc[mult * i] * c2_5tap + piSrc[mult * i + 1] * c3_5tap
                   +  piSrc[mult * i + strOffset] * c4_5tap
                   +  offset_5tap) >> shift_5tap;
-#else
-          pDst[i] = (piSrc[mult * i] * c0_3tap + piSrc[mult * i - strOffset] * c1_3tap + piSrc[mult * i + strOffset] * c2_3tap + offset_3tap) >> shift_3tap;
-#endif
         }
         else
         {
@@ -1509,13 +1479,9 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
 
         if ((i == 0 && !bLeftAvaillable) || (i == uiCWidth + addedAboveRight - 1 + logSubWidthC))
         {
-#if JVET_Q0500_CCLM_REF_PADDING
           pDst[i] = ((piSrc[mult * i]            * c0_6tap + piSrc[mult * i]             * c1_6tap + piSrc[mult * i + 1]             * c2_6tap)
                   + (piSrc[mult * i + strOffset] * c3_6tap + piSrc[mult * i + strOffset] * c4_6tap + piSrc[mult * i + 1 + strOffset] * c5_6tap)
                   + offset_6tap) >> shift_6tap;
-#else
-          pDst[i] = (piSrc[mult * i] * c0_2tap + piSrc[mult * i + strOffset] * c1_2tap + offset_2tap) >> shift_2tap;
-#endif
         }
         else
         {
@@ -1545,14 +1511,10 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
       {
         if ((j == 0 && !bAboveAvaillable) || (j == uiCHeight + addedLeftBelow - 1 + logSubWidthC))
         {
-#if JVET_Q0500_CCLM_REF_PADDING
           pDst[0] = ( piSrc[1            ] * c0_5tap
                     + piSrc[1            ] * c1_5tap + piSrc[0] * c2_5tap + piSrc[2] * c3_5tap
                     + piSrc[1 + strOffset] * c4_5tap
                     + offset_5tap ) >> shift_5tap;
-#else
-          pDst[0] = ( piSrc[1] * c0_3tap + piSrc[0] * c1_3tap + piSrc[2] * c2_3tap + offset_3tap) >> shift_3tap;
-#endif
         }
         else
         {
@@ -1585,37 +1547,25 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
         {
           if ( j == 0 && !bAboveAvaillable )
           {
-#if JVET_Q0500_CCLM_REF_PADDING
             pDst0[i] = (pRecSrc0[mult * i] * c0_5tap
                      +  pRecSrc0[mult * i] * c1_5tap + pRecSrc0[mult * i] * c2_5tap + pRecSrc0[mult * i + 1] * c3_5tap
                      +  pRecSrc0[mult * i + strOffset] * c4_5tap
                      +  offset_5tap) >> shift_5tap;
-#else
-            pDst0[i] = pRecSrc0[mult * i];
-#endif
           }
           else
           {
-#if JVET_Q0500_CCLM_REF_PADDING
             pDst0[i] = (pRecSrc0[mult * i - strOffset] * c0_5tap
                      +  pRecSrc0[mult * i] * c1_5tap + pRecSrc0[mult * i] * c2_5tap + pRecSrc0[mult * i + 1] * c3_5tap
                      +  pRecSrc0[mult * i + strOffset] * c4_5tap
                      +  offset_5tap) >> shift_5tap;
-#else
-            pDst0[i] = (pRecSrc0[mult * i] * c0_3tap + pRecSrc0[mult * i - strOffset] * c1_3tap + pRecSrc0[mult * i + strOffset] * c2_3tap + offset_3tap) >> shift_3tap;
-#endif
           }
         }
         else if ( j == 0 && !bAboveAvaillable )
         {
-#if JVET_Q0500_CCLM_REF_PADDING
           pDst0[i] = (pRecSrc0[mult * i] * c0_5tap
                    +  pRecSrc0[mult * i] * c1_5tap + pRecSrc0[mult * i - 1] * c2_5tap + pRecSrc0[mult * i + 1] * c3_5tap
                    +  pRecSrc0[mult * i + strOffset] * c4_5tap
                    +  offset_5tap) >> shift_5tap;
-#else
-          pDst0[i] = (pRecSrc0[mult * i] * c0_3tap + pRecSrc0[mult * i - 1] * c1_3tap + pRecSrc0[mult * i + 1] * c2_3tap + offset_3tap) >> shift_3tap;
-#endif
         }
         else
         {
@@ -1630,7 +1580,6 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
 
         if ((i == 0 && !bLeftAvaillable) || (i == uiCWidth - 1 + logSubWidthC))
         {
-#if JVET_Q0500_CCLM_REF_PADDING
           int s = offset_6tap;
           s += pRecSrc0[mult * i] * c0_6tap;
           s += pRecSrc0[mult * i + 1] * c1_6tap;
@@ -1642,9 +1591,6 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
             s += pRecSrc0[mult * i + strOffset] * c5_6tap;
           }
           pDst0[i] = s >> shift_6tap;
-#else
-          pDst0[i] = (pRecSrc0[mult * i] * c0_2tap + pRecSrc0[mult * i + strOffset] * c1_2tap + offset_2tap) >> shift_2tap;
-#endif
         }
         else
         {
@@ -1943,10 +1889,8 @@ void IntraPrediction::reorderPLT(CodingStructure& cs, Partitioner& partitioner, 
 
     for (curidx = 0; curidx < cu.curPLTSize[compBegin]; curidx++)
     {
-#if JVET_Q0504_PLT_NON444
       if( curPLTpred[curidx] )
         continue;
-#endif
       bool matchTmp = true;
       for (int comp = compBegin; comp < (compBegin + numComp); comp++)
       {
@@ -1963,7 +1907,6 @@ void IntraPrediction::reorderPLT(CodingStructure& cs, Partitioner& partitioner, 
     {
       cu.reuseflag[compBegin][predidx] = true;
       curPLTpred[curidx] = true;
-#if JVET_Q0504_PLT_NON444
       if( cu.isLocalSepTree() )
       {
         cu.reuseflag[COMPONENT_Y][predidx] = true;
@@ -1974,14 +1917,11 @@ void IntraPrediction::reorderPLT(CodingStructure& cs, Partitioner& partitioner, 
       }
       else
       {
-#endif
       for (int comp = compBegin; comp < (compBegin + numComp); comp++)
       {
         curPLTtmp[comp][reusePLTSizetmp] = cs.prevPLT.curPLT[comp][predidx];
       }
-#if JVET_Q0504_PLT_NON444
       }
-#endif
       reusePLTSizetmp++;
       pltSizetmp++;
     }
@@ -1991,7 +1931,6 @@ void IntraPrediction::reorderPLT(CodingStructure& cs, Partitioner& partitioner, 
   {
     if (!curPLTpred[curidx])
     {
-#if JVET_Q0504_PLT_NON444
       if( cu.isLocalSepTree() )
       {
         for( int comp = compBegin; comp < (compBegin + numComp); comp++ )
@@ -2010,21 +1949,17 @@ void IntraPrediction::reorderPLT(CodingStructure& cs, Partitioner& partitioner, 
       }
       else
       {
-#endif
       for (int comp = compBegin; comp < (compBegin + numComp); comp++)
       {
         curPLTtmp[comp][pltSizetmp] = cu.curPLT[comp][curidx];
       }
-#if JVET_Q0504_PLT_NON444
       }
-#endif
       pltSizetmp++;
     }
   }
   assert(pltSizetmp == cu.curPLTSize[compBegin]);
   for (int curidx = 0; curidx < cu.curPLTSize[compBegin]; curidx++)
   {
-#if JVET_Q0504_PLT_NON444
     if( cu.isLocalSepTree() )
     {
       for( int comp = COMPONENT_Y; comp < MAX_NUM_COMPONENT; comp++ )
@@ -2034,14 +1969,11 @@ void IntraPrediction::reorderPLT(CodingStructure& cs, Partitioner& partitioner, 
     }
     else
     {
-#endif
     for (int comp = compBegin; comp < (compBegin + numComp); comp++)
     {
       cu.curPLT[comp][curidx] = curPLTtmp[comp][curidx];
     }
-#if JVET_Q0504_PLT_NON444
     }
-#endif
   }
 }
 //! \}

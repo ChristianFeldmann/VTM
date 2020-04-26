@@ -1324,20 +1324,12 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
     // add intra modes
     if( tryIntraRdo )
     {
-#if JVET_Q0504_PLT_NON444
     if (cs.slice->getSPS()->getPLTMode() && (partitioner.treeType != TREE_D || cs.slice->isIRAP() || (cs.area.lwidth() == 4 && cs.area.lheight() == 4)) && getPltEnc())
-#else
-    if (cs.slice->getSPS()->getPLTMode() && ( cs.slice->isIRAP() || (cs.area.lwidth() == 4 && cs.area.lheight() == 4) ) && getPltEnc() )
-#endif
     {
       m_ComprCUCtxList.back().testModes.push_back({ ETM_PALETTE, ETO_STANDARD, qp });
     }
     m_ComprCUCtxList.back().testModes.push_back( { ETM_INTRA, ETO_STANDARD, qp } );
-#if JVET_Q0504_PLT_NON444
     if (cs.slice->getSPS()->getPLTMode() && partitioner.treeType == TREE_D && !cs.slice->isIRAP() && !(cs.area.lwidth() == 4 && cs.area.lheight() == 4) && getPltEnc())
-#else
-    if (cs.slice->getSPS()->getPLTMode() && !cs.slice->isIRAP() && !(cs.area.lwidth() == 4 && cs.area.lheight() == 4) && getPltEnc() )
-#endif
     {
       m_ComprCUCtxList.back().testModes.push_back({ ETM_PALETTE,  ETO_STANDARD, qp });
     }
@@ -1372,17 +1364,10 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
       // add inter modes
       if( m_pcEncCfg->getUseEarlySkipDetection() )
       {
-#if !JVET_Q0806
-        if( cs.sps->getUseTriangle() && cs.slice->isInterB() )
-        {
-          m_ComprCUCtxList.back().testModes.push_back( { ETM_MERGE_TRIANGLE, ETO_STANDARD, qp } );
-        }
-#else
         if( cs.sps->getUseGeo() && cs.slice->isInterB() )
         {
           m_ComprCUCtxList.back().testModes.push_back( { ETM_MERGE_GEO, ETO_STANDARD, qp } );
         }
-#endif
         m_ComprCUCtxList.back().testModes.push_back( { ETM_MERGE_SKIP,  ETO_STANDARD, qp } );
         if ( cs.sps->getUseAffine() || cs.sps->getSBTMVPEnabledFlag() )
         {
@@ -1393,17 +1378,10 @@ void EncModeCtrlMTnoRQT::initCULevel( Partitioner &partitioner, const CodingStru
       else
       {
         m_ComprCUCtxList.back().testModes.push_back( { ETM_INTER_ME,    ETO_STANDARD, qp } );
-#if !JVET_Q0806
-        if( cs.sps->getUseTriangle() && cs.slice->isInterB() )
-        {
-          m_ComprCUCtxList.back().testModes.push_back( { ETM_MERGE_TRIANGLE, ETO_STANDARD, qp } );
-        }
-#else
         if( cs.sps->getUseGeo() && cs.slice->isInterB() )
         {
           m_ComprCUCtxList.back().testModes.push_back( { ETM_MERGE_GEO, ETO_STANDARD, qp } );
         }
-#endif
         m_ComprCUCtxList.back().testModes.push_back( { ETM_MERGE_SKIP,  ETO_STANDARD, qp } );
         if ( cs.sps->getUseAffine() || cs.sps->getSBTMVPEnabledFlag() )
         {
@@ -1441,11 +1419,7 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
   ComprCUCtx& cuECtx = m_ComprCUCtxList.back();
 
   // Fast checks, partitioning depended
-#if !JVET_Q0806
-  if (cuECtx.isHashPerfectMatch && encTestmode.type != ETM_MERGE_SKIP && encTestmode.type != ETM_INTER_ME && encTestmode.type != ETM_AFFINE && encTestmode.type != ETM_MERGE_TRIANGLE)
-#else
   if (cuECtx.isHashPerfectMatch && encTestmode.type != ETM_MERGE_SKIP && encTestmode.type != ETM_INTER_ME && encTestmode.type != ETM_AFFINE && encTestmode.type != ETM_MERGE_GEO)
-#endif
   {
     return false;
   }
@@ -1578,11 +1552,7 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
         }
       }
     }
-#if JVET_Q0504_PLT_NON444
     if (bestMode.type == ETM_PALETTE && !slice.isIRAP() && partitioner.treeType == TREE_D && !(partitioner.currArea().lumaSize().width == 4 && partitioner.currArea().lumaSize().height == 4)) // inter slice
-#else
-    if (bestMode.type == ETM_PALETTE && !slice.isIRAP() && !( partitioner.currArea().lumaSize().width == 4 && partitioner.currArea().lumaSize().height == 4) ) // inter slice
-#endif
     {
       return false;
     }
@@ -1598,24 +1568,16 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
   }
   else if (encTestmode.type == ETM_PALETTE)
   {
-#if JVET_Q0629_REMOVAL_PLT_4X4
     if (partitioner.currArea().lumaSize().width > 64 || partitioner.currArea().lumaSize().height > 64
         || ((partitioner.currArea().lumaSize().width * partitioner.currArea().lumaSize().height <= 16) && (isLuma(partitioner.chType)) )
         || ((partitioner.currArea().chromaSize().width * partitioner.currArea().chromaSize().height <= 16) && (!isLuma(partitioner.chType)) && partitioner.isSepTree(cs) ) )
-#else
-    if (partitioner.currArea().lumaSize().width > 64 || partitioner.currArea().lumaSize().height > 64)
-#endif            
     {
       return false;
     }
     const Area curr_cu = CS::getArea(cs, cs.area, partitioner.chType).blocks[getFirstComponentOfChannel(partitioner.chType)];
     try
     {
-#if JVET_Q0504_PLT_NON444
       double stored_cost = slice.m_mapPltCost[isChroma(partitioner.chType)].at(curr_cu.pos()).at(curr_cu.size());
-#else
-      double stored_cost = slice.m_mapPltCost.at(curr_cu.pos()).at(curr_cu.size());
-#endif
       if (bestMode.type != ETM_INVALID && stored_cost > cuECtx.bestCS->cost)
       {
         return false;
@@ -1680,12 +1642,6 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
     {
       return false;
     }
-#if !JVET_Q0806
-    if( encTestmode.type == ETM_MERGE_TRIANGLE && ( partitioner.currArea().lumaSize().area() < TRIANGLE_MIN_SIZE || relatedCU.isIntra ) )
-    {
-      return false;
-    }
-#else
     if( encTestmode.type == ETM_MERGE_GEO && ( partitioner.currArea().lwidth() < GEO_MIN_CU_SIZE || partitioner.currArea().lheight() < GEO_MIN_CU_SIZE  
                                             || partitioner.currArea().lwidth() > GEO_MAX_CU_SIZE || partitioner.currArea().lheight() > GEO_MAX_CU_SIZE
                                             || partitioner.currArea().lwidth() >= 8 * partitioner.currArea().lheight()
@@ -1693,7 +1649,6 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
     {
       return false;
     }
-#endif
     return true;
   }
   else if( isModeSplit( encTestmode ) )
@@ -1880,7 +1835,6 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
     }
 
     if( split == CU_QUAD_SPLIT ) cuECtx.set( DID_QUAD_SPLIT, true );
-#if JVET_Q0297_MER
     if (cs.sps->getLog2ParallelMergeLevelMinus2())
     {
       const CompArea& area = partitioner.currArea().Y();
@@ -1893,7 +1847,6 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
         if (area.width <= 2 * size && split == CU_TRIV_SPLIT) return false;
       }
     }
-#endif
     return true;
   }
   else

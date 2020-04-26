@@ -1570,7 +1570,6 @@ void EncSampleAdaptiveOffset::deriveLoopFilterBoundaryAvailibility(CodingStructu
     isAboveLeftAvail = (!isAboveLeftAvail) ? false : CU::isSameTile(*cuCurr, *cuAboveLeft);
   }
 
-#if JVET_O1143_LPF_ACROSS_SUBPIC_BOUNDARY
   const SubPic& curSubPic = cs.pps->getSubPicFromCU(*cuCurr);
   if (!curSubPic.getloopFilterAcrossEnabledFlag())
   {
@@ -1578,7 +1577,6 @@ void EncSampleAdaptiveOffset::deriveLoopFilterBoundaryAvailibility(CodingStructu
     isAboveAvail     = (!isAboveAvail)     ? false : CU::isSameSubPic(*cuCurr, *cuAbove);
     isAboveLeftAvail = (!isAboveLeftAvail) ? false : CU::isSameSubPic(*cuCurr, *cuAboveLeft);
   }
-#endif
 }
 
 //! \}

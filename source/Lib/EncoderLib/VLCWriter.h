@@ -116,9 +116,7 @@ private:
   void xCodeRefPicList( const ReferencePictureList* rpl, bool isLongTermPresent, uint32_t ltLsbBitsCount, const bool isForbiddenZeroDeltaPoc );
   bool xFindMatchingLTRP        ( Slice* pcSlice, uint32_t *ltrpsIndex, int ltrpPOC, bool usedFlag );
   void xCodePredWeightTable     ( Slice* pcSlice );
-#if JVET_Q0819_PH_CHANGES
   void xCodePredWeightTable     ( PicHeader *picHeader, const SPS *sps );
-#endif
   void xCodeScalingList         ( const ScalingList* scalingList, uint32_t scalinListId, bool isPredictor);
 public:
   void  setBitstream            ( OutputBitstream* p )  { m_pcBitIf = p;  }
@@ -131,43 +129,20 @@ public:
   void  codeLmcsAps             ( APS* pcAPS );
   void  codeScalingListAps      ( APS* pcAPS );
   void  codeVPS                 ( const VPS* pcVPS );
-#if JVET_Q0117_PARAMETER_SETS_CLEANUP
   void  codeDCI                 ( const DCI* dci );
-#else
-  void  codeDPS                 ( const DPS* dps );
-#endif
-#if JVET_Q0775_PH_IN_SH
   void  codePictureHeader       ( PicHeader* picHeader, bool writeRbspTrailingBits );
-#else
-  void  codePictureHeader       ( PicHeader* picHeader );
-#endif
   void  codeSliceHeader         ( Slice* pcSlice );
   void  codeConstraintInfo      ( const ConstraintInfo* cinfo );
-#if JVET_Q0786_PTL_only
   void  codeProfileTierLevel    ( const ProfileTierLevel* ptl, bool profileTierPresentFlag, int maxNumSubLayersMinus1 );
-#else
-  void  codeProfileTierLevel    ( const ProfileTierLevel* ptl, int maxNumSubLayersMinus1 );
-#endif
-#if JVET_P0118_HRD_ASPECTS
   void  codeOlsHrdParameters(const GeneralHrdParams * generalHrd, const OlsHrdParams *olsHrd , const uint32_t firstSubLayer, const uint32_t maxNumSubLayersMinus1);
-#else
-  void  codeHrdParameters       ( const HRDParameters *hrd, const uint32_t firstSubLayer, const uint32_t maxNumSubLayersMinus1);
-#endif
 
-#if JVET_P0118_HRD_ASPECTS
   void codeGeneralHrdparameters(const GeneralHrdParams *hrd);
-#endif
   void  codeTilesWPPEntryPoint  ( Slice* pSlice );
   void  codeScalingList         ( const ScalingList &scalingList );
 
   void alfFilter( const AlfParam& alfParam, const bool isChroma, const int altIdx );
-#if JVET_P0117_PTL_SCALABILITY
   void dpb_parameters(int maxSubLayersMinus1, bool subLayerInfoFlag, const SPS *pcSPS);
-#endif
 private:
-#if !JVET_Q0210_UEK_REMOVAL
-  void alfGolombEncode( const int coeff, const int k, const bool signed_coeff=true );
-#endif
 };
 
 //! \}

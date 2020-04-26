@@ -915,12 +915,8 @@ bool VideoIOYuv::read ( PelUnitBuf& pic, PelUnitBuf& picOrg, const InputColourSp
     const bool b709Compliance=(bClipToRec709) && (m_bitdepthShift[chType] < 0 && desired_bitdepth >= 8);     /* ITU-R BT.709 compliant clipping for converting say 10b to 8b */
     const Pel minval = b709Compliance? ((   1 << (desired_bitdepth - 8))   ) : 0;
     const Pel maxval = b709Compliance? ((0xff << (desired_bitdepth - 8)) -1) : (1 << desired_bitdepth) - 1;
-#if JVET_Q0438_MONOCHROME_BUGFIXES
     const bool processComponent = (size_t)compID < picOrg.bufs.size();
     Pel* const dst = processComponent ? picOrg.get(compID).bufAt(0,0) : nullptr;
-#else
-    Pel* const dst = picOrg.get(compID).bufAt(0,0);
-#endif
 #if EXTENSION_360_VIDEO
     const uint32_t stride444 = picOrg.get(compID).stride;
 #endif
@@ -929,7 +925,6 @@ bool VideoIOYuv::read ( PelUnitBuf& pic, PelUnitBuf& picOrg, const InputColourSp
       return false;
     }
 
-#if JVET_Q0438_MONOCHROME_BUGFIXES
     if (processComponent)
     {
       if (! verifyPlane( dst, stride444, width444, height444, pad_h444, pad_v444, compID, format, m_fileBitdepth[chType]) )
@@ -938,17 +933,6 @@ bool VideoIOYuv::read ( PelUnitBuf& pic, PelUnitBuf& picOrg, const InputColourSp
       }
       scalePlane( picOrg.get(compID), m_bitdepthShift[chType], minval, maxval);
     }
-#else
-    if (! verifyPlane( dst, stride444, width444, height444, pad_h444, pad_v444, compID, format, m_fileBitdepth[chType]) )
-    {
-       EXIT("Source image contains values outside the specified bit range!");
-    }
-
-    if( (size_t)compID < picOrg.bufs.size() )
-    {
-      scalePlane( picOrg.get(compID), m_bitdepthShift[chType], minval, maxval);
-    }
-#endif
   }
 
 #if EXTENSION_360_VIDEO
@@ -1263,22 +1247,12 @@ bool VideoIOYuv::writeUpscaledPicture( const SPS& sps, const PPS& pps, const CPe
       PelStorage upscaledPic;
       upscaledPic.create( chromaFormatIDC, Area( Position(), Size( sps.getMaxPicWidthInLumaSamples(), sps.getMaxPicHeightInLumaSamples() ) ) );
 
-#if JVET_Q0487_SCALING_WINDOW_ISSUES
       int curPicWidth = sps.getMaxPicWidthInLumaSamples()   - SPS::getWinUnitX( sps.getChromaFormatIdc() ) * ( afterScaleWindowFullResolution.getWindowLeftOffset() + afterScaleWindowFullResolution.getWindowRightOffset() );
       int curPicHeight = sps.getMaxPicHeightInLumaSamples() - SPS::getWinUnitY( sps.getChromaFormatIdc() ) * ( afterScaleWindowFullResolution.getWindowTopOffset()  + afterScaleWindowFullResolution.getWindowBottomOffset() );
-#else
-      int curPicWidth = sps.getMaxPicWidthInLumaSamples() - afterScaleWindowFullResolution.getWindowLeftOffset() - afterScaleWindowFullResolution.getWindowRightOffset();
-      int curPicHeight = sps.getMaxPicHeightInLumaSamples() - afterScaleWindowFullResolution.getWindowTopOffset() - afterScaleWindowFullResolution.getWindowBottomOffset();
-#endif
 
       const Window& beforeScalingWindow = pps.getScalingWindow();
-#if JVET_Q0487_SCALING_WINDOW_ISSUES
       int refPicWidth = pps.getPicWidthInLumaSamples()   - SPS::getWinUnitX( sps.getChromaFormatIdc() ) * ( beforeScalingWindow.getWindowLeftOffset() + beforeScalingWindow.getWindowRightOffset() );
       int refPicHeight = pps.getPicHeightInLumaSamples() - SPS::getWinUnitY( sps.getChromaFormatIdc() ) * ( beforeScalingWindow.getWindowTopOffset()  + beforeScalingWindow.getWindowBottomOffset() );
-#else
-      int refPicWidth = pps.getPicWidthInLumaSamples() - beforeScalingWindow.getWindowLeftOffset() - beforeScalingWindow.getWindowRightOffset();
-      int refPicHeight = pps.getPicHeightInLumaSamples() - beforeScalingWindow.getWindowTopOffset() - beforeScalingWindow.getWindowBottomOffset();
-#endif
 
       int xScale = ( ( refPicWidth << SCALE_RATIO_BITS ) + ( curPicWidth >> 1 ) ) / curPicWidth;
       int yScale = ( ( refPicHeight << SCALE_RATIO_BITS ) + ( curPicHeight >> 1 ) ) / curPicHeight;

@@ -187,12 +187,10 @@ static const int MAX_NUM_ALF_CHROMA_COEFF    =                      7;
 static const int MAX_ALF_FILTER_LENGTH       =                      7;
 static const int MAX_NUM_ALF_COEFF           =                     MAX_ALF_FILTER_LENGTH * MAX_ALF_FILTER_LENGTH / 2 + 1;
 static const int MAX_ALF_PADDING_SIZE        =                      4;
-#if JVET_Q0795_CCALF
 #define MAX_NUM_CC_ALF_FILTERS                                      4
 static constexpr int MAX_NUM_CC_ALF_CHROMA_COEFF    =               8;
 static constexpr int CCALF_DYNAMIC_RANGE            =               6;
 static constexpr int CCALF_BITS_PER_COEFF_LEVEL     =               3;
-#endif
 
 static const int ALF_FIXED_FILTER_NUM        =                     64;
 static const int ALF_CTB_MAX_NUM_APS         =                      8;
@@ -383,24 +381,10 @@ static const int DMVR_NUM_ITERATION = 2;
 //QTBT high level parameters
 //for I slice luma CTB configuration para.
 static const int    MAX_BT_DEPTH  =                                 4;      ///<  <=7
-#if !JVET_Q0330_BLOCK_PARTITION
-static const int    MAX_BT_SIZE   =                                32;      ///<  [1<<MIN_QT_SIZE, 1<<CTU_LOG2]
-
-static const int    MAX_TT_SIZE   =                                32;      ///<  [1<<MIN_QT_SIZE, 1<<CTU_LOG2]
-static const int    MAX_TT_SIZE_C =                                32;      ///<  [1<<MIN_QT_SIZE, 1<<CTU_LOG2]
-#endif
                                                                             //for P/B slice CTU config. para.
 static const int    MAX_BT_DEPTH_INTER =                            4;      ///< <=7
-#if !JVET_Q0330_BLOCK_PARTITION
-static const int    MAX_BT_SIZE_INTER  =                          128;      ///< for initialization, [1<<MIN_BT_SIZE_INTER, 1<<CTU_LOG2]
-#endif
                                                                             //for I slice chroma CTB configuration para. (in luma samples)
 static const int    MAX_BT_DEPTH_C      =                           0;      ///< <=7
-#if !JVET_Q0330_BLOCK_PARTITION
-static const int    MAX_BT_SIZE_C       =                          64;      ///< [1<<MIN_QT_SIZE_C, 1<<CTU_LOG2], in luma samples
-
-static const int    MAX_TT_SIZE_INTER  =                           64;      ///< for initialization, [1<<MIN_CU_LOG2, 64]
-#endif
 static const int    MIN_DUALTREE_CHROMA_WIDTH  =                    4;
 static const int    MIN_DUALTREE_CHROMA_SIZE   =                   16;
 static const SplitSeries SPLIT_BITS         =                       5;
@@ -434,13 +418,6 @@ static const int MAX_LADF_INTERVALS       =                         5; /// max n
 static const int NTAPS_BILINEAR           =                         2; ///< Number of taps for bilinear filter
 
 static const int ATMVP_SUB_BLOCK_SIZE =                             3; ///< sub-block size for ATMVP
-#if !JVET_Q0806
-static const int TRIANGLE_MAX_NUM_UNI_CANDS =                       6;
-static const int TRIANGLE_MAX_NUM_CANDS_MEM =                       7;
-static const int TRIANGLE_MAX_NUM_CANDS = TRIANGLE_MAX_NUM_UNI_CANDS * (TRIANGLE_MAX_NUM_UNI_CANDS - 1) * 2;
-static const int TRIANGLE_MAX_NUM_SATD_CANDS =                      3;
-static const int TRIANGLE_MIN_SIZE =                            8 * 8;
-#else
 static const int GEO_MAX_NUM_UNI_CANDS =                            6;
 static const int GEO_MAX_NUM_CANDS = GEO_MAX_NUM_UNI_CANDS * (GEO_MAX_NUM_UNI_CANDS - 1);
 static const int GEO_MIN_CU_LOG2 =                                  3;
@@ -456,7 +433,6 @@ static const int GEO_WEIGHT_MASK_SIZE = 3 * (GEO_MAX_CU_SIZE >> 3) * 2 + GEO_MAX
 static const int GEO_MV_MASK_SIZE =         GEO_WEIGHT_MASK_SIZE >> 2;
 static const int GEO_MAX_TRY_WEIGHTED_SAD = 60;
 static const int GEO_MAX_TRY_WEIGHTED_SATD = 8;
-#endif
 
 static const int SBT_MAX_SIZE =                                    64; ///< maximum CU size for using SBT
 static const int SBT_NUM_SL =                                      10; ///< maximum number of historical PU decision saved for a CU
@@ -500,10 +476,8 @@ static const int NUM_TRELLIS_STATE =                              3;
 static const double ENC_CHROMA_WEIGHTING =                      0.8;
 static const int MAXPLTPREDSIZE = 63;
 static const int MAXPLTSIZE = 31;
-#if JVET_Q0291_REDUCE_DUALTREE_PLT_SIZE
 static const int MAXPLTPREDSIZE_DUALTREE = 31;
 static const int MAXPLTSIZE_DUALTREE = 15;
-#endif
 static const double PLT_CHROMA_WEIGHTING =                      0.8;
 static const int PLT_ENCBITDEPTH = 8;
 static const int PLT_FAST_RATIO = 100;
@@ -514,12 +488,7 @@ static const int ENC_PPS_ID_RPR =                                 3;
 static const int SCALE_RATIO_BITS =                              14;
 static const int MAX_SCALING_RATIO =                              2;  // max downsampling ratio for RPR
 static const std::pair<int, int> SCALE_1X = std::pair<int, int>( 1 << SCALE_RATIO_BITS, 1 << SCALE_RATIO_BITS );  // scale ratio 1x
-#if JVET_Q0820_ACT
 static const int DELTA_QP_ACT[4] =                  { -5, 1, 3, 1 };
-#else
-static const int DELTA_QP_FOR_Y_Cg =                             -5;
-static const int DELTA_QP_FOR_Co =                               -3;
-#endif
 
 // ====================================================================================================================
 // Macro functions
@@ -739,10 +708,8 @@ static inline int ceilLog2(uint32_t x)
 #define PARL_PARAM0(DEF)
 #endif
 
-#if JVET_Q0795_CCALF
 static const uint32_t CCALF_CANDS_COEFF_NR = 8;
 static const int CCALF_SMALL_TAB[CCALF_CANDS_COEFF_NR] = { 0, 1, 2, 4, 8, 16, 32, 64 };
-#endif
 
 //! \}
 

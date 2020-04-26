@@ -67,9 +67,7 @@ class InputNALUnit : public NALUnit
 
 void read(InputNALUnit& nalu);
 void readNalUnitHeader(InputNALUnit& nalu);
-#if JVET_Q0775_PH_IN_SH
 bool checkPictureHeaderInSliceHeaderFlag(InputNALUnit & nalu);
-#endif
 //! \}
 
 #endif

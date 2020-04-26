@@ -59,9 +59,7 @@ protected:
   std::string   m_bitstreamFileName;                    ///< input bitstream file name
   std::string   m_reconFileName;                        ///< output reconstruction file name
 
-#if JVET_P2008_OUTPUT_LOG
   std::string   m_oplFilename;                        ///< filename to output conformance log.
-#endif //JVET_P2008_OUTPUT_LOG
 
   int           m_iSkipFrame;                           ///< counter for frames prior to the random access point to skip
   int           m_outputBitDepth[MAX_NUM_CHANNEL_TYPE]; ///< bit depth used for writing output
@@ -83,9 +81,7 @@ protected:
   bool          m_mctsCheck;
 
   int          m_upscaledOutput;                     ////< Output upscaled (2), decoded but in full resolution buffer (1) or decoded cropped (0, default) picture for RPR.
-#if JVET_O1143_SUBPIC_BOUNDARY
   int           m_targetSubPicIdx;                    ///< Specify which subpicture shall be write to output, using subpicture index
-#endif
 public:
   DecAppCfg();
   virtual ~DecAppCfg();

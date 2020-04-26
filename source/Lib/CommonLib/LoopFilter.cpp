@@ -81,30 +81,14 @@ inline static uint32_t getRasterIdx(const Position& pos, const PreCalcValues& pc
 // ====================================================================================================================
 // utility functions
 // ====================================================================================================================
-#if JVET_O1143_LPF_ACROSS_SUBPIC_BOUNDARY
 static bool isAvailableLeft( const CodingUnit& cu, const CodingUnit& cu2, const bool bEnforceSliceRestriction, const bool bEnforceTileRestriction, const bool bEnforceSubPicRestriction)
-#else
-static bool isAvailableLeft( const CodingUnit& cu, const CodingUnit& cu2, const bool bEnforceSliceRestriction, const bool bEnforceTileRestriction)
-#endif
 {
-#if JVET_O1143_LPF_ACROSS_SUBPIC_BOUNDARY
   return ((!bEnforceSliceRestriction || CU::isSameSlice(cu, cu2)) && (!bEnforceTileRestriction || CU::isSameTile(cu, cu2)) && (!bEnforceSubPicRestriction || CU::isSameSubPic(cu, cu2)));
-#else
-  return ((!bEnforceSliceRestriction || CU::isSameSlice(cu, cu2)) && (!bEnforceTileRestriction || CU::isSameTile(cu, cu2)));
-#endif    
 }
 
-#if JVET_O1143_LPF_ACROSS_SUBPIC_BOUNDARY
 static bool isAvailableAbove( const CodingUnit& cu, const CodingUnit& cu2, const bool bEnforceSliceRestriction, const bool bEnforceTileRestriction, const bool bEnforceSubPicRestriction)
-#else
-static bool isAvailableAbove( const CodingUnit& cu, const CodingUnit& cu2, const bool bEnforceSliceRestriction, const bool bEnforceTileRestriction)
-#endif
 {
-#if JVET_O1143_LPF_ACROSS_SUBPIC_BOUNDARY
   return ( !bEnforceSliceRestriction || CU::isSameSlice( cu, cu2 ) ) && ( !bEnforceTileRestriction || CU::isSameTile( cu, cu2 ) ) && (!bEnforceSubPicRestriction || CU::isSameSubPic(cu, cu2));
-#else
-  return ( !bEnforceSliceRestriction || CU::isSameSlice( cu, cu2 ) ) && ( !bEnforceTileRestriction || CU::isSameTile( cu, cu2 ) ) ;
-#endif
 }
 
 
@@ -450,11 +434,7 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
       xEdgeFilterLuma( cu, edgeDir, edge );
     }
 
-#if JVET_Q0438_MONOCHROME_BUGFIXES
     if ( pcv.chrFormat != CHROMA_400 && cu.blocks[COMPONENT_Cb].valid() )
-#else
-    if ( cu.blocks[COMPONENT_Cb].valid() && pcv.chrFormat != CHROMA_400 )
-#endif
     {
       if ( !cu.ispMode || edge == 0 )
       {
@@ -467,13 +447,8 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
 inline bool LoopFilter::isCrossedByVirtualBoundaries(const int xPos, const int yPos, const int width, const int height, int& numHorVirBndry, int& numVerVirBndry, int horVirBndryPos[], int verVirBndryPos[], const PicHeader* picHeader )
 {
   numHorVirBndry = 0; numVerVirBndry = 0;
-#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
   if( picHeader->getVirtualBoundariesPresentFlag() )
   {
-#else
-  if (picHeader->getLoopFilterAcrossVirtualBoundariesDisabledFlag())
-  {
-#endif
     for (int i = 0; i < picHeader->getNumHorVirtualBoundaries(); i++)
     {
       if (yPos <= picHeader->getVirtualBoundariesPosY(i) && picHeader->getVirtualBoundariesPosY(i) < yPos + height)
@@ -519,11 +494,7 @@ void LoopFilter::xSetMaxFilterLengthPQFromTransformSizes( const DeblockEdgeDir e
 
   if ( edgeDir == EDGE_HOR )
   {
-#if JVET_Q0438_MONOCHROME_BUGFIXES
     for ( int cIdx = 0; cIdx < ::getNumberValidComponents(tuQ.chromaFormat); cIdx++ ) // per component
-#else
-    for ( int cIdx = 0; cIdx < MAX_NUM_COMPONENT; cIdx++ ) // per component
-#endif
     {
       const ComponentID comp = ComponentID(cIdx);
       const ChannelType ch   = toChannelType(comp);
@@ -568,11 +539,7 @@ void LoopFilter::xSetMaxFilterLengthPQFromTransformSizes( const DeblockEdgeDir e
   }
   if ( edgeDir == EDGE_VER )
   {
-#if JVET_Q0438_MONOCHROME_BUGFIXES
     for ( int cIdx = 0; cIdx < ::getNumberValidComponents(tuQ.chromaFormat); cIdx++ ) // per component
-#else
-    for ( int cIdx = 0; cIdx < MAX_NUM_COMPONENT; cIdx++ ) // per component
-#endif
     {
       const ComponentID comp = ComponentID(cIdx);
       const ChannelType ch   = toChannelType(comp);
@@ -738,24 +705,10 @@ void LoopFilter::xSetLoopfilterParam( const CodingUnit& cu )
 
   m_stLFCUParam.internalEdge = true;
 
-#if JVET_Q0371_DEBLOCKING_CLEANUP
   m_stLFCUParam.leftEdge = (0 < pos.x) && isAvailableLeft(cu, *cu.cs->getCU(pos.offset(-1, 0), cu.chType), !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag(), 
     !( pps.getSubPicFromCU(cu).getloopFilterAcrossEnabledFlag() && pps.getSubPicFromCU(*cu.cs->getCU(pos.offset(-1, 0), cu.chType)).getloopFilterAcrossEnabledFlag()));
   m_stLFCUParam.topEdge = (0 < pos.y) && isAvailableAbove(cu, *cu.cs->getCU(pos.offset(0, -1), cu.chType), !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag(), 
     !( pps.getSubPicFromCU(cu).getloopFilterAcrossEnabledFlag() && pps.getSubPicFromCU(*cu.cs->getCU(pos.offset(0, -1), cu.chType)).getloopFilterAcrossEnabledFlag()));
-#else
-#if JVET_O1143_LPF_ACROSS_SUBPIC_BOUNDARY
-  m_stLFCUParam.leftEdge     = ( 0 < pos.x ) && isAvailableLeft ( cu, *cu.cs->getCU( pos.offset( -1,  0 ), cu.chType ), !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag(), !pps.getSubPicFromCU(cu).getloopFilterAcrossEnabledFlag() );
-#else
-  m_stLFCUParam.leftEdge     = ( 0 < pos.x ) && isAvailableLeft ( cu, *cu.cs->getCU( pos.offset( -1,  0 ), cu.chType ), !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag());  
-#endif
-
-#if JVET_O1143_LPF_ACROSS_SUBPIC_BOUNDARY
-  m_stLFCUParam.topEdge      = ( 0 < pos.y ) && isAvailableAbove( cu, *cu.cs->getCU( pos.offset(  0, -1 ), cu.chType ), !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag(), !pps.getSubPicFromCU(cu).getloopFilterAcrossEnabledFlag() );
-#else
-  m_stLFCUParam.topEdge      = ( 0 < pos.y ) && isAvailableAbove( cu, *cu.cs->getCU( pos.offset(  0, -1 ), cu.chType ), !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag());  
-#endif
-#endif
 }
 
 unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const DeblockEdgeDir edgeDir, const Position& localPos, const ChannelType chType ) const
@@ -821,10 +774,8 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
   }
   else 
   {
-#if JVET_Q0438_MONOCHROME_BUGFIXES
   if (pcv.chrFormat != CHROMA_400)
   {
-#endif
   // U
   if (m_aapucBS[edgeDir][rasterIdx] && (TU::getCbf(tuQ, COMPONENT_Cb) || TU::getCbf(tuP, COMPONENT_Cb) || tuQ.jointCbCr || tuP.jointCbCr))
   {
@@ -835,9 +786,7 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
   {
     tmpBs += BsSet(1, COMPONENT_Cr);
   }
-#if JVET_Q0438_MONOCHROME_BUGFIXES
   }
-#endif
   }
   if (BsGet(tmpBs, COMPONENT_Y) == 1)
   {
@@ -1036,16 +985,8 @@ void LoopFilter::xEdgeFilterLuma( const CodingUnit& cu, const DeblockEdgeDir edg
       // Derive neighboring PU index
       if (edgeDir == EDGE_VER)
       {
-#if JVET_Q0371_DEBLOCKING_CLEANUP
         if (!isAvailableLeft(cu, cuP, !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag(), 
           !( pps.getSubPicFromCU(cu).getloopFilterAcrossEnabledFlag() && pps.getSubPicFromCU(cuP).getloopFilterAcrossEnabledFlag())))
-#else
-#if JVET_O1143_LPF_ACROSS_SUBPIC_BOUNDARY
-        if (!isAvailableLeft(cu, cuP, !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag(), !pps.getSubPicFromCU(cu).getloopFilterAcrossEnabledFlag()))
-#else
-        if (!isAvailableLeft(cu, cuP, !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag()))
-#endif     
-#endif
         {
           m_aapucBS[edgeDir][uiBsAbsIdx] = uiBs = 0;
           continue;
@@ -1053,16 +994,8 @@ void LoopFilter::xEdgeFilterLuma( const CodingUnit& cu, const DeblockEdgeDir edg
       }
       else  // (iDir == EDGE_HOR)
       {
-#if JVET_Q0371_DEBLOCKING_CLEANUP
         if (!isAvailableAbove(cu, cuP, !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag(), 
           !( pps.getSubPicFromCU(cu).getloopFilterAcrossEnabledFlag() && pps.getSubPicFromCU(cuP).getloopFilterAcrossEnabledFlag())))
-#else
-#if JVET_O1143_LPF_ACROSS_SUBPIC_BOUNDARY
-        if (!isAvailableAbove(cu, cuP, !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag(), !pps.getSubPicFromCU(cu).getloopFilterAcrossEnabledFlag()))
-#else
-        if (!isAvailableAbove(cu, cuP, !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag()))
-#endif
-#endif
         {
           m_aapucBS[edgeDir][uiBsAbsIdx] = uiBs = 0;
           continue;
@@ -1245,13 +1178,8 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
 
   bool      bPartPNoFilter  = false;
   bool      bPartQNoFilter  = false;
-#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
   const int tcOffsetDiv2[2]   = { slice.getDeblockingFilterCbTcOffsetDiv2(), slice.getDeblockingFilterCrTcOffsetDiv2() };
   const int betaOffsetDiv2[2] = { slice.getDeblockingFilterCbBetaOffsetDiv2(), slice.getDeblockingFilterCrBetaOffsetDiv2() };
-#else
-  const int tcOffsetDiv2    = slice.getDeblockingFilterTcOffsetDiv2();
-  const int betaOffsetDiv2  = slice.getDeblockingFilterBetaOffsetDiv2();
-#endif
 
   // Vertical Position
   unsigned uiEdgeNumInCtuVert = rasterIdx % pcv.partsInCtuWidth + iEdge;
@@ -1322,29 +1250,13 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
 
       if (edgeDir == EDGE_VER)
       {
-#if JVET_Q0371_DEBLOCKING_CLEANUP
         CHECK(!isAvailableLeft(cu, cuP, !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag(), 
           !( pps.getSubPicFromCU(cu).getloopFilterAcrossEnabledFlag() && pps.getSubPicFromCU(cuP).getloopFilterAcrossEnabledFlag())), "Neighbour not available");
-#else
-#if JVET_O1143_LPF_ACROSS_SUBPIC_BOUNDARY
-        CHECK(!isAvailableLeft(cu, cuP, !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag(), !pps.getSubPicFromCU(cu).getloopFilterAcrossEnabledFlag()), "Neighbour not available");
-#else
-        CHECK(!isAvailableLeft(cu, cuP, !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag()), "Neighbour not available");
-#endif
-#endif
       }
       else  // (iDir == EDGE_HOR)
       {
-#if JVET_Q0371_DEBLOCKING_CLEANUP
         CHECK(!isAvailableAbove(cu, cuP, !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag(), 
           !( pps.getSubPicFromCU(cu).getloopFilterAcrossEnabledFlag() && pps.getSubPicFromCU(cuP).getloopFilterAcrossEnabledFlag())), "Neighbour not available");
-#else
-#if JVET_O1143_LPF_ACROSS_SUBPIC_BOUNDARY
-        CHECK(!isAvailableAbove(cu, cuP, !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag(), !pps.getSubPicFromCU(cu).getloopFilterAcrossEnabledFlag()), "Neighbour not available");
-#else
-        CHECK(!isAvailableAbove(cu, cuP, !pps.getLoopFilterAcrossSlicesEnabledFlag(), !pps.getLoopFilterAcrossTilesEnabledFlag()), "Neighbour not available");
-#endif
-#endif
       }
 
       bPartPNoFilter = bPartQNoFilter = false;
@@ -1379,33 +1291,20 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
         const TransformUnit& tuQ = *cuQ.cs->getTU(recalcPosition( cu.chromaFormat, CHANNEL_TYPE_LUMA, CHANNEL_TYPE_CHROMA, pos), CHANNEL_TYPE_CHROMA);
         const TransformUnit& tuP = *cuP.cs->getTU(recalcPosition( cu.chromaFormat, CHANNEL_TYPE_LUMA, CHANNEL_TYPE_CHROMA, (edgeDir == EDGE_VER) ? pos.offset(-1, 0) : pos.offset(0, -1)), CHANNEL_TYPE_CHROMA);
 
-#if JVET_Q0820_ACT
         const QpParam cQP(tuP, ComponentID(chromaIdx + 1), -MAX_INT, false);
         const QpParam cQQ(tuQ, ComponentID(chromaIdx + 1), -MAX_INT, false);
-#else
-        const QpParam cQP(tuP, ComponentID(chromaIdx + 1));
-        const QpParam cQQ(tuQ, ComponentID(chromaIdx + 1));
-#endif
         const int qpBdOffset = tuP.cs->sps->getQpBDOffset(toChannelType(ComponentID(chromaIdx + 1)));
         int baseQp_P = cQP.Qp(0) - qpBdOffset;
         int baseQp_Q = cQQ.Qp(0) - qpBdOffset;
         int iQP = ((baseQp_Q + baseQp_P + 1) >> 1);
 
 
-#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
         const int iIndexTC = Clip3<int>(0, MAX_QP + DEFAULT_INTRA_TC_OFFSET, iQP + DEFAULT_INTRA_TC_OFFSET * (bS[chromaIdx] - 1) + (tcOffsetDiv2[chromaIdx] << 1));
-#else
-        const int iIndexTC = Clip3<int>(0, MAX_QP + DEFAULT_INTRA_TC_OFFSET, iQP + DEFAULT_INTRA_TC_OFFSET * (bS[chromaIdx] - 1) + (tcOffsetDiv2 << 1));
-#endif
         const int iTc = sps.getBitDepth(CHANNEL_TYPE_CHROMA) < 10 ? ((sm_tcTable[iIndexTC] + 2) >> (10 - sps.getBitDepth(CHANNEL_TYPE_CHROMA))) : ((sm_tcTable[iIndexTC]) << (sps.getBitDepth(CHANNEL_TYPE_CHROMA) - 10));
         bool useLongFilter = false;
         if (largeBoundary)
         {
-#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
         const int indexB = Clip3<int>(0, MAX_QP, iQP + (betaOffsetDiv2[chromaIdx] << 1));
-#else
-        const int indexB = Clip3<int>(0, MAX_QP, iQP + (betaOffsetDiv2 << 1));
-#endif
         const int beta = sm_betaTable[indexB] * iBitdepthScale;
 
         const int dp0 = xCalcDP(piTmpSrcChroma + iSrcStep*(iIdx*uiLoopLength + 0), iOffset, isChromaHorCTBBoundary);
@@ -1742,7 +1641,6 @@ inline bool LoopFilter::xUseStrongFiltering(Pel* piSrc, const int iOffset, const
   {
     Pel mP4;
     Pel m11;
-#if JVET_Q0054
     if (sidePisLarge)
     {
       if (maxFilterLengthP == 7)
@@ -1776,34 +1674,6 @@ inline bool LoopFilter::xUseStrongFiltering(Pel* piSrc, const int iOffset, const
       sq3 = (sq3 + abs(m11 - m7) + 1) >> 1;
   }
   return ((sp3 + sq3) < (beta*3 >> 5)) && (d < (beta >> 4)) && (abs(m3 - m4) < ((tc * 5 + 1) >> 1));
-#else
-    if (maxFilterLengthP == 5)
-    {
-      mP4 = piSrc[-iOffset * 6];
-    }
-    else
-    {
-      mP4 = piSrc[-iOffset * 8];
-    }
-    if (maxFilterLengthQ == 5)
-    {
-      m11 = piSrc[iOffset * 5];
-    }
-    else
-    {
-      m11 = piSrc[iOffset * 7];
-    }
-
-    if (sidePisLarge)
-    {
-      sp3 = (sp3 + abs(m0 - mP4) + 1) >> 1;
-    }
-    if (sideQisLarge)
-    {
-      sq3 = (sq3 + abs(m11 - m7) + 1) >> 1;
-    }
-    return ((sp3 + sq3) < (beta*3 >> 5)) && (d < (beta >> 2)) && (abs(m3 - m4) < ((tc * 5 + 1) >> 1));
-#endif
   }
   else
   return ( ( d_strong < ( beta >> 3 ) ) && ( d < ( beta >> 2 ) ) && ( abs( m3 - m4 ) < ( ( tc * 5 + 1 ) >> 1 ) ) );

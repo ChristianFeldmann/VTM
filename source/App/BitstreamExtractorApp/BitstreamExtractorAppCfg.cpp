@@ -120,22 +120,7 @@ namespace po = df::program_options_lite;
       return false;
     }
   }
-#if JVET_P0118_OLS_EXTRACTION
   CHECK(m_maxTemporalLayer < -1 || m_maxTemporalLayer > 6, "MaxTemporalLayer shall either be equal -1 (for diabled) or in the range of 0 to 6, inclusive");
-#else
-  if (m_targetOlsIdx != -1)
-  {
-    std::cerr << "Extraction by target output layer set index is not implemented yet";
-    return false;
-  }
-#endif
-#if !JVET_Q0397_SUB_PIC_EXTRACT
-  if (m_subPicId != -1)
-  {
-    std::cerr << "Extraction by subpicture ID is not implemented yet";
-    return false;
-  }
-#endif
 
   if (m_bitstreamFileNameIn.empty())
   {
@@ -155,13 +140,8 @@ namespace po = df::program_options_lite;
 BitstreamExtractorAppCfg::BitstreamExtractorAppCfg()
 : m_bitstreamFileNameIn()
 , m_bitstreamFileNameOut()
-#if JVET_P0118_OLS_EXTRACTION
 , m_maxTemporalLayer( 0 )
 , m_targetOlsIdx( 0 )
-#else
-, m_maxTemporalLayer( -1 )
-, m_targetOlsIdx( -1 )
-#endif
 , m_subPicId( -1 )
 {
 }

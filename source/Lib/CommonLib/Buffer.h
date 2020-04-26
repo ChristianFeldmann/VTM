@@ -110,9 +110,7 @@ struct AreaBuf : public Size
   void memset               ( const int val );
 
   void copyFrom             ( const AreaBuf<const T> &other );
-#if JVET_Q0806
   void roundToOutputBitdepth(const AreaBuf<const T> &src, const ClpRng& clpRng);
-#endif
 
   void reconstruct          ( const AreaBuf<const T> &pred, const AreaBuf<const T> &resi, const ClpRng& clpRng);
   void copyClip             ( const AreaBuf<const T> &src, const ClpRng& clpRng);
@@ -767,9 +765,7 @@ struct UnitBuf
 
   void fill                 ( const T &val );
   void copyFrom             ( const UnitBuf<const T> &other, const bool lumaOnly = false, const bool chromaOnly = false );
-#if JVET_Q0806
   void roundToOutputBitdepth(const UnitBuf<const T> &src, const ClpRngs& clpRngs);
-#endif
   void reconstruct          ( const UnitBuf<const T> &pred, const UnitBuf<const T> &resi, const ClpRngs& clpRngs );
   void copyClip             ( const UnitBuf<const T> &src, const ClpRngs& clpRngs, const bool lumaOnly = false, const bool chromaOnly = false );
   void subtract             ( const UnitBuf<const T> &other );
@@ -785,11 +781,7 @@ struct UnitBuf
 
         UnitBuf<      T> subBuf (const UnitArea& subArea);
   const UnitBuf<const T> subBuf (const UnitArea& subArea) const;
-#if JVET_Q0820_ACT
   void colorSpaceConvert(const UnitBuf<T> &other, const bool forward, const ClpRng& clpRng);
-#else
-  void colorSpaceConvert(const UnitBuf<T> &other, const bool forward);
-#endif
 };
 
 typedef UnitBuf<      Pel>  PelUnitBuf;
@@ -849,7 +841,6 @@ void UnitBuf<T>::copyClip(const UnitBuf<const T> &src, const ClpRngs &clpRngs, c
 }
 
 
-#if JVET_Q0806
 template<typename T>
 void UnitBuf<T>::roundToOutputBitdepth(const UnitBuf<const T> &src, const ClpRngs& clpRngs)
 {
@@ -860,7 +851,6 @@ void UnitBuf<T>::roundToOutputBitdepth(const UnitBuf<const T> &src, const ClpRng
     bufs[i].roundToOutputBitdepth(src.bufs[i], clpRngs.comp[i]);
   }
 }
-#endif
 
 template<typename T>
 void UnitBuf<T>::reconstruct(const UnitBuf<const T> &pred, const UnitBuf<const T> &resi, const ClpRngs& clpRngs)
@@ -903,21 +893,13 @@ void UnitBuf<T>::addAvg(const UnitBuf<const T> &other1, const UnitBuf<const T> &
 }
 
 template<typename T>
-#if JVET_Q0820_ACT
 void UnitBuf<T>::colorSpaceConvert(const UnitBuf<T> &other, const bool forward, const ClpRng& clpRng)
-#else
-void UnitBuf<T>::colorSpaceConvert(const UnitBuf<T> &other, const bool forward)
-#endif
 {
   THROW("Type not supported");
 }
 
 template<>
-#if JVET_Q0820_ACT
 void UnitBuf<Pel>::colorSpaceConvert(const UnitBuf<Pel> &other, const bool forward, const ClpRng& clpRng);
-#else
-void UnitBuf<Pel>::colorSpaceConvert(const UnitBuf<Pel> &other, const bool forward);
-#endif
 
 template<typename T>
 void UnitBuf<T>::extendSingleBorderPel()

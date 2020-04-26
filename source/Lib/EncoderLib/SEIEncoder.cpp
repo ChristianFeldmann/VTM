@@ -341,14 +341,9 @@ void SEIEncoder::initSEIGcmp(SEIGeneralizedCubemapProjection* seiGeneralizedCube
     seiGeneralizedCubemapProjection->m_gcmpGuardBandFlag                 = m_pcCfg->getGcmpSEIGuardBandFlag();
     if (seiGeneralizedCubemapProjection->m_gcmpGuardBandFlag)
     {
-#if JVET_Q0343_GCMP_GUARD_BAND_TYPE
       seiGeneralizedCubemapProjection->m_gcmpGuardBandType                 = m_pcCfg->getGcmpSEIGuardBandType();
       seiGeneralizedCubemapProjection->m_gcmpGuardBandBoundaryExteriorFlag = m_pcCfg->getGcmpSEIGuardBandBoundaryExteriorFlag();
       seiGeneralizedCubemapProjection->m_gcmpGuardBandSamplesMinus1        = m_pcCfg->getGcmpSEIGuardBandSamplesMinus1();
-#else
-      seiGeneralizedCubemapProjection->m_gcmpGuardBandBoundaryType       = m_pcCfg->getGcmpSEIGuardBandBoundaryType();
-      seiGeneralizedCubemapProjection->m_gcmpGuardBandSamplesMinus1      = m_pcCfg->getGcmpSEIGuardBandSamplesMinus1();
-#endif
     }
   }
 }
@@ -376,7 +371,6 @@ void SEIEncoder::initSEISampleAspectRatioInfo(SEISampleAspectRatioInfo* seiSampl
   }
 }
 
-#if JVET_P0190_SCALABLE_NESTING_SEI
 //! initialize scalable nesting SEI message.
 //! Note: The SEI message structures input into this function will become part of the scalable nesting SEI and will be
 //!       automatically freed, when the nesting SEI is disposed.
@@ -412,7 +406,6 @@ void SEIEncoder::initSEIScalableNesting(SEIScalableNesting *scalableNestingSEI, 
     scalableNestingSEI->m_nestedSEIs.push_back((*it));
   }
 }
-#endif
 
 
 //! calculate hashes for entire reconstructed picture
@@ -621,7 +614,6 @@ void SEIEncoder::initSEIContentColourVolume(SEIContentColourVolume *seiContentCo
 }
 void SEIEncoder::initSEISubpictureLevelInfo(SEISubpicureLevelInfo *sei, const SPS *sps)
 {
-#if JVET_SUBPIC_LEVEL_CFG
   const EncCfgParam::CfgSEISubpictureLevel &cfgSubPicLevel = m_pcCfg->getSubpicureLevelInfoSEICfg();
 
   sei->m_numRefLevels = (int) cfgSubPicLevel.m_refLevels.size();
@@ -641,23 +633,6 @@ void SEIEncoder::initSEISubpictureLevelInfo(SEISubpicureLevelInfo *sei, const SP
       }
     }
   }
-#else
-  // subpicture level information should be specified via config file
-  // unfortunately the implementation of subpictures is still not available
-  // TODO: implement config file parameters and intialization
-  fprintf(stderr, "SEISubpicureLevelInfo depends on subpictures! Initializing to dummy values!\n");
-
-#if !JVET_Q0630_SUBPIC_LEVEL
-  sei->m_sliSeqParameterSetId = sps->getSPSId();
-#else
-  sei->m_numSubpics = sps->getNumSubPics();
-#endif
-  sei->m_numRefLevels = 2;
-  sei->m_refLevelIdc.resize(2);
-  sei->m_refLevelIdc[0] = Level::LEVEL4;
-  sei->m_refLevelIdc[1] = Level::LEVEL8_5;
-  sei->m_explicitFractionPresentFlag = false;
-#endif
 }
 
 

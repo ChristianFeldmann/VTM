@@ -67,17 +67,6 @@ class EncSlice;
 // ====================================================================================================================
 
 /// CU encoder class
-#if !JVET_Q0806
-struct TriangleMotionInfo
-{
-  uint8_t   m_splitDir;
-  uint8_t   m_candIdx0;
-  uint8_t   m_candIdx1;
-
-  TriangleMotionInfo ( uint8_t splitDir, uint8_t candIdx0, uint8_t candIdx1 ): m_splitDir(splitDir), m_candIdx0(candIdx0), m_candIdx1(candIdx1) { }
-  TriangleMotionInfo() { m_splitDir = m_candIdx0 = m_candIdx1 = 0; }
-};
-#else
 struct GeoMergeCombo
 {
   int splitDir;
@@ -156,7 +145,6 @@ public:
   }
   int numGeoTemplatesInitialized;
 };
-#endif
 
 class EncCu
   : DecCu
@@ -203,13 +191,9 @@ private:
   PelStorage            m_acMergeBuffer[MMVD_MRG_MAX_RD_BUF_NUM];
   PelStorage            m_acRealMergeBuffer[MRG_MAX_NUM_CANDS];
   PelStorage            m_acMergeTmpBuffer[MRG_MAX_NUM_CANDS];
-#if !JVET_Q0806
-  PelStorage            m_acTriangleWeightedBuffer[TRIANGLE_MAX_NUM_CANDS]; // to store weighted prediction pixles
-#else
   PelStorage            m_acGeoWeightedBuffer[GEO_MAX_TRY_WEIGHTED_SAD]; // to store weighted prediction pixles
   FastGeoCostList       m_GeoCostList;
   double                m_AFFBestSATDCost;
-#endif
   double                m_mergeBestSATDCost;
   MotionInfo            m_SubPuMiBuf      [( MAX_CU_SIZE * MAX_CU_SIZE ) >> ( MIN_CU_LOG2 << 1 )];
 
@@ -220,12 +204,7 @@ private:
 #endif
   int                   m_bestBcwIdx[2];
   double                m_bestBcwCost[2];
-#if !JVET_Q0806
-  TriangleMotionInfo    m_triangleModeTest[TRIANGLE_MAX_NUM_CANDS];
-  uint8_t               m_triangleIdxBins[2][TRIANGLE_MAX_NUM_UNI_CANDS][TRIANGLE_MAX_NUM_UNI_CANDS];
-#else
   GeoMotionInfo         m_GeoModeTest[GEO_MAX_NUM_CANDS];
-#endif
 #if SHARP_LUMA_DELTA_QP || ENABLE_QPA_SUB_CTU
   void    updateLambda      ( Slice* slice, const int dQP,
  #if WCG_EXT && ER_CHROMA_QP_WCG_PPS
@@ -255,10 +234,8 @@ public:
 
   void   setMergeBestSATDCost(double cost) { m_mergeBestSATDCost = cost; }
   double getMergeBestSATDCost()            { return m_mergeBestSATDCost; }
-#if JVET_Q0806
   void   setAFFBestSATDCost(double cost)   { m_AFFBestSATDCost = cost; }
   double getAFFBestSATDCost()              { return m_AFFBestSATDCost; }
-#endif
   IbcHashMap& getIbcHashMap()              { return m_ibcHashMap;        }
   EncCfg*     getEncCfg()            const { return m_pcEncCfg;          }
 
@@ -284,9 +261,7 @@ protected:
   bool xCheckRDCostIntra(CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode, bool adaptiveColorTrans);
 
   void xCheckDQP              ( CodingStructure& cs, Partitioner& partitioner, bool bKeepCtx = false);
-#if JVET_Q0267_RESET_CHROMA_QP_OFFSET
   void xCheckChromaQPOffset   ( CodingStructure& cs, Partitioner& partitioner);
-#endif
   void xFillPCMBuffer         ( CodingUnit &cu);
 
   void xCheckRDCostHashInter  ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode );
@@ -298,11 +273,7 @@ protected:
 
   void xCheckRDCostMerge2Nx2N ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode );
 
-#if !JVET_Q0806
-  void xCheckRDCostMergeTriangle2Nx2N( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode );
-#else
   void xCheckRDCostMergeGeo2Nx2N(CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode);
-#endif
 
   void xEncodeInterResidual(   CodingStructure *&tempCS
                              , CodingStructure *&bestCS

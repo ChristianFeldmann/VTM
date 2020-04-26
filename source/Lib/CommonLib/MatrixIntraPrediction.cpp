@@ -105,13 +105,8 @@ void MatrixIntraPrediction::prepareInputForPred(const CPelBuf &pSrc, const Area&
   m_inputOffsetTransp = m_reducedBoundaryTransposed[0];
 
   const bool hasFirstCol = (m_sizeId < 2);
-#if JVET_Q0446_MIP_CONST_SHIFT_OFFSET
   m_reducedBoundary          [0] = hasFirstCol ? ((1 << (bitDepth - 1)) - m_inputOffset      ) : 0; // first column of matrix not needed for large blocks
   m_reducedBoundaryTransposed[0] = hasFirstCol ? ((1 << (bitDepth - 1)) - m_inputOffsetTransp) : 0;
-#else
-  m_reducedBoundary          [0] = hasFirstCol ? (m_inputOffset       - (1 << (bitDepth - 1))) : 0; // first column of matrix not needed for large blocks
-  m_reducedBoundaryTransposed[0] = hasFirstCol ? (m_inputOffsetTransp - (1 << (bitDepth - 1))) : 0;
-#endif
   for (int i = 1; i < inputSize; i++)
   {
     m_reducedBoundary          [i] -= m_inputOffset;
@@ -123,22 +118,12 @@ void MatrixIntraPrediction::predBlock(int* const result, const int modeIdx, cons
 {
   const bool needUpsampling = ( m_upsmpFactorHor > 1 ) || ( m_upsmpFactorVer > 1 );
 
-#if JVET_Q0446_MIP_CONST_SHIFT_OFFSET
   const uint8_t* matrix = getMatrixData(modeIdx);
-#else
-  const uint8_t* matrix;
-  int shiftMatrix = 0, offsetMatrix = 0;
-  getMatrixData(matrix, shiftMatrix, offsetMatrix, modeIdx);
-#endif
 
   static_vector<int, MIP_MAX_REDUCED_OUTPUT_SAMPLES> bufReducedPred( m_reducedPredSize * m_reducedPredSize );
   int* const       reducedPred     = needUpsampling ? bufReducedPred.data() : result;
   const int* const reducedBoundary = transpose ? m_reducedBoundaryTransposed.data() : m_reducedBoundary.data();
-#if JVET_Q0446_MIP_CONST_SHIFT_OFFSET
   computeReducedPred(reducedPred, reducedBoundary, matrix, transpose, bitDepth);
-#else
-  computeReducedPred( reducedPred, reducedBoundary, matrix, shiftMatrix, offsetMatrix, transpose, bitDepth );
-#endif
   if( needUpsampling )
   {
     predictionUpsampling( result, reducedPred );
@@ -275,47 +260,22 @@ void MatrixIntraPrediction::predictionUpsampling( int* const dst, const int* con
   }
 }
 
-#if JVET_Q0446_MIP_CONST_SHIFT_OFFSET
 const uint8_t* MatrixIntraPrediction::getMatrixData(const int modeIdx) const
-#else
-void MatrixIntraPrediction::getMatrixData(const uint8_t*& matrix, int &shiftMatrix, int &offsetMatrix, const int modeIdx) const
-#endif
 {
   switch( m_sizeId )
   {
-#if JVET_Q0446_MIP_CONST_SHIFT_OFFSET
   case 0: return &mipMatrix4x4[modeIdx][0][0];
 
   case 1: return &mipMatrix8x8[modeIdx][0][0];
 
   case 2: return &mipMatrix16x16[modeIdx][0][0];
-#else
-  case 0: matrix       = &mipMatrix4x4      [modeIdx][0][0];
-          shiftMatrix  =  mipShiftMatrix4x4 [modeIdx];
-          offsetMatrix =  mipOffsetMatrix4x4[modeIdx];
-          break;
-
-  case 1: matrix       = &mipMatrix8x8      [modeIdx][0][0];
-          shiftMatrix  =  mipShiftMatrix8x8 [modeIdx];
-          offsetMatrix =  mipOffsetMatrix8x8[modeIdx];
-          break;
-
-  case 2: matrix       = &mipMatrix16x16      [modeIdx][0][0];
-          shiftMatrix  =  mipShiftMatrix16x16 [modeIdx];
-          offsetMatrix =  mipOffsetMatrix16x16[modeIdx];
-          break;
-#endif
 
   default: THROW( "Invalid mipSizeId" );
   }
 }
 
 void MatrixIntraPrediction::computeReducedPred( int*const result, const int* const input, 
-#if JVET_Q0446_MIP_CONST_SHIFT_OFFSET
                                                 const uint8_t* matrix,
-#else
-                                                const uint8_t*matrix, const int shiftMatrix, const int offsetMatrix,
-#endif
                                                 const bool transpose, const int bitDepth )
 {
   const int inputSize = 2 * m_reducedBdrySize;
@@ -326,11 +286,7 @@ void MatrixIntraPrediction::computeReducedPred( int*const result, const int* con
 
   int sum = 0;
   for( int i = 0; i < inputSize; i++ ) { sum += input[i]; }
-#if JVET_Q0446_MIP_CONST_SHIFT_OFFSET
   const int offset = (1 << (MIP_SHIFT_MATRIX - 1)) - MIP_OFFSET_MATRIX * sum;
-#else
-  const int offset = (1 << (shiftMatrix - 1)) - offsetMatrix * sum;
-#endif
   CHECK( inputSize != 4 * (inputSize >> 2), "Error, input size not divisible by four" );
 
   const uint8_t *weight = matrix;
@@ -354,11 +310,7 @@ void MatrixIntraPrediction::computeReducedPred( int*const result, const int* con
         tmp2 += input[i + 2] * weight[i + 2];
         tmp3 += input[i + 3] * weight[i + 3];
       }
-#if JVET_Q0446_MIP_CONST_SHIFT_OFFSET
       resPtr[posRes++] = ClipBD<int>(((tmp0 + tmp1 + tmp2 + tmp3 + offset) >> MIP_SHIFT_MATRIX) + inputOffset, bitDepth);
-#else
-      resPtr[posRes++] = ClipBD<int>( ((tmp0 + tmp1 + tmp2 + tmp3 + offset) >> shiftMatrix) + inputOffset, bitDepth );
-#endif
 
       weight += inputSize;
     }

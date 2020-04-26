@@ -73,10 +73,8 @@ private:
   GeneralHrdParams        m_prevGeneralHrdParams;
 
   NalUnitType             m_associatedIRAPType; ///< NAL unit type of the associated IRAP picture
-#if JVET_P0978_RPL_RESTRICTIONS
   int                     m_associatedIRAPDecodingOrderNumber; ///< Decoding order number of the associated IRAP picture
   int                     m_decodingOrderCounter;
-#endif
   int                     m_pocCRA;            ///< POC number of the latest CRA picture
   int                     m_pocRandomAccess;   ///< POC number of the random access point (the first IDR or CRA picture)
   int                     m_lastRasPoc;
@@ -117,11 +115,7 @@ private:
   int                     m_prevPOC;
   int                     m_prevTid0POC;
   bool                    m_bFirstSliceInPicture;
-#if JVET_P0125_EOS_LAYER_SPECIFIC
   bool                    m_firstSliceInSequence[MAX_VPS_LAYERS];
-#else
-  bool                    m_bFirstSliceInSequence;
-#endif
   bool                    m_firstSliceInBitstream;
   bool                    m_prevSliceSkipped;
   int                     m_skippedPOC;
@@ -141,7 +135,6 @@ private:
   int                     m_debugCTU;
 
   std::vector<std::pair<NalUnitType, int>> m_accessUnitNals;
-  #if JVET_P0101_POC_MULTILAYER
   struct AccessUnitPicInfo
   {
     NalUnitType     m_nalUnitType; ///< nal_unit_type
@@ -150,8 +143,6 @@ private:
     int             m_POC;
   };
   std::vector<AccessUnitPicInfo> m_accessUnitPicInfo;
-  #endif
-#if JVET_P0124_MIXED_NALU
   struct NalUnitInfo
   {
     NalUnitType     m_nalUnitType; ///< nal_unit_type
@@ -160,34 +151,19 @@ private:
     int             m_POC;             /// the picture order 
   };
   std::vector<NalUnitInfo> m_nalUnitInfo[MAX_VPS_LAYERS];
-#endif 
   std::vector<int> m_accessUnitApsNals;
-#if JVET_P0125_ASPECT_TID_LAYER_ID_NUH
   std::vector<int> m_accessUnitSeiTids;
-#endif
 
-#if JVET_P0125_SEI_CONSTRAINTS
   // NAL unit type, layer ID, and SEI payloadType
   std::vector<std::tuple<NalUnitType, int, SEI::PayloadType>> m_accessUnitSeiPayLoadTypes;
-#endif
   VPS*                    m_vps;
-#if !JVET_Q0346_SCALING_LIST_USED_IN_SH
-  bool                    m_scalingListUpdateFlag;
-  int                     m_PreScalingListAPSId;
-#endif
-#if JVET_Q0044_SLICE_IDX_WITH_SUBPICS
   int                     m_maxDecSubPicIdx;
   int                     m_maxDecSliceAddrInSubPic;
-#endif
 
-#if JVET_O1143_SUBPIC_BOUNDARY
 public:
   int                     m_targetSubPicIdx;
-#endif
 
-#if JVET_Q0117_PARAMETER_SETS_CLEANUP
   DCI*                    m_dci;
-#endif
 public:
   DecLib();
   virtual ~DecLib();
@@ -202,11 +178,7 @@ public:
     const std::string& cacheCfgFileName
 #endif
   );
-#if JVET_P0288_PIC_OUTPUT
   bool  decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay, int iTargetOlsIdx);
-#else
-  bool  decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay);
-#endif
   void  deletePicBuffer();
 
   void  executeLoopFilters();
@@ -214,22 +186,15 @@ public:
   void  finishPictureLight(int& poc, PicList*& rpcListPic );
   void  checkNoOutputPriorPics (PicList* rpcListPic);
   void  checkNalUnitConstraints( uint32_t naluType );
-#if JVET_P0978_RPL_RESTRICTIONS
   void updateAssociatedIRAP();
-#endif
 
 
   bool  getNoOutputPriorPicsFlag () const   { return m_isNoOutputPriorPics; }
   void  setNoOutputPriorPicsFlag (bool val) { m_isNoOutputPriorPics = val; }
   void  setFirstSliceInPicture (bool val)  { m_bFirstSliceInPicture = val; }
   bool  getFirstSliceInPicture () const  { return m_bFirstSliceInPicture; }
-#if JVET_P0125_EOS_LAYER_SPECIFIC
   bool  getFirstSliceInSequence(int layerId) const { return m_firstSliceInSequence[layerId]; }
   void  setFirstSliceInSequence(bool val, int layerId) { m_firstSliceInSequence[layerId] = val; }
-#else
-  bool  getFirstSliceInSequence () const   { return m_bFirstSliceInSequence; }
-  void  setFirstSliceInSequence (bool val) { m_bFirstSliceInSequence = val; }
-#endif
   void  setDecodedSEIMessageOutputStream(std::ostream *pOpStream) { m_pDecodedSEIOutputStream = pOpStream; }
   uint32_t  getNumberOfChecksumErrorsDetected() const { return m_numberOfChecksumErrorsDetected; }
 
@@ -238,35 +203,21 @@ public:
   int  getDebugPOC( )               const { return m_debugPOC; };
   void setDebugPOC( int debugPOC )        { m_debugPOC = debugPOC; };
   void resetAccessUnitNals()              { m_accessUnitNals.clear();    }
-#if JVET_P0101_POC_MULTILAYER
   void resetAccessUnitPicInfo()              { m_accessUnitPicInfo.clear();    }
-#endif
   void resetAccessUnitApsNals()           { m_accessUnitApsNals.clear(); }
-#if JVET_P0125_ASPECT_TID_LAYER_ID_NUH
   void resetAccessUnitSeiTids()           { m_accessUnitSeiTids.clear(); }
   void checkTidLayerIdInAccessUnit();
-#endif
-#if JVET_P0125_SEI_CONSTRAINTS
   void resetAccessUnitSeiPayLoadTypes()   { m_accessUnitSeiPayLoadTypes.clear(); }
   void checkSEIInAccessUnit();
-#endif
   bool isSliceNaluFirstInAU( bool newPicture, InputNALUnit &nalu );
 
   const VPS* getVPS()                     { return m_vps; }
-#if JVET_Q0814_DPB
   void deriveTargetOutputLayerSet( const int targetOlsIdx ) { if( m_vps != nullptr ) m_vps->deriveTargetOutputLayerSet( targetOlsIdx ); }
-#endif
 
   void  initScalingList()
   {
     m_cTrQuantScalingList.init(nullptr, MAX_TB_SIZEY, false, false, false, false);
   }
-#if !JVET_Q0346_SCALING_LIST_USED_IN_SH
-  bool  getScalingListUpdateFlag() { return m_scalingListUpdateFlag; }
-  void  setScalingListUpdateFlag(bool b) { m_scalingListUpdateFlag = b; }
-  int   getPreScalingListAPSId() { return m_PreScalingListAPSId; }
-  void  setPreScalingListAPSId(int id) { m_PreScalingListAPSId = id; }
-#endif
 
 protected:
   void  xUpdateRasInit(Slice* slice);
@@ -279,11 +230,7 @@ protected:
   void      xDecodePicHeader( InputNALUnit& nalu );
   bool      xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDisplay);
   void      xDecodeVPS( InputNALUnit& nalu );
-#if JVET_Q0117_PARAMETER_SETS_CLEANUP
   void      xDecodeDCI( InputNALUnit& nalu );
-#else
-  void      xDecodeDPS( InputNALUnit& nalu );
-#endif
   void      xDecodeSPS( InputNALUnit& nalu );
   void      xDecodePPS( InputNALUnit& nalu );
   void      xDecodeAPS(InputNALUnit& nalu);
@@ -292,9 +239,7 @@ protected:
   void      xParsePrefixSEIsForUnknownVCLNal();
 
   void  xCheckNalUnitConstraintFlags( const ConstraintInfo *cInfo, uint32_t naluType );
-#if JVET_P0124_MIXED_NALU
   void     xCheckMixedNalUnit(Slice* pcSlice, SPS *sps, InputNALUnit &nalu);
-#endif
 };// END CLASS DEFINITION DecLib
 
 

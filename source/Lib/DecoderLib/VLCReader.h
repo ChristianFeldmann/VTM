@@ -157,11 +157,7 @@ protected:
 public:
   void  setBitstream        ( InputBitstream* p )   { m_pcBitstream = p; }
   void  parseVPS            ( VPS* pcVPS );
-#if JVET_Q0117_PARAMETER_SETS_CLEANUP
   void  parseDCI            ( DCI* dci );
-#else
-  void  parseDPS            ( DPS* dps );
-#endif
   void  parseSPS            ( SPS* pcSPS );
   void  parsePPS            ( PPS* pcPPS );
   void  parseAPS            ( APS* pcAPS );
@@ -170,58 +166,27 @@ public:
   void  parseScalingListAps ( APS* pcAPS );
   void  parseVUI            ( VUI* pcVUI, SPS* pcSPS );
   void  parseConstraintInfo   (ConstraintInfo *cinfo);
-#if JVET_Q0786_PTL_only
   void  parseProfileTierLevel(ProfileTierLevel *ptl, bool profileTierPresentFlag, int maxNumSubLayersMinus1);
-#else
-  void  parseProfileTierLevel ( ProfileTierLevel *ptl, int maxNumSubLayersMinus1);
-#endif
-#if JVET_P0118_HRD_ASPECTS
   void  parseOlsHrdParameters(GeneralHrdParams* generalHrd, OlsHrdParams *olsHrd, uint32_t firstSubLayer, uint32_t tempLevelHigh);
-#else
-  void  parseHrdParameters  ( HRDParameters *hrd, uint32_t firstSubLayer, uint32_t tempLevelHigh );
-#endif
-#if JVET_P0118_HRD_ASPECTS
   void parseGeneralHrdParameters(GeneralHrdParams *generalHrd);
-#endif
-#if JVET_Q0775_PH_IN_SH
   void  parsePictureHeader  ( PicHeader* picHeader, ParameterSetManager *parameterSetManager, bool readRbspTrailingBits );
-#else
-  void  parsePictureHeader  ( PicHeader* picHeader, ParameterSetManager *parameterSetManager );
-#endif
-#if JVET_Q0358_ALF_NALU_TID_CONSTRAINT
   void  checkAlfNaluTidAndPicTid(Slice* pcSlice, PicHeader* picHeader, ParameterSetManager *parameterSetManager);
-#endif
   void  parseSliceHeader    ( Slice* pcSlice, PicHeader* picHeader, ParameterSetManager *parameterSetManager, const int prevTid0POC );
-#if JVET_Q0819_PH_CHANGES
   void  getSlicePoc ( Slice* pcSlice, PicHeader* picHeader, ParameterSetManager *parameterSetManager, const int prevTid0POC );
-#else
-  void  parseSliceHeaderToPoc ( Slice* pcSlice, PicHeader* picHeader, ParameterSetManager *parameterSetManager, const int prevTid0POC );
-#endif
   void  parseTerminatingBit ( uint32_t& ruiBit );
   void  parseRemainingBytes ( bool noTrailingBytesExpected );
 
   void  parsePredWeightTable( Slice* pcSlice, const SPS *sps );
-#if JVET_Q0819_PH_CHANGES
   void parsePredWeightTable ( PicHeader *picHeader, const SPS *sps );
-#endif
   void  parseScalingList    ( ScalingList* scalingList );
   void  decodeScalingList   ( ScalingList *scalingList, uint32_t scalingListId, bool isPredictor);
   void parseReshaper        ( SliceReshapeInfo& sliceReshaperInfo, const SPS* pcSPS, const bool isIntra );
   void alfFilter( AlfParam& alfParam, const bool isChroma, const int altIdx );
-#if JVET_Q0795_CCALF
   void ccAlfFilter( Slice *pcSlice );
-#endif
-#if JVET_P0117_PTL_SCALABILITY
   void dpb_parameters(int maxSubLayersMinus1, bool subLayerInfoFlag, SPS *pcSPS);
-#endif
-#if JVET_Q0400_EXTRA_BITS
   void parseExtraPHBitsStruct( SPS *sps, int numBytes );
   void parseExtraSHBitsStruct( SPS *sps, int numBytes );
-#endif
 private:
-#if !JVET_Q0210_UEK_REMOVAL
-  int  alfGolombDecode( const int k, const bool signed_val=true );
-#endif
 
 protected:
   bool  xMoreRbspData();

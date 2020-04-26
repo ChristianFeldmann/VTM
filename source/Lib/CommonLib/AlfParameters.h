@@ -48,16 +48,12 @@ enum AlfFilterType
 {
   ALF_FILTER_5,
   ALF_FILTER_7,
-#if JVET_Q0795_CCALF
   CC_ALF,
-#endif
   ALF_NUM_OF_FILTER_TYPES
 };
 
 
-#if JVET_Q0795_CCALF
 static const int size_CC_ALF = -1;
-#endif
 
 struct AlfFilterShape
 {
@@ -105,7 +101,6 @@ struct AlfFilterShape
 
       filterType = ALF_FILTER_7;
     }
-#if JVET_Q0795_CCALF
     else if (size == size_CC_ALF)
     {
       size = 4;
@@ -114,7 +109,6 @@ struct AlfFilterShape
       filterSize = 8;
       filterType   = CC_ALF;
     }
-#endif
     else
     {
       filterType = ALF_NUM_OF_FILTER_TYPES;
@@ -133,11 +127,7 @@ struct AlfFilterShape
 struct AlfParam
 {
   bool                         enabledFlag[MAX_NUM_COMPONENT];                          // alf_slice_enable_flag, alf_chroma_idc
-#if JVET_Q0249_ALF_CHROMA_CLIPFLAG
   bool                         nonLinearFlag[MAX_NUM_CHANNEL_TYPE];                     // alf_[luma/chroma]_clip_flag
-#else
-  bool                         nonLinearFlag[MAX_NUM_CHANNEL_TYPE][MAX_NUM_ALF_ALTERNATIVES_CHROMA]; // alf_[luma/chroma]_clip_flag
-#endif
   short                        lumaCoeff[MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF]; // alf_coeff_luma_delta[i][j]
   short                        lumaClipp[MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF]; // alf_clipp_luma_[i][j]
   int                          numAlternativesChroma;                                                  // alf_chroma_num_alts_minus_one + 1
@@ -249,7 +239,6 @@ struct AlfParam
   }
 };
 
-#if JVET_Q0795_CCALF
 struct CcAlfFilterParam
 {
   bool    ccAlfFilterEnabled[2];
@@ -285,7 +274,6 @@ struct CcAlfFilterParam
     return *this;
   }
 };
-#endif
 //! \}
 
 #endif  // end of #ifndef  __ALFPARAMETERS__

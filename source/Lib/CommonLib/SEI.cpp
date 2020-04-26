@@ -156,9 +156,7 @@ const char *SEI::getSEIMessageString(SEI::PayloadType payloadType)
     case SEI::FILM_GRAIN_CHARACTERISTICS:           return "Film grain characteristics";           // not currently decoded
     case SEI::FRAME_PACKING:                        return "Frame packing arrangement";
     case SEI::DECODING_UNIT_INFO:                   return "Decoding unit information";
-#if JVET_P0190_SCALABLE_NESTING_SEI
     case SEI::SCALABLE_NESTING:                     return "Scalable nesting";
-#endif
     case SEI::DECODED_PICTURE_HASH:                 return "Decoded picture hash";
     case SEI::DEPENDENT_RAP_INDICATION:             return "Dependent RAP indication";
     case SEI::MASTERING_DISPLAY_COLOUR_VOLUME:      return "Mastering display colour volume";

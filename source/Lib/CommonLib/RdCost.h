@@ -72,12 +72,10 @@ public:
 #if WCG_EXT
   CPelBuf               orgLuma;
 #endif
-#if JVET_Q0806
   const Pel*            mask;
   int                   maskStride;
   int                   stepX;
   int                   maskStride2;
-#endif
   int                   step;
   FpDistFunc            distFunc;
   int                   bitDepth;
@@ -97,12 +95,10 @@ public:
   int                   cShiftY;
   DistParam() :
   org(), cur(), 
-#if JVET_Q0806
   mask( nullptr ),
   maskStride( 0 ),
   stepX(0),
   maskStride2(0),
-#endif
   step( 1 ), bitDepth( 0 ), useMR( false ), applyWeight( false ), isBiPred( false ), wpCur( nullptr ), compID( MAX_NUM_COMPONENT ), maximumDistortionForEarlyExit( std::numeric_limits<Distortion>::max() ), subShift( 0 )
   , cShiftX(-1), cShiftY(-1)
   { }
@@ -180,9 +176,7 @@ public:
   void           setDistParam( DistParam &rcDP, const CPelBuf &org, const Pel* piRefY , int iRefStride, int bitDepth, ComponentID compID, int subShiftMode = 0, int step = 1, bool useHadamard = false );
   void           setDistParam( DistParam &rcDP, const CPelBuf &org, const CPelBuf &cur, int bitDepth, ComponentID compID, bool useHadamard = false );
   void           setDistParam( DistParam &rcDP, const Pel* pOrg, const Pel* piRefY, int iOrgStride, int iRefStride, int bitDepth, ComponentID compID, int width, int height, int subShiftMode = 0, int step = 1, bool useHadamard = false, bool bioApplied = false );
-#if JVET_Q0806
   void           setDistParam( DistParam &rcDP, const CPelBuf &org, const Pel* piRefY, int iRefStride, const Pel* mask, int iMaskStride, int stepX, int iMaskStride2, int bitDepth,  ComponentID compID);
-#endif
 
   double         getMotionLambda          ( )  { return m_dLambdaMotionSAD; }
   void           selectMotionLambda       ( )  { m_motionLambda = getMotionLambda( ); }
@@ -367,9 +361,7 @@ private:
   static Distortion xGetSAD48         ( const DistParam& pcDtParam );
 
   static Distortion xGetSAD_full      ( const DistParam& pcDtParam );
-#if JVET_Q0806
   static Distortion xGetSADwMask      ( const DistParam& pcDtParam );
-#endif
 
   static Distortion xGetMRSAD         ( const DistParam& pcDtParam );
   static Distortion xGetMRSAD4        ( const DistParam& pcDtParam );
@@ -409,10 +401,8 @@ private:
   template<X86_VEXT vext>
   static Distortion xGetHADs_SIMD   ( const DistParam& pcDtParam );
 
-#if JVET_Q0806
   template< X86_VEXT vext >
   static Distortion xGetSADwMask_SIMD( const DistParam& pcDtParam );
-#endif
 #endif
 
 public:
@@ -423,9 +413,7 @@ public:
   Distortion   getDistPart( const CPelBuf &org, const CPelBuf &cur, int bitDepth, const ComponentID compID, DFunc eDFunc );
 #endif
 
-#if JVET_Q0806
   Distortion   getDistPart(const CPelBuf &org, const CPelBuf &cur, const Pel* mask, int bitDepth, const ComponentID compID, DFunc eDFunc);
-#endif
 };// END CLASS DEFINITION RdCost
 
 //! \}

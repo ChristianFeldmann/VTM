@@ -1624,13 +1624,6 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_UVLC(uiCode, "sps_log2_diff_min_qt_min_cb_intra_slice_luma");
   unsigned minQtLog2SizeIntraY = uiCode + pcSPS->getLog2MinCodingBlockSize();
   minQT[0] = 1 << minQtLog2SizeIntraY;
-#if !JVET_Q0481_PARTITION_CONSTRAINTS_ORDER
-  READ_UVLC(uiCode, "sps_log2_diff_min_qt_min_cb_inter_slice");
-  unsigned minQtLog2SizeInterY = uiCode + pcSPS->getLog2MinCodingBlockSize();
-  minQT[1] = 1 << minQtLog2SizeInterY;
-  READ_UVLC(uiCode, "sps_max_mtt_hierarchy_depth_inter_slice");     maxBTD[1] = uiCode;
-  CHECK(uiCode > 2*(ctbLog2SizeY - log2MinCUSize), "sps_max_mtt_hierarchy_depth_inter_slice shall be in the range 0 to 2*(ctbLog2SizeY - log2MinCUSize)");
-#endif
   READ_UVLC(uiCode, "sps_max_mtt_hierarchy_depth_intra_slice_luma");     maxBTD[0] = uiCode;
   CHECK(uiCode > 2 * (ctbLog2SizeY - log2MinCUSize), "sps_max_mtt_hierarchy_depth_intra_slice_luma shall be in the range 0 to 2*(ctbLog2SizeY - log2MinCUSize)");
 
@@ -1642,13 +1635,11 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     READ_UVLC(uiCode, "sps_log2_diff_max_tt_min_qt_intra_slice_luma");     maxTTSize[0] <<= uiCode;
     CHECK(uiCode > ctbLog2SizeY - minQtLog2SizeIntraY, "Invalid code");
   }
-#if JVET_Q0481_PARTITION_CONSTRAINTS_ORDER
   READ_UVLC(uiCode, "sps_log2_diff_min_qt_min_cb_inter_slice");
   unsigned minQtLog2SizeInterY = uiCode + pcSPS->getLog2MinCodingBlockSize();
   minQT[1] = 1 << minQtLog2SizeInterY;
   READ_UVLC(uiCode, "sps_max_mtt_hierarchy_depth_inter_slice");     maxBTD[1] = uiCode;
   CHECK(uiCode > 2*(ctbLog2SizeY - log2MinCUSize), "sps_max_mtt_hierarchy_depth_inter_slice shall be in the range 0 to 2*(ctbLog2SizeY - log2MinCUSize)");
-#endif
   maxTTSize[1] = maxBTSize[1] = minQT[1];
   if (maxBTD[1] != 0)
   {

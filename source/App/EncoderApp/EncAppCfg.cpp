@@ -1116,9 +1116,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("Log2ParallelMergeLevel",                          m_log2ParallelMergeLevel,                            2u, "Parallel merge estimation region")
 #endif
   ("WaveFrontSynchro",                                m_entropyCodingSyncEnabledFlag,                   false, "0: entropy coding sync disabled; 1 entropy coding sync enabled")
-#if JVET_Q0151_Q0205_ENTRYPOINTS
   ("WaveFrontEntryPointsPresent",                     m_entropyCodingSyncEntryPointPresentFlag,         false, "0: entry points for WPP is not present; 1 entry points for WPP may be present in slice header")
-#endif
   ("ScalingList",                                     m_useScalingListId,                    SCALING_LIST_OFF, "0/off: no scaling list, 1/default: default scaling lists, 2/file: scaling lists specified in ScalingListFile")
   ("ScalingListFile",                                 m_scalingListFileName,                       string(""), "Scaling list file name. Use an empty string to produce help.")
   ("DisableScalingMatrixForLFNST",                    m_disableScalingMatrixForLfnstBlks,                true, "Disable scaling matrices, when enabled, for LFNST-coded blocks")
@@ -1711,12 +1709,10 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     m_outputBitDepth     [CHANNEL_TYPE_CHROMA] = m_outputBitDepth     [CHANNEL_TYPE_LUMA  ];
   }
 
-#if JVET_Q0151_Q0205_ENTRYPOINTS
   if( !m_entropyCodingSyncEnabledFlag ) 
   {
     m_entropyCodingSyncEntryPointPresentFlag = false;
   }
-#endif
 
   m_InputChromaFormatIDC = numberToChromaFormat(tmpInputChromaFormat);
   m_chromaFormatIDC      = ((tmpChromaFormat == 0) ? (m_InputChromaFormatIDC) : (numberToChromaFormat(tmpChromaFormat)));

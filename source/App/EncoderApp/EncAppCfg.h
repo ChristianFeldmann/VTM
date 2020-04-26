@@ -469,9 +469,7 @@ protected:
   uint32_t  m_numTileRows;                                    ///< derived number of tile rows
   bool      m_singleSlicePerSubPicFlag;
   bool      m_entropyCodingSyncEnabledFlag;
-#if JVET_Q0151_Q0205_ENTRYPOINTS
   bool      m_entropyCodingSyncEntryPointPresentFlag;         ///< flag for the presence of entry points for WPP
-#endif
 
   bool      m_bFastUDIUseMPMEnabled;
   bool      m_bFastMEForGenBLowDelayEnabled;

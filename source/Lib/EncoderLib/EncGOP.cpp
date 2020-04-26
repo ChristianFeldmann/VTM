@@ -2635,11 +2635,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     // Allocate some coders, now the number of tiles are known.
     const uint32_t numberOfCtusInFrame = pcPic->cs->pcv->sizeInCtus;
     const int numSubstreamsColumns = pcSlice->getPPS()->getNumTileColumns();
-#if JVET_Q0151_Q0205_ENTRYPOINTS
     const int numSubstreamRows     = pcSlice->getSPS()->getEntropyCodingSyncEnabledFlag() ? pcPic->cs->pcv->heightInCtus : (pcSlice->getPPS()->getNumTileRows());
-#else
-    const int numSubstreamRows     = pcSlice->getPPS()->getEntropyCodingSyncEnabledFlag() ? pcPic->cs->pcv->heightInCtus : (pcSlice->getPPS()->getNumTileRows());
-#endif
     const int numSubstreams        = std::max<int> (numSubstreamRows * numSubstreamsColumns, (int) pcPic->cs->pps->getNumSlicesInPic());
     std::vector<OutputBitstream> substreamsOut(numSubstreams);
 
@@ -3222,10 +3218,8 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
         pcSlice->setFinalized(true);
 
-#if JVET_Q0151_Q0205_ENTRYPOINTS
         pcSlice->resetNumberOfSubstream( );
         pcSlice->setNumSubstream( pcSlice->getSPS(), pcSlice->getPPS() );
-#endif
         pcSlice->clearSubstreamSizes(  );
         {
           uint32_t numBinsCoded = 0;
@@ -3241,11 +3235,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
           // Append substreams...
           OutputBitstream *pcOut = pcBitstreamRedirect;
-#if JVET_Q0151_Q0205_ENTRYPOINTS
           const int numSubstreamsToCode = pcSlice->getNumberOfSubstream() + 1;
-#else
-          const int numSubstreamsToCode  = pcSlice->getNumberOfSubstreamSizes()+1;
-#endif
 
           for ( uint32_t ui = 0 ; ui < numSubstreamsToCode; ui++ )
           {

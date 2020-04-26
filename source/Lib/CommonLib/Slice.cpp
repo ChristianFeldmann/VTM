@@ -250,7 +250,6 @@ void Slice::inheritFromPicHeader( PicHeader *picHeader, const PPS *pps, const SP
 #endif
 }
 
-#if JVET_Q0151_Q0205_ENTRYPOINTS
 void Slice::setNumSubstream(const SPS* sps, const PPS* pps) 
 {
   uint32_t ctuAddr, ctuX, ctuY;
@@ -272,14 +271,9 @@ void Slice::setNumSubstream(const SPS* sps, const PPS* pps)
 }
 
 void Slice::setNumEntryPoints(const SPS *sps, const PPS *pps)
-#else
-void  Slice::setNumEntryPoints( const PPS *pps ) 
-#endif
 {
   uint32_t ctuAddr, ctuX, ctuY;
-#if JVET_Q0151_Q0205_ENTRYPOINTS
   uint32_t prevCtuAddr, prevCtuX, prevCtuY;
-#endif
   m_numEntryPoints = 0;
 
   // count the number of CTUs that align with either the start of a tile, or with an entropy coding sync point
@@ -289,15 +283,11 @@ void  Slice::setNumEntryPoints( const PPS *pps )
     ctuAddr = m_sliceMap.getCtuAddrInSlice( i );
     ctuX = ( ctuAddr % pps->getPicWidthInCtu() );
     ctuY = ( ctuAddr / pps->getPicWidthInCtu() );
-#if JVET_Q0151_Q0205_ENTRYPOINTS
     prevCtuAddr = m_sliceMap.getCtuAddrInSlice(i - 1);
     prevCtuX    = (prevCtuAddr % pps->getPicWidthInCtu());
     prevCtuY    = (prevCtuAddr / pps->getPicWidthInCtu());
 
     if (pps->ctuToTileRowBd(ctuY) != pps->ctuToTileRowBd(prevCtuY) || pps->ctuToTileColBd(ctuX) != pps->ctuToTileColBd(prevCtuX) || (ctuY != prevCtuY && sps->getEntropyCodingSyncEntryPointsPresentFlag()))
-#else
-    if( pps->ctuIsTileColBd( ctuX ) && (pps->ctuIsTileRowBd( ctuY ) || pps->getEntropyCodingSyncEnabledFlag() ) ) 
-#endif
     {
       m_numEntryPoints++;
     }
@@ -2422,10 +2412,8 @@ SPS::SPS()
 , m_log2MaxTransformSkipBlockSize (2)
 , m_BDPCMEnabledFlag          (false)
 , m_JointCbCrEnabledFlag      (false)
-#if JVET_Q0151_Q0205_ENTRYPOINTS
 , m_entropyCodingSyncEnabledFlag(false)
 , m_entropyCodingSyncEntryPointPresentFlag(false)
-#endif
 , m_sbtmvpEnabledFlag         (false)
 , m_bdofEnabledFlag           (false)
 , m_fpelMmvdEnabledFlag       ( false )
@@ -2683,9 +2671,6 @@ PPS::PPS()
 , m_tileIdxDeltaPresentFlag          (0)
 , m_loopFilterAcrossTilesEnabledFlag (1)
 , m_loopFilterAcrossSlicesEnabledFlag(0)
-#if !JVET_Q0151_Q0205_ENTRYPOINTS
-, m_entropyCodingSyncEnabledFlag     (false)
-#endif
 , m_cabacInitPresentFlag             (false)
 , m_pictureHeaderExtensionPresentFlag(0)
 , m_sliceHeaderExtensionPresentFlag  (false)

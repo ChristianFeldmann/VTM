@@ -499,9 +499,7 @@ protected:
   //====== Sub-picture and Slices ========
   bool      m_singleSlicePerSubPicFlag;
   bool      m_entropyCodingSyncEnabledFlag;
-#if JVET_Q0151_Q0205_ENTRYPOINTS
   bool      m_entropyCodingSyncEntryPointPresentFlag;          ///< flag for the presence of entry points for WPP
-#endif
 
 
   HashType  m_decodedPictureHashSEIType;
@@ -1440,9 +1438,7 @@ public:
   bool  getSaoGreedyMergeEnc           ()                            { return m_saoGreedyMergeEnc; }
   void  setEntropyCodingSyncEnabledFlag(bool b)                      { m_entropyCodingSyncEnabledFlag = b; }
   bool  getEntropyCodingSyncEnabledFlag() const                      { return m_entropyCodingSyncEnabledFlag; }
-#if JVET_Q0151_Q0205_ENTRYPOINTS
   void  setEntropyCodingSyncEntryPointPresentFlag(bool b)            { m_entropyCodingSyncEntryPointPresentFlag = b; }
-#endif
   void  setDecodedPictureHashSEIType(HashType m)                     { m_decodedPictureHashSEIType = m; }
   HashType getDecodedPictureHashSEIType() const                      { return m_decodedPictureHashSEIType; }
   void  setBufferingPeriodSEIEnabled(bool b)                         { m_bufferingPeriodSEIEnabled = b; }

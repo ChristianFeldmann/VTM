@@ -1254,10 +1254,8 @@ void EncLib::xInitSPS( SPS& sps )
     sps.setMinQpPrimeTsMinus4(ChannelType(channelType), max(0, 6 * (m_bitDepth[channelType] - m_inputBitDepth[channelType])));
   }
 
-#if JVET_Q0151_Q0205_ENTRYPOINTS
   sps.setEntropyCodingSyncEnabledFlag( m_entropyCodingSyncEnabledFlag );
   sps.setEntropyCodingSyncEntryPointsPresentFlag( m_entropyCodingSyncEntryPointPresentFlag );
-#endif
 
   sps.setUseWP( m_useWeightedPred );
   sps.setUseWPBiPred( m_useWeightedBiPred );
@@ -1575,9 +1573,6 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
     pps.setSliceChromaQpFlag(m_chromaCbQpOffsetDualTree != 0 || m_chromaCrQpOffsetDualTree != 0 || m_chromaCbCrQpOffsetDualTree != 0);
   }
 
-#if !JVET_Q0151_Q0205_ENTRYPOINTS
-  pps.setEntropyCodingSyncEnabledFlag(m_entropyCodingSyncEnabledFlag);
-#endif
 
   pps.setNoPicPartitionFlag( m_noPicPartitionFlag );
   if( m_noPicPartitionFlag == false )

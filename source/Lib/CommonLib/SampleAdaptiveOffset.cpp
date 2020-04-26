@@ -727,7 +727,6 @@ void SampleAdaptiveOffset::deriveLoopFilterBoundaryAvailibility(CodingStructure&
     isBelowRightAvail = (!isBelowRightAvail) ? false : CU::isSameTile(*cuCurr, *cuBelowRight);
   }
 
-#if JVET_O1143_LPF_ACROSS_SUBPIC_BOUNDARY
   // check cross subpic flags
   const SubPic& curSubPic = cs.pps->getSubPicFromCU(*cuCurr);
   if (!curSubPic.getloopFilterAcrossEnabledFlag())
@@ -741,7 +740,6 @@ void SampleAdaptiveOffset::deriveLoopFilterBoundaryAvailibility(CodingStructure&
     isBelowLeftAvail  = (!isBelowLeftAvail)  ? false : CU::isSameSubPic(*cuCurr, *cuBelowLeft);
     isBelowRightAvail = (!isBelowRightAvail) ? false : CU::isSameSubPic(*cuCurr, *cuBelowRight);
   }
-#endif
 }
 
 bool SampleAdaptiveOffset::isCrossedByVirtualBoundaries(const int xPos, const int yPos, const int width, const int height, int& numHorVirBndry, int& numVerVirBndry, int horVirBndryPos[], int verVirBndryPos[], const PicHeader* picHeader )

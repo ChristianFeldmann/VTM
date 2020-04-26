@@ -141,7 +141,6 @@
 
 
 
-#define JVET_O1143_LPF_ACROSS_SUBPIC_BOUNDARY             1 
 #define JVET_O1143_MV_ACROSS_SUBPIC_BOUNDARY              1
 
 #define JVET_Q0495_NLALF_CLIP_CLEANUP                     1 // JVET-Q0495: Cleanup of clipping table for NL-ALF

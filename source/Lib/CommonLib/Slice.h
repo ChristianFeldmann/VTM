@@ -2465,9 +2465,7 @@ private:
   int                         m_rpl1Idx;              //< index of used RPL in the SPS or -1 for local RPL in the slice header
   int                        m_colourPlaneId;                         //!< 4:4:4 colour plane ID
   NalUnitType                m_eNalUnitType;         ///< Nal unit type for the slice
-#if JVET_Q0775_PH_IN_SH
   bool                       m_pictureHeaderInSliceHeader;
-#endif
   uint32_t                   m_nuhLayerId;           ///< Nal unit layer id
   SliceType                  m_eSliceType;
   int                        m_iSliceQp;
@@ -2638,10 +2636,8 @@ public:
   bool                        getCheckLDC() const                                    { return m_bCheckLDC;                                           }
   int                         getList1IdxToList0Idx( int list1Idx ) const            { return m_list1IdxToList0Idx[list1Idx];                        }
   void                        setPOC( int i )                                        { m_iPOC              = i;                                      }
-#if JVET_Q0775_PH_IN_SH
   bool                        getPictureHeaderInSliceHeader() const                  { return m_pictureHeaderInSliceHeader;                         }
   void                        setPictureHeaderInSliceHeader( bool e )                { m_pictureHeaderInSliceHeader = e;                            }
-#endif
   void                        setNalUnitType( NalUnitType e )                        { m_eNalUnitType      = e;                                      }
   NalUnitType                 getNalUnitType() const                                 { return m_eNalUnitType;                                        }
   void                        setNalUnitLayerId( uint32_t i )                        { m_nuhLayerId = i;                                             }

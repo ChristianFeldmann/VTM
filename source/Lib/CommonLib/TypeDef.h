@@ -150,7 +150,6 @@
 
 
 
-#define JVET_Q0775_PH_IN_SH                               1 // JVET-Q0755: Allow picture header in slice header
 
 #define JVET_Q0433_MODIFIED_CHROMA_DIST_WEIGHT            1 // modification of chroma distortion weight (as agreed during presentation of JVET-Q0433)
 

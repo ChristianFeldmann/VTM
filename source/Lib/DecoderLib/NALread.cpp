@@ -167,12 +167,10 @@ void read(InputNALUnit& nalu)
   bitstream.resetToStart();
   readNalUnitHeader(nalu);
 }
-#if JVET_Q0775_PH_IN_SH
 bool checkPictureHeaderInSliceHeaderFlag(InputNALUnit& nalu)
 {
   InputBitstream& bitstream = nalu.getBitstream();
   CHECK(bitstream.getByteLocation() != 2, "The picture_header_in_slice_header_flag is the first bit after the NAL unit header");
   return (bool)bitstream.read(1);
 }
-#endif
 //! \}

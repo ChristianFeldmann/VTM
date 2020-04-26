@@ -2263,11 +2263,7 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
   xReadRbspTrailingBits();
 }
 
-#if JVET_Q0775_PH_IN_SH
 void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManager *parameterSetManager, bool readRbspTrailingBits )
-#else
-void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManager *parameterSetManager )
-#endif
 {
   uint32_t  uiCode; 
   int       iCode;
@@ -3032,14 +3028,10 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
     }
   }
 
-#if JVET_Q0775_PH_IN_SH
   if( readRbspTrailingBits )
   {
     xReadRbspTrailingBits();
   }
-#else
-  xReadRbspTrailingBits();
-#endif
 }
 
 void  HLSyntaxReader::checkAlfNaluTidAndPicTid(Slice* pcSlice, PicHeader* picHeader, ParameterSetManager *parameterSetManager)
@@ -3077,7 +3069,6 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
 #endif
   PPS* pps = NULL;
   SPS* sps = NULL;
-#if JVET_Q0775_PH_IN_SH
   READ_FLAG(uiCode, "picture_header_in_slice_header_flag");
   if (uiCode)
   {
@@ -3085,7 +3076,6 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
     parsePictureHeader(picHeader, parameterSetManager, false);
     picHeader->setValid();
   }
-#endif
   CHECK(picHeader==0, "Invalid Picture Header");
   CHECK(picHeader->isValid()==false, "Invalid Picture Header");
   checkAlfNaluTidAndPicTid(pcSlice, picHeader, parameterSetManager);

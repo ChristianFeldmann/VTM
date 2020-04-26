@@ -1148,13 +1148,11 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
   cinfo->setProgressiveSourceFlag       (m_progressiveSourceFlag);
   cinfo->setInterlacedSourceFlag        (m_interlacedSourceFlag);
   cinfo->setNonPackedConstraintFlag     (m_nonPackedConstraintFlag);
-#if JVET_Q0114_CONSTRAINT_FLAGS
   cinfo->setNonProjectedConstraintFlag(m_nonProjectedConstraintFlag);
   cinfo->setNoResChangeInClvsConstraintFlag(m_noResChangeInClvsConstraintFlag);
   cinfo->setOneTilePerPicConstraintFlag(m_oneTilePerPicConstraintFlag);
   cinfo->setOneSlicePerPicConstraintFlag(m_oneSlicePerPicConstraintFlag);
   cinfo->setOneSubpicPerPicConstraintFlag(m_oneSubpicPerPicConstraintFlag);
-#endif
   cinfo->setFrameOnlyConstraintFlag     (m_frameOnlyConstraintFlag);
   cinfo->setIntraOnlyConstraintFlag         (m_intraConstraintFlag);
   cinfo->setMaxBitDepthConstraintIdc    (m_maxBitDepthConstraintIdc);

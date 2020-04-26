@@ -1492,7 +1492,6 @@ void DecLib::xCheckParameterSetConstraints(const int layerId)
     }
   }
 
-#if JVET_Q0114_CONSTRAINT_FLAGS
   if (sps->getProfileTierLevel()->getConstraintInfo()->getOneTilePerPicConstraintFlag())
   {
     CHECK(pps->getNumTiles() != 1, "When one_tile_per_pic_constraint_flag is equal to 1, each picture shall contain only one tile");
@@ -1501,7 +1500,6 @@ void DecLib::xCheckParameterSetConstraints(const int layerId)
   {
     CHECK( pps->getNumSlicesInPic() != 1, "When one_slice_per_pic_constraint_flag is equal to 1, each picture shall contain only one slice");
   }
-#endif
 
   if (sps->getMaxPicWidthInLumaSamples() == pps->getPicWidthInLumaSamples() &&
       sps->getMaxPicHeightInLumaSamples() == pps->getPicHeightInLumaSamples())

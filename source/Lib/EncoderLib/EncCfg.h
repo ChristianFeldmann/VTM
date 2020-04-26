@@ -232,13 +232,11 @@ protected:
   bool m_progressiveSourceFlag;
   bool m_interlacedSourceFlag;
   bool m_nonPackedConstraintFlag;
-#if JVET_Q0114_CONSTRAINT_FLAGS
   bool m_nonProjectedConstraintFlag;
   bool m_noResChangeInClvsConstraintFlag;
   bool m_oneTilePerPicConstraintFlag;
   bool m_oneSlicePerPicConstraintFlag;
   bool m_oneSubpicPerPicConstraintFlag;
-#endif
   bool m_frameOnlyConstraintFlag;
   bool m_intraConstraintFlag;
 
@@ -1855,7 +1853,6 @@ public:
   bool         getNonPackedConstraintFlag() const                    { return m_nonPackedConstraintFlag; }
   void         setNonPackedConstraintFlag(bool b)                    { m_nonPackedConstraintFlag = b; }
 
-#if JVET_Q0114_CONSTRAINT_FLAGS
   bool         getNonProjectedConstraintFlag() const                 { return m_nonProjectedConstraintFlag; }
   void         setNonProjectedConstraintFlag(bool b)                 { m_nonProjectedConstraintFlag = b; }
                
@@ -1870,7 +1867,6 @@ public:
                
   bool         getOneSubpicPerPicConstraintFlag() const              { return m_oneSubpicPerPicConstraintFlag; }
   void         setOneSubpicPerPicConstraintFlag(bool b)              { m_oneSubpicPerPicConstraintFlag = b; }
-#endif
 
   bool         getFrameOnlyConstraintFlag() const                    { return m_frameOnlyConstraintFlag; }
   void         setFrameOnlyConstraintFlag(bool b)                    { m_frameOnlyConstraintFlag = b; }

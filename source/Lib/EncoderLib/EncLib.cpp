@@ -1398,9 +1398,7 @@ void EncLib::xInitSPS( SPS& sps )
 
   sps.setRprEnabledFlag( m_rprEnabled || sps.getInterLayerPresentFlag() );
 
-#if JVET_Q0297_MER
   sps.setLog2ParallelMergeLevelMinus2( m_log2ParallelMergeLevelMinus2 );
-#endif
 
   CHECK( sps.getRprEnabledFlag() && sps.getVirtualBoundariesEnabledFlag(), "when the value of res_change_in_clvs_allowed_flag is equal to 1, the value of sps_virtual_boundaries_present_flag shall be equal to 0" );
 }

@@ -1378,9 +1378,7 @@ private:
   bool              m_rprEnabledFlag;
   bool              m_interLayerPresentFlag;
 
-#if JVET_Q0297_MER
   uint32_t          m_log2ParallelMergeLevelMinus2;
-#endif
   bool              m_ppsValidFlag[64];
   Size              m_scalingWindowSizeInPPS[64];
   uint32_t          m_maxNumMergeCand;
@@ -1755,10 +1753,8 @@ void                    setCCALFEnabledFlag( bool b )                           
   bool      getInterLayerPresentFlag()                                        const { return m_interLayerPresentFlag; }
   void      setInterLayerPresentFlag( bool b )                                      { m_interLayerPresentFlag = b; }
 
-#if JVET_Q0297_MER
   uint32_t  getLog2ParallelMergeLevelMinus2() const { return m_log2ParallelMergeLevelMinus2; }
   void      setLog2ParallelMergeLevelMinus2(uint32_t mrgLevel) { m_log2ParallelMergeLevelMinus2 = mrgLevel; }
-#endif
   void          setPPSValidFlag(int i, bool b) { m_ppsValidFlag[i] = b; }
   bool          getPPSValidFlag(int i)         { return m_ppsValidFlag[i]; }
   void          setScalingWindowSizeInPPS(int i, int scWidth, int scHeight) { m_scalingWindowSizeInPPS[i].width = scWidth; m_scalingWindowSizeInPPS[i].height = scHeight;}

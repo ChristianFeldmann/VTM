@@ -273,14 +273,12 @@ void CU::saveMotionInHMVP( const CodingUnit& cu, const bool isToBeDone )
 
     mi.BcwIdx = (mi.interDir == 3) ? cu.BcwIdx : BCW_DEFAULT;
 
-#if JVET_Q0297_MER
     const unsigned log2ParallelMergeLevel = (pu.cs->sps->getLog2ParallelMergeLevelMinus2() + 2);
     const unsigned xBr = pu.cu->Y().width + pu.cu->Y().x;
     const unsigned yBr = pu.cu->Y().height + pu.cu->Y().y;
     bool enableHmvp = ((xBr >> log2ParallelMergeLevel) > (pu.cu->Y().x >> log2ParallelMergeLevel)) && ((yBr >> log2ParallelMergeLevel) > (pu.cu->Y().y >> log2ParallelMergeLevel));
     bool enableInsertion = CU::isIBC(cu) || enableHmvp;
     if (enableInsertion)
-#endif
     cu.cs->addMiToLut(CU::isIBC(cu) ? cu.cs->motionLut.lutIbc : cu.cs->motionLut.lut, mi);
   }
 }
@@ -771,11 +769,7 @@ void PU::getIBCMergeCandidates(const PredictionUnit &pu, MergeCtx& mrgCtx, const
   //left
   const PredictionUnit* puLeft = cs.getPURestricted(posLB.offset(-1, 0), pu, pu.chType);
   bool isGt4x4 = pu.lwidth() * pu.lheight() > 16;
-#if JVET_Q0297_MER
   const bool isAvailableA1 = puLeft && pu.cu != puLeft->cu && CU::isIBC(*puLeft->cu);
-#else
-  const bool isAvailableA1 = puLeft && isDiffMER(pu, *puLeft) && pu.cu != puLeft->cu && CU::isIBC(*puLeft->cu);
-#endif
   if (isGt4x4 && isAvailableA1)
   {
     miLeft = puLeft->getMotionInfo(posLB.offset(-1, 0));
@@ -799,11 +793,7 @@ void PU::getIBCMergeCandidates(const PredictionUnit &pu, MergeCtx& mrgCtx, const
 
   // above
   const PredictionUnit *puAbove = cs.getPURestricted(posRT.offset(0, -1), pu, pu.chType);
-#if JVET_Q0297_MER
   bool isAvailableB1 = puAbove && pu.cu != puAbove->cu && CU::isIBC(*puAbove->cu);
-#else
-  bool isAvailableB1 = puAbove && isDiffMER(pu, *puAbove) && pu.cu != puAbove->cu && CU::isIBC(*puAbove->cu);
-#endif
   if (isGt4x4 && isAvailableB1)
   {
     miAbove = puAbove->getMotionInfo(posRT.offset(0, -1));
@@ -861,9 +851,7 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
                                  int mmvdList,
                                  const int& mrgCandIdx )
 {
-#if JVET_Q0297_MER
   const unsigned plevel = pu.cs->sps->getLog2ParallelMergeLevelMinus2() + 2;
-#endif
   const CodingStructure &cs  = *pu.cs;
   const Slice &slice         = *pu.cs->slice;
   const uint32_t maxNumMergeCand = pu.cs->sps->getMaxNumMergeCand();
@@ -890,11 +878,7 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
   // above
   const PredictionUnit *puAbove = cs.getPURestricted(posRT.offset(0, -1), pu, pu.chType);
 
-#if JVET_Q0297_MER
   bool isAvailableB1 = puAbove && isDiffMER(pu.lumaPos(), posRT.offset(0, -1), plevel) && pu.cu != puAbove->cu && CU::isInter(*puAbove->cu);
-#else
-  bool isAvailableB1 = puAbove && isDiffMER(pu, *puAbove) && pu.cu != puAbove->cu && CU::isInter(*puAbove->cu);
-#endif
 
   if (isAvailableB1)
   {
@@ -928,11 +912,7 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
   //left
   const PredictionUnit* puLeft = cs.getPURestricted(posLB.offset(-1, 0), pu, pu.chType);
 
-#if JVET_Q0297_MER
   const bool isAvailableA1 = puLeft && isDiffMER(pu.lumaPos(), posLB.offset(-1, 0), plevel) && pu.cu != puLeft->cu && CU::isInter(*puLeft->cu);
-#else
-  const bool isAvailableA1 = puLeft && isDiffMER(pu, *puLeft) && pu.cu != puLeft->cu && CU::isInter(*puLeft->cu);
-#endif
 
   if (isAvailableA1)
   {
@@ -969,11 +949,7 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
   // above right
   const PredictionUnit *puAboveRight = cs.getPURestricted( posRT.offset( 1, -1 ), pu, pu.chType );
 
-#if JVET_Q0297_MER
   bool isAvailableB0 = puAboveRight && isDiffMER( pu.lumaPos(), posRT.offset(1, -1), plevel) && CU::isInter( *puAboveRight->cu );
-#else
-  bool isAvailableB0 = puAboveRight && isDiffMER( pu, *puAboveRight ) && CU::isInter( *puAboveRight->cu );
-#endif
 
   if( isAvailableB0 )
   {
@@ -1011,11 +987,7 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
   //left bottom
   const PredictionUnit *puLeftBottom = cs.getPURestricted( posLB.offset( -1, 1 ), pu, pu.chType );
 
-#if JVET_Q0297_MER
   bool isAvailableA0 = puLeftBottom && isDiffMER( pu.lumaPos(), posLB.offset(-1, 1), plevel) && CU::isInter( *puLeftBottom->cu );
-#else
-  bool isAvailableA0 = puLeftBottom && isDiffMER( pu, *puLeftBottom ) && CU::isInter( *puLeftBottom->cu );
-#endif
 
   if( isAvailableA0 )
   {
@@ -1056,11 +1028,7 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
   {
     const PredictionUnit *puAboveLeft = cs.getPURestricted( posLT.offset( -1, -1 ), pu, pu.chType );
 
-#if JVET_Q0297_MER
     bool isAvailableB2 = puAboveLeft && isDiffMER( pu.lumaPos(), posLT.offset(-1, -1), plevel ) && CU::isInter( *puAboveLeft->cu );
-#else
-    bool isAvailableB2 = puAboveLeft && isDiffMER( pu, *puAboveLeft ) && CU::isInter( *puAboveLeft->cu );
-#endif
 
     if( isAvailableB2 )
     {
@@ -1550,7 +1518,6 @@ bool PU::getColocatedMVP(const PredictionUnit &pu, const RefPicList &eRefPicList
   return true;
 }
 
-#if JVET_Q0297_MER
 bool PU::isDiffMER(const Position &pos1, const Position &pos2, const unsigned plevel)
 {
   const unsigned xN = pos1.x;
@@ -1570,27 +1537,6 @@ bool PU::isDiffMER(const Position &pos1, const Position &pos2, const unsigned pl
 
   return false;
 }
-#else
-bool PU::isDiffMER(const PredictionUnit &pu1, const PredictionUnit &pu2)
-{
-  const unsigned xN = pu1.lumaPos().x;
-  const unsigned yN = pu1.lumaPos().y;
-  const unsigned xP = pu2.lumaPos().x;
-  const unsigned yP = pu2.lumaPos().y;
-
-  if ((xN >> 2) != (xP >> 2))
-  {
-    return true;
-  }
-
-  if ((yN >> 2) != (yP >> 2))
-  {
-    return true;
-  }
-
-  return false;
-}
-#endif
 
 bool PU::isAddNeighborMv(const Mv& currMv, Mv* neighborMvs, int numNeighborMv)
 {
@@ -2454,16 +2400,12 @@ const int getAvailableAffineNeighboursForLeftPredictor( const PredictionUnit &pu
 {
   const Position posLB = pu.Y().bottomLeft();
   int num = 0;
-#if JVET_Q0297_MER
   const unsigned plevel = pu.cs->sps->getLog2ParallelMergeLevelMinus2() + 2;
-#endif
 
   const PredictionUnit *puLeftBottom = pu.cs->getPURestricted( posLB.offset( -1, 1 ), pu, pu.chType );
   if ( puLeftBottom && puLeftBottom->cu->affine
     && puLeftBottom->mergeType == MRG_TYPE_DEFAULT_N
-#if JVET_Q0297_MER
     && PU::isDiffMER(pu.lumaPos(), posLB.offset(-1, 1), plevel)
-#endif
     )
   {
     npu[num++] = puLeftBottom;
@@ -2473,9 +2415,7 @@ const int getAvailableAffineNeighboursForLeftPredictor( const PredictionUnit &pu
   const PredictionUnit* puLeft = pu.cs->getPURestricted( posLB.offset( -1, 0 ), pu, pu.chType );
   if ( puLeft && puLeft->cu->affine
     && puLeft->mergeType == MRG_TYPE_DEFAULT_N
-#if JVET_Q0297_MER
     && PU::isDiffMER(pu.lumaPos(), posLB.offset(-1, 0), plevel)
-#endif
     )
   {
     npu[num++] = puLeft;
@@ -2489,17 +2429,13 @@ const int getAvailableAffineNeighboursForAbovePredictor( const PredictionUnit &p
 {
   const Position posLT = pu.Y().topLeft();
   const Position posRT = pu.Y().topRight();
-#if JVET_Q0297_MER
   const unsigned plevel = pu.cs->sps->getLog2ParallelMergeLevelMinus2() + 2;
-#endif
   int num = numAffNeighLeft;
 
   const PredictionUnit* puAboveRight = pu.cs->getPURestricted( posRT.offset( 1, -1 ), pu, pu.chType );
   if ( puAboveRight && puAboveRight->cu->affine
     && puAboveRight->mergeType == MRG_TYPE_DEFAULT_N
-#if JVET_Q0297_MER
     && PU::isDiffMER(pu.lumaPos(), posRT.offset(1, -1), plevel)
-#endif
     )
   {
     npu[num++] = puAboveRight;
@@ -2509,9 +2445,7 @@ const int getAvailableAffineNeighboursForAbovePredictor( const PredictionUnit &p
   const PredictionUnit* puAbove = pu.cs->getPURestricted( posRT.offset( 0, -1 ), pu, pu.chType );
   if ( puAbove && puAbove->cu->affine
     && puAbove->mergeType == MRG_TYPE_DEFAULT_N
-#if JVET_Q0297_MER
     && PU::isDiffMER(pu.lumaPos(), posRT.offset(0, -1), plevel)
-#endif
     )
   {
     npu[num++] = puAbove;
@@ -2521,9 +2455,7 @@ const int getAvailableAffineNeighboursForAbovePredictor( const PredictionUnit &p
   const PredictionUnit *puAboveLeft = pu.cs->getPURestricted( posLT.offset( -1, -1 ), pu, pu.chType );
   if ( puAboveLeft && puAboveLeft->cu->affine
     && puAboveLeft->mergeType == MRG_TYPE_DEFAULT_N
-#if JVET_Q0297_MER
     && PU::isDiffMER(pu.lumaPos(), posLT.offset(-1, -1), plevel)
-#endif
     )
   {
     npu[num++] = puAboveLeft;
@@ -2538,9 +2470,7 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
   const CodingStructure &cs = *pu.cs;
   const Slice &slice = *pu.cs->slice;
   const uint32_t maxNumAffineMergeCand = slice.getPicHeader()->getMaxNumAffineMergeCand();
-#if JVET_Q0297_MER
   const unsigned plevel = pu.cs->sps->getLog2ParallelMergeLevelMinus2() + 2;
-#endif
 
   for ( int i = 0; i < maxNumAffineMergeCand; i++ )
   {
@@ -2575,11 +2505,7 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
 
     //left
     const PredictionUnit* puLeft = cs.getPURestricted( posCurLB.offset( -1, 0 ), pu, pu.chType );
-#if JVET_Q0297_MER
     const bool isAvailableA1 = puLeft && isDiffMER(pu.lumaPos(), posCurLB.offset(-1, 0), plevel) && pu.cu != puLeft->cu && CU::isInter( *puLeft->cu );
-#else
-    const bool isAvailableA1 = puLeft && isDiffMER( pu, *puLeft ) && pu.cu != puLeft->cu && CU::isInter( *puLeft->cu );
-#endif
     if ( isAvailableA1 )
     {
       miLeft = puLeft->getMotionInfo( posCurLB.offset( -1, 0 ) );
@@ -2688,9 +2614,7 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
         const PredictionUnit* puNeigh = cs.getPURestricted( pos, pu, pu.chType );
 
         if ( puNeigh && CU::isInter( *puNeigh->cu )
-#if JVET_Q0297_MER
           && PU::isDiffMER(pu.lumaPos(), pos, plevel)
-#endif
           )
         {
           isAvailable[0] = true;
@@ -2709,9 +2633,7 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
 
 
         if ( puNeigh && CU::isInter( *puNeigh->cu )
-#if JVET_Q0297_MER
           && PU::isDiffMER(pu.lumaPos(), pos, plevel)
-#endif
           )
         {
           isAvailable[1] = true;
@@ -2730,9 +2652,7 @@ void PU::getAffineMergeCand( const PredictionUnit &pu, AffineMergeCtx& affMrgCtx
 
 
         if ( puNeigh && CU::isInter( *puNeigh->cu )
-#if JVET_Q0297_MER
           && PU::isDiffMER(pu.lumaPos(), pos, plevel)
-#endif
           )
         {
           isAvailable[2] = true;

@@ -1852,10 +1852,8 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   }
 #endif
 
-#if JVET_Q0297_MER
   READ_UVLC(uiCode, "log2_parallel_merge_level_minus2");
   pcSPS->setLog2ParallelMergeLevelMinus2(uiCode);
-#endif
 
   READ_FLAG(uiCode, "sps_explicit_scaling_list_enabled_flag");                 pcSPS->setScalingListFlag(uiCode);
   READ_FLAG(uiCode, "sps_dep_quant_enabled_flag"); pcSPS->setDepQuantEnabledFlag(uiCode);

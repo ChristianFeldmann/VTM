@@ -1860,7 +1860,6 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
     }
 
     if( split == CU_QUAD_SPLIT ) cuECtx.set( DID_QUAD_SPLIT, true );
-#if JVET_Q0297_MER
     if (cs.sps->getLog2ParallelMergeLevelMinus2())
     {
       const CompArea& area = partitioner.currArea().Y();
@@ -1873,7 +1872,6 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
         if (area.width <= 2 * size && split == CU_TRIV_SPLIT) return false;
       }
     }
-#endif
     return true;
   }
   else

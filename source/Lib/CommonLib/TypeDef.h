@@ -173,7 +173,6 @@
 
 
 
-#define JVET_SUBPIC_LEVEL_CFG                             1  // improved configuration of subpicture level info SEI
 
 #define JVET_Q0217_PROPOSAL5                              1  // JVET-Q0217 Proposal 5: modifications to reference picture information signalling
 

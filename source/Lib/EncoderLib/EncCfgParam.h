@@ -44,7 +44,6 @@
 
 namespace EncCfgParam {
 
-#if JVET_SUBPIC_LEVEL_CFG
 class CfgSEISubpictureLevel
 {
 public:
@@ -63,7 +62,6 @@ public:
   int                       m_numSubpictures;
   std::vector<int>          m_fractions;
 };
-#endif
 
 }
 

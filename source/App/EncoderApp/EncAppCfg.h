@@ -576,11 +576,7 @@ protected:
   bool                 m_gcmpSEIGuardBandBoundaryExteriorFlag;
   uint32_t             m_gcmpSEIGuardBandSamplesMinus1;
 
-#if JVET_SUBPIC_LEVEL_CFG
   EncCfgParam::CfgSEISubpictureLevel m_cfgSubpictureLevelInfoSEI;
-#else
-  bool m_subpicureLevelInfoSEIEnabled;
-#endif
 
   bool                  m_sampleAspectRatioInfoSEIEnabled;
   bool                  m_sariCancelFlag;

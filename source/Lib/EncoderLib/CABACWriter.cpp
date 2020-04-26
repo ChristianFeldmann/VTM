@@ -701,11 +701,6 @@ void CABACWriter::coding_unit( const CodingUnit& cu, Partitioner& partitioner, C
     end_of_ctu(cu, cuCtx);
     return;
   }
-#if !JVET_Q0110_Q0785_CHROMA_BDPCM_420
-  bdpcm_mode( cu, ComponentID( partitioner.chType ) );
-  if (!CS::isDualITree(cs) && isLuma(partitioner.chType) && isChromaEnabled(cu.chromaFormat))
-      bdpcm_mode(cu, ComponentID(CHANNEL_TYPE_CHROMA));
-#endif
 
   // prediction data ( intra prediction modes / reference indexes + motion vectors )
   cu_pred_data( cu );
@@ -830,20 +825,12 @@ void CABACWriter::bdpcm_mode( const CodingUnit& cu, const ComponentID compID )
 
   int bdpcmMode = isLuma(compID) ? cu.bdpcmMode : cu.bdpcmModeChroma;
 
-#if JVET_Q0110_Q0785_CHROMA_BDPCM_420
   unsigned ctxId = isLuma(compID) ? 0 : 2; 
   m_BinEncoder.encodeBin(bdpcmMode > 0 ? 1 : 0, Ctx::BDPCMMode(ctxId));
-#else
-  m_BinEncoder.encodeBin(bdpcmMode > 0 ? 1 : 0, Ctx::BDPCMMode(0));
-#endif
 
   if (bdpcmMode)
   {
-#if JVET_Q0110_Q0785_CHROMA_BDPCM_420
     m_BinEncoder.encodeBin(bdpcmMode > 1 ? 1 : 0, Ctx::BDPCMMode(ctxId+1));
-#else
-    m_BinEncoder.encodeBin(bdpcmMode > 1 ? 1 : 0, Ctx::BDPCMMode(1));
-#endif
   }
   if (isLuma(compID))
   {
@@ -860,20 +847,16 @@ void CABACWriter::cu_pred_data( const CodingUnit& cu )
 {
   if( CU::isIntra( cu ) )
   {
-#if JVET_Q0110_Q0785_CHROMA_BDPCM_420
     if( cu.Y().valid() )
     {
       bdpcm_mode( cu, COMPONENT_Y );
     }
-#endif
 
     intra_luma_pred_modes  ( cu );
-#if JVET_Q0110_Q0785_CHROMA_BDPCM_420
     if( ( !cu.Y().valid() || ( !cu.isSepTree() && cu.Y().valid() ) ) && isChromaEnabled(cu.chromaFormat) )
     {
       bdpcm_mode( cu, ComponentID(CHANNEL_TYPE_CHROMA) );
     } 
-#endif
     intra_chroma_pred_modes( cu );
     return;
   }
@@ -1238,13 +1221,11 @@ void CABACWriter::intra_chroma_pred_modes( const CodingUnit& cu )
     return;
   }
 
-#if JVET_Q0110_Q0785_CHROMA_BDPCM_420
   if( cu.bdpcmModeChroma )
   {
     cu.firstPU->intraDir[1] = cu.bdpcmModeChroma == 2 ? VER_IDX : HOR_IDX;
     return;
   }
-#endif
   const PredictionUnit* pu = cu.firstPU;
 
   intra_chroma_pred_mode( *pu );
@@ -1278,12 +1259,6 @@ void CABACWriter::intra_chroma_lmc_mode(const PredictionUnit& pu)
 
 void CABACWriter::intra_chroma_pred_mode(const PredictionUnit& pu)
 {
-#if !JVET_Q0110_Q0785_CHROMA_BDPCM_420
-  if (pu.cu->bdpcmModeChroma)
-  {
-      return;
-  }
-#endif
 
   const unsigned intraDir = pu.intraDir[1];
   if (pu.cu->colorTransform)

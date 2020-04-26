@@ -875,11 +875,6 @@ void CABACReader::coding_unit( CodingUnit &cu, Partitioner &partitioner, CUCtx& 
     end_of_ctu(cu, cuCtx);
     return;
   }
-#if !JVET_Q0110_Q0785_CHROMA_BDPCM_420
-  bdpcm_mode( cu, ComponentID( partitioner.chType ) );
-  if (!CS::isDualITree(*cu.cs) && isLuma(partitioner.chType))
-      bdpcm_mode(cu, ComponentID(CHANNEL_TYPE_CHROMA));
-#endif
 
   // --> create PUs
 
@@ -1163,19 +1158,11 @@ void CABACReader::bdpcm_mode( CodingUnit& cu, const ComponentID compID )
   RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET_SIZE2( STATS__CABAC_BITS__BDPCM_MODE, cu.block(compID).lumaSize(), compID );
 
   int bdpcmMode;
-#if JVET_Q0110_Q0785_CHROMA_BDPCM_420
   unsigned ctxId = isLuma( compID ) ? 0 : 2;
   bdpcmMode = m_BinDecoder.decodeBin( Ctx::BDPCMMode(ctxId) );
-#else
-  bdpcmMode = m_BinDecoder.decodeBin(Ctx::BDPCMMode(0));
-#endif
   if (bdpcmMode)
   {
-#if JVET_Q0110_Q0785_CHROMA_BDPCM_420
     bdpcmMode += m_BinDecoder.decodeBin( Ctx::BDPCMMode(ctxId+1) );
-#else
-    bdpcmMode += m_BinDecoder.decodeBin(Ctx::BDPCMMode(1));
-#endif
   }
   if (isLuma(compID))
   {
@@ -1199,19 +1186,15 @@ void CABACReader::cu_pred_data( CodingUnit &cu )
 {
   if( CU::isIntra( cu ) )
   {
-#if JVET_Q0110_Q0785_CHROMA_BDPCM_420
     if( cu.Y().valid() )
 	{
       bdpcm_mode(cu, COMPONENT_Y );
     }
-#endif
     intra_luma_pred_modes( cu );
-#if JVET_Q0110_Q0785_CHROMA_BDPCM_420
     if( ( !cu.Y().valid() || (!cu.isSepTree() && cu.Y().valid() ) ) && isChromaEnabled(cu.chromaFormat) )
     {
       bdpcm_mode(cu, ComponentID(CHANNEL_TYPE_CHROMA));
     } 
-#endif
     intra_chroma_pred_modes( cu );
     return;
   }
@@ -1452,13 +1435,11 @@ void CABACReader::intra_chroma_pred_modes( CodingUnit& cu )
     return;
   }
 
-#if JVET_Q0110_Q0785_CHROMA_BDPCM_420
   if( cu.bdpcmModeChroma )
   {
     cu.firstPU->intraDir[1] = cu.bdpcmModeChroma == 2 ? VER_IDX : HOR_IDX;
     return;
   }
-#endif
   PredictionUnit *pu = cu.firstPU;
 
   {
@@ -1496,15 +1477,6 @@ void CABACReader::intra_chroma_pred_mode(PredictionUnit& pu)
   }
 
   // LM chroma mode
-#if !JVET_Q0110_Q0785_CHROMA_BDPCM_420
-  if (pu.cu->bdpcmModeChroma)
-  {
-    unsigned chromaCandModes[NUM_CHROMA_MODE];
-    PU::getIntraChromaCandModes(pu, chromaCandModes);
-    pu.intraDir[1] = chromaCandModes[0];
-    return;
-  }
-#endif
 
   if (pu.cs->sps->getUseLMChroma() && pu.cu->checkCCLMAllowed())
   {

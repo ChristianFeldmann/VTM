@@ -334,10 +334,6 @@ public:
   , m_numDecodingUnitsMinus1 (0)
   , m_duCommonCpbRemovalDelayFlag (false)
   , m_cpbAltTimingInfoPresentFlag (false)
-#if !JVET_Q0219_SIGNAL_ALT_BUFFER_DELAY_PARMS
-    , m_cpbDelayOffset(0)
-    , m_dpbDelayOffset(0)
-#endif
   , m_ptDisplayElementalPeriodsMinus1(0)
   {
     ::memset(m_ptSubLayerDelaysPresentFlag, 0, sizeof(m_ptSubLayerDelaysPresentFlag));
@@ -363,17 +359,10 @@ public:
   std::vector<uint32_t> m_numNalusInDuMinus1;
   std::vector<uint32_t> m_duCpbRemovalDelayMinus1;
   bool     m_cpbAltTimingInfoPresentFlag;
-#if JVET_Q0219_SIGNAL_ALT_BUFFER_DELAY_PARMS
   std::vector<std::vector<uint32_t>> m_cpbAltInitialCpbRemovalDelayDelta;
   std::vector<std::vector<uint32_t>> m_cpbAltInitialCpbRemovalOffsetDelta;
   std::vector<uint32_t>              m_cpbDelayOffset;
   std::vector<uint32_t>              m_dpbDelayOffset;
-#else
-  std::vector<uint32_t> m_cpbAltInitialCpbRemovalDelayDelta;
-  std::vector<uint32_t> m_cpbAltInitialCpbRemovalOffsetDelta;
-  uint32_t              m_cpbDelayOffset;
-  uint32_t              m_dpbDelayOffset;
-#endif
   int m_ptDisplayElementalPeriodsMinus1;
 };
 

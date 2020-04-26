@@ -274,7 +274,7 @@ const uint8_t* MatrixIntraPrediction::getMatrixData(const int modeIdx) const
   }
 }
 
-void MatrixIntraPrediction::computeReducedPred( int*const result, const int* const input, 
+void MatrixIntraPrediction::computeReducedPred( int*const result, const int* const input,
                                                 const uint8_t* matrix,
                                                 const bool transpose, const int bitDepth )
 {

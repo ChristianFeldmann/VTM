@@ -148,7 +148,7 @@ private:
     NalUnitType     m_nalUnitType; ///< nal_unit_type
     uint32_t        m_nuhLayerId;  ///< nuh_layer_id
     uint32_t        m_firstCTUinSlice; /// the first CTU in slice, specified with raster scan order ctu address
-    int             m_POC;             /// the picture order 
+    int             m_POC;             /// the picture order
   };
   std::vector<NalUnitInfo> m_nalUnitInfo[MAX_VPS_LAYERS];
   std::vector<int> m_accessUnitApsNals;

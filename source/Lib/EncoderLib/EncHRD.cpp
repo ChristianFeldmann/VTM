@@ -151,7 +151,7 @@ void EncHRD::initHRDParameters(EncCfg* encCfg)
   uint32_t duBitRateValue = 0;
   OlsHrdParams* olsHrdParams = getOlsHrdParametersAddr();
 
-  for (i = 0; i < MAX_TLAYER; i++)  
+  for (i = 0; i < MAX_TLAYER; i++)
   {
     OlsHrdParams curOlsHrdParams = olsHrdParams[i];
 

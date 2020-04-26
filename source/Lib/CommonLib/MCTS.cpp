@@ -97,9 +97,9 @@ Area MCTSHelper::getTileArea( const CodingStructure* cs, const int ctuAddr )
   const uint32_t tileIdx = pps->getTileIdx( (uint32_t)ctuAddr );
   const uint32_t tileX = tileIdx % pps->getNumTileColumns();
   const uint32_t tileY = tileIdx / pps->getNumTileColumns();
-  
+
   const int tileWidthtInCtus = pps->getTileColumnWidth( tileX );
-  const int tileHeightInCtus = pps->getTileRowHeight  ( tileY );  
+  const int tileHeightInCtus = pps->getTileRowHeight  ( tileY );
   const int tileXPosInCtus   = pps->getTileColumnBd( tileX );
   const int tileYPosInCtus   = pps->getTileRowBd( tileY );
 

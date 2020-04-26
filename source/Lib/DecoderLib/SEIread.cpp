@@ -677,10 +677,10 @@ void SEIReader::xParseSEIPictureTiming(SEIPictureTiming& sei, uint32_t payloadSi
   sei_read_code( pDecodedMessageOutputStream, bp.m_cpbRemovalDelayLength, symbol, "cpb_removal_delay_minus1[bp_max_sub_layers_minus1]" );
   sei.m_auCpbRemovalDelay[bp.m_bpMaxSubLayers - 1] = symbol + 1;
 
-  if( bp.m_altCpbParamsPresentFlag ) 
+  if( bp.m_altCpbParamsPresentFlag )
   {
     sei_read_flag( pDecodedMessageOutputStream, symbol, "cpb_alt_timing_info_present_flag" ); sei.m_cpbAltTimingInfoPresentFlag = symbol;
-    if( sei.m_cpbAltTimingInfoPresentFlag ) 
+    if( sei.m_cpbAltTimingInfoPresentFlag )
     {
       sei.m_cpbAltInitialCpbRemovalDelayDelta.resize(bp.m_bpMaxSubLayers);
       sei.m_cpbAltInitialCpbRemovalOffsetDelta.resize(bp.m_bpMaxSubLayers);
@@ -1087,7 +1087,7 @@ void SEIReader::xParseSEIOmniViewport(SEIOmniViewport& sei, uint32_t payloadSize
   if (!sei.m_omniViewportCancelFlag)
   {
     uint32_t numRegions;
-    sei_read_flag( pDecodedMessageOutputStream,    code,       "omni_viewport_persistence_flag" ); sei.m_omniViewportPersistenceFlag = code;    
+    sei_read_flag( pDecodedMessageOutputStream,    code,       "omni_viewport_persistence_flag" ); sei.m_omniViewportPersistenceFlag = code;
     sei_read_code( pDecodedMessageOutputStream, 4, numRegions, "omni_viewport_cnt_minus1"       ); numRegions++;
     sei.m_omniViewportRegions.resize(numRegions);
     for(uint32_t region=0; region<numRegions; region++)
@@ -1098,7 +1098,7 @@ void SEIReader::xParseSEIOmniViewport(SEIOmniViewport& sei, uint32_t payloadSize
       sei_read_scode( pDecodedMessageOutputStream, 32, scode, "omni_viewport_tilt_centre"      );   viewport.tiltCentre = code;
       sei_read_code( pDecodedMessageOutputStream,  32, code, "omni_viewport_hor_range"         );   viewport.horRange        = code;
       sei_read_code( pDecodedMessageOutputStream,  32, code, "omni_viewport_ver_range"         );   viewport.verRange        = code;
-    }    
+    }
   }
   else
   {
@@ -1237,7 +1237,7 @@ void SEIReader::xParseSEISubpictureLevelInfo(SEISubpicureLevelInfo& sei, uint32_
     sei.m_refLevelFraction.resize(sei.m_numRefLevels);
   }
 
-  for( int i = 0; i  <  sei.m_numRefLevels; i++ ) 
+  for( int i = 0; i  <  sei.m_numRefLevels; i++ )
   {
     sei_read_code( pDecodedMessageOutputStream,   8,  val,    "ref_level_idc[i]" );         sei.m_refLevelIdc[i]  = (Level::Name) val;
     if( sei.m_explicitFractionPresentFlag )
@@ -1263,7 +1263,7 @@ void SEIReader::xParseSEISampleAspectRatioInfo(SEISampleAspectRatioInfo& sei, ui
     sei_read_flag( pDecodedMessageOutputStream,         val,    "sari_persistence_flag" );                 sei.m_sariPersistenceFlag = val;
     sei_read_code( pDecodedMessageOutputStream,     8,  val,    "sari_aspect_ratio_idc" );                 sei.m_sariAspectRatioIdc = val;
     if (sei.m_sariAspectRatioIdc == 255)
-    { 
+    {
       sei_read_code( pDecodedMessageOutputStream,  16,  val,    "sari_sar_width" );                        sei.m_sariSarWidth = val;
       sei_read_code( pDecodedMessageOutputStream,  16,  val,    "sari_sar_height" );                       sei.m_sariSarHeight = val;
     }

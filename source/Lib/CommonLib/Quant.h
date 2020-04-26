@@ -130,8 +130,8 @@ public:
   int* getDequantCoeff           ( uint32_t list, int qp, uint32_t sizeX, uint32_t sizeY ) { return m_dequantCoef          [sizeX][sizeY][list][qp]; };  //!< get DeQuant Coefficent
 
   void setUseScalingList         ( bool bUseScalingList){ m_scalingListEnabledFlag = bUseScalingList; };
-  bool getUseScalingList(const uint32_t width, const uint32_t height, const bool isTransformSkip, const bool lfnstApplied, const bool disableScalingMatrixForLFNSTBlks) 
-  { 
+  bool getUseScalingList(const uint32_t width, const uint32_t height, const bool isTransformSkip, const bool lfnstApplied, const bool disableScalingMatrixForLFNSTBlks)
+  {
     return (m_scalingListEnabledFlag && !isTransformSkip && (!lfnstApplied || !disableScalingMatrixForLFNSTBlks));
   }
   void setScalingListDec         ( const ScalingList &scalingList);

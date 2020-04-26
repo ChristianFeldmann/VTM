@@ -1556,7 +1556,7 @@ void EncSampleAdaptiveOffset::deriveLoopFilterBoundaryAvailibility(CodingStructu
     isAboveAvail     = (cuAbove == NULL)     ? false : CU::isSameTile(*cuCurr, *cuAbove);
     isAboveLeftAvail = (cuAboveLeft == NULL) ? false : CU::isSameTile(*cuCurr, *cuAboveLeft);
   }
-  else 
+  else
   {
     isLeftAvail      = (cuLeft != NULL);
     isAboveAvail     = (cuAbove != NULL);

@@ -116,7 +116,7 @@ bool CU::getRprScaling( const SPS* sps, const PPS* curPPS, Picture* refPic, int&
   int curSeqMaxPicWidthY = sps->getMaxPicWidthInLumaSamples();                  // pic_width_max_in_luma_samples
   int curSeqMaxPicHeightY = sps->getMaxPicHeightInLumaSamples();                // pic_height_max_in_luma_samples
   int curPicWidthY = curPPS->getPicWidthInLumaSamples();                        // pic_width_in_luma_samples
-  int curPicHeightY = curPPS->getPicHeightInLumaSamples();                      // pic_height_in_luma_samples 
+  int curPicHeightY = curPPS->getPicHeightInLumaSamples();                      // pic_height_in_luma_samples
   int max8MinCbSizeY = std::max((int)8, (1<<sps->getLog2MinCodingBlockSize())); // Max(8, MinCbSizeY)
 
   CHECK((curPicWidth * curSeqMaxPicWidthY) < refPicWidth * (curPicWidthY - max8MinCbSizeY), "(curPicWidth * curSeqMaxPicWidthY) should be greater than or equal to refPicWidth * (curPicWidthY - max8MinCbSizeY))");
@@ -211,8 +211,8 @@ int CU::predictQP( const CodingUnit& cu, const int prevQP )
   uint32_t  tileXPosInCtus  = cu.slice->getPPS()->getTileColumnBd( tileColIdx );
   if( ctuXPosInCtus == tileXPosInCtus &&
       !( cu.blocks[cu.chType].x & ( cs.pcv->maxCUWidthMask  >> getChannelTypeScaleX( cu.chType, cu.chromaFormat ) ) ) &&
-      !( cu.blocks[cu.chType].y & ( cs.pcv->maxCUHeightMask >> getChannelTypeScaleY( cu.chType, cu.chromaFormat ) ) ) && 
-      ( cs.getCU( cu.blocks[cu.chType].pos().offset( 0, -1 ), cu.chType) != NULL ) && 
+      !( cu.blocks[cu.chType].y & ( cs.pcv->maxCUHeightMask >> getChannelTypeScaleY( cu.chType, cu.chromaFormat ) ) ) &&
+      ( cs.getCU( cu.blocks[cu.chType].pos().offset( 0, -1 ), cu.chType) != NULL ) &&
       CU::isSameSliceAndTile( *cs.getCU( cu.blocks[cu.chType].pos().offset( 0, -1 ), cu.chType), cu ) )
   {
     return ( ( cs.getCU( cu.blocks[cu.chType].pos().offset( 0, -1 ), cu.chType ) )->qp );
@@ -1062,7 +1062,7 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx,
     {
       boundaryCond = ((posRB.x + pcv.minCUWidth) <= curSubPic.getSubPicRight() &&
                       (posRB.y + pcv.minCUHeight) <= curSubPic.getSubPicBottom());
-    }    
+    }
     if (boundaryCond)
     {
       int posYInCtu = posRB.y & pcv.maxCUHeightMask;
@@ -1759,7 +1759,7 @@ void PU::fillMvpCand(PredictionUnit &pu, const RefPicList &eRefPicList, const in
     {
       boundaryCond = ((posRB.x + pcv.minCUWidth) <= curSubPic.getSubPicRight() &&
                       (posRB.y + pcv.minCUHeight) <= curSubPic.getSubPicBottom());
-    }    
+    }
     if (boundaryCond)
     {
       int posYInCtu = posRB.y & pcv.maxCUHeightMask;

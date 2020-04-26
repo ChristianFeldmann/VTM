@@ -182,7 +182,7 @@ void SEIEncoder::initSEIBufferingPeriod(SEIBufferingPeriod *bufferingPeriodSEI, 
   // A commercial encoder should track the buffer state for all layers and sub-layers
   // to ensure CPB conformance. Such tracking is required for calculating alternative
   // CPB parameters.
-  // Unfortunately VTM does not have such tracking. Thus we cannot encode alternative 
+  // Unfortunately VTM does not have such tracking. Thus we cannot encode alternative
   // CPB parameters here.
   bufferingPeriodSEI->m_altCpbParamsPresentFlag = false;
   bufferingPeriodSEI->m_useAltCpbParamsFlag = false;
@@ -275,7 +275,7 @@ void SEIEncoder::initSEIRegionWisePacking(SEIRegionWisePacking *seiRegionWisePac
   seiRegionWisePacking->m_rwpTopGuardBandHeight.resize(seiRegionWisePacking->m_numPackedRegions);
   seiRegionWisePacking->m_rwpBottomGuardBandHeight.resize(seiRegionWisePacking->m_numPackedRegions);
   seiRegionWisePacking->m_rwpGuardBandNotUsedForPredFlag.resize(seiRegionWisePacking->m_numPackedRegions);
-  seiRegionWisePacking->m_rwpGuardBandType.resize(4*seiRegionWisePacking->m_numPackedRegions); 
+  seiRegionWisePacking->m_rwpGuardBandType.resize(4*seiRegionWisePacking->m_numPackedRegions);
   for( int i=0; i < seiRegionWisePacking->m_numPackedRegions; i++ )
   {
     seiRegionWisePacking->m_rwpTransformType[i]                  = m_pcCfg->getRwpSEIRwpTransformType(i);
@@ -374,15 +374,15 @@ void SEIEncoder::initSEISampleAspectRatioInfo(SEISampleAspectRatioInfo* seiSampl
 //! initialize scalable nesting SEI message.
 //! Note: The SEI message structures input into this function will become part of the scalable nesting SEI and will be
 //!       automatically freed, when the nesting SEI is disposed.
-void SEIEncoder::initSEIScalableNesting(SEIScalableNesting *scalableNestingSEI, SEIMessages &nestedSEIs) 
+void SEIEncoder::initSEIScalableNesting(SEIScalableNesting *scalableNestingSEI, SEIMessages &nestedSEIs)
 {
   CHECK(!(m_isInitialized), "Unspecified error");
   CHECK(!(scalableNestingSEI != NULL), "Unspecified error");
   scalableNestingSEI->m_nestingOlsFlag = 1;         // by If the nested SEI messages are picture buffering SEI messages, picture timing SEI messages or sub-picture timing SEI messages, nesting_ols_flag shall be equal to 1, by default case
-  scalableNestingSEI->m_nestingNumOlssMinus1 =  1;  // by default the nesting scalable SEI message applies to two OLSs. 
+  scalableNestingSEI->m_nestingNumOlssMinus1 =  1;  // by default the nesting scalable SEI message applies to two OLSs.
   for (int i = 0; i <= scalableNestingSEI->m_nestingNumOlssMinus1; i++)
   {
-    scalableNestingSEI->m_nestingOlsIdxDeltaMinus1[i] = 0; // first ols to which nesting SEI applies is  
+    scalableNestingSEI->m_nestingOlsIdxDeltaMinus1[i] = 0; // first ols to which nesting SEI applies is
   }
   for (int i = 0; i <= scalableNestingSEI->m_nestingNumOlssMinus1; i++)
   {

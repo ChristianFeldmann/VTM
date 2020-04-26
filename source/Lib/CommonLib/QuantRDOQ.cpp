@@ -1701,7 +1701,7 @@ inline uint32_t QuantRDOQ::xGetCodedLevelTSPred(double&            rd64CodedCost
     dErr = double(levelDouble - (Intermediate_Int(absLevel) << qBits));
     coeffLevelError[errorInd] = dErr * dErr * errorScale;
     int modAbsLevel = absLevel;
-    if (cctx.numCtxBins() >= 4) 
+    if (cctx.numCtxBins() >= 4)
     {
       modAbsLevel = cctx.deriveModCoeff(rightPixel, belowPixel, absLevel, m_bdpcm);
     }
@@ -1735,11 +1735,11 @@ inline int QuantRDOQ::xGetICRateTS( const uint32_t            absLevel,
                                     const bool                useLimitedPrefixLength,
                                     const int                 maxLog2TrDynamicRange  ) const
 {
- 
-  
-  if (cctx.numCtxBins() < 4) // Full by-pass coding 
+
+
+  if (cctx.numCtxBins() < 4) // Full by-pass coding
   {
-    int rate = absLevel ? (1 << SCALE_BITS) : 0; // 1 bit to signal sign of non-zero 
+    int rate = absLevel ? (1 << SCALE_BITS) : 0; // 1 bit to signal sign of non-zero
 
     uint32_t symbol = absLevel;
 
@@ -1846,8 +1846,8 @@ inline int QuantRDOQ::xGetICRateTS( const uint32_t            absLevel,
 
   }
 
-  
-  
+
+
   int rate = fracBitsSign.intBits[sign];
 
   if (absLevel)

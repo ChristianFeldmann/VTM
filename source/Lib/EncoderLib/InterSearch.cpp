@@ -6527,10 +6527,10 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
         continue;
       }
 
-      
+
       const bool tsAllowed  = TU::isTSAllowed(tu, compID) && (isLuma(compID) || (isChroma(compID) && m_pcEncCfg->getUseChromaTS()));
       const bool mtsAllowed = CU::isMTSAllowed( *tu.cu, compID );
-      
+
       uint8_t nNumTransformCands = 1 + ( tsAllowed ? 1 : 0 ) + ( mtsAllowed ? 4 : 0 ); // DCT + TS + 4 MTS = 6 tests
       std::vector<TrMode> trModes;
       if (m_pcEncCfg->getCostMode() == COST_LOSSLESS_CODING)
@@ -7745,7 +7745,7 @@ void InterSearch::xClipMv( Mv& rcMv, const Position& pos, const struct Size& siz
   int verMax = ( pps.getPicHeightInLumaSamples() + offset - (int)pos.y - 1 ) << mvShift;
   int verMin = ( -( int ) sps.getMaxCUHeight()   - offset - ( int ) pos.y + 1 ) << mvShift;
   const SubPic &curSubPic = pps.getSubPicFromPos(pos);
-  if (curSubPic.getTreatedAsPicFlag()) 
+  if (curSubPic.getTreatedAsPicFlag())
   {
     horMax = ((curSubPic.getSubPicRight() + 1)  + offset - (int)pos.x - 1) << mvShift;
     horMin = (-(int)sps.getMaxCUWidth()  - offset - ((int)pos.x - curSubPic.getSubPicLeft()) + 1) << mvShift;

@@ -547,7 +547,7 @@ unsigned DeriveCtx::CtxPltCopyFlag( const unsigned prevRunType, const unsigned d
      return ucCtxLut[dist];
   }
   else
-  { 
+  {
     return ucCtxLut[RUN_IDX_THRE];
   }
 }

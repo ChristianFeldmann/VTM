@@ -647,7 +647,7 @@ void DecLib::executeLoopFilters()
           cs.getRecoBuf().Cr().at(col>>1, row>>1) = 0;
         }
       }
-    } 
+    }
   }
 
   m_pcPic->cs->slice->stopProcessingTimer();
@@ -724,7 +724,7 @@ void DecLib::finishPicture(int& poc, PicList*& rpcListPic, MsgLevel msgl )
       if( pcSlice->getRefPOC( RefPicList( iRefList ), iRefIndex ) == pcSlice->getPOC() )
       {
         msg( msgl, ".%d", pcSlice->getRefPic( RefPicList( iRefList ), iRefIndex )->layerId );
-      }   
+      }
     }
     msg( msgl, "] ");
   }
@@ -930,7 +930,7 @@ void DecLib::checkSEIInAccessUnit()
         }
       }
       CHECK(!inZeroOls, "non-scalable-nested timing related SEI shall apply only to the 0-th OLS");
-      
+
       int layerId = m_vps->getLayerId(0);
       CHECK(nuhLayerId != layerId, "the nuh_layer_id of non-scalable-nested timing related SEI shall be equal to vps_layer_id[0]");
     }
@@ -961,7 +961,7 @@ bool DecLib::isSliceNaluFirstInAU( bool newPicture, InputNALUnit &nalu )
     return false;
   }
 
-  
+
   // check for layer ID less than or equal to previous picture's layer ID
   if( nalu.m_nuhLayerId <= m_prevLayerID )
   {
@@ -970,7 +970,7 @@ bool DecLib::isSliceNaluFirstInAU( bool newPicture, InputNALUnit &nalu )
 
   // get slice POC
   m_apcSlicePilot->setPicHeader( &m_picHeader );
-  m_apcSlicePilot->initSlice(); 
+  m_apcSlicePilot->initSlice();
   m_HLSReader.setBitstream( &nalu.getBitstream() );
   m_HLSReader.getSlicePoc( m_apcSlicePilot, &m_picHeader, &m_parameterSetManager, m_prevTid0POC );
 
@@ -1140,7 +1140,7 @@ void DecLib::xActivateParameterSets( const int layerId )
     {
       THROW("Parameter set activation failed!");
     }
-    
+
 
     m_parameterSetManager.getApsMap()->clear();
     for (int i = 0; i < ALF_CTB_MAX_NUM_APS; i++)
@@ -1371,7 +1371,7 @@ void DecLib::xCheckParameterSetConstraints(const int layerId)
   const int minCuSize = 1 << sps->getLog2MinCodingBlockSize();
   CHECK( ( pps->getPicWidthInLumaSamples() % ( std::max( 8, minCuSize) ) ) != 0, "Coded frame width must be a multiple of Max(8, the minimum unit size)" );
   CHECK( ( pps->getPicHeightInLumaSamples() % ( std::max( 8, minCuSize) ) ) != 0, "Coded frame height must be a multiple of Max(8, the minimum unit size)" );
-  if( !sps->getRprEnabledFlag() ) 
+  if( !sps->getRprEnabledFlag() )
   {
     CHECK( pps->getPicWidthInLumaSamples() != sps->getMaxPicWidthInLumaSamples(), "When res_change_in_clvs_allowed_flag equal to 0, the value of pic_width_in_luma_samples shall be equal to pic_width_max_in_luma_samples." );
     CHECK( pps->getPicHeightInLumaSamples() != sps->getMaxPicHeightInLumaSamples(), "When res_change_in_clvs_allowed_flag equal to 0, the value of pic_height_in_luma_samples shall be equal to pic_height_max_in_luma_samples." );
@@ -1462,7 +1462,7 @@ void DecLib::xCheckParameterSetConstraints(const int layerId)
   // When the current picture is not the first picture of the CLVS, if the value of SubpicId[ i ] is not equal to the value of SubpicId[ i ] of previous picture in decoding order in the same layer,
   // the nal_unit_type for all coded slice NAL units of the the subpicture with subpicture index i shall be in the range of IDR_W_RADL to CRA_NUT, inclusive.
   if( sps->getSubPicInfoPresentFlag() )
-  {    
+  {
     static std::unordered_map<int, std::vector<int>> previousSubPicIds;
 
     if( m_firstSliceInSequence[layerId] )
@@ -1501,7 +1501,7 @@ void DecLib::xCheckParameterSetConstraints(const int layerId)
           previousSubPicIds[layerId].push_back( pps->getSubPic( subPicIdx ).getSubPicID() );
         }
       }
-    }    
+    }
   }
 }
 
@@ -1612,7 +1612,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   }
   if( currSubPicIdx > m_maxDecSubPicIdx )
   {
-    m_maxDecSubPicIdx = currSubPicIdx; 
+    m_maxDecSubPicIdx = currSubPicIdx;
     m_maxDecSliceAddrInSubPic = currSliceAddr;
   }
   if ((sps->getVPSId() == 0) && (m_prevLayerID != MAX_INT))
@@ -1621,11 +1621,11 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
                                               "when sps_video_parameter_set_id is equal to 0");
   }
   CHECK((sps->getVPSId() > 0) && (vps == 0), "Invalid VPS");
-  if (vps != nullptr && (vps->getIndependentLayerFlag(nalu.m_nuhLayerId) == 0)) 
+  if (vps != nullptr && (vps->getIndependentLayerFlag(nalu.m_nuhLayerId) == 0))
   {
     bool pocIsSet = false;
     for(auto auNALit=m_accessUnitPicInfo.begin(); auNALit != m_accessUnitPicInfo.end();auNALit++)
-    {      
+    {
       for (int iRefIdx = 0; iRefIdx < m_apcSlicePilot->getNumRefIdx(REF_PIC_LIST_0) && !pocIsSet; iRefIdx++)
       {
         if (m_apcSlicePilot->getRefPic(REF_PIC_LIST_0, iRefIdx) && m_apcSlicePilot->getRefPic(REF_PIC_LIST_0, iRefIdx)->getPOC() == (*auNALit).m_POC)

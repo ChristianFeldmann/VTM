@@ -713,7 +713,7 @@ void EncGOP::xCreateIRAPLeadingSEIMessages (SEIMessages& seiMessages, const SPS 
 void EncGOP::xCreatePerPictureSEIMessages (int picInGOP, SEIMessages& seiMessages, SEIMessages& nestedSeiMessages, Slice *slice)
 {
   if ((m_pcCfg->getBufferingPeriodSEIEnabled()) && (slice->isIRAP() || slice->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR) &&
-    slice->getNalUnitLayerId()==slice->getVPS()->getLayerId(0) && 
+    slice->getNalUnitLayerId()==slice->getVPS()->getLayerId(0) &&
   (slice->getSPS()->getGeneralHrdParametersPresentFlag()))
   {
     SEIBufferingPeriod *bufferingPeriodSEI = new SEIBufferingPeriod();
@@ -750,7 +750,7 @@ void EncGOP::xCreateScalableNestingSEI(SEIMessages& seiMessages, SEIMessages& ne
     nestedSeiMessages.pop_front();
     tmpMessages.push_back(sei);
     SEIScalableNesting *nestingSEI = new SEIScalableNesting();
-    m_seiEncoder.initSEIScalableNesting(nestingSEI, tmpMessages); 
+    m_seiEncoder.initSEIScalableNesting(nestingSEI, tmpMessages);
     seiMessages.push_back(nestingSEI);
     tmpMessages.clear();
   }
@@ -999,7 +999,7 @@ void EncGOP::xCreatePictureTimingSEI  (int IRAPGOPid, SEIMessages& seiMessages, 
     {
       seiMessages.push_back(pictureTimingSEI);
 
-      if (m_pcCfg->getScalableNestingSEIEnabled()) 
+      if (m_pcCfg->getScalableNestingSEIEnabled())
       {
         SEIPictureTiming *pictureTimingSEIcopy = new SEIPictureTiming();
         pictureTimingSEI->copyTo(*pictureTimingSEIcopy);
@@ -2247,7 +2247,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     }
     //  Set reference list
     pcSlice->constructRefPicList(rcListPic);
-    
+
     xPicInitHashME( pcPic, pcSlice->getPPS(), rcListPic );
 
     if( m_pcCfg->getUseAMaxBT() )
@@ -2648,7 +2648,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
     pcPic->cs->picHeader->setPic(pcPic);
     pcPic->cs->picHeader->setValid();
-    if(pcPic->cs->sps->getFpelMmvdEnabledFlag()) 
+    if(pcPic->cs->sps->getFpelMmvdEnabledFlag())
     {
       // cannot set ph_fpel_mmvd_enabled_flag at slice level - need new picture-level version of checkDisFracMmvd algorithm?
       // m_pcSliceEncoder->checkDisFracMmvd( pcPic, 0, numberOfCtusInFrame );
@@ -3042,7 +3042,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         }
 
         // code picture header before first slice
-        if(sliceSegmentIdxCount == 0) 
+        if(sliceSegmentIdxCount == 0)
         {
           // code RPL in picture header or slice headers
           if( !m_pcCfg->getSliceLevelRpl() && (!pcSlice->getIdrPicFlag() || pcSlice->getSPS()->getIDRRefParamListPresent()) )
@@ -3054,13 +3054,13 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
             *picHeader->getLocalRPL0() = *pcSlice->getLocalRPL0();
             *picHeader->getLocalRPL1() = *pcSlice->getLocalRPL1();
           }
-          
+
           // code DBLK in picture header or slice headers
           if( !m_pcCfg->getSliceLevelDblk() )
           {
             picHeader->setDeblockingFilterOverrideFlag   ( pcSlice->getDeblockingFilterOverrideFlag()   );
-            picHeader->setDeblockingFilterDisable        ( pcSlice->getDeblockingFilterDisable()        ); 
-            picHeader->setDeblockingFilterBetaOffsetDiv2 ( pcSlice->getDeblockingFilterBetaOffsetDiv2() ); 
+            picHeader->setDeblockingFilterDisable        ( pcSlice->getDeblockingFilterDisable()        );
+            picHeader->setDeblockingFilterBetaOffsetDiv2 ( pcSlice->getDeblockingFilterBetaOffsetDiv2() );
             picHeader->setDeblockingFilterTcOffsetDiv2   ( pcSlice->getDeblockingFilterTcOffsetDiv2()   );
             picHeader->setDeblockingFilterCbBetaOffsetDiv2( pcSlice->getDeblockingFilterCbBetaOffsetDiv2() );
             picHeader->setDeblockingFilterCbTcOffsetDiv2  ( pcSlice->getDeblockingFilterCbTcOffsetDiv2() );
@@ -3079,13 +3079,13 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
             picHeader->setSaoEnabledFlag(CHANNEL_TYPE_LUMA,   pcSlice->getSaoEnabledFlag(CHANNEL_TYPE_LUMA  ));
             picHeader->setSaoEnabledFlag(CHANNEL_TYPE_CHROMA, pcSlice->getSaoEnabledFlag(CHANNEL_TYPE_CHROMA));
           }
-          
+
           // code ALF parameters in picture header or slice headers
           if( !m_pcCfg->getSliceLevelAlf() )
           {
             picHeader->setAlfEnabledFlag(COMPONENT_Y,  pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Y ) );
             picHeader->setAlfEnabledFlag(COMPONENT_Cb, pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Cb) );
-            picHeader->setAlfEnabledFlag(COMPONENT_Cr, pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Cr) );            
+            picHeader->setAlfEnabledFlag(COMPONENT_Cr, pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Cr) );
             picHeader->setNumAlfAps(pcSlice->getTileGroupNumAps());
             picHeader->setAlfAPSs(pcSlice->getTileGroupApsIdLuma());
             picHeader->setAlfApsIdChroma(pcSlice->getTileGroupApsIdChroma());
@@ -4150,7 +4150,7 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
       for( int iRefIndex = 0; iRefIndex < pcSlice->getNumRefIdx( RefPicList( iRefList ) ); iRefIndex++ )
       {
         const std::pair<int, int>& scaleRatio = pcSlice->getScalingRatio( RefPicList( iRefList ), iRefIndex );
-        
+
         if( pcPic->cs->picHeader->getEnableTMVPFlag() && pcSlice->getColFromL0Flag() == bool(1 - iRefList) && pcSlice->getColRefIdx() == iRefIndex )
         {
           if( scaleRatio.first != 1 << SCALE_RATIO_BITS || scaleRatio.second != 1 << SCALE_RATIO_BITS )
@@ -5069,7 +5069,7 @@ void EncGOP::xCreateExplicitReferencePictureSetFromReference( Slice* slice, PicL
         int refLayerIdx = vps->getGeneralLayerIdx( rpcPic->layerId );
 
         if( rpcPic->referenced && rpcPic->getPOC() == pic->getPOC() && vps->getDirectRefLayerFlag( layerIdx, refLayerIdx ) )
-        {          
+        {
           pLocalRPL0->setRefPicIdentifier( refPicIdxL0, 0, true, true, vps->getInterLayerRefIdc( layerIdx, refLayerIdx ) );
           refPicIdxL0++;
           numOfILRPL0++;
@@ -5135,7 +5135,7 @@ void EncGOP::xCreateExplicitReferencePictureSetFromReference( Slice* slice, PicL
           isAvailable = true;
           break;
         }
-      }      
+      }
     }
 
     if( isAvailable )
@@ -5148,7 +5148,7 @@ void EncGOP::xCreateExplicitReferencePictureSetFromReference( Slice* slice, PicL
     }
   }
 
-  
+
   // inter-layer reference pictures are added to the end of the reference picture list
   if( layerIdx && vps && !vps->getAllIndependentLayersFlag() )
   {

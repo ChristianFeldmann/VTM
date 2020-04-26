@@ -1186,7 +1186,7 @@ void CABACReader::cu_pred_data( CodingUnit &cu )
     if( ( !cu.Y().valid() || (!cu.isSepTree() && cu.Y().valid() ) ) && isChromaEnabled(cu.chromaFormat) )
     {
       bdpcm_mode(cu, ComponentID(CHANNEL_TYPE_CHROMA));
-    } 
+    }
     intra_chroma_pred_modes( cu );
     return;
   }
@@ -2198,7 +2198,7 @@ void CABACReader::merge_data( PredictionUnit& pu )
     RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET( STATS__CABAC_BITS__MERGE_FLAG );
 
     const bool ciipAvailable = pu.cs->sps->getUseCiip() && !pu.cu->skip && pu.cu->lwidth() < MAX_CU_SIZE && pu.cu->lheight() < MAX_CU_SIZE && pu.cu->lwidth() * pu.cu->lheight() >= 64;
-    const bool geoAvailable = pu.cu->cs->slice->getSPS()->getUseGeo() && pu.cu->cs->slice->isInterB() && 
+    const bool geoAvailable = pu.cu->cs->slice->getSPS()->getUseGeo() && pu.cu->cs->slice->isInterB() &&
       pu.cs->sps->getMaxNumGeoCand() > 1
                                                                       && pu.cu->lwidth() >= GEO_MIN_CU_SIZE && pu.cu->lheight() >= GEO_MIN_CU_SIZE
                                                                       && pu.cu->lwidth() <= GEO_MAX_CU_SIZE && pu.cu->lheight() <= GEO_MAX_CU_SIZE
@@ -2961,9 +2961,9 @@ void CABACReader::ts_flag( TransformUnit& tu, ComponentID compID )
     RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET_SIZE2( STATS__CABAC_BITS__MTS_FLAGS, tu.blocks[compID], compID );
     tsFlag = m_BinDecoder.decodeBin( Ctx::TransformSkipFlag( ctxIdx ) );
   }
-  
+
   tu.mtsIdx[compID] = tsFlag ? MTS_SKIP : MTS_DCT2_DCT2;
-  
+
   DTRACE(g_trace_ctx, D_SYNTAX, "ts_flag() etype=%d pos=(%d,%d) mtsIdx=%d\n", COMPONENT_Y, tu.cu->lx(), tu.cu->ly(), tsFlag);
 }
 
@@ -2978,7 +2978,7 @@ void CABACReader::mts_idx( CodingUnit& cu, CUCtx& cuCtx )
     RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET_SIZE2( STATS__CABAC_BITS__MTS_FLAGS, tu.blocks[COMPONENT_Y], COMPONENT_Y );
     int ctxIdx = 0;
     int symbol = m_BinDecoder.decodeBin( Ctx::MTSIdx(ctxIdx));
-    
+
     if( symbol )
     {
       ctxIdx = 1;
@@ -2987,7 +2987,7 @@ void CABACReader::mts_idx( CodingUnit& cu, CUCtx& cuCtx )
       {
         symbol  = m_BinDecoder.decodeBin( Ctx::MTSIdx(ctxIdx));
         mtsIdx += symbol;
-        
+
         if( !symbol )
         {
           break;
@@ -2995,12 +2995,12 @@ void CABACReader::mts_idx( CodingUnit& cu, CUCtx& cuCtx )
       }
     }
   }
-  
+
   tu.mtsIdx[COMPONENT_Y] = mtsIdx;
-  
+
   DTRACE(g_trace_ctx, D_SYNTAX, "mts_idx() etype=%d pos=(%d,%d) mtsIdx=%d\n", COMPONENT_Y, tu.cu->lx(), tu.cu->ly(), mtsIdx);
 }
-  
+
 void CABACReader::isp_mode( CodingUnit& cu )
 {
   if( !CU::isIntra( cu ) || !isLuma( cu.chType ) || cu.firstPU->multiRefIdx || !cu.cs->sps->getUseISP() || cu.bdpcmMode || !CU::canUseISP( cu, getFirstComponentOfChannel( cu.chType ) ) || cu.colorTransform )

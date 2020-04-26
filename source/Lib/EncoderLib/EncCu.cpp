@@ -577,7 +577,7 @@ void EncCu::xCompressCU( CodingStructure*& tempCS, CodingStructure*& bestCS, Par
   }
   SplitSeries splitmode = -1;
   uint8_t   bestLastPLTSize[MAX_NUM_CHANNEL_TYPE];
-  Pel       bestLastPLT[MAX_NUM_COMPONENT][MAXPLTPREDSIZE]; // store LastPLT for 
+  Pel       bestLastPLT[MAX_NUM_COMPONENT][MAXPLTPREDSIZE]; // store LastPLT for
   uint8_t   curLastPLTSize[MAX_NUM_CHANNEL_TYPE];
   Pel       curLastPLT[MAX_NUM_COMPONENT][MAXPLTPREDSIZE]; // store LastPLT if no partition
   for (int i = compBegin; i < (compBegin + numComp); i++)
@@ -628,7 +628,7 @@ void EncCu::xCompressCU( CodingStructure*& tempCS, CodingStructure*& bestCS, Par
     // TODO M0133 : double check encoder decisions with respect to chroma QG detection and actual encode
     int lgMinCuSize = sps.getLog2MinCodingBlockSize() +
       std::max<int>(0, floorLog2(sps.getCTUSize()) - sps.getLog2MinCodingBlockSize() - int(slice.getCuChromaQpOffsetSubdiv() / 2));
-    if( partitioner.currQgChromaEnable() ) 
+    if( partitioner.currQgChromaEnable() )
     {
       m_cuChromaQpOffsetIdxPlus1 = ( ( uiLPelX >> lgMinCuSize ) + ( uiTPelY >> lgMinCuSize ) ) % ( pps.getChromaQpOffsetListLen() + 1 );
     }
@@ -2124,13 +2124,13 @@ void EncCu::xCheckChromaQPOffset( CodingStructure& cs, Partitioner& partitioner 
   }
 
   // not needed after the first coded TU in the chroma QG
-  if( !partitioner.currQgChromaEnable() ) 
+  if( !partitioner.currQgChromaEnable() )
   {
     return;
   }
-  
+
   CodingUnit& cu = *cs.getCU( partitioner.chType );
-  
+
   // check if chroma is coded or not
   bool hasResidual = false;
   for( const TransformUnit &tu : CU::traverseTUs(cu) )

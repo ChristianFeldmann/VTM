@@ -153,7 +153,7 @@ public:
   void        residual_coding_subblockTS( CoeffCodingContext&           cctx,     const TCoeff*     coeff  );
   void        joint_cb_cr               ( const TransformUnit&          tu,       const int cbfMask );
 
-  
+
   void        codeAlfCtuEnableFlags     ( CodingStructure& cs, ChannelType channel, AlfParam* alfParam);
   void        codeAlfCtuEnableFlags     ( CodingStructure& cs, ComponentID compID, AlfParam* alfParam);
   void        codeAlfCtuEnableFlag      ( CodingStructure& cs, uint32_t ctuRsAddr, const int compIdx, AlfParam* alfParam );

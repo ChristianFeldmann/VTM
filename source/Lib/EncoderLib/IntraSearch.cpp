@@ -1569,7 +1569,7 @@ void IntraSearch::PLTSearch(CodingStructure &cs, Partitioner& partitioner, Compo
   reorderPLT(cs, partitioner, compBegin, numComp);
 
   bool idxExist[MAXPLTSIZE + 1] = { false };
-  preCalcPLTIndexRD(cs, partitioner, compBegin, numComp); // Pre-calculate distortions for each pixel 
+  preCalcPLTIndexRD(cs, partitioner, compBegin, numComp); // Pre-calculate distortions for each pixel
   double rdCost = MAX_DOUBLE;
   deriveIndexMap(cs, partitioner, compBegin, numComp, PLT_SCAN_HORTRAV, rdCost, idxExist); // Optimize palette index map (horizontal scan)
   if ((cu.curPLTSize[compBegin] + cu.useEscape[compBegin]) > 1)
@@ -1876,7 +1876,7 @@ void IntraSearch::preCalcPLTIndexRD(CodingStructure& cs, Partitioner& partitione
       }
       double rdCost = (double)error + m_pcRdCost->getLambda()*(double)rate;
       m_indexError[cu.curPLTSize[compBegin]][rasPos] = rdCost;
-      if (rdCost < minError) 
+      if (rdCost < minError)
       {
         minError = rdCost;
         bestIdx = (uint8_t)cu.curPLTSize[compBegin];
@@ -2056,12 +2056,12 @@ bool IntraSearch::deriveSubblockIndexMap(
       aboveScanPos = -1; // first column/row: above row is not valid
     }
 
-// Trellis stats: 
+// Trellis stats:
 // 1st state: same as previous scanned sample
 // 2nd state: Copy_Above mode
-// 3rd state: Index mode 
+// 3rd state: Index mode
 // Loop of current state
-    for ( int curState = 0; curState < NUM_TRELLIS_STATE; curState++ ) 
+    for ( int curState = 0; curState < NUM_TRELLIS_STATE; curState++ )
     {
       double    minRdCost          = MAX_DOUBLE;
       int       minState           = 0; // best prevState
@@ -2081,14 +2081,14 @@ bool IntraSearch::deriveSubblockIndexMap(
       {
         runType = PLT_RUN_COPY;
       }
-      else if ( curState == 2 ) // 3rd state: Index mode 
+      else if ( curState == 2 ) // 3rd state: Index mode
       {
         runType = PLT_RUN_INDEX;
         runIndex = m_minErrorIndexMap[currRasterPos];
       }
 
 // Loop of previous state
-      for ( int stateID = 0; stateID < NUM_TRELLIS_STATE; stateID++ ) 
+      for ( int stateID = 0; stateID < NUM_TRELLIS_STATE; stateID++ )
       {
         if ( m_stateCostRDOQ[refId][stateID] == MAX_DOUBLE )
         {
@@ -2110,7 +2110,7 @@ bool IntraSearch::deriveSubblockIndexMap(
         double rdCost = m_stateCostRDOQ[refId][stateID];
         if ( rdCost >= minRdCost ) continue;
 
-// Calculate Rd cost 
+// Calculate Rd cost
         bool prevCodedRunType = m_prevRunTypeRDOQ[refId][stateID];
         int  prevCodedPos     = m_prevRunPosRDOQ [refId][stateID];
         const BinFracBits* fracBitsPt = (m_prevRunTypeRDOQ[refId][stateID] == PLT_RUN_INDEX) ? fracBitsPltIndexINDEX : fracBitsPltIndexCOPY;
@@ -2419,8 +2419,8 @@ void IntraSearch::derivePLTLossy(CodingStructure& cs, Partitioner& partitioner, 
 
       ComponentID tmpCompBegin = compBegin;
       int tmpNumComp = numComp;
-      if( cs.sps->getChromaFormatIdc() != CHROMA_444 && 
-          numComp == 3 && 
+      if( cs.sps->getChromaFormatIdc() != CHROMA_444 &&
+          numComp == 3 &&
          (x != ((x >> scaleX) << scaleX) || (y != ((y >> scaleY) << scaleY))) )
       {
         tmpCompBegin = COMPONENT_Y;
@@ -4197,7 +4197,7 @@ bool IntraSearch::xRecurIntraCodingACTQT(CodingStructure &cs, Partitioner &parti
 
     resiBuf.colorSpaceConvert(orgResiBuf, true, cs.slice->clpRng(COMPONENT_Y));
 
-    // 2. luma residual optimization 
+    // 2. luma residual optimization
     double     dSingleCostLuma = MAX_DOUBLE;
     bool       checkTransformSkip = sps.getTransformSkipEnabledFlag();
     int        bestLumaModeId = 0;
@@ -4405,7 +4405,7 @@ bool IntraSearch::xRecurIntraCodingACTQT(CodingStructure &cs, Partitioner &parti
       else
       {
         singleTmpFracBits = xGetIntraFracBitsQT(*csFull, partitioner, true, false, -1, TU_NO_ISP, &cuCtx);
-        
+
         if (tu.mtsIdx[COMPONENT_Y] > MTS_SKIP)
         {
           if (!cuCtx.mtsLastScanPos)
@@ -4686,7 +4686,7 @@ bool IntraSearch::xRecurIntraCodingACTQT(CodingStructure &cs, Partitioner &parti
       bool        cbfDCT2 = true;
 
       trModes.clear();
-      trModes.push_back(TrMode(0, true)); // DCT2 
+      trModes.push_back(TrMode(0, true)); // DCT2
       if (tsAllowed)
       {
         trModes.push_back(TrMode(1, true));//TS
@@ -5032,7 +5032,7 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
       }
       CHECK(!currTU.Cb().valid(), "Invalid TU");
 
-      
+
       const int  totalModesToTest            = nNumTransformCands;
       bool cbfDCT2 = true;
       const bool isOneMode                   = false;
@@ -5213,7 +5213,7 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
 
         if (!checkTSOnly || currTU.cu->bdpcmModeChroma)
         {
-          trModes.push_back(TrMode(0, true)); // DCT2 
+          trModes.push_back(TrMode(0, true)); // DCT2
         }
         if (tsAllowed && !checkDCTOnly)
         {
@@ -5584,7 +5584,7 @@ void IntraSearch::xGetNextISPMode(ModeInfo& modeInfo, const ModeInfo* lastMode, 
 
   int maxNumSubPartitions = ispTestedModes.numTotalParts[nextISPcandSplitType - 1];
 
-  // We try to break the split here for lfnst > 0 according to the first mode 
+  // We try to break the split here for lfnst > 0 according to the first mode
   if (curIspLfnstIdx > 0 && ispTestedModes.numTestedModes[nextISPcandSplitType - 1] == 1)
   {
     int firstModeThisSplit = ispTestedModes.getTestedIntraMode(nextISPcandSplitType, 0);
@@ -5612,7 +5612,7 @@ void IntraSearch::xGetNextISPMode(ModeInfo& modeInfo, const ModeInfo* lastMode, 
     }
   }
 
-  // We try to break the split here for lfnst = 0 or all lfnst indices according to the first two modes 
+  // We try to break the split here for lfnst = 0 or all lfnst indices according to the first two modes
   if (curIspLfnstIdx == 0 && ispTestedModes.numTestedModes[nextISPcandSplitType - 1] == 2)
   {
     // Split stop criteria after checking the performance of previously tested intra modes
@@ -5653,7 +5653,7 @@ void IntraSearch::xGetNextISPMode(ModeInfo& modeInfo, const ModeInfo* lastMode, 
 
     if (!stopThisSplit)
     {
-      // 2) One split type may be discarded by comparing the number of sub-partitions of the best angle modes of both splits 
+      // 2) One split type may be discarded by comparing the number of sub-partitions of the best angle modes of both splits
       ISPType otherSplit = nextISPcandSplitType == HOR_INTRA_SUBPARTITIONS ? VER_INTRA_SUBPARTITIONS : HOR_INTRA_SUBPARTITIONS;
       int  numSubPartsBestMode2OtherSplit = mode2 != -1 ? ispTestedModes.getNumCompletedSubParts(otherSplit, mode2) : -1;
       if (numSubPartsBestMode2OtherSplit != -1 && numSubPartsBestMode2 != -1 && ispTestedModes.bestSplitSoFar != nextISPcandSplitType)
@@ -5795,7 +5795,7 @@ void IntraSearch::xFindAlreadyTestedNearbyIntraModes(int lfnstIdx, int currentIn
     }
   }
 
-  //The mode has not been checked for another lfnstIdx value, so now we look for a similar mode within a window using the same lfnstIdx 
+  //The mode has not been checked for another lfnstIdx value, so now we look for a similar mode within a window using the same lfnstIdx
   for (int k = 1; k <= windowSize; k++)
   {
     int off = currentIntraMode - 2 - k;
@@ -5871,7 +5871,7 @@ bool IntraSearch::xSortISPCandList(double bestCostSoFar, double bestNonISPCost, 
 
   ModeInfo refMode = origHadList.at(0);
   auto* destListPtr = &m_ispCandListHor;
-  //List creation 
+  //List creation
 
   if (m_pcEncCfg->getUseFastISP() && bestISPModeInRelCU != -1) //RelCU intra mode
   {
@@ -6079,7 +6079,7 @@ bool IntraSearch::updateISPStatusFromRelCU( double bestNonISPCostCurrCu, ModeInf
 
 void IntraSearch::xFinishISPModes()
 {
-  //Continue to the next lfnst index 
+  //Continue to the next lfnst index
   m_curIspLfnstIdx++;
 
   if (m_curIspLfnstIdx < NUM_LFNST_NUM_PER_SET)

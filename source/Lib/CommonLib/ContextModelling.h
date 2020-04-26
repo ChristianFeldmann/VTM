@@ -298,7 +298,7 @@ public:
 
   int deriveModCoeff(int rightPixel, int belowPixel, int absCoeff, int bdpcm = 0)
   {
-    
+
     if (absCoeff == 0)
       return 0;
     int pred1, absBelow = abs(belowPixel), absRight = abs(rightPixel);
@@ -324,7 +324,7 @@ public:
 
   int decDeriveModCoeff(int rightPixel, int belowPixel, int absCoeff)
   {
-    
+
     if (absCoeff == 0)
       return 0;
 

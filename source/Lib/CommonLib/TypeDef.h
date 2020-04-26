@@ -149,7 +149,6 @@
 
 
 
-#define JVET_Q0055_MTS_SIGNALLING                         1 // JVET-Q0055: Check for transform coefficients outside the 16x16 area
 #define JVET_Q0480_RASTER_RECT_SLICES                     1 // JVET-Q0480: Eliminate redundant slice height syntax when in raster rectangular slice mode (tile_idx_delta_present_flag == 0)
 
 #define JVET_Q0775_PH_IN_SH                               1 // JVET-Q0755: Allow picture header in slice header

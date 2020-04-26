@@ -60,7 +60,6 @@
 
 
 
-#define JVET_Q0244                                        1 // JVET-Q0244 Aspect 3: Signal the slice width(height) in tiles when the number of tile columns(rows) is greater than 1.
 
 #define JVET_Q0355_DCI_LEVEL_IDC_CONSTRAINT               1 // JVET-Q0355: max level signaled in the DCI shall not be less than the level signaled in the SPS
 

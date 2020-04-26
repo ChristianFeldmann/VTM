@@ -58,7 +58,6 @@
 
 
 
-#define JVET_Q0210_SUBPIC_VIRTUAL_BOUNDARY_CONSTRAINT     1 // JVET-Q0210 (aspect 7): when subpicture signalling is present, virtual boundaries if present shall be in the SPS.
 
 #define JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG           1 // JVET-Q0246: virtual boundary enable flag in the SPS.
 

@@ -3091,9 +3091,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   {
     READ_FLAG( uiCode, "ph_virtual_boundaries_present_flag" );
     picHeader->setVirtualBoundariesPresentFlag( uiCode != 0 );
-#if JVET_Q0210_SUBPIC_VIRTUAL_BOUNDARY_CONSTRAINT
     CHECK( sps->getSubPicInfoPresentFlag() && picHeader->getVirtualBoundariesPresentFlag(), "When the subpicture info is present, the signalling of the virtual boundary position, if present, shall be in SPS" );
-#endif
     if( picHeader->getVirtualBoundariesPresentFlag() )
     {
 #else

@@ -3140,12 +3140,10 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
             picHeader->setDeblockingFilterDisable        ( pcSlice->getDeblockingFilterDisable()        ); 
             picHeader->setDeblockingFilterBetaOffsetDiv2 ( pcSlice->getDeblockingFilterBetaOffsetDiv2() ); 
             picHeader->setDeblockingFilterTcOffsetDiv2   ( pcSlice->getDeblockingFilterTcOffsetDiv2()   );
-#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
             picHeader->setDeblockingFilterCbBetaOffsetDiv2( pcSlice->getDeblockingFilterCbBetaOffsetDiv2() );
             picHeader->setDeblockingFilterCbTcOffsetDiv2  ( pcSlice->getDeblockingFilterCbTcOffsetDiv2() );
             picHeader->setDeblockingFilterCrBetaOffsetDiv2( pcSlice->getDeblockingFilterCrBetaOffsetDiv2() );
             picHeader->setDeblockingFilterCrTcOffsetDiv2  ( pcSlice->getDeblockingFilterCrTcOffsetDiv2() );
-#endif
           }
 
           if (!m_pcCfg->getSliceLevelDeltaQp())
@@ -4940,12 +4938,10 @@ void EncGOP::applyDeblockingFilterMetric( Picture* pcPic, uint32_t uiNumSlices )
       pcLocalSlice->setDeblockingFilterDisable        ( false);
       pcLocalSlice->setDeblockingFilterBetaOffsetDiv2 ( offset );
       pcLocalSlice->setDeblockingFilterTcOffsetDiv2   ( offset );
-#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
       pcLocalSlice->setDeblockingFilterCbBetaOffsetDiv2 ( offset );
       pcLocalSlice->setDeblockingFilterCbTcOffsetDiv2   ( offset );
       pcLocalSlice->setDeblockingFilterCrBetaOffsetDiv2 ( offset );
       pcLocalSlice->setDeblockingFilterCrTcOffsetDiv2   ( offset );
-#endif
     }
   }
   else
@@ -4958,12 +4954,10 @@ void EncGOP::applyDeblockingFilterMetric( Picture* pcPic, uint32_t uiNumSlices )
       pcLocalSlice->setDeblockingFilterDisable       ( pcPPS->getPPSDeblockingFilterDisabledFlag() );
       pcLocalSlice->setDeblockingFilterBetaOffsetDiv2( pcPPS->getDeblockingFilterBetaOffsetDiv2() );
       pcLocalSlice->setDeblockingFilterTcOffsetDiv2  ( pcPPS->getDeblockingFilterTcOffsetDiv2()   );
-#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
       pcLocalSlice->setDeblockingFilterCbBetaOffsetDiv2 ( pcPPS->getDeblockingFilterCbBetaOffsetDiv2() );
       pcLocalSlice->setDeblockingFilterCbTcOffsetDiv2   ( pcPPS->getDeblockingFilterCbTcOffsetDiv2() );
       pcLocalSlice->setDeblockingFilterCrBetaOffsetDiv2 ( pcPPS->getDeblockingFilterCrBetaOffsetDiv2() );
       pcLocalSlice->setDeblockingFilterCrTcOffsetDiv2   ( pcPPS->getDeblockingFilterCrTcOffsetDiv2() );
-#endif
     }
   }
 }
@@ -5025,12 +5019,10 @@ void EncGOP::applyDeblockingFilterParameterSelection( Picture* pcPic, const uint
         pcSlice->setDeblockingFilterDisable       ( false);
         pcSlice->setDeblockingFilterBetaOffsetDiv2( betaOffsetDiv2 );
         pcSlice->setDeblockingFilterTcOffsetDiv2  ( tcOffsetDiv2 );
-#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
         pcSlice->setDeblockingFilterCbBetaOffsetDiv2( betaOffsetDiv2 );
         pcSlice->setDeblockingFilterCbTcOffsetDiv2  ( tcOffsetDiv2 );
         pcSlice->setDeblockingFilterCrBetaOffsetDiv2( betaOffsetDiv2 );
         pcSlice->setDeblockingFilterCrTcOffsetDiv2  ( tcOffsetDiv2 );
-#endif
       }
 
       // restore reconstruction
@@ -5089,12 +5081,10 @@ void EncGOP::applyDeblockingFilterParameterSelection( Picture* pcPic, const uint
       pcSlice->setDeblockingFilterDisable        ( pcPPS->getPPSDeblockingFilterDisabledFlag() );
       pcSlice->setDeblockingFilterBetaOffsetDiv2 ( pcPPS->getDeblockingFilterBetaOffsetDiv2() );
       pcSlice->setDeblockingFilterTcOffsetDiv2   ( pcPPS->getDeblockingFilterTcOffsetDiv2()   );
-#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
       pcSlice->setDeblockingFilterCbBetaOffsetDiv2 ( pcPPS->getDeblockingFilterBetaOffsetDiv2() );
       pcSlice->setDeblockingFilterCbTcOffsetDiv2   ( pcPPS->getDeblockingFilterTcOffsetDiv2()   );
       pcSlice->setDeblockingFilterCrBetaOffsetDiv2 ( pcPPS->getDeblockingFilterBetaOffsetDiv2() );
       pcSlice->setDeblockingFilterCrTcOffsetDiv2   ( pcPPS->getDeblockingFilterTcOffsetDiv2()   );
-#endif
     }
   }
   else
@@ -5106,12 +5096,10 @@ void EncGOP::applyDeblockingFilterParameterSelection( Picture* pcPic, const uint
       pcSlice->setDeblockingFilterDisable        ( false );
       pcSlice->setDeblockingFilterBetaOffsetDiv2 ( betaOffsetDiv2Best);
       pcSlice->setDeblockingFilterTcOffsetDiv2   ( tcOffsetDiv2Best);
-#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
       pcSlice->setDeblockingFilterCbBetaOffsetDiv2 ( betaOffsetDiv2Best);
       pcSlice->setDeblockingFilterCbTcOffsetDiv2   ( tcOffsetDiv2Best);
       pcSlice->setDeblockingFilterCrBetaOffsetDiv2 ( betaOffsetDiv2Best);
       pcSlice->setDeblockingFilterCrTcOffsetDiv2   ( tcOffsetDiv2Best);
-#endif
     }
   }
 }

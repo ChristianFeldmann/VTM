@@ -1647,27 +1647,22 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
   {
     pps.setDeblockingFilterBetaOffsetDiv2( getLoopFilterBetaOffset() );
     pps.setDeblockingFilterTcOffsetDiv2( getLoopFilterTcOffset() );
-#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
     pps.setDeblockingFilterCbBetaOffsetDiv2( getLoopFilterCbBetaOffset() );
     pps.setDeblockingFilterCbTcOffsetDiv2( getLoopFilterCbTcOffset() );
     pps.setDeblockingFilterCrBetaOffsetDiv2( getLoopFilterCrBetaOffset() );
     pps.setDeblockingFilterCrTcOffsetDiv2( getLoopFilterCrTcOffset() );
-#endif
   }
   else
   {
     pps.setDeblockingFilterBetaOffsetDiv2(0);
     pps.setDeblockingFilterTcOffsetDiv2(0);
-#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
     pps.setDeblockingFilterCbBetaOffsetDiv2(0);
     pps.setDeblockingFilterCbTcOffsetDiv2(0);
     pps.setDeblockingFilterCrBetaOffsetDiv2(0);
     pps.setDeblockingFilterCrTcOffsetDiv2(0);
-#endif
   }
 
   // deblockingFilterControlPresentFlag is true if any of the settings differ from the inferred values:
-#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
   const bool deblockingFilterControlPresentFlag = pps.getDeblockingFilterOverrideEnabledFlag()   ||
                                                   pps.getPPSDeblockingFilterDisabledFlag()       ||
                                                   pps.getDeblockingFilterBetaOffsetDiv2() != 0   ||
@@ -1676,12 +1671,6 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
                                                   pps.getDeblockingFilterCbTcOffsetDiv2() != 0   ||
                                                   pps.getDeblockingFilterCrBetaOffsetDiv2() != 0 ||
                                                   pps.getDeblockingFilterCrTcOffsetDiv2() != 0;
-#else
-  const bool deblockingFilterControlPresentFlag = pps.getDeblockingFilterOverrideEnabledFlag() ||
-                                                  pps.getPPSDeblockingFilterDisabledFlag()     ||
-                                                  pps.getDeblockingFilterBetaOffsetDiv2() != 0 ||
-                                                  pps.getDeblockingFilterTcOffsetDiv2() != 0;
-#endif
 
   pps.setDeblockingFilterControlPresentFlag(deblockingFilterControlPresentFlag);
 

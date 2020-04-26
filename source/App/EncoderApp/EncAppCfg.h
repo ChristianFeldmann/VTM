@@ -419,12 +419,10 @@ protected:
   bool      m_loopFilterOffsetInPPS;                         ///< offset for deblocking filter in 0 = slice header, 1 = PPS
   int       m_loopFilterBetaOffsetDiv2;                     ///< beta offset for deblocking filter
   int       m_loopFilterTcOffsetDiv2;                       ///< tc offset for deblocking filter
-#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
   int       m_loopFilterCbBetaOffsetDiv2;                     ///< beta offset for Cb deblocking filter
   int       m_loopFilterCbTcOffsetDiv2;                       ///< tc offset for Cb deblocking filter
   int       m_loopFilterCrBetaOffsetDiv2;                     ///< beta offset for Cr deblocking filter
   int       m_loopFilterCrTcOffsetDiv2;                       ///< tc offset for Cr deblocking filter
-#endif
 #if W0038_DB_OPT
   int       m_deblockingFilterMetric;                         ///< blockiness metric in encoder
 #else

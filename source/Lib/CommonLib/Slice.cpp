@@ -67,12 +67,10 @@ Slice::Slice()
 , m_deblockingFilterOverrideFlag  ( false )
 , m_deblockingFilterBetaOffsetDiv2( 0 )
 , m_deblockingFilterTcOffsetDiv2  ( 0 )
-#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
 , m_deblockingFilterCbBetaOffsetDiv2( 0 )
 , m_deblockingFilterCbTcOffsetDiv2  ( 0 )
 , m_deblockingFilterCrBetaOffsetDiv2( 0 )
 , m_deblockingFilterCrTcOffsetDiv2  ( 0 )
-#endif
 , m_tsResidualCodingDisabledFlag  ( false )
 , m_pendingRasInit                ( false )
 , m_bCheckLDC                     ( false )
@@ -228,12 +226,10 @@ void Slice::inheritFromPicHeader( PicHeader *picHeader, const PPS *pps, const SP
   setDeblockingFilterDisable( picHeader->getDeblockingFilterDisable() );
   setDeblockingFilterBetaOffsetDiv2( picHeader->getDeblockingFilterBetaOffsetDiv2() );
   setDeblockingFilterTcOffsetDiv2( picHeader->getDeblockingFilterTcOffsetDiv2() );
-#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
   setDeblockingFilterCbBetaOffsetDiv2( picHeader->getDeblockingFilterCbBetaOffsetDiv2() );
   setDeblockingFilterCbTcOffsetDiv2( picHeader->getDeblockingFilterCbTcOffsetDiv2() );
   setDeblockingFilterCrBetaOffsetDiv2( picHeader->getDeblockingFilterCrBetaOffsetDiv2() );
   setDeblockingFilterCrTcOffsetDiv2( picHeader->getDeblockingFilterCrTcOffsetDiv2() );
-#endif
 
   setSaoEnabledFlag(CHANNEL_TYPE_LUMA,     picHeader->getSaoEnabledFlag(CHANNEL_TYPE_LUMA));
   setSaoEnabledFlag(CHANNEL_TYPE_CHROMA,   picHeader->getSaoEnabledFlag(CHANNEL_TYPE_CHROMA));
@@ -941,12 +937,10 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
   m_deblockingFilterOverrideFlag    = pSrc->m_deblockingFilterOverrideFlag;
   m_deblockingFilterBetaOffsetDiv2  = pSrc->m_deblockingFilterBetaOffsetDiv2;
   m_deblockingFilterTcOffsetDiv2    = pSrc->m_deblockingFilterTcOffsetDiv2;
-#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
   m_deblockingFilterCbBetaOffsetDiv2  = pSrc->m_deblockingFilterCbBetaOffsetDiv2;
   m_deblockingFilterCbTcOffsetDiv2    = pSrc->m_deblockingFilterCbTcOffsetDiv2;
   m_deblockingFilterCrBetaOffsetDiv2  = pSrc->m_deblockingFilterCrBetaOffsetDiv2;
   m_deblockingFilterCrTcOffsetDiv2    = pSrc->m_deblockingFilterCrTcOffsetDiv2;
-#endif
   m_tsResidualCodingDisabledFlag      = pSrc->m_tsResidualCodingDisabledFlag;
 
   for (i = 0; i < NUM_REF_PIC_LIST_01; i++)
@@ -2218,12 +2212,10 @@ PicHeader::PicHeader()
 , m_deblockingFilterDisable                       ( 0 )
 , m_deblockingFilterBetaOffsetDiv2                ( 0 )
 , m_deblockingFilterTcOffsetDiv2                  ( 0 )
-#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
 , m_deblockingFilterCbBetaOffsetDiv2              ( 0 )
 , m_deblockingFilterCbTcOffsetDiv2                ( 0 )
 , m_deblockingFilterCrBetaOffsetDiv2              ( 0 )
 , m_deblockingFilterCrTcOffsetDiv2                ( 0 )
-#endif
 , m_lmcsEnabledFlag                               ( 0 )
 , m_lmcsApsId                                     ( -1 )
 , m_lmcsAps                                       ( nullptr )
@@ -2311,12 +2303,10 @@ void PicHeader::initPicHeader()
   m_deblockingFilterDisable                       = 0;
   m_deblockingFilterBetaOffsetDiv2                = 0;
   m_deblockingFilterTcOffsetDiv2                  = 0;
-#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
   m_deblockingFilterCbBetaOffsetDiv2              = 0;
   m_deblockingFilterCbTcOffsetDiv2                = 0;
   m_deblockingFilterCrBetaOffsetDiv2              = 0;
   m_deblockingFilterCrTcOffsetDiv2                = 0;
-#endif
   m_lmcsEnabledFlag                               = 0;
   m_lmcsApsId                                     = -1;
   m_lmcsAps                                       = nullptr;

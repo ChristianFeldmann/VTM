@@ -68,12 +68,10 @@ struct GOPEntry
   double m_QPFactor;
   int m_tcOffsetDiv2;
   int m_betaOffsetDiv2;
-#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
   int m_CbTcOffsetDiv2;
   int m_CbBetaOffsetDiv2;
   int m_CrTcOffsetDiv2;
   int m_CrBetaOffsetDiv2;
-#endif
   int m_temporalId;
   bool m_refPic;
   int8_t m_sliceType;
@@ -99,12 +97,10 @@ struct GOPEntry
   , m_QPFactor(0)
   , m_tcOffsetDiv2(0)
   , m_betaOffsetDiv2(0)
-#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
   , m_CbTcOffsetDiv2(0)
   , m_CbBetaOffsetDiv2(0)
   , m_CrTcOffsetDiv2(0)
   , m_CrBetaOffsetDiv2(0)
-#endif
   , m_temporalId(0)
   , m_refPic(false)
   , m_sliceType('P')
@@ -388,12 +384,10 @@ protected:
   bool      m_loopFilterOffsetInPPS;
   int       m_loopFilterBetaOffsetDiv2;
   int       m_loopFilterTcOffsetDiv2;
-#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
   int       m_loopFilterCbBetaOffsetDiv2;
   int       m_loopFilterCbTcOffsetDiv2;
   int       m_loopFilterCrBetaOffsetDiv2;
   int       m_loopFilterCrTcOffsetDiv2;
-#endif
 #if W0038_DB_OPT
   int       m_deblockingFilterMetric;
 #else
@@ -1176,12 +1170,10 @@ public:
   void      setLoopFilterOffsetInPPS        ( bool  b )      { m_loopFilterOffsetInPPS      = b; }
   void      setLoopFilterBetaOffset         ( int   i )      { m_loopFilterBetaOffsetDiv2  = i; }
   void      setLoopFilterTcOffset           ( int   i )      { m_loopFilterTcOffsetDiv2    = i; }
-#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
   void      setLoopFilterCbBetaOffset       ( int   i )      { m_loopFilterCbBetaOffsetDiv2  = i; }
   void      setLoopFilterCbTcOffset         ( int   i )      { m_loopFilterCbTcOffsetDiv2    = i; }
   void      setLoopFilterCrBetaOffset       ( int   i )      { m_loopFilterCrBetaOffsetDiv2  = i; }
   void      setLoopFilterCrTcOffset         ( int   i )      { m_loopFilterCrTcOffsetDiv2    = i; }
-#endif
 #if W0038_DB_OPT
   void      setDeblockingFilterMetric       ( int   i )      { m_deblockingFilterMetric = i; }
 #else
@@ -1294,12 +1286,10 @@ public:
   bool      getLoopFilterOffsetInPPS        ()      { return m_loopFilterOffsetInPPS; }
   int       getLoopFilterBetaOffset         ()      { return m_loopFilterBetaOffsetDiv2; }
   int       getLoopFilterTcOffset           ()      { return m_loopFilterTcOffsetDiv2; }
-#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
   int       getLoopFilterCbBetaOffset       ()      { return m_loopFilterCbBetaOffsetDiv2; }
   int       getLoopFilterCbTcOffset         ()      { return m_loopFilterCbTcOffsetDiv2;   }
   int       getLoopFilterCrBetaOffset       ()      { return m_loopFilterCrBetaOffsetDiv2; }
   int       getLoopFilterCrTcOffset         ()      { return m_loopFilterCrTcOffsetDiv2;   }
-#endif
 #if W0038_DB_OPT
   int       getDeblockingFilterMetric       ()      { return m_deblockingFilterMetric; }
 #else

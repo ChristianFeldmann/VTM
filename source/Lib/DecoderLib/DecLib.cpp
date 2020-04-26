@@ -1713,7 +1713,6 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
     CHECK(m_prevLayerID != nalu.m_nuhLayerId, "All VCL NAL unit in the CVS shall have the same value of nuh_layer_id "
                                               "when sps_video_parameter_set_id is equal to 0");
   }
-#if JVET_P0101_POC_MULTILAYER
   CHECK((sps->getVPSId() > 0) && (vps == 0), "Invalid VPS");
   if (vps != nullptr && (vps->getIndependentLayerFlag(nalu.m_nuhLayerId) == 0)) 
   {
@@ -1746,7 +1745,6 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
       }
     }
   }
-#endif
 
   // update independent slice index
   uint32_t uiIndependentSliceIdx = 0;
@@ -1758,12 +1756,6 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   m_apcSlicePilot->setIndependentSliceIdx(uiIndependentSliceIdx);
 
 #if K0149_BLOCK_STATISTICS
-#if !JVET_P0101_POC_MULTILAYER
-  PPS *pps = m_parameterSetManager.getPPS(m_picHeader.getPPSId());
-  CHECK(pps == 0, "No PPS present");
-  SPS *sps = m_parameterSetManager.getSPS(pps->getSPSId());
-  CHECK(sps == 0, "No SPS present");
-#endif
   writeBlockStatisticsHeader(sps);
 #endif
 
@@ -1916,25 +1908,17 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
       m_lastNoIncorrectPicOutputFlag)                     //Reset POC MSB when CRA or GDR has NoIncorrectPicOutputFlag equal to 1
 #endif
   {
-#if !JVET_P0101_POC_MULTILAYER
-    PPS *pps = m_parameterSetManager.getPPS(m_picHeader.getPPSId());
-    CHECK(pps == 0, "No PPS present");
-    SPS *sps = m_parameterSetManager.getSPS(pps->getSPSId());
-    CHECK(sps == 0, "No SPS present");
-#endif
     int iMaxPOClsb = 1 << sps->getBitsForPOC();
     m_apcSlicePilot->setPOC( m_apcSlicePilot->getPOC() & (iMaxPOClsb - 1) );
     xUpdatePreviousTid0POC(m_apcSlicePilot);
   }
 
-#if JVET_P0101_POC_MULTILAYER
   AccessUnitPicInfo picInfo;
   picInfo.m_nalUnitType = nalu.m_nalUnitType;
   picInfo.m_nuhLayerId  = nalu.m_nuhLayerId;
   picInfo.m_temporalId  = nalu.m_temporalId;
   picInfo.m_POC         = m_apcSlicePilot->getPOC();
   m_accessUnitPicInfo.push_back(picInfo);
-#endif
 
   // Skip pictures due to random access
 

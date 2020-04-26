@@ -50,128 +50,16 @@
 #include <assert.h>
 #include <cassert>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+//########### place macros to be removed in next cycle below this line ###############
 
 #define JVET_Q0471_CHROMA_QT_SPLIT                        1 // JVET-Q0471: Chroma QT split
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+//########### place macros to be be kept below this line ###############
 
 #define JVET_M0497_MATRIX_MULT                            0 // 0: Fast method; 1: Matrix multiplication
 
-
-
-
 #define APPLY_SBT_SL_ON_MTS                               1 // apply save & load fast algorithm on inter MTS when SBT is on
-
-
-
-
-
-
-
-
-
 
 typedef std::pair<int, bool> TrMode;
 typedef std::pair<int, int>  TrCost;
@@ -182,8 +70,6 @@ typedef std::pair<int, int>  TrCost;
 #define REUSE_CU_RESULTS_WITH_MULTIPLE_TUS                1
 #endif
 // clang-format on
-
-
 
 #ifndef JVET_J0090_MEMORY_BANDWITH_MEASURE
 #define JVET_J0090_MEMORY_BANDWITH_MEASURE                0

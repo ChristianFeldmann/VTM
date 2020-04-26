@@ -549,11 +549,7 @@ void InterPrediction::xPredInterBi(PredictionUnit &pu, PelUnitBuf &pcYuvPred, co
     }
     else
     {
-#if JVET_Q0128_DMVR_BDOF_ENABLING_CONDITION
       const bool biocheck0 = !((wp0[COMPONENT_Y].bPresentFlag || wp0[COMPONENT_Cb].bPresentFlag || wp0[COMPONENT_Cr].bPresentFlag || wp1[COMPONENT_Y].bPresentFlag || wp1[COMPONENT_Cb].bPresentFlag || wp1[COMPONENT_Cr].bPresentFlag) && slice.getSliceType() == B_SLICE);
-#else
-      const bool biocheck0 = !((wp0[COMPONENT_Y].bPresentFlag || wp1[COMPONENT_Y].bPresentFlag) && slice.getSliceType() == B_SLICE);
-#endif
       const bool biocheck1 = !(pps.getUseWP() && slice.getSliceType() == P_SLICE);
       if (biocheck0
         && biocheck1
@@ -1438,42 +1434,12 @@ void InterPrediction::xWeightedAverage(const PredictionUnit& pu, const CPelUnitB
           yuvDstTmp->bufs[0].copyFrom(pcYuvDst.bufs[0]);
       }
     }
-#if JVET_Q0128_DMVR_BDOF_ENABLING_CONDITION
     if (!bioApplied && (lumaOnly || chromaOnly))
     {
       pcYuvDst.addAvg(pcYuvSrc0, pcYuvSrc1, clpRngs, chromaOnly, lumaOnly);
     }
     else
       pcYuvDst.addAvg(pcYuvSrc0, pcYuvSrc1, clpRngs, bioApplied);
-#else
-    if (pu.cs->pps->getWPBiPred())
-    {
-      const int iRefIdx0 = pu.refIdx[0];
-      const int iRefIdx1 = pu.refIdx[1];
-      WPScalingParam  *pwp0;
-      WPScalingParam  *pwp1;
-      getWpScaling(pu.cu->slice, iRefIdx0, iRefIdx1, pwp0, pwp1);
-      if (!bioApplied)
-      {
-        if (!chromaOnly)
-        addWeightBiComponent(pcYuvSrc0, pcYuvSrc1, pu.cu->slice->clpRngs(), pwp0, pwp1, pcYuvDst, true, COMPONENT_Y);
-      }
-      if (!lumaOnly)
-      {
-        addWeightBiComponent(pcYuvSrc0, pcYuvSrc1, pu.cu->slice->clpRngs(), pwp0, pwp1, pcYuvDst, true, COMPONENT_Cb);
-        addWeightBiComponent(pcYuvSrc0, pcYuvSrc1, pu.cu->slice->clpRngs(), pwp0, pwp1, pcYuvDst, true, COMPONENT_Cr);
-      }
-    }
-    else
-    {
-      if (!bioApplied && (lumaOnly || chromaOnly))
-      {
-        pcYuvDst.addAvg(pcYuvSrc0, pcYuvSrc1, clpRngs, chromaOnly, lumaOnly);
-      }
-      else
-      pcYuvDst.addAvg(pcYuvSrc0, pcYuvSrc1, clpRngs, bioApplied);
-    }
-#endif
     if (yuvDstTmp)
     {
       if (bioApplied)
@@ -1608,11 +1574,7 @@ void InterPrediction::motionCompensation( PredictionUnit &pu, PelUnitBuf &predBu
       }
       else
       {
-#if JVET_Q0128_DMVR_BDOF_ENABLING_CONDITION
         const bool biocheck0 = !((wp0[COMPONENT_Y].bPresentFlag || wp0[COMPONENT_Cb].bPresentFlag || wp0[COMPONENT_Cr].bPresentFlag || wp1[COMPONENT_Y].bPresentFlag || wp1[COMPONENT_Cb].bPresentFlag || wp1[COMPONENT_Cr].bPresentFlag) && slice.getSliceType() == B_SLICE);
-#else
-        const bool biocheck0 = !((wp0[COMPONENT_Y].bPresentFlag || wp1[COMPONENT_Y].bPresentFlag) && slice.getSliceType() == B_SLICE);
-#endif
         const bool biocheck1 = !(pps.getUseWP() && slice.getSliceType() == P_SLICE);
         if (biocheck0
           && biocheck1

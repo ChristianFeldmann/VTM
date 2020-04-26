@@ -1276,13 +1276,8 @@ cabac_zero_word_padding(Slice *const pcSlice, Picture *const pcPic, const std::s
   const SPS &sps=*(pcSlice->getSPS());
   const ChromaFormat format = sps.getChromaFormatIdc();
   const int log2subWidthCxsubHeightC = (::getComponentScaleX(COMPONENT_Cb, format)+::getComponentScaleY(COMPONENT_Cb, format));
-#if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
   const int minCuWidth  = 1 << pcSlice->getSPS()->getLog2MinCodingBlockSize();
   const int minCuHeight = 1 << pcSlice->getSPS()->getLog2MinCodingBlockSize();
-#else
-  const int minCuWidth  = pcPic->cs->pcv->minCUWidth;
-  const int minCuHeight = pcPic->cs->pcv->minCUHeight;
-#endif
   const int paddedWidth = ( ( pcSlice->getPPS()->getPicWidthInLumaSamples() + minCuWidth - 1 ) / minCuWidth ) * minCuWidth;
   const int paddedHeight = ( ( pcSlice->getPPS()->getPicHeightInLumaSamples() + minCuHeight - 1 ) / minCuHeight ) * minCuHeight;
   const int rawBits = paddedWidth * paddedHeight *
@@ -2117,11 +2112,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     const int maxCUWidth = pcPic->cs->sps->getMaxCUWidth();
     const int maxCUHeight = pcPic->cs->sps->getMaxCUHeight();
     const ChromaFormat chromaFormatIDC = pcPic->cs->sps->getChromaFormatIdc();
-#if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
     const int maxTotalCUDepth = floorLog2(maxCUWidth) - pcPic->cs->sps->getLog2MinCodingBlockSize();
-#else
-    const int maxTotalCUDepth = pcPic->cs->sps->getMaxCodingDepth();
-#endif
 
     m_pcSliceEncoder->create( picWidth, picHeight, chromaFormatIDC, maxCUWidth, maxCUHeight, maxTotalCUDepth );
 

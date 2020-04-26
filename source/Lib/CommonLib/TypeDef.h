@@ -79,7 +79,6 @@
 
 
 
-#define JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX       1 // JVET-Q0468: add support of min Luma coding block size; JVET-Q0469: fix for signaling of Intra Chroma Min QT size
 
 #define JVET_Q0260_CONFORMANCE_WINDOW_IN_SPS              1 // JVET-Q0260: Conformance cropping window in the SPS that applies to the max picture size
 

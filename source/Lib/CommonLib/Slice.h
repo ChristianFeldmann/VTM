@@ -1333,9 +1333,6 @@ private:
   std::vector<uint16_t> m_subPicId;                          //!< sub-picture ID for each sub-picture in the sequence
 
   int               m_log2MinCodingBlockSize;
-#if !JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
-  int               m_log2DiffMaxMinCodingBlockSize;
-#endif
   unsigned    m_CTUSize;
   unsigned    m_partitionOverrideEnalbed;       // enable partition constraints override function
   unsigned    m_minQT[3];   // 0: I slice luma; 1: P/B slice; 2: I slice chroma
@@ -1346,9 +1343,6 @@ private:
   unsigned    m_dualITree;
   uint32_t              m_uiMaxCUWidth;
   uint32_t              m_uiMaxCUHeight;
-#if !JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
-  uint32_t              m_uiMaxCodingDepth; ///< Total CU depth, relative to the smallest possible transform block size.
-#endif
 
   RPLList           m_RPLList0;
   RPLList           m_RPLList1;
@@ -1595,10 +1589,6 @@ public:
 
   int                     getLog2MinCodingBlockSize() const                                               { return m_log2MinCodingBlockSize;                                     }
   void                    setLog2MinCodingBlockSize(int val)                                              { m_log2MinCodingBlockSize = val;                                      }
-#if !JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
-  int                     getLog2DiffMaxMinCodingBlockSize() const                                        { return m_log2DiffMaxMinCodingBlockSize;                              }
-  void                    setLog2DiffMaxMinCodingBlockSize(int val)                                       { m_log2DiffMaxMinCodingBlockSize = val;                               }
-#endif
   void                    setCTUSize(unsigned    ctuSize)                                                 { m_CTUSize = ctuSize; }
   unsigned                getCTUSize()                                                              const { return  m_CTUSize; }
   void                    setSplitConsOverrideEnabledFlag(bool b)                                         { m_partitionOverrideEnalbed = b; }
@@ -1641,10 +1631,6 @@ public:
   uint32_t                    getMaxCUWidth() const                                                           { return  m_uiMaxCUWidth;                                              }
   void                    setMaxCUHeight( uint32_t u )                                                        { m_uiMaxCUHeight = u;                                                 }
   uint32_t                    getMaxCUHeight() const                                                          { return  m_uiMaxCUHeight;                                             }
-#if !JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
-  void                    setMaxCodingDepth( uint32_t u )                                                     { m_uiMaxCodingDepth = u;                                              }
-  uint32_t                    getMaxCodingDepth() const                                                       { return  m_uiMaxCodingDepth;                                          }
-#endif
   bool                    getTransformSkipEnabledFlag() const                                                 { return m_transformSkipEnabledFlag;                                   }
   void                    setTransformSkipEnabledFlag( bool b )                                               { m_transformSkipEnabledFlag = b;                                      }
 #if JVET_Q0183_SPS_TRANSFORM_SKIP_MODE_CONTROL
@@ -3275,34 +3261,19 @@ public:
     , maxCUHeightMask     ( maxCUHeight - 1 )
     , maxCUWidthLog2      ( floorLog2( maxCUWidth  ) )
     , maxCUHeightLog2     ( floorLog2( maxCUHeight ) )
-#if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
     , minCUWidth          ( 1 << MIN_CU_LOG2 )
     , minCUHeight         ( 1 << MIN_CU_LOG2 )
-#else
-    , minCUWidth          ( sps.getMaxCUWidth()  >> sps.getMaxCodingDepth() )
-    , minCUHeight         ( sps.getMaxCUHeight() >> sps.getMaxCodingDepth() )
-#endif
     , minCUWidthLog2      ( floorLog2( minCUWidth  ) )
     , minCUHeightLog2     ( floorLog2( minCUHeight ) )
-#if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
     , partsInCtuWidth     ( maxCUWidth >> MIN_CU_LOG2)
     , partsInCtuHeight    ( maxCUHeight >> MIN_CU_LOG2)
     , partsInCtu          ( partsInCtuWidth * partsInCtuHeight )
-#else
-    , partsInCtuWidth     ( 1 << sps.getMaxCodingDepth() )
-    , partsInCtuHeight    ( 1 << sps.getMaxCodingDepth() )
-    , partsInCtu          ( 1 << (sps.getMaxCodingDepth() << 1) )
-#endif
     , widthInCtus         ( (pps.getPicWidthInLumaSamples () + sps.getMaxCUWidth () - 1) / sps.getMaxCUWidth () )
     , heightInCtus        ( (pps.getPicHeightInLumaSamples() + sps.getMaxCUHeight() - 1) / sps.getMaxCUHeight() )
     , sizeInCtus          ( widthInCtus * heightInCtus )
     , lumaWidth           ( pps.getPicWidthInLumaSamples() )
     , lumaHeight          ( pps.getPicHeightInLumaSamples() )
-#if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
     , fastDeltaQPCuMaxSize( Clip3(1u << sps.getLog2MinCodingBlockSize(), sps.getMaxCUHeight(), 32u) )
-#else
-    , fastDeltaQPCuMaxSize( Clip3(sps.getMaxCUHeight() >> (sps.getLog2DiffMaxMinCodingBlockSize()), sps.getMaxCUHeight(), 32u) )
-#endif
     , noChroma2x2         (  false )
     , isEncoder           ( _isEncoder )
     , ISingleTree         ( !sps.getUseDualITree() )

@@ -833,9 +833,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 #endif
   ("FrameOnly",                                       m_frameOnlyConstraintFlag,                        false, "Indicate that the bitstream contains only frames")
   ("CTUSize",                                         m_uiCTUSize,                                       128u, "CTUSize (specifies the CTU size if QTBT is on) [default: 128]")
-#if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
   ("Log2MinCuSize",                                   m_log2MinCuSize,                                     2u, "Log2 min CU size")
-#endif
 #if JVET_Q0119_CLEANUPS
   ("SubPicInfoPresentFlag",                           m_subPicInfoPresentFlag,                          false, "equal to 1 specifies that subpicture parameters are present in in the SPS RBSP syntax")
 #else
@@ -981,9 +979,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   // todo: remove defaults from MaxCUSize
   ("MaxCUSize,s",                                     m_uiMaxCUWidth,                                     64u, "Maximum CU size")
   ("MaxCUSize,s",                                     m_uiMaxCUHeight,                                    64u, "Maximum CU size")
-#if !JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
-  ("MaxPartitionDepth,h",                             m_uiMaxCUDepth,                                      4u, "CU depth")
-#endif
 
   ("Log2MaxTbSize",                                   m_log2MaxTbSize,                                      6, "Maximum transform block size in logarithm base 2 (Default: 6)")
 
@@ -1815,7 +1810,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   m_inputColourSpaceConvert = stringToInputColourSpaceConvert(inputColourSpaceConvert, true);
   m_rgbFormat = (m_inputColourSpaceConvert == IPCOLOURSPACE_RGBtoGBR && m_chromaFormatIDC == CHROMA_444) ? true : false;
 
-#if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
 #if JVET_Q0260_CONFORMANCE_WINDOW_IN_SPS
   // Picture width and height must be multiples of 8 and minCuSize
   const int minResolutionMultiple = std::max(8, 1 << m_log2MinCuSize);
@@ -1823,7 +1817,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 #else
   const int minCuSize = 1 << m_log2MinCuSize;
   CHECK(((m_iSourceWidth % minCuSize ) || (m_iSourceHeight % minCuSize )) && m_conformanceWindowMode != 1, "Picture width or height is not a multiple of minCuSize, please use ConformanceMode 1!");
-#endif
 #endif
   switch (m_conformanceWindowMode)
   {
@@ -1837,15 +1830,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   case 1:
     {
       // automatic padding to minimum CU size
-#if !JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
-#if JVET_Q0260_CONFORMANCE_WINDOW_IN_SPS
-      // Picture width and height must be multiples of 8 and minCuSize
-      int minCuSize = m_uiMaxCUHeight >> (m_uiMaxCUDepth - 1);
-      int minResolutionMultiple = std::max(8, minCuSize);
-#else
-      int minCuSize = m_uiMaxCUHeight >> (m_uiMaxCUDepth - 1);
-#endif
-#endif
 #if JVET_Q0260_CONFORMANCE_WINDOW_IN_SPS
       if (m_iSourceWidth % minResolutionMultiple)
       {
@@ -2347,19 +2331,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   }
 #endif
 
-#if !JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
-  const int minCuSize = 1 << MIN_CU_LOG2;
-  m_uiMaxCodingDepth = 0;
-  while( ( m_uiCTUSize >> m_uiMaxCodingDepth ) > minCuSize )
-  {
-    m_uiMaxCodingDepth++;
-  }
-  m_uiLog2DiffMaxMinCodingBlockSize = m_uiMaxCodingDepth;
-#endif
   m_uiMaxCUWidth = m_uiMaxCUHeight = m_uiCTUSize;
-#if !JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
-  m_uiMaxCUDepth = m_uiMaxCodingDepth;
-#endif
 
   // check validity of input parameters
   if( xCheckParameter() )
@@ -2443,15 +2415,9 @@ bool EncAppCfg::xCheckParameter()
 
   if( m_wrapAround )
   {
-#if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
     const int minCUSize = 1 << m_log2MinCuSize;
     xConfirmPara(m_wrapAroundOffset <= m_uiCTUSize + minCUSize, "Wrap-around offset must be greater than CtbSizeY + MinCbSize");
     xConfirmPara(m_wrapAroundOffset > m_iSourceWidth, "Wrap-around offset must not be greater than the source picture width");
-#else
-    xConfirmPara( m_wrapAroundOffset <= m_uiCTUSize + (m_uiMaxCUWidth >> m_uiLog2DiffMaxMinCodingBlockSize), "Wrap-around offset must be greater than CtbSizeY + MinCbSize" );
-    xConfirmPara( m_wrapAroundOffset > m_iSourceWidth, "Wrap-around offset must not be greater than the source picture width" );
-    int minCUSize =  m_uiCTUSize >> m_uiLog2DiffMaxMinCodingBlockSize;
-#endif
     xConfirmPara( m_wrapAroundOffset % minCUSize != 0, "Wrap-around offset must be an integer multiple of the specified minimum CU size" );
   }
 
@@ -2704,12 +2670,8 @@ bool EncAppCfg::xCheckParameter()
   {
     xConfirmPara( m_iIntraPeriod > 0 && m_iIntraPeriod <= m_iGOPSize ,                      "Intra period must be larger than GOP size for periodic IDR pictures");
   }
-#if !JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
-  xConfirmPara( m_uiMaxCUDepth > MAX_CU_DEPTH,                                              "MaxPartitionDepth exceeds predefined MAX_CU_DEPTH limit");
-#endif
   xConfirmPara( m_uiMaxCUWidth > MAX_CU_SIZE,                                               "MaxCUWith exceeds predefined MAX_CU_SIZE limit");
 
-#if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
   const int minCuSize = 1 << m_log2MinCuSize;
   xConfirmPara( m_uiMinQT[0] < minCuSize,                                                   "Min Luma QT size in I slices should be larger than or equal to minCuSize");
   xConfirmPara( m_uiMinQT[1] < minCuSize,                                                   "Min Luma QT size in non-I slices should be larger than or equal to minCuSize");
@@ -2718,18 +2680,9 @@ bool EncAppCfg::xCheckParameter()
   xConfirmPara( minDiff < 0 ,                                                               "Min Chroma QT size in I slices is smaller than Min Luma CU size even considering color format");
   xConfirmPara( (m_uiMinQT[2] << (int)getChannelTypeScaleX(CHANNEL_TYPE_CHROMA, m_chromaFormatIDC)) > std::min(64, (int)m_uiCTUSize),
                                                                                             "Min Chroma QT size in I slices should be smaller than or equal to CTB size or CB size after implicit split of CTB");
-#else
-  xConfirmPara( m_uiMinQT[0] < 1<<MIN_CU_LOG2,                                              "Minimum QT size should be larger than or equal to 4");
-  xConfirmPara( m_uiMinQT[1] < 1<<MIN_CU_LOG2,                                              "Minimum QT size should be larger than or equal to 4");
-#endif
   xConfirmPara( m_uiCTUSize < 32,                                                           "CTUSize must be greater than or equal to 32");
   xConfirmPara( m_uiCTUSize > 128,                                                          "CTUSize must be less than or equal to 128");
   xConfirmPara( m_uiCTUSize != 32 && m_uiCTUSize != 64 && m_uiCTUSize != 128,               "CTUSize must be a power of 2 (32, 64, or 128)");
-#if !JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
-  xConfirmPara( m_uiMaxCUDepth < 1,                                                         "MaxPartitionDepth must be greater than zero");
-  xConfirmPara( (m_uiMaxCUWidth  >> m_uiMaxCUDepth) < 4,                                    "Minimum partition width size should be larger than or equal to 8");
-  xConfirmPara( (m_uiMaxCUHeight >> m_uiMaxCUDepth) < 4,                                    "Minimum partition height size should be larger than or equal to 8");
-#endif
   xConfirmPara( m_uiMaxCUWidth < 16,                                                        "Maximum partition width size should be larger than or equal to 16");
   xConfirmPara( m_uiMaxCUHeight < 16,                                                       "Maximum partition height size should be larger than or equal to 16");
 #if JVET_Q0330_BLOCK_PARTITION
@@ -2748,13 +2701,8 @@ bool EncAppCfg::xCheckParameter()
                                                                                             "Maximum TT size for chroma block in I slice should be larger than minimum QT size");
   xConfirmPara( m_uiMaxTT[2] > m_uiCTUSize,                                                 "Maximum TT size for chroma block in I slice should be smaller than or equal to CTUSize");
 #endif
-#if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
   xConfirmPara( (m_iSourceWidth  % (std::max(8u, m_log2MinCuSize))) != 0,                   "Resulting coded frame width must be a multiple of Max(8, the minimum CU size)");
   xConfirmPara( (m_iSourceHeight % (std::max(8u, m_log2MinCuSize))) != 0,                   "Resulting coded frame height must be a multiple of Max(8, the minimum CU size)");
-#else
-  xConfirmPara( (m_iSourceWidth  % (std::max(8, int(m_uiMaxCUWidth  >> (m_uiMaxCUDepth - 1))))) != 0, "Resulting coded frame width must be a multiple of Max(8, the minimum CU size)");
-  xConfirmPara( (m_iSourceHeight % (std::max(8, int(m_uiMaxCUHeight >> (m_uiMaxCUDepth - 1))))) != 0, "Resulting coded frame height must be a multiple of Max(8, the minimum CU size)");
-#endif
   if (m_uiMaxMTTHierarchyDepthI == 0)
   {
     xConfirmPara(m_uiMaxBT[0] != m_uiMinQT[0], "MaxBTLumaISlice shall be equal to MinQTLumaISlice when MaxMTTHierarchyDepthISliceL is 0.");
@@ -3701,11 +3649,7 @@ void EncAppCfg::xPrintParameter()
   {
     msg( DETAILS, "Profile                                : %s\n", profileToString(m_profile) );
   }
-#if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
   msg(DETAILS, "CTU size / min CU size                 : %d / %d \n", m_uiMaxCUWidth, 1 << m_log2MinCuSize);
-#else
-  msg( DETAILS, "CU size / depth / total-depth          : %d / %d / %d\n", m_uiMaxCUWidth, m_uiMaxCUDepth, m_uiMaxCodingDepth );
-#endif
 
 #if JVET_Q0119_CLEANUPS
   msg(DETAILS, "subpicture info present flag                       : %d\n", m_subPicInfoPresentFlag);

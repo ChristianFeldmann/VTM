@@ -93,10 +93,6 @@ Slice::Slice()
 , m_pcPic                         ( NULL )
 , m_pcPicHeader                   ( NULL )
 , m_colFromL0Flag                 ( true )
-#if !SPS_ID_CHECK
-, m_noIncorrectPicOutputFlag      ( false )
-, m_handleCraAsCvsStartFlag       ( false )
-#endif
 , m_colRefIdx                     ( 0 )
 , m_uiTLayer                      ( 0 )
 , m_bTLayerSwitchingFlag          ( false )
@@ -2232,11 +2228,9 @@ PicHeader::PicHeader()
 , m_gdrPicFlag                                    ( 0 )
 , m_noOutputOfPriorPicsFlag                       ( 0 )
 , m_recoveryPocCnt                                ( 0 )
-#if SPS_ID_CHECK
 , m_noOutputBeforeRecoveryFlag                    ( false )
 , m_handleCraAsCvsStartFlag                       ( false )
 , m_handleGdrAsCvsStartFlag                       ( false )
-#endif
 , m_spsId                                         ( -1 )
 , m_ppsId                                         ( -1 )
 , m_pocMsbPresentFlag                             ( 0 )
@@ -2811,9 +2805,7 @@ PPS::PPS()
 , m_wpInfoInPhFlag                   (0)
 , m_qpDeltaInfoInPhFlag              (0)
 #endif
-#if SPS_ID_CHECK
 , m_mixedNaluTypesInPicFlag          ( false )
-#endif
 , m_picWidthInLumaSamples(352)
 , m_picHeightInLumaSamples( 288 )
 #if !REMOVE_PPS_REXT

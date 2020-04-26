@@ -3181,28 +3181,16 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         pcSlice->setRPL0idx(pcPic->slices[0]->getRPL0idx());
         pcSlice->setRPL1idx(pcPic->slices[0]->getRPL1idx());
 
-#if SPS_ID_CHECK
         picHeader->setNoOutputBeforeRecoveryFlag( false );
-#else
-        pcSlice->setNoIncorrectPicOutputFlag(false);
-#endif
         if (pcSlice->isIRAP())
         {
           if (pcSlice->getNalUnitType() >= NAL_UNIT_CODED_SLICE_IDR_W_RADL && pcSlice->getNalUnitType() <= NAL_UNIT_CODED_SLICE_IDR_N_LP)
           {
-#if SPS_ID_CHECK
             picHeader->setNoOutputBeforeRecoveryFlag( true );
-#else
-            pcSlice->setNoIncorrectPicOutputFlag(true);
-#endif
           }
           //the inference for NoOutputPriorPicsFlag
           // KJS: This cannot happen at the encoder
-#if SPS_ID_CHECK
           if( !m_bFirst && ( pcSlice->isIRAP() || pcSlice->getNalUnitType() >= NAL_UNIT_CODED_SLICE_GDR ) && picHeader->getNoOutputBeforeRecoveryFlag() )
-#else     
-          if (!m_bFirst && (pcSlice->isIRAP() || pcSlice->getNalUnitType() >= NAL_UNIT_CODED_SLICE_GDR) && pcSlice->getNoIncorrectPicOutputFlag())
-#endif
           {
             if (pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA || pcSlice->getNalUnitType() >= NAL_UNIT_CODED_SLICE_GDR)
             {

@@ -118,7 +118,6 @@
 
 
 
-#define SPS_ID_CHECK                                      1 // add SPS id check to be the same within CLVS, related to mixed_nalu_types_in_pic_flag
 #define JVET_P0124_MIXED_NALU                             1 // JVET-P0124/P0095/P0222: MIxed IRAP/non-IRAP VCL NAL units within a picture
 #define JVET_Q0117_PARAMETER_SETS_CLEANUP                 1 // JVET-Q0117: cleanups on parameter sets
 

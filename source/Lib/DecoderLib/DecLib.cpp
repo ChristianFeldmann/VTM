@@ -439,10 +439,6 @@ DecLib::DecLib()
   , m_debugPOC( -1 )
   , m_debugCTU( -1 )
   , m_vps( nullptr )
-#if !JVET_Q0346_SCALING_LIST_USED_IN_SH
-  , m_scalingListUpdateFlag(true)
-  , m_PreScalingListAPSId(-1)
-#endif
   , m_maxDecSubPicIdx(0)
   , m_maxDecSliceAddrInSubPic(-1)
   , m_dci(NULL)
@@ -1107,11 +1103,7 @@ void activateAPS(PicHeader* picHeader, Slice* pSlice, ParameterSetManager& param
   }
   picHeader->setLmcsAPS(lmcsAPS);
 
-#if JVET_Q0346_SCALING_LIST_USED_IN_SH
   if( picHeader->getExplicitScalingListEnabledFlag() && scalingListAPS == nullptr)
-#else
-  if( picHeader->getScalingListPresentFlag() && scalingListAPS == nullptr)
-#endif
   {
     scalingListAPS = parameterSetManager.getAPS( picHeader->getScalingListAPSId(), SCALING_LIST_APS );
     CHECK( scalingListAPS == nullptr, "No SCALING LIST APS present" );
@@ -2032,7 +2024,6 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
 
   Quant *quant = m_cTrQuant.getQuant();
 
-#if JVET_Q0346_SCALING_LIST_USED_IN_SH
   if (pcSlice->getExplicitScalingListUsed())
   {
     APS* scalingListAPS = pcSlice->getPicHeader()->getScalingListAPS();
@@ -2040,29 +2031,6 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
     quant->setScalingListDec(scalingList);
     quant->setUseScalingList(true);
   }
-#else
-  if( pcSlice->getSPS()->getScalingListFlag() )
-  {
-    ScalingList scalingList;
-    if( pcSlice->getPicHeader()->getScalingListPresentFlag() )
-    {
-      APS* scalingListAPS = pcSlice->getPicHeader()->getScalingListAPS();
-      scalingList = scalingListAPS->getScalingList();
-    }
-    else
-    {
-      scalingList.setDefaultScalingList();
-    }
-    int scalingListAPSId = pcSlice->getPicHeader()->getScalingListAPSId();
-    if (getScalingListUpdateFlag() || (scalingListAPSId != getPreScalingListAPSId()))
-    {
-      quant->setScalingListDec(scalingList);
-      setScalingListUpdateFlag(false);
-      setPreScalingListAPSId(scalingListAPSId);
-    }
-    quant->setUseScalingList( true );
-  }
-#endif
   else
   {
     quant->setUseScalingList( false );
@@ -2216,12 +2184,6 @@ void DecLib::xDecodeAPS(InputNALUnit& nalu)
   aps->setTemporalId(nalu.m_temporalId);
   aps->setLayerId( nalu.m_nuhLayerId );
   m_parameterSetManager.checkAuApsContent( aps, m_accessUnitApsNals );
-#if !JVET_Q0346_SCALING_LIST_USED_IN_SH
-  if (aps->getAPSType() == SCALING_LIST_APS)
-  {
-    setScalingListUpdateFlag(true);
-  }
-#endif
 
   // aps will be deleted if it was already stored (and did not changed),
   // thus, storing it must be last action.

@@ -2695,12 +2695,8 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
     if( pcSlice->getSPS()->getScalingListFlag() && m_pcCfg->getUseScalingListId() == SCALING_LIST_FILE_READ )
     {
-#if JVET_Q0346_SCALING_LIST_USED_IN_SH
       picHeader->setExplicitScalingListEnabledFlag( true );
       pcSlice->setExplicitScalingListUsed( true );
-#else
-      picHeader->setScalingListPresentFlag( true );
-#endif
 
       int apsId = std::min<int>( 7, m_pcEncLib->getVPS() == nullptr ? 0 : m_pcEncLib->getVPS()->getGeneralLayerIdx( m_pcEncLib->getLayerId() ) );
       picHeader->setScalingListAPSId( apsId );
@@ -2836,12 +2832,8 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
       if( pcSlice->getSPS()->getScalingListFlag() && m_pcCfg->getUseScalingListId() == SCALING_LIST_FILE_READ )
       {
-#if JVET_Q0346_SCALING_LIST_USED_IN_SH
         picHeader->setExplicitScalingListEnabledFlag(true);
         pcSlice->setExplicitScalingListUsed(true);
-#else
-        picHeader->setScalingListPresentFlag(true);
-#endif
         int apsId = 0;
         picHeader->setScalingListAPSId( apsId );
       }

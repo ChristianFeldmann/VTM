@@ -2295,11 +2295,7 @@ private:
   int                         m_lmcsApsId;                                              //!< lmcs APS ID
   APS*                        m_lmcsAps;                                                //!< lmcs APS
   bool                        m_lmcsChromaResidualScaleFlag;                            //!< lmcs chroma residual scale flag  
-#if JVET_Q0346_SCALING_LIST_USED_IN_SH
   bool                        m_explicitScalingListEnabledFlag;                         //!< explicit quantization scaling list enabled
-#else
-  bool                        m_scalingListPresentFlag;                                 //!< quantization scaling lists present
-#endif
   int                         m_scalingListApsId;                                       //!< quantization scaling list APS ID
   APS*                        m_scalingListAps;                                         //!< quantization scaling list APS
   unsigned                    m_minQT[3];                                               //!< minimum quad-tree size  0: I slice luma; 1: P/B slice; 2: I slice chroma
@@ -2458,15 +2454,9 @@ public:
   APS*                        getScalingListAPS() const                                 { return m_scalingListAps;                                                                     }
   void                        setScalingListAPSId( int id )                             { m_scalingListApsId = id;                                                                     }
   int                         getScalingListAPSId() const                               { return m_scalingListApsId;                                                                   }
-#if JVET_Q0346_SCALING_LIST_USED_IN_SH
   void                        setExplicitScalingListEnabledFlag( bool b )               { m_explicitScalingListEnabledFlag = b;                                                        }
   bool                        getExplicitScalingListEnabledFlag()                       { return m_explicitScalingListEnabledFlag;                                                     }
   const bool                  getExplicitScalingListEnabledFlag() const                 { return m_explicitScalingListEnabledFlag;                                                     }
-#else
-  void                        setScalingListPresentFlag( bool b )                       { m_scalingListPresentFlag = b;                                                                }
-  bool                        getScalingListPresentFlag()                               { return m_scalingListPresentFlag;                                                             }
-  const bool                  getScalingListPresentFlag() const                         { return m_scalingListPresentFlag;                                                             }
-#endif
 
   unsigned*                   getMinQTSizes() const                                     { return (unsigned *)m_minQT;                                                                  }
   unsigned*                   getMaxMTTHierarchyDepths() const                          { return (unsigned *)m_maxMTTHierarchyDepth;                                                   }
@@ -2553,9 +2543,7 @@ private:
   int                        m_iSliceQpBase;
   bool                       m_ChromaQpAdjEnabled;
   bool                       m_lmcsEnabledFlag;
-#if JVET_Q0346_SCALING_LIST_USED_IN_SH
   bool                       m_explicitScalingListUsed;
-#endif
   bool                       m_deblockingFilterDisable;
   bool                       m_deblockingFilterOverrideFlag;      //< offsets for deblocking filter inherit from PPS
   int                        m_deblockingFilterBetaOffsetDiv2;    //< beta offset for deblocking filter
@@ -2710,10 +2698,8 @@ public:
   bool                        getLmcsEnabledFlag()                                    { return m_lmcsEnabledFlag;                                    }
   const bool                  getLmcsEnabledFlag() const                              { return m_lmcsEnabledFlag;                                    }
 
-#if JVET_Q0346_SCALING_LIST_USED_IN_SH
   void                        setExplicitScalingListUsed(bool b)                      { m_explicitScalingListUsed = b;                               }
   bool                        getExplicitScalingListUsed()                            { return m_explicitScalingListUsed;                            }
-#endif
 
   int                         getNumRefIdx( RefPicList e ) const                     { return m_aiNumRefIdx[e];                                      }
   Picture*                    getPic()                                               { return m_pcPic;                                               }

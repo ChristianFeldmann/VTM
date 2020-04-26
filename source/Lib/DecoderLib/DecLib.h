@@ -157,10 +157,6 @@ private:
   // NAL unit type, layer ID, and SEI payloadType
   std::vector<std::tuple<NalUnitType, int, SEI::PayloadType>> m_accessUnitSeiPayLoadTypes;
   VPS*                    m_vps;
-#if !JVET_Q0346_SCALING_LIST_USED_IN_SH
-  bool                    m_scalingListUpdateFlag;
-  int                     m_PreScalingListAPSId;
-#endif
   int                     m_maxDecSubPicIdx;
   int                     m_maxDecSliceAddrInSubPic;
 
@@ -224,12 +220,6 @@ public:
   {
     m_cTrQuantScalingList.init(nullptr, MAX_TB_SIZEY, false, false, false, false);
   }
-#if !JVET_Q0346_SCALING_LIST_USED_IN_SH
-  bool  getScalingListUpdateFlag() { return m_scalingListUpdateFlag; }
-  void  setScalingListUpdateFlag(bool b) { m_scalingListUpdateFlag = b; }
-  int   getPreScalingListAPSId() { return m_PreScalingListAPSId; }
-  void  setPreScalingListAPSId(int id) { m_PreScalingListAPSId = id; }
-#endif
 
 protected:
   void  xUpdateRasInit(Slice* slice);

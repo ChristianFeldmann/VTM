@@ -62,9 +62,7 @@ Slice::Slice()
 , m_iSliceQp                      ( 0 )
 , m_ChromaQpAdjEnabled            ( false )
 , m_lmcsEnabledFlag               ( 0 )
-#if JVET_Q0346_SCALING_LIST_USED_IN_SH
 , m_explicitScalingListUsed       ( 0 )
-#endif
 , m_deblockingFilterDisable       ( false )
 , m_deblockingFilterOverrideFlag  ( false )
 , m_deblockingFilterBetaOffsetDiv2( 0 )
@@ -166,9 +164,7 @@ void Slice::initSlice()
   m_colourPlaneId = 0;
   m_colRefIdx = 0;
   m_lmcsEnabledFlag = 0;
-#if JVET_Q0346_SCALING_LIST_USED_IN_SH
   m_explicitScalingListUsed = 0;
-#endif
   initEqualRef();
 
   m_bCheckLDC = false;
@@ -1020,9 +1016,7 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
   m_nextSlice                     = pSrc->m_nextSlice;
   m_clpRngs                       = pSrc->m_clpRngs;
   m_lmcsEnabledFlag               = pSrc->m_lmcsEnabledFlag;
-#if JVET_Q0346_SCALING_LIST_USED_IN_SH
   m_explicitScalingListUsed       = pSrc->m_explicitScalingListUsed;
-#endif
 
   m_pendingRasInit                = pSrc->m_pendingRasInit;
 
@@ -2234,11 +2228,7 @@ PicHeader::PicHeader()
 , m_lmcsApsId                                     ( -1 )
 , m_lmcsAps                                       ( nullptr )
 , m_lmcsChromaResidualScaleFlag                   ( 0 )
-#if JVET_Q0346_SCALING_LIST_USED_IN_SH
 , m_explicitScalingListEnabledFlag                ( 0 )
-#else
-, m_scalingListPresentFlag                        ( 0 )
-#endif
 , m_scalingListApsId                              ( -1 )
 , m_scalingListAps                                ( nullptr )
 , m_numL0Weights                                  ( 0 )
@@ -2331,11 +2321,7 @@ void PicHeader::initPicHeader()
   m_lmcsApsId                                     = -1;
   m_lmcsAps                                       = nullptr;
   m_lmcsChromaResidualScaleFlag                   = 0;
-#if JVET_Q0346_SCALING_LIST_USED_IN_SH
   m_explicitScalingListEnabledFlag                = 0;
-#else
-  m_scalingListPresentFlag                        = 0;
-#endif
   m_scalingListApsId                              = -1;
   m_scalingListAps                                = nullptr;
   m_numL0Weights                                  = 0;

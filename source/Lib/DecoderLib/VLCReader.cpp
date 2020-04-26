@@ -1487,7 +1487,6 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     }
 #endif
 
-#if JVET_Q0816
     if( pcSPS->getNumSubPics() == 1 )
     {
       pcSPS->setSubPicCtuTopLeftX( 0, 0 );
@@ -1499,7 +1498,6 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     }
     else
     {
-#endif
     for (int picIdx = 0; picIdx < pcSPS->getNumSubPics(); picIdx++)
     {
 #if JVET_Q0787_SUBPIC
@@ -1574,9 +1572,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
       READ_FLAG(uiCode, "loop_filter_across_subpic_enabled_flag[ i ]");
       pcSPS->setLoopFilterAcrossSubpicEnabledFlag(picIdx, uiCode);
     }
-#if JVET_Q0816
     }
-#endif
 
 #if JVET_Q0119_CLEANUPS
     READ_UVLC( uiCode, "sps_subpic_id_len_minus1" );                       pcSPS->setSubPicIdLen( uiCode + 1 );

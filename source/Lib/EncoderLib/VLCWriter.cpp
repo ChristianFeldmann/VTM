@@ -968,10 +968,8 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 #else
     WRITE_CODE(pcSPS->getNumSubPics() - 1, 8, "sps_num_subpics_minus1");
 #endif
-#if JVET_Q0816
     if( pcSPS->getNumSubPics() > 1 )
     {
-#endif
     for (int picIdx = 0; picIdx < pcSPS->getNumSubPics(); picIdx++)
     {
 #if JVET_Q0787_SUBPIC
@@ -1015,9 +1013,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
       WRITE_FLAG( pcSPS->getSubPicTreatedAsPicFlag(picIdx),  "subpic_treated_as_pic_flag[ i ]" );
       WRITE_FLAG( pcSPS->getLoopFilterAcrossSubpicEnabledFlag(picIdx),  "loop_filter_across_subpic_enabled_flag[ i ]" );
     }
-#if JVET_Q0816
     }
-#endif
 
 #if JVET_Q0119_CLEANUPS
     CHECK(pcSPS->getSubPicIdLen() < 1, "SPS: SubPicIdLen cannot be less than 1");

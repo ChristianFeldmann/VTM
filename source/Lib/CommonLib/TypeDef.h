@@ -50,7 +50,6 @@
 #include <assert.h>
 #include <cassert>
 
-#define DQ_SDH_SIGNALLING                                 1 // Merge request !1506: add DQ and SDH signalling in SPS to align with spec.
 
 #define JVET_Q0237_STSA_TID_ZERO_DEPLAYER                 1 // JVET-Q0237: STSA picture with TemporalId equal to 0 in a dependent layer
 

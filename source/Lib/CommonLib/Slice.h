@@ -1434,10 +1434,8 @@ private:
   bool              m_bTemporalIdNestingFlag; // temporal_id_nesting_flag
 
   bool              m_scalingListEnabledFlag;
-#if DQ_SDH_SIGNALLING
   bool              m_depQuantEnabledFlag;            //!< dependent quantization enabled flag
   bool              m_signDataHidingEnabledFlag;      //!< sign data hiding enabled flag
-#endif
 #if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
   bool              m_virtualBoundariesEnabledFlag;   //!< Enable virtual boundaries tool
   bool              m_virtualBoundariesPresentFlag;   //!< disable loop filtering across virtual boundaries
@@ -1809,12 +1807,10 @@ void                    setCCALFEnabledFlag( bool b )                           
 
   bool                    getScalingListFlag() const                                                      { return m_scalingListEnabledFlag;                                     }
   void                    setScalingListFlag( bool b )                                                    { m_scalingListEnabledFlag  = b;                                       }
-#if DQ_SDH_SIGNALLING
   void                    setDepQuantEnabledFlag(bool b)                                                  { m_depQuantEnabledFlag = b; }
   bool                    getDepQuantEnabledFlag() const                                                  { return m_depQuantEnabledFlag; }
   void                    setSignDataHidingEnabledFlag(bool b)                                            { m_signDataHidingEnabledFlag = b; }
   bool                    getSignDataHidingEnabledFlag() const                                            { return m_signDataHidingEnabledFlag; }
-#endif
 #if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG  
   void                    setVirtualBoundariesEnabledFlag( bool b )                                       { m_virtualBoundariesEnabledFlag = b;                                  }
   bool                    getVirtualBoundariesEnabledFlag() const                                         { return m_virtualBoundariesEnabledFlag;                               }

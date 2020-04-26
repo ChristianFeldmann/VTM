@@ -2357,7 +2357,6 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 #else
   READ_FLAG( uiCode, "sps_scaling_list_enabled_flag" );                 pcSPS->setScalingListFlag ( uiCode );
 #endif
-#if DQ_SDH_SIGNALLING
   READ_FLAG(uiCode, "sps_dep_quant_enabled_flag"); pcSPS->setDepQuantEnabledFlag(uiCode);
   if (!pcSPS->getDepQuantEnabledFlag())
   {
@@ -2367,7 +2366,6 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   {
     pcSPS->setSignDataHidingEnabledFlag(false);
   }
-#endif
 #if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
   READ_FLAG( uiCode, "sps_virtual_boundaries_enabled_flag" ); pcSPS->setVirtualBoundariesEnabledFlag( uiCode != 0 );
   if( pcSPS->getVirtualBoundariesEnabledFlag() )
@@ -3958,10 +3956,8 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
 #endif
 
   // dependent quantization
-#if DQ_SDH_SIGNALLING
   if (sps->getDepQuantEnabledFlag())
   {
-#endif
 #if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
     if (!pps->getPPSDepQuantEnabledIdc())
     {
@@ -3975,20 +3971,14 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
     READ_FLAG(uiCode, "ph_dep_quant_enabled_flag");
 #endif
     picHeader->setDepQuantEnabledFlag(uiCode != 0);
-#if DQ_SDH_SIGNALLING
   }
   else
   {
     picHeader->setDepQuantEnabledFlag(false);
   }
-#endif
 
   // sign data hiding
-#if DQ_SDH_SIGNALLING
   if (sps->getSignDataHidingEnabledFlag() && !picHeader->getDepQuantEnabledFlag())
-#else
-  if( !picHeader->getDepQuantEnabledFlag() )
-#endif
   {
     READ_FLAG( uiCode, "pic_sign_data_hiding_enabled_flag" );
     picHeader->setSignDataHidingEnabledFlag( uiCode != 0 );

@@ -859,7 +859,6 @@ void HLSWriter::codeVUI( const VUI *pcVUI, const SPS* pcSPS )
 }
 #endif
 
-#if JVET_P0118_HRD_ASPECTS
 void HLSWriter::codeGeneralHrdparameters(const GeneralHrdParams * hrd)
 {
   WRITE_CODE(hrd->getNumUnitsInTick(), 32, "num_units_in_tick");
@@ -880,31 +879,11 @@ void HLSWriter::codeGeneralHrdparameters(const GeneralHrdParams * hrd)
   }
   WRITE_UVLC(hrd->getHrdCpbCntMinus1(), "hrd_cpb_cnt_minus1");
 }
-#endif
-#if JVET_P0118_HRD_ASPECTS
 void HLSWriter::codeOlsHrdParameters(const GeneralHrdParams * generalHrd, const OlsHrdParams *olsHrd, const uint32_t firstSubLayer, const uint32_t maxNumSubLayersMinus1)
 {
-#else
-void HLSWriter::codeHrdParameters( const HRDParameters *hrd, const uint32_t firstSubLayer, const uint32_t maxNumSubLayersMinus1)
-{
-  WRITE_FLAG( hrd->getNalHrdParametersPresentFlag() ? 1 : 0 ,  "general_nal_hrd_parameters_present_flag" );
-  WRITE_FLAG( hrd->getVclHrdParametersPresentFlag() ? 1 : 0 ,  "general_vcl_hrd_parameters_present_flag" );
-  WRITE_FLAG( hrd->getGeneralDecodingUnitHrdParamsPresentFlag() ? 1 : 0,  "general_decoding_unit_hrd_params_present_flag" );
-  if( hrd->getGeneralDecodingUnitHrdParamsPresentFlag() )
-  {
-    WRITE_CODE( hrd->getTickDivisorMinus2(), 8,            "tick_divisor_minus2" );
-  }
-  WRITE_CODE( hrd->getBitRateScale(), 4,                     "bit_rate_scale" );
-  WRITE_CODE( hrd->getCpbSizeScale(), 4,                     "cpb_size_scale" );
-  if( hrd->getGeneralDecodingUnitHrdParamsPresentFlag() )
-  {
-    WRITE_CODE( hrd->getCpbSizeDuScale(), 4,               "cpb_size_du_scale" );
-  }
-#endif
 
   for( int i = firstSubLayer; i <= maxNumSubLayersMinus1; i ++ )
   {
-#if JVET_P0118_HRD_ASPECTS
     const OlsHrdParams *hrd = &(olsHrd[i]);
     WRITE_FLAG(hrd->getFixedPicRateGeneralFlag() ? 1 : 0, "fixed_pic_rate_general_flag");
 
@@ -920,42 +899,13 @@ void HLSWriter::codeHrdParameters( const HRDParameters *hrd, const uint32_t firs
     {
       WRITE_FLAG(hrd->getLowDelayHrdFlag() ? 1 : 0, "low_delay_hrd_flag");
     }
-#else
-    WRITE_FLAG( hrd->getFixedPicRateFlag( i ) ? 1 : 0,          "fixed_pic_rate_general_flag");
-    bool fixedPixRateWithinCvsFlag = true;
-    if( !hrd->getFixedPicRateFlag( i ) )
-    {
-      fixedPixRateWithinCvsFlag = hrd->getFixedPicRateWithinCvsFlag( i );
-      WRITE_FLAG( hrd->getFixedPicRateWithinCvsFlag( i ) ? 1 : 0, "fixed_pic_rate_within_cvs_flag");
-    }
-    if( fixedPixRateWithinCvsFlag )
-    {
-      WRITE_UVLC( hrd->getPicDurationInTcMinus1( i ),           "elemental_duration_in_tc_minus1");
-    }
-    else
-    {
-      WRITE_FLAG( hrd->getLowDelayHrdFlag( i ) ? 1 : 0,           "low_delay_hrd_flag");
-    }
-    if (!hrd->getLowDelayHrdFlag( i ))
-    {
-      WRITE_UVLC( hrd->getCpbCntMinus1( i ),                      "cpb_cnt_minus1");
-    }
-#endif
 
     for( int nalOrVcl = 0; nalOrVcl < 2; nalOrVcl ++ )
     {
-#if JVET_P0118_HRD_ASPECTS
       if (((nalOrVcl == 0) && (generalHrd->getGeneralNalHrdParametersPresentFlag())) || ((nalOrVcl == 1) && (generalHrd->getGeneralVclHrdParametersPresentFlag())))
       {
         for (int j = 0; j <= (generalHrd->getHrdCpbCntMinus1()); j++)
-#else
-      if( ( ( nalOrVcl == 0 ) && ( hrd->getNalHrdParametersPresentFlag() ) ) ||
-          ( ( nalOrVcl == 1 ) && ( hrd->getVclHrdParametersPresentFlag() ) ) )
-      {
-        for( int j = 0; j <= ( hrd->getCpbCntMinus1( i ) ); j ++ )
-#endif
         {
-#if JVET_P0118_HRD_ASPECTS
           WRITE_UVLC(hrd->getBitRateValueMinus1(j, nalOrVcl), "bit_rate_value_minus1");
           WRITE_UVLC(hrd->getCpbSizeValueMinus1(j, nalOrVcl), "cpb_size_value_minus1");
           if (generalHrd->getGeneralDecodingUnitHrdParamsPresentFlag())
@@ -964,11 +914,6 @@ void HLSWriter::codeHrdParameters( const HRDParameters *hrd, const uint32_t firs
             WRITE_UVLC(hrd->getDuCpbSizeValueMinus1(j, nalOrVcl), "cpb_size_du_value_minus1");
           }
           WRITE_FLAG(hrd->getCbrFlag(j, nalOrVcl) ? 1 : 0, "cbr_flag");
-#else
-          WRITE_UVLC( hrd->getBitRateValueMinus1( i, j, nalOrVcl ), "bit_rate_value_minus1");
-          WRITE_UVLC( hrd->getCpbSizeValueMinus1( i, j, nalOrVcl ), "cpb_size_value_minus1");
-          WRITE_FLAG( hrd->getCbrFlag( i, j, nalOrVcl ) ? 1 : 0, "cbr_flag");
-#endif
         }
       }
     }
@@ -1577,48 +1522,16 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   if (pcSPS->getPtlDpbHrdParamsPresentFlag())
   {
 #endif
-#if !JVET_P0118_HRD_ASPECTS
-  const TimingInfo *timingInfo = pcSPS->getTimingInfo();
-#endif
-#if JVET_P0118_HRD_ASPECTS
   WRITE_FLAG(pcSPS->getGeneralHrdParametersPresentFlag(), "sps_general_hrd_parameters_present_flag");
-#else
-  WRITE_FLAG(pcSPS->getHrdParametersPresentFlag(),          "general_hrd_parameters_present_flag");
-#endif
-#if JVET_P0118_HRD_ASPECTS
   if (pcSPS->getGeneralHrdParametersPresentFlag())
-#else
-    if( pcSPS->getHrdParametersPresentFlag() )
-#endif
   {
-#if !JVET_P0118_HRD_ASPECTS
-    WRITE_CODE(timingInfo->getNumUnitsInTick(), 32,           "num_units_in_tick");
-    WRITE_CODE(timingInfo->getTimeScale(),      32,           "time_scale");
-#endif
-#if JVET_P0118_HRD_ASPECTS
     codeGeneralHrdparameters(pcSPS->getGeneralHrdParameters());
-#endif
-#if JVET_P0118_HRD_ASPECTS
     if ((pcSPS->getMaxTLayers() - 1) > 0)
     {
       WRITE_FLAG(pcSPS->getSubLayerParametersPresentFlag(), "sps_sublayer_cpb_params_present_flag");
     }
     uint32_t firstSubLayer = pcSPS->getSubLayerParametersPresentFlag() ? 0 : (pcSPS->getMaxTLayers() - 1);
-#else
-    WRITE_FLAG(pcSPS->getSubLayerParametersPresentFlag(), "sub_layer_cpb_parameters_present_flag");
-#endif
-#if JVET_P0118_HRD_ASPECTS
     codeOlsHrdParameters(pcSPS->getGeneralHrdParameters(), pcSPS->getOlsHrdParameters(), firstSubLayer, pcSPS->getMaxTLayers() - 1);
-#else
-    if (pcSPS->getSubLayerParametersPresentFlag())
-    {
-      codeHrdParameters(pcSPS->getHrdParameters(), 0, pcSPS->getMaxTLayers() - 1);
-    }
-    else
-    {
-      codeHrdParameters(pcSPS->getHrdParameters(), pcSPS->getMaxTLayers() - 1, pcSPS->getMaxTLayers() - 1);
-    }
-#endif
   }
 #if JVET_P0117_PTL_SCALABILITY
   }
@@ -1882,7 +1795,6 @@ void HLSWriter::codeVPS(const VPS* pcVPS)
     }
   }
 #endif
-#if JVET_P0118_HRD_ASPECTS
   if (!pcVPS->getEachLayerIsAnOlsFlag())
   {
     WRITE_FLAG(pcVPS->getVPSGeneralHrdParamsPresentFlag(), "vps_general_hrd_params_present_flag");
@@ -1915,7 +1827,6 @@ void HLSWriter::codeVPS(const VPS* pcVPS)
       }
     }
   }
-#endif
 
   WRITE_FLAG(0, "vps_extension_flag");
 

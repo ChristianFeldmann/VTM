@@ -175,14 +175,8 @@ public:
 #else
   void  parseProfileTierLevel ( ProfileTierLevel *ptl, int maxNumSubLayersMinus1);
 #endif
-#if JVET_P0118_HRD_ASPECTS
   void  parseOlsHrdParameters(GeneralHrdParams* generalHrd, OlsHrdParams *olsHrd, uint32_t firstSubLayer, uint32_t tempLevelHigh);
-#else
-  void  parseHrdParameters  ( HRDParameters *hrd, uint32_t firstSubLayer, uint32_t tempLevelHigh );
-#endif
-#if JVET_P0118_HRD_ASPECTS
   void parseGeneralHrdParameters(GeneralHrdParams *generalHrd);
-#endif
 #if JVET_Q0775_PH_IN_SH
   void  parsePictureHeader  ( PicHeader* picHeader, ParameterSetManager *parameterSetManager, bool readRbspTrailingBits );
 #else

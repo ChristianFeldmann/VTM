@@ -1459,7 +1459,6 @@ void DecLib::xCheckParameterSetConstraints(const int layerId)
 #if JVET_Q0814_DPB
   const VPS *vps = slice->getVPS();
 #endif
-#if JVET_P0118_HRD_ASPECTS
   if (((vps!=nullptr)&&(vps->getVPSGeneralHrdParamsPresentFlag()))||(sps->getGeneralHrdParametersPresentFlag()))
   {
     if (((vps != nullptr) && (vps->getVPSGeneralHrdParamsPresentFlag())) && (sps->getGeneralHrdParametersPresentFlag()))
@@ -1473,7 +1472,6 @@ void DecLib::xCheckParameterSetConstraints(const int layerId)
     m_prevGeneralHrdParams = (sps->getGeneralHrdParametersPresentFlag() ? *sps->getGeneralHrdParameters() : *vps->getGeneralHrdParameters());
   }
   m_isFirstGeneralHrd = false;
-#endif
 #if SPS_ID_CHECK
   static std::unordered_map<int, int> m_clvssSPSid;
 

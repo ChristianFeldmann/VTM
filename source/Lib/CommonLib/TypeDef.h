@@ -54,7 +54,6 @@
 
 
 
-#define JVET_P0118_HRD_ASPECTS                            1 //JVET-P0118: HRD aspects
 
 #define JVET_Q0371_DEBLOCKING_CLEANUP                     1 //JVET_Q0371: cleanup on deblocking across subpicture boundaries
 

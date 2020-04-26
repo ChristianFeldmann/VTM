@@ -1239,7 +1239,6 @@ void HLSyntaxReader::dpb_parameters(int maxSubLayersMinus1, bool subLayerInfoFla
   }
 }
 
-#if JVET_Q0400_EXTRA_BITS
 void HLSyntaxReader::parseExtraPHBitsStruct( SPS *sps, int numBytes )
 {
   uint32_t symbol;
@@ -1269,7 +1268,6 @@ void HLSyntaxReader::parseExtraSHBitsStruct( SPS *sps, int numBytes )
   
   sps->setExtraSHBitPresentFlags(presentFlags);
 }
-#endif
 
 void HLSyntaxReader::parseSPS(SPS* pcSPS)
 {
@@ -1469,14 +1467,12 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     CHECK(uiCode > (32 - ( pcSPS->getBitsForPOC() - 4 )- 5), "The value of poc_msb_len_minus1 shall be in the range of 0 to 32 - log2_max_pic_order_cnt_lsb_minus4 - 5, inclusive");
   }
 
-#if JVET_Q0400_EXTRA_BITS
   // extra bits are for future extensions, we will read, but ignore them,
   // unless a meaning is specified in the spec
   READ_CODE(2, uiCode, "num_extra_ph_bits_bytes");  pcSPS->setNumExtraPHBitsBytes(uiCode);
   parseExtraPHBitsStruct( pcSPS, uiCode );
   READ_CODE(2, uiCode, "num_extra_sh_bits_bytes");  pcSPS->setNumExtraSHBitsBytes(uiCode);
   parseExtraSHBitsStruct( pcSPS, uiCode );
-#endif
 
   if (pcSPS->getMaxTLayers() - 1 > 0)
   {
@@ -2290,7 +2286,6 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
     picHeader->setRecoveryPocCnt( 0 );
   }
   
-#if JVET_Q0400_EXTRA_BITS
   std::vector<bool> phExtraBitsPresent = sps->getExtraPHBitPresentFlags();
   for (int i=0; i< sps->getNumExtraPHBitsBytes() * 8; i++)
   {
@@ -2300,7 +2295,6 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
       READ_FLAG(uiCode, "ph_extra_bit[ i ]");
     }
   }
-#endif
   
   if (sps->getPocMsbFlag())
   {
@@ -3183,7 +3177,6 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
     pcSlice->setSliceID(picLevelSliceIdx);
   }
 
-#if JVET_Q0400_EXTRA_BITS
   std::vector<bool> shExtraBitsPresent = sps->getExtraSHBitPresentFlags();
   for (int i=0; i< sps->getNumExtraSHBitsBytes() * 8; i++)
   {
@@ -3193,7 +3186,6 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
       READ_FLAG(uiCode, "sh_extra_bit[ i ]");
     }
   }
-#endif
 
   if (picHeader->getPicInterSliceAllowedFlag())
   {

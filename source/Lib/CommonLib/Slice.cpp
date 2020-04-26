@@ -2397,10 +2397,8 @@ SPS::SPS()
 , m_uiBitsForPOC              (  8)
 , m_pocMsbFlag                ( false )
 , m_pocMsbLen                 ( 1 )
-#if JVET_Q0400_EXTRA_BITS
 , m_numExtraPHBitsBytes       ( 0 )
 , m_numExtraSHBitsBytes       ( 0 )
-#endif
 , m_numLongTermRefPicSPS      (  0)
 
 , m_log2MaxTbSize             (  6)

@@ -1462,9 +1462,7 @@ void DecLib::xCheckParameterSetConstraints(const int layerId)
 #endif
 #endif
 
-#if JVET_Q0417_CONSTRAINT_SPS_VB_PRESENT_FLAG
   CHECK( sps->getRprEnabledFlag() && sps->getVirtualBoundariesEnabledFlag(), "when the value of res_change_in_clvs_allowed_flag is equal to 1, the value of sps_virtual_boundaries_present_flag shall be equal to 0" );
-#endif
 
   if( sps->getCTUSize() + 2 * ( 1 << sps->getLog2MinCodingBlockSize() ) > pps->getPicWidthInLumaSamples() )
   {

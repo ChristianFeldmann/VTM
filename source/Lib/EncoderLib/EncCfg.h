@@ -478,9 +478,6 @@ protected:
   bool      m_crossComponentPredictionEnabledFlag;
 #endif
   bool      m_reconBasedCrossCPredictionEstimate;
-#if !JVET_Q0441_SAO_MOD_12_BIT
-  uint32_t      m_log2SaoOffsetScale[MAX_NUM_CHANNEL_TYPE];
-#endif
   bool      m_useTransformSkip;
   bool      m_useTransformSkipFast;
   bool      m_useChromaTS;
@@ -1422,9 +1419,6 @@ public:
 #endif
   bool      getUseReconBasedCrossCPredictionEstimate ()                const { return m_reconBasedCrossCPredictionEstimate;  }
   void      setUseReconBasedCrossCPredictionEstimate (const bool value)      { m_reconBasedCrossCPredictionEstimate = value; }
-#if !JVET_Q0441_SAO_MOD_12_BIT
-  void      setLog2SaoOffsetScale(ChannelType type, uint32_t uiBitShift)         { m_log2SaoOffsetScale[type] = uiBitShift; }
-#endif
 
   bool getUseTransformSkip                             ()      { return m_useTransformSkip;        }
   void setUseTransformSkip                             ( bool b ) { m_useTransformSkip  = b;       }

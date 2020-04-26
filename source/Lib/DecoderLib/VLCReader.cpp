@@ -892,12 +892,6 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
 
           READ_FLAG( uiCode, "cross_component_prediction_enabled_flag");
           ppsRangeExtension.setCrossComponentPredictionEnabledFlag(uiCode != 0);
-#if !JVET_Q0441_SAO_MOD_12_BIT
-          READ_UVLC( uiCode, "log2_sao_offset_scale_luma");
-          ppsRangeExtension.setLog2SaoOffsetScale(CHANNEL_TYPE_LUMA, uiCode);
-          READ_UVLC( uiCode, "log2_sao_offset_scale_chroma");
-          ppsRangeExtension.setLog2SaoOffsetScale(CHANNEL_TYPE_CHROMA, uiCode);
-#endif
         }
         break;
         default:

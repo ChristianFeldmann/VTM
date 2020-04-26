@@ -537,10 +537,6 @@ void HLSWriter::codePPS( const PPS* pcPPS )
           const PPSRExt &ppsRangeExtension = pcPPS->getPpsRangeExtension();
 
           WRITE_FLAG((ppsRangeExtension.getCrossComponentPredictionEnabledFlag() ? 1 : 0), "cross_component_prediction_enabled_flag" );
-#if !JVET_Q0441_SAO_MOD_12_BIT
-          WRITE_UVLC( ppsRangeExtension.getLog2SaoOffsetScale(CHANNEL_TYPE_LUMA),           "log2_sao_offset_scale_luma"   );
-          WRITE_UVLC( ppsRangeExtension.getLog2SaoOffsetScale(CHANNEL_TYPE_CHROMA),         "log2_sao_offset_scale_chroma" );
-#endif
         }
         break;
         default:

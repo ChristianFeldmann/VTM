@@ -1610,7 +1610,6 @@ void DecLib::xCheckParameterSetConstraints(const int layerId)
     CHECK(spsConfWin.getWindowBottomOffset() != ppsConfWin.getWindowBottomOffset(), "When picture size is equal to maximum picutre size, conformance window bottom offset in SPS and PPS shall be equal");
   }
 #endif
-#if JVET_Q0355_DCI_LEVEL_IDC_CONSTRAINT
   int levelIdcSps = int(sps->getProfileTierLevel()->getLevelIdc());
   int maxLevelIdxDci = 0;
   if (m_dci)
@@ -1624,7 +1623,6 @@ void DecLib::xCheckParameterSetConstraints(const int layerId)
     }
     CHECK(levelIdcSps > maxLevelIdxDci, "max level signaled in the DCI shall not be less than the level signaled in the SPS");
   }
-#endif
 
   // When the current picture is not the first picture of the CLVS, if the value of SubpicId[ i ] is not equal to the value of SubpicId[ i ] of previous picture in decoding order in the same layer,
   // the nal_unit_type for all coded slice NAL units of the the subpicture with subpicture index i shall be in the range of IDR_W_RADL to CRA_NUT, inclusive.

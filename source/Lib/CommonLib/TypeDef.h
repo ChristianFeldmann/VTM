@@ -174,7 +174,6 @@
 
 
 
-#define JVET_Q0217_PROPOSAL5                              1  // JVET-Q0217 Proposal 5: modifications to reference picture information signalling
 
 typedef std::pair<int, bool> TrMode;
 typedef std::pair<int, int>  TrCost;

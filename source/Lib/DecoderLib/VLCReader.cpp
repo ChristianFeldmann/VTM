@@ -367,11 +367,7 @@ void HLSyntaxReader::parseRefPicList(SPS* sps, ReferencePictureList* rpl)
     if (!isLongTerm)
     {
       READ_UVLC(code, "abs_delta_poc_st[ listIdx ][ rplsIdx ][ i ]");
-#if JVET_Q0217_PROPOSAL5
       if ((!sps->getUseWP() && !sps->getUseWPBiPred()) || (ii == 0))
-#else
-      if (!sps->getUseWP() && !sps->getUseWPBiPred())
-#endif
       {
         code++;
       }

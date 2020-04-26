@@ -224,15 +224,9 @@ void HLSWriter::xCodeRefPicList( const ReferencePictureList* rpl, bool isLongTer
         prevDelta = rpl->getRefPicIdentifier(ii);
       }
       unsigned int absDeltaValue = (deltaValue < 0) ? 0 - deltaValue : deltaValue;
-#if JVET_Q0217_PROPOSAL5
       if (isForbiddenZeroDeltaPoc || ii == 0)
       {
         CHECK(!absDeltaValue, "Zero delta POC is not used without WP or is the 0-th entry");
-#else
-      if (isForbiddenZeroDeltaPoc)
-      {
-        CHECK( !absDeltaValue, "Zero delta POC is not used without WP" );
-#endif
         WRITE_UVLC( absDeltaValue - 1, "abs_delta_poc_st[ listIdx ][ rplsIdx ][ i ]" );
       }
       else

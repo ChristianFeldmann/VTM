@@ -72,33 +72,20 @@ public:
     return cnt > other.cnt;
   }
   SortingElement() {
-#if JVET_Q0504_PLT_NON444
     cnt[0] = cnt[1] = cnt[2] = cnt[3] = 0;
     shift[0] = shift[1] = shift[2] = 0;
     lastCnt[0] = lastCnt[1] = lastCnt[2] = 0;
-#else
-    cnt = shift = lastCnt = 0;
-#endif
     data[0] = data[1] = data[2] = 0;
     sumData[0] = sumData[1] = sumData[2] = 0;
   }
-#if JVET_Q0504_PLT_NON444
   uint32_t  getCnt(int idx) const         { return cnt[idx]; }
   void      setCnt(uint32_t val, int idx) { cnt[idx] = val; }
-#else
-  uint32_t  getCnt() const        { return cnt; }
-  void      setCnt(uint32_t val)  { cnt = val; }
-#endif
   int       getSumData (int id) const   { return sumData[id]; }
 
   void resetAll(ComponentID compBegin, uint32_t numComp)
   {
-#if JVET_Q0504_PLT_NON444
     shift[0] = shift[1] = shift[2] = 0;
     lastCnt[0] = lastCnt[1] = lastCnt[2] = 0;
-#else
-    shift = lastCnt = 0;
-#endif
     for (int ch = compBegin; ch < (compBegin + numComp); ch++)
     {
       data[ch] = 0;
@@ -168,37 +155,22 @@ public:
     {
       data[comp] = element.data[comp];
       sumData[comp] = data[comp];
-#if JVET_Q0504_PLT_NON444
       shift[comp] = 0; 
       lastCnt[comp] = 1;
-#endif
     }
-#if !JVET_Q0504_PLT_NON444
-    shift = 0; lastCnt = 1;
-#endif
   }
   void copyAllFrom(SortingElement element, ComponentID compBegin, uint32_t numComp)
   {
     copyDataFrom(element, compBegin, numComp);
-#if !JVET_Q0504_PLT_NON444
-    cnt = element.cnt;
-#endif
     for (int comp = compBegin; comp < (compBegin + numComp); comp++)
     {
       sumData[comp] = element.sumData[comp];
-#if JVET_Q0504_PLT_NON444
       cnt[comp]     = element.cnt[comp];
       shift[comp]   = element.shift[comp];
       lastCnt[comp] = element.lastCnt[comp];
-#endif
     }
-#if JVET_Q0504_PLT_NON444
     cnt[MAX_NUM_COMPONENT] = element.cnt[MAX_NUM_COMPONENT];
-#else
-    lastCnt = element.lastCnt; shift = element.shift;
-#endif
   }
-#if JVET_Q0504_PLT_NON444
   void addElement(const SortingElement& element, ComponentID compBegin, uint32_t numComp)
   {
     for (int i = compBegin; i<(compBegin + numComp); i++)
@@ -214,34 +186,9 @@ public:
       }
     }
   }
-#else
-  void addElement(const SortingElement& element, ComponentID compBegin, uint32_t numComp)
-  {
-    cnt++;
-    for (int i = compBegin; i<(compBegin + numComp); i++)
-    {
-      sumData[i] += element.data[i];
-    }
-    if (cnt>1 && cnt == 2 * lastCnt)
-    {
-      uint32_t rnd = 1 << shift;
-      shift++;
-      for (int i = compBegin; i<(compBegin + numComp); i++)
-      {
-        data[i] = (sumData[i] + rnd) >> shift;
-      }
-      lastCnt = cnt;
-    }
-  }
-#endif
 private:
-#if JVET_Q0504_PLT_NON444
   uint32_t cnt[MAX_NUM_COMPONENT+1];
   int shift[3], lastCnt[3], data[3], sumData[3];
-#else
-  uint32_t cnt;
-  int shift, lastCnt, data[3], sumData[3];
-#endif
 };
 /// encoder search class
 #if !REMOVE_PPS_REXT

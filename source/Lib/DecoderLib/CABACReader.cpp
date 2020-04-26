@@ -671,7 +671,6 @@ void CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
   bool jointPLT = false;
   if (cu.isSepTree())
   {
-#if JVET_Q0504_PLT_NON444
     if( cu.isLocalSepTree() )
     {
       compBegin = COMPONENT_Y;
@@ -680,7 +679,6 @@ void CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
     }
     else
     {
-#endif
     if (isLuma(partitioner.chType))
     {
       compBegin = COMPONENT_Y;
@@ -691,18 +689,12 @@ void CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
       compBegin = COMPONENT_Cb;
       numComp = 2;
     }
-#if JVET_Q0504_PLT_NON444
     }
-#endif
   }
   else
   {
     compBegin = COMPONENT_Y;
-#if JVET_Q0504_PLT_NON444
     numComp = (cu.chromaFormat != CHROMA_400) ? 3 : 1;
-#else
-    numComp = 3;
-#endif
     jointPLT = true;
   }
   if (CU::isPLT(cu))
@@ -871,7 +863,6 @@ void CABACReader::coding_unit( CodingUnit &cu, Partitioner &partitioner, CUCtx& 
     }
     else
     {
-#if JVET_Q0504_PLT_NON444
       if( cu.chromaFormat != CHROMA_400 )
       {
         cu_palette_info(cu, COMPONENT_Y, 3, cuCtx);
@@ -880,9 +871,6 @@ void CABACReader::coding_unit( CodingUnit &cu, Partitioner &partitioner, CUCtx& 
       {
         cu_palette_info(cu, COMPONENT_Y, 1, cuCtx);
       }
-#else
-      cu_palette_info(cu, COMPONENT_Y, 3, cuCtx);
-#endif
     }
     end_of_ctu(cu, cuCtx);
     return;
@@ -1702,10 +1690,8 @@ void CABACReader::cu_palette_info(CodingUnit& cu, ComponentID compBegin, uint32_
   TransformUnit&   tu = *cu.firstTU;
   int curPLTidx = 0;
 
-#if JVET_Q0504_PLT_NON444
   if( cu.isLocalSepTree() )
     cu.cs->prevPLT.curPLTSize[compBegin] = cu.cs->prevPLT.curPLTSize[COMPONENT_Y];
-#endif
   cu.lastPLTSize[compBegin] = cu.cs->prevPLT.curPLTSize[compBegin];
 
   int maxPltSize = cu.isSepTree() ? MAXPLTSIZE_DUALTREE : MAXPLTSIZE;
@@ -1719,7 +1705,6 @@ void CABACReader::cu_palette_info(CodingUnit& cu, ComponentID compBegin, uint32_
   {
     if (cu.reuseflag[compBegin][idx])
     {
-#if JVET_Q0504_PLT_NON444
       if( cu.isLocalSepTree() )
       {
         for( int comp = COMPONENT_Y; comp < MAX_NUM_COMPONENT; comp++ )
@@ -1729,14 +1714,11 @@ void CABACReader::cu_palette_info(CodingUnit& cu, ComponentID compBegin, uint32_
       }
       else
       {
-#endif
       for (int comp = compBegin; comp < (compBegin + numComp); comp++)
       {
         cu.curPLT[comp][curPLTidx] = cu.cs->prevPLT.curPLT[comp][idx];
       }
-#if JVET_Q0504_PLT_NON444
       }
-#endif
       curPLTidx++;
     }
   }
@@ -1748,10 +1730,8 @@ void CABACReader::cu_palette_info(CodingUnit& cu, ComponentID compBegin, uint32_
   }
 
   cu.curPLTSize[compBegin] = curPLTidx + recievedPLTnum;
-#if JVET_Q0504_PLT_NON444
   if( cu.isLocalSepTree() )
     cu.curPLTSize[COMPONENT_Y] = cu.curPLTSize[compBegin];
-#endif
   for (int comp = compBegin; comp < (compBegin + numComp); comp++)
   {
     for (int idx = curPLTidx; idx < cu.curPLTSize[compBegin]; idx++)
@@ -1759,7 +1739,6 @@ void CABACReader::cu_palette_info(CodingUnit& cu, ComponentID compBegin, uint32_
       ComponentID compID = (ComponentID)comp;
       const int  channelBitDepth = sps.getBitDepth(toChannelType(compID));
       cu.curPLT[compID][idx] = m_BinDecoder.decodeBinsEP(channelBitDepth);
-#if JVET_Q0504_PLT_NON444
       if( cu.isLocalSepTree() )
       {
         if( isLuma( cu.chType ) )
@@ -1772,7 +1751,6 @@ void CABACReader::cu_palette_info(CodingUnit& cu, ComponentID compBegin, uint32_
           cu.curPLT[COMPONENT_Y][idx] = 1 << (cu.cs->sps->getBitDepth(CHANNEL_TYPE_LUMA) - 1);
         }
       }
-#endif
     }
   }
   cu.useEscape[compBegin] = true;
@@ -1995,10 +1973,8 @@ void CABACReader::xDecodePLTPredIndicator(CodingUnit& cu, uint32_t maxPLTSize, C
         idx += symbol - 1;
       }
       cu.reuseflag[compBegin][idx] = 1;
-#if JVET_Q0504_PLT_NON444
       if( cu.isLocalSepTree() )
         cu.reuseflag[COMPONENT_Y][idx] = 1;
-#endif
       numPltPredicted++;
       idx++;
     }

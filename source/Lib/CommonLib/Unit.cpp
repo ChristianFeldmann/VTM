@@ -378,12 +378,10 @@ const bool CodingUnit::isSepTree() const
   return treeType != TREE_D || CS::isDualITree( *cs );
 }
 
-#if JVET_Q0504_PLT_NON444
 const bool CodingUnit::isLocalSepTree() const
 {
   return treeType != TREE_D && !CS::isDualITree(*cs);
 }
-#endif
 
 const bool CodingUnit::checkCCLMAllowed() const
 {

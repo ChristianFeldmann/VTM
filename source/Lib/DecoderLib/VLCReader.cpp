@@ -1992,18 +1992,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     pcSPS->setUseColorTrans(false);
   }
 #endif
-#if JVET_Q0504_PLT_NON444
   READ_FLAG( uiCode,  "sps_palette_enabled_flag");                                pcSPS->setPLTMode                ( uiCode != 0 );
-#else
-  if (pcSPS->getChromaFormatIdc() == CHROMA_444)
-  {
-    READ_FLAG( uiCode,  "sps_palette_enabled_flag");                                pcSPS->setPLTMode                ( uiCode != 0 );
-  }
-  else
-  {
-    pcSPS->setPLTMode(false);
-  }
-#endif
 #if JVET_Q0820_ACT
 #if JVET_Q0265
   if (chromaArrayType == CHROMA_444 && pcSPS->getLog2MaxTbSize() != 6)

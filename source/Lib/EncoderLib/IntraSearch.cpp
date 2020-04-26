@@ -1589,10 +1589,8 @@ void IntraSearch::PLTSearch(CodingStructure &cs, Partitioner& partitioner, Compo
     cs.getPredBuf().copyFrom(cs.getOrgBuf());
     cs.getPredBuf().Y().rspSignal(m_pcReshape->getFwdLUT());
   }
-#if JVET_Q0504_PLT_NON444
   if( cu.isLocalSepTree() )
     cs.prevPLT.curPLTSize[compBegin] = cs.prevPLT.curPLTSize[COMPONENT_Y];
-#endif
   cu.lastPLTSize[compBegin] = cs.prevPLT.curPLTSize[compBegin];
   //derive palette
   derivePLTLossy(cs, partitioner, compBegin, numComp);
@@ -1635,7 +1633,6 @@ void IntraSearch::PLTSearch(CodingStructure &cs, Partitioner& partitioner, Compo
     Pel curPLTtmp[MAX_NUM_COMPONENT][MAXPLTSIZE];
     int reuseFlagIdx = 0, curPLTtmpIdx = 0, reuseEntrySize = 0;
     memset(cu.reuseflag[compBegin], false, sizeof(bool) * MAXPLTPREDSIZE);
-#if JVET_Q0504_PLT_NON444
     int compBeginTmp = compBegin;
     int numCompTmp   = numComp;
     if( cu.isLocalSepTree() )
@@ -1644,16 +1641,11 @@ void IntraSearch::PLTSearch(CodingStructure &cs, Partitioner& partitioner, Compo
       compBeginTmp = COMPONENT_Y;
       numCompTmp   = (cu.chromaFormat != CHROMA_400) ? 3 : 1;
     }
-#endif
     for (int curIdx = 0; curIdx < cu.curPLTSize[compBegin]; curIdx++)
     {
       if (idxExist[curIdx])
       {
-#if JVET_Q0504_PLT_NON444
         for (int comp = compBeginTmp; comp < (compBeginTmp + numCompTmp); comp++)
-#else
-        for (int comp = compBegin; comp < (compBegin + numComp); comp++)
-#endif
           curPLTtmp[comp][curPLTtmpIdx] = cu.curPLT[comp][curIdx];
 
         // Update reuse flags
@@ -1676,10 +1668,8 @@ void IntraSearch::PLTSearch(CodingStructure &cs, Partitioner& partitioner, Compo
           if (match)
           {
             cu.reuseflag[compBegin][reuseFlagIdx] = true;
-#if JVET_Q0504_PLT_NON444
             if( cu.isLocalSepTree() )
               cu.reuseflag[COMPONENT_Y][reuseFlagIdx] = true;
-#endif
             reuseEntrySize++;
           }
         }
@@ -1689,13 +1679,9 @@ void IntraSearch::PLTSearch(CodingStructure &cs, Partitioner& partitioner, Compo
     cu.reusePLTSize[compBegin] = reuseEntrySize;
     // update palette table
     cu.curPLTSize[compBegin] = newPLTSize;
-#if JVET_Q0504_PLT_NON444
     if( cu.isLocalSepTree() )
       cu.curPLTSize[COMPONENT_Y] = newPLTSize;
     for (int comp = compBeginTmp; comp < (compBeginTmp + numCompTmp); comp++)
-#else
-    for (int comp = compBegin; comp < (compBegin + numComp); comp++)
-#endif
       memcpy( cu.curPLT[comp], curPLTtmp[comp], sizeof(Pel)*cu.curPLTSize[compBegin]);
   }
 #endif
@@ -2505,7 +2491,6 @@ void IntraSearch::derivePLTLossy(CodingStructure& cs, Partitioner& partitioner, 
 
   uint32_t scaleX = getComponentScaleX(COMPONENT_Cb, cs.sps->getChromaFormatIdc());
   uint32_t scaleY = getComponentScaleY(COMPONENT_Cb, cs.sps->getChromaFormatIdc());
-#if JVET_Q0504_PLT_NON444
   for (uint32_t y = 0; y < height; y++)
   {
     for (uint32_t x = 0; x < width; x++)
@@ -2604,78 +2589,13 @@ void IntraSearch::derivePLTLossy(CodingStructure& cs, Partitioner& partitioner, 
       }
     }
   }
-#else
-  for (uint32_t y = 0; y < height; y++)
-  {
-    for (uint32_t x = 0; x < width; x++)
-    {
-      uint32_t org[3], pX, pY;
-      for (int comp = compBegin; comp < (compBegin + numComp); comp++)
-      {
-        pX = (comp > 0 && compBegin == COMPONENT_Y) ? (x >> scaleX) : x;
-        pY = (comp > 0 && compBegin == COMPONENT_Y) ? (y >> scaleY) : y;
-        org[comp] = orgBuf[comp].at(pX, pY);
-      }
-      element.setAll(org, compBegin, numComp);
-      int besti = last, bestSAD = (last == -1) ? MAX_UINT : pelList[last].getSAD(element, cs.sps->getBitDepths(), compBegin, numComp, lossless);
-      if (lossless)
-      {
-        if (bestSAD)
-        {
-          for (int i = idx - 1; i >= 0; i--)
-          {
-            uint32_t sad = pelList[i].getSAD(element, cs.sps->getBitDepths(), compBegin, numComp, lossless);
-            if (sad == 0)
-            {
-              bestSAD = sad;
-              besti   = i;
-              break;
-            }
-          }
-        }
-      }
-      else
-      {
-      if (bestSAD)
-      {
-        for (int i = idx - 1; i >= 0; i--)
-        {
-          uint32_t sad = pelList[i].getSAD(element, cs.sps->getBitDepths(), compBegin, numComp, lossless);
-          if (sad < bestSAD)
-          {
-            bestSAD = sad;
-            besti = i;
-            if (!sad) break;
-          }
-        }
-      }
-      }
-      if (besti >= 0 && pelList[besti].almostEqualData(element, errorLimit, cs.sps->getBitDepths(), compBegin, numComp, lossless))
-      {
-        pelList[besti].addElement(element, compBegin, numComp);
-        last = besti;
-      }
-      else
-      {
-        pelList[idx].copyDataFrom(element, compBegin, numComp);
-        pelList[idx].setCnt(1);
-        last = idx;
-        idx++;
-      }
-    }
-  }
-#endif
 
   for (int i = 0; i < dictMaxSize; i++)
   {
-#if JVET_Q0504_PLT_NON444
     pelListSort[i].setCnt(0, COMPONENT_Y);
     pelListSort[i].setCnt(0, COMPONENT_Cb);
     pelListSort[i].setCnt(0, COMPONENT_Cr);
     pelListSort[i].setCnt(0, MAX_NUM_COMPONENT);
-#else
-    pelListSort[i].setCnt(0);
-#endif
     pelListSort[i].resetAll(compBegin, numComp);
   }
 
@@ -2683,20 +2603,12 @@ void IntraSearch::derivePLTLossy(CodingStructure& cs, Partitioner& partitioner, 
   dictMaxSize = 1;
   for (int i = 0; i < idx; i++)
   {
-#if JVET_Q0504_PLT_NON444
     if( pelList[i].getCnt(MAX_NUM_COMPONENT) > pelListSort[dictMaxSize - 1].getCnt(MAX_NUM_COMPONENT) )
-#else
-    if (pelList[i].getCnt() > pelListSort[dictMaxSize - 1].getCnt())
-#endif
     {
       int j;
       for (j = dictMaxSize; j > 0; j--)
       {
-#if JVET_Q0504_PLT_NON444
         if (pelList[i].getCnt(MAX_NUM_COMPONENT) > pelListSort[j - 1].getCnt(MAX_NUM_COMPONENT))
-#else
-        if (pelList[i].getCnt() > pelListSort[j - 1].getCnt() )
-#endif
         {
           pelListSort[j].copyAllFrom(pelListSort[j - 1], compBegin, numComp);
           dictMaxSize = std::min(dictMaxSize + 1, (uint32_t)maxPltSize);
@@ -2723,7 +2635,6 @@ void IntraSearch::derivePLTLossy(CodingStructure& cs, Partitioner& partitioner, 
   int    run;
   double reuseflagCost;
 #endif
-#if JVET_Q0504_PLT_NON444
   for (int i = 0; i < maxPltSize; i++)
   {
     if( pelListSort[i].getCnt(MAX_NUM_COMPONENT) )
@@ -2856,120 +2767,9 @@ void IntraSearch::derivePLTLossy(CodingStructure& cs, Partitioner& partitioner, 
       break;
     }
   }
-#else
-for (int i = 0; i < maxPltSize; i++)
-  {
-    if (pelListSort[i].getCnt())
-    {
-      int half = pelListSort[i].getCnt() >> 1;
-      for (int comp = compBegin; comp < (compBegin + numComp); comp++)
-      {
-        cu.curPLT[comp][paletteSize] = (pelListSort[i].getSumData(comp) + half) / pelListSort[i].getCnt();
-      }
-
-      int best = -1;
-      if (errorLimit)
-      {
-        double pal[MAX_NUM_COMPONENT], err = 0.0, bestCost = 0.0;
-        for (int comp = compBegin; comp < (compBegin + numComp); comp++)
-        {
-          pal[comp] = pelListSort[i].getSumData(comp) / (double)pelListSort[i].getCnt();
-          err = pal[comp] - cu.curPLT[comp][paletteSize];
-          if (isChroma((ComponentID) comp))
-          {
-            bestCost += (err * err * PLT_CHROMA_WEIGHTING) / (1 << (2 * pcmShiftRight_C));
-          }
-          else
-          {
-            bestCost += (err * err) / (1 << (2 * pcmShiftRight_L));
-          }
-        }
-        bestCost = bestCost * pelListSort[i].getCnt() + bitCost;
-
-        for (int t = 0; t < cs.prevPLT.curPLTSize[compBegin]; t++)
-        {
-          double cost = 0.0;
-          for (int comp = compBegin; comp < (compBegin + numComp); comp++)
-          {
-            err = pal[comp] - cs.prevPLT.curPLT[comp][t];
-            if (isChroma((ComponentID) comp))
-            {
-              cost += (err * err * PLT_CHROMA_WEIGHTING) / (1 << (2 * pcmShiftRight_C));
-            }
-            else
-            {
-              cost += (err * err) / (1 << (2 * pcmShiftRight_L));
-            }
-          }
-          cost *= pelListSort[i].getCnt();
-#if JVET_Q0503_Q0712_PLT_ENCODER_IMPROV_BUGFIX
-          run = 0;
-          for (int t2 = t-1; t2 >= 0; t2--)
-          {
-            if (!reuseflag[t2])
-            {
-              run++;
-            }
-            else
-            {
-              break;
-            }
-          }
-          reuseflagCost = m_pcRdCost->getLambda() / (double)(1 << (2 * plt_lambda_shift)) * getEpExGolombNumBins(run ? run + 1 : run, 0);
-          cost += reuseflagCost;
-#endif
-          if (cost < bestCost)
-          {
-            best = t;
-            bestCost = cost;
-          }
-        }
-        if (best != -1)
-        {
-          for (int comp = compBegin; comp < (compBegin + numComp); comp++)
-          {
-            cu.curPLT[comp][paletteSize] = cs.prevPLT.curPLT[comp][best];
-          }
-#if JVET_Q0503_Q0712_PLT_ENCODER_IMPROV_BUGFIX
-          reuseflag[best] = true;
-#endif
-        }
-      }
-
-      bool duplicate = false;
-      if (pelListSort[i].getCnt() == 1 && best == -1)
-      {
-        duplicate = true;
-      }
-      else
-      {
-        for (int t = 0; t<paletteSize; t++)
-        {
-          bool duplicateTmp = true;
-          for (int comp = compBegin; comp < (compBegin + numComp); comp++)
-          {
-            duplicateTmp = duplicateTmp && (cu.curPLT[comp][paletteSize] == cu.curPLT[comp][t]);
-          }
-          if (duplicateTmp)
-          {
-            duplicate = true;
-            break;
-          }
-        }
-      }
-      if (!duplicate) paletteSize++;
-    }
-    else
-    {
-      break;
-    }
-  }
-#endif
   cu.curPLTSize[compBegin] = paletteSize;
-#if JVET_Q0504_PLT_NON444
   if( cu.isLocalSepTree() )
     cu.curPLTSize[COMPONENT_Y] = paletteSize;
-#endif
 
   delete[] pelList;
   delete[] pelListSort;

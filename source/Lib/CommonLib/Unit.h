@@ -371,9 +371,7 @@ struct CodingUnit : public UnitArea
   const uint8_t     checkAllowedSbt() const;
   const bool        checkCCLMAllowed() const;
   const bool        isSepTree() const;
-#if JVET_Q0504_PLT_NON444
   const bool        isLocalSepTree() const;
-#endif 
   const bool        isConsInter() const { return modeType == MODE_TYPE_INTER; }
   const bool        isConsIntra() const { return modeType == MODE_TYPE_INTRA; }
 };

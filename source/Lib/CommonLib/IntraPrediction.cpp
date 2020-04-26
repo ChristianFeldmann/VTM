@@ -1943,10 +1943,8 @@ void IntraPrediction::reorderPLT(CodingStructure& cs, Partitioner& partitioner, 
 
     for (curidx = 0; curidx < cu.curPLTSize[compBegin]; curidx++)
     {
-#if JVET_Q0504_PLT_NON444
       if( curPLTpred[curidx] )
         continue;
-#endif
       bool matchTmp = true;
       for (int comp = compBegin; comp < (compBegin + numComp); comp++)
       {
@@ -1963,7 +1961,6 @@ void IntraPrediction::reorderPLT(CodingStructure& cs, Partitioner& partitioner, 
     {
       cu.reuseflag[compBegin][predidx] = true;
       curPLTpred[curidx] = true;
-#if JVET_Q0504_PLT_NON444
       if( cu.isLocalSepTree() )
       {
         cu.reuseflag[COMPONENT_Y][predidx] = true;
@@ -1974,14 +1971,11 @@ void IntraPrediction::reorderPLT(CodingStructure& cs, Partitioner& partitioner, 
       }
       else
       {
-#endif
       for (int comp = compBegin; comp < (compBegin + numComp); comp++)
       {
         curPLTtmp[comp][reusePLTSizetmp] = cs.prevPLT.curPLT[comp][predidx];
       }
-#if JVET_Q0504_PLT_NON444
       }
-#endif
       reusePLTSizetmp++;
       pltSizetmp++;
     }
@@ -1991,7 +1985,6 @@ void IntraPrediction::reorderPLT(CodingStructure& cs, Partitioner& partitioner, 
   {
     if (!curPLTpred[curidx])
     {
-#if JVET_Q0504_PLT_NON444
       if( cu.isLocalSepTree() )
       {
         for( int comp = compBegin; comp < (compBegin + numComp); comp++ )
@@ -2010,21 +2003,17 @@ void IntraPrediction::reorderPLT(CodingStructure& cs, Partitioner& partitioner, 
       }
       else
       {
-#endif
       for (int comp = compBegin; comp < (compBegin + numComp); comp++)
       {
         curPLTtmp[comp][pltSizetmp] = cu.curPLT[comp][curidx];
       }
-#if JVET_Q0504_PLT_NON444
       }
-#endif
       pltSizetmp++;
     }
   }
   assert(pltSizetmp == cu.curPLTSize[compBegin]);
   for (int curidx = 0; curidx < cu.curPLTSize[compBegin]; curidx++)
   {
-#if JVET_Q0504_PLT_NON444
     if( cu.isLocalSepTree() )
     {
       for( int comp = COMPONENT_Y; comp < MAX_NUM_COMPONENT; comp++ )
@@ -2034,14 +2023,11 @@ void IntraPrediction::reorderPLT(CodingStructure& cs, Partitioner& partitioner, 
     }
     else
     {
-#endif
     for (int comp = compBegin; comp < (compBegin + numComp); comp++)
     {
       cu.curPLT[comp][curidx] = curPLTtmp[comp][curidx];
     }
-#if JVET_Q0504_PLT_NON444
     }
-#endif
   }
 }
 //! \}

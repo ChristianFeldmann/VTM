@@ -67,11 +67,7 @@ protected:
 #if JVET_P0190_SCALABLE_NESTING_SEI
   void xParseSEIScalableNesting               (SEIScalableNesting& sei, const NalUnitType nalUnitType, const uint32_t nuh_layer_id, uint32_t payloadSize, const VPS *vps, const SPS *sps, std::ostream *pDecodedMessageOutputStream);
 #endif
-#if JVET_Q0818_PT_SEI
   void xParseSEIFrameFieldinfo                (SEIFrameFieldInfo& sei, const SEIPictureTiming& pt, uint32_t payloadSize, std::ostream *pDecodedMessageOutputStream);
-#else
-  void xParseSEIFrameFieldinfo                (SEIFrameFieldInfo& sei,                 uint32_t payloadSize,                    std::ostream *pDecodedMessageOutputStream);
-#endif
   void xParseSEIDependentRAPIndication        (SEIDependentRAPIndication& sei,        uint32_t payLoadSize,                     std::ostream *pDecodedMessageOutputStream);
   void xParseSEIFramePacking                  (SEIFramePacking& sei,                  uint32_t payloadSize,                     std::ostream *pDecodedMessageOutputStream);
   void xParseSEIMasteringDisplayColourVolume  (SEIMasteringDisplayColourVolume& sei,  uint32_t payloadSize,                     std::ostream *pDecodedMessageOutputStream);

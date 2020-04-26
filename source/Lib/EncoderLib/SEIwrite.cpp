@@ -434,9 +434,7 @@ void SEIWriter::xWriteSEIPictureTiming(const SEIPictureTiming& sei, const SEIBuf
       }
     }
   }
-#if JVET_Q0818_PT_SEI
   WRITE_UVLC( sei.m_ptDisplayElementalPeriodsMinus1,          "pt_display_elemental_periods_minus1" );
-#endif
 }
 
 void SEIWriter::xWriteSEIFrameFieldInfo(const SEIFrameFieldInfo& sei)

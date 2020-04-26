@@ -106,7 +106,6 @@
 
 
 
-#define JVET_Q0818_PT_SEI                                 1 // JVET-Q0818: add display_elemental_periods_minus1 to picture timing SEI message
 
 #define JVET_Q0343_GCMP_GUARD_BAND_TYPE                   1 // JVET-Q0343: Add gcmp_guard_band_type to generalized cubemap projection SEI message and rename boundary guard band
 

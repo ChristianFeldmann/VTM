@@ -60,11 +60,7 @@ static std::vector<uint32_t> writeAnnexB(std::ostream& out, const AccessUnit& au
 
     static const uint8_t start_code_prefix[] = {0,0,0,1};
 
-#if JVET_Q0117_PARAMETER_SETS_CLEANUP
       if (it == au.begin() || nalu.m_nalUnitType == NAL_UNIT_DCI || nalu.m_nalUnitType == NAL_UNIT_SPS || nalu.m_nalUnitType == NAL_UNIT_VPS || nalu.m_nalUnitType == NAL_UNIT_PPS)
-#else
-      if (it == au.begin() || nalu.m_nalUnitType == NAL_UNIT_DPS || nalu.m_nalUnitType == NAL_UNIT_SPS || nalu.m_nalUnitType == NAL_UNIT_VPS || nalu.m_nalUnitType == NAL_UNIT_PPS)
-#endif
 
     {
       /* From AVC, When any of the following conditions are fulfilled, the

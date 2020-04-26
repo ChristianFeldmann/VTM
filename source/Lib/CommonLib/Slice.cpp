@@ -85,9 +85,6 @@ Slice::Slice()
 , m_biDirPred                    ( false )
 , m_iSliceQpDelta                 ( 0 )
 , m_iDepth                        ( 0 )
-#if !JVET_Q0117_PARAMETER_SETS_CLEANUP
-, m_dps                           ( nullptr )
-#endif
 , m_pcSPS                         ( NULL )
 , m_pcPPS                         ( NULL )
 , m_pcPic                         ( NULL )
@@ -2488,9 +2485,6 @@ SPSRExt::SPSRExt()
 
 SPS::SPS()
 : m_SPSId                     (  0)
-#if !JVET_Q0117_PARAMETER_SETS_CLEANUP
-, m_decodingParameterSetId    (  0 )
-#endif
 , m_VPSId                     ( 0 )
 , m_affineAmvrEnabledFlag     ( false )
 , m_DMVR                      ( false )
@@ -4109,7 +4103,6 @@ bool Slice::checkRPR()
   return false;
 }
 
-#if JVET_Q0117_PARAMETER_SETS_CLEANUP
 bool             operator == (const ConstraintInfo& op1, const ConstraintInfo& op2)
 {
   if( op1.m_progressiveSourceFlag                        != op2.m_progressiveSourceFlag                          ) return false;
@@ -4196,7 +4189,6 @@ bool             operator != (const ProfileTierLevel& op1, const ProfileTierLeve
 {
   return !(op1 == op2);
 }
-#endif
 
 #if ENABLE_TRACING
 void xTraceVPSHeader()
@@ -4204,17 +4196,10 @@ void xTraceVPSHeader()
   DTRACE( g_trace_ctx, D_HEADER, "=========== Video Parameter Set     ===========\n" );
 }
 
-#if !JVET_Q0117_PARAMETER_SETS_CLEANUP
-void xTraceDPSHeader()
-{
-  DTRACE( g_trace_ctx, D_HEADER, "=========== Decoding Parameter Set     ===========\n" );
-}
-#else
 void xTraceDCIHeader()
 {
   DTRACE( g_trace_ctx, D_HEADER, "=========== Decoding Capability Information     ===========\n" );
 }
-#endif
 
 void xTraceSPSHeader()
 {

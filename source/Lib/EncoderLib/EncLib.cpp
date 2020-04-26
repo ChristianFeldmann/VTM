@@ -223,13 +223,7 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
   xInitSPS( sps0 );
   xInitVPS( sps0 );
 
-#if JVET_Q0117_PARAMETER_SETS_CLEANUP
   xInitDCI(m_dci, sps0);
-#else
-  int dpsId = getDecodingParameterSetEnabled() ? 1 : 0;
-  xInitDPS(m_dps, sps0, dpsId);
-  sps0.setDecodingParameterSetId(m_dps.getDecodingParameterSetId());
-#endif
 #if ENABLE_SPLIT_PARALLELISM
   if( omp_get_dynamic() )
   {
@@ -1069,7 +1063,6 @@ void EncLib::xInitVPS( const SPS& sps )
   }
 }
 
-#if JVET_Q0117_PARAMETER_SETS_CLEANUP
 void EncLib::xInitDCI(DCI& dci, const SPS& sps)
 {
   dci.setMaxSubLayersMinus1(sps.getMaxTLayers() - 1);
@@ -1078,19 +1071,6 @@ void EncLib::xInitDCI(DCI& dci, const SPS& sps)
   ptls[0] = *sps.getProfileTierLevel();
   dci.setProfileTierLevel(ptls);
 }
-#else
-void EncLib::xInitDPS(DPS &dps, const SPS &sps, const int dpsId)
-{
-  // The SPS must have already been set up.
-  // set the DPS profile information.
-  dps.setDecodingParameterSetId(dpsId);
-  dps.setMaxSubLayersMinus1(sps.getMaxTLayers()-1);
-  std::vector<ProfileTierLevel> ptls;
-  ptls.resize(1);
-  ptls[0] = *sps.getProfileTierLevel();
-  dps.setProfileTierLevel(ptls);
-}
-#endif
 
 void EncLib::xInitSPS( SPS& sps )
 {

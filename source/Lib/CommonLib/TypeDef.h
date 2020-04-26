@@ -118,7 +118,6 @@
 
 
 
-#define JVET_Q0117_PARAMETER_SETS_CLEANUP                 1 // JVET-Q0117: cleanups on parameter sets
 
 #define JVET_Q0751_MIXED_NAL_UNIT_TYPES                   1 // JVET-Q0751: Constraints and properties of mixed nal unit types
 
@@ -961,11 +960,7 @@ enum NalUnitType
 
   NAL_UNIT_RESERVED_IRAP_VCL_11,
   NAL_UNIT_RESERVED_IRAP_VCL_12,
-#if JVET_Q0117_PARAMETER_SETS_CLEANUP
   NAL_UNIT_DCI,                     // 13
-#else
-  NAL_UNIT_DPS,                     // 13
-#endif
   NAL_UNIT_VPS,                     // 14
   NAL_UNIT_SPS,                     // 15
   NAL_UNIT_PPS,                     // 16

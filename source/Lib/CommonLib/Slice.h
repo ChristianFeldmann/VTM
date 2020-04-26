@@ -477,10 +477,8 @@ public:
   bool          getNoApsConstraintFlag() const { return m_noApsConstraintFlag; }
   void          setNoApsConstraintFlag(bool bVal) { m_noApsConstraintFlag = bVal; }
 
-#if JVET_Q0117_PARAMETER_SETS_CLEANUP
   friend bool             operator == (const ConstraintInfo& op1, const ConstraintInfo& op2);
   friend bool             operator != (const ConstraintInfo& op1, const ConstraintInfo& op2);
-#endif
 };
 
 class ProfileTierLevel
@@ -522,10 +520,8 @@ public:
 
   Level::Name             getSubLayerLevelIdc(int i) const             { return m_subLayerLevelIdc[i];   }
   void                    setSubLayerLevelIdc(int i, Level::Name x)    { m_subLayerLevelIdc[i] = x;      }
-#if JVET_Q0117_PARAMETER_SETS_CLEANUP
   friend bool             operator == (const ProfileTierLevel& op1, const ProfileTierLevel& op2);
   friend bool             operator != (const ProfileTierLevel& op1, const ProfileTierLevel& op2);
-#endif
 };
 
 
@@ -845,7 +841,6 @@ public:
 };
 #endif
 
-#if JVET_Q0117_PARAMETER_SETS_CLEANUP // Rename DPS to DCI (decoding_capability_information)
 class DCI
 {
 private:
@@ -872,33 +867,6 @@ public:
     return true;
   }
 };
-#else
-class DPS
-{
-private:
-  int m_decodingParameterSetId;
-  int m_maxSubLayersMinus1;
-  std::vector<ProfileTierLevel> m_profileTierLevel;
-
-public:
-  DPS()
-    : m_decodingParameterSetId(-1)
-    , m_maxSubLayersMinus1 (0)
-  {};
-
-  virtual ~DPS() {};
-
-  int  getDecodingParameterSetId() const { return m_decodingParameterSetId; }
-  void setDecodingParameterSetId(int val) { m_decodingParameterSetId = val; }
-  int  getMaxSubLayersMinus1() const { return m_maxSubLayersMinus1; }
-  void setMaxSubLayersMinus1(int val) { m_maxSubLayersMinus1 = val; }
-
-  size_t getNumPTLs() const { return m_profileTierLevel.size(); }
-  void  setProfileTierLevel(const std::vector<ProfileTierLevel> &val)   { m_profileTierLevel = val; }
-  const ProfileTierLevel& getProfileTierLevel(int idx) const            { return m_profileTierLevel[idx]; }
-};
-
-#endif
 
 
 class VPS
@@ -1255,9 +1223,6 @@ class SPS
 {
 private:
   int               m_SPSId;
-#if !JVET_Q0117_PARAMETER_SETS_CLEANUP
-  int               m_decodingParameterSetId;
-#endif
   int               m_VPSId;
 
   bool              m_affineAmvrEnabledFlag;
@@ -1443,10 +1408,6 @@ public:
 
   int                     getSPSId() const                                                                { return m_SPSId;                                                      }
   void                    setSPSId(int i)                                                                 { m_SPSId = i;                                                         }
-#if !JVET_Q0117_PARAMETER_SETS_CLEANUP
-  void                    setDecodingParameterSetId(int val)                                              { m_decodingParameterSetId = val; }
-  int                     getDecodingParameterSetId() const                                               { return m_decodingParameterSetId; }
-#endif
   int                     getVPSId() const                                                                { return m_VPSId; }
   void                    setVPSId(int i)                                                                 { m_VPSId = i; }
 
@@ -2687,9 +2648,6 @@ private:
 
 
   // access channel
-#if !JVET_Q0117_PARAMETER_SETS_CLEANUP
-  const DPS*                 m_dps;
-#endif
   const VPS*                 m_pcVPS;
   const SPS*                 m_pcSPS;
   const PPS*                 m_pcPPS;
@@ -2758,10 +2716,6 @@ public:
   const PicHeader*            getPicHeader() const                                   { return m_pcPicHeader;                                         }
   int                         getRefIdx4MVPair( RefPicList eCurRefPicList, int nCurRefIdx );
 
-#if !JVET_Q0117_PARAMETER_SETS_CLEANUP
-  void                        setDPS( DPS* dps )                                     { m_dps = dps;                                              }
-  const DPS*                  getDPS() const                                         { return m_dps;                                               }
-#endif
 
   void                        setSPS( const SPS* pcSPS )                             { m_pcSPS = pcSPS;                                              }
   const SPS*                  getSPS() const                                         { return m_pcSPS;                                               }
@@ -3175,11 +3129,7 @@ public:
 
 #if ENABLE_TRACING
 void xTraceVPSHeader();
-#if !JVET_Q0117_PARAMETER_SETS_CLEANUP
-void xTraceDPSHeader();
-#else
 void xTraceDCIHeader();
-#endif
 void xTraceSPSHeader();
 void xTracePPSHeader();
 void xTraceAPSHeader();

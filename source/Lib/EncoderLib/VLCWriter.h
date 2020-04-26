@@ -131,11 +131,7 @@ public:
   void  codeLmcsAps             ( APS* pcAPS );
   void  codeScalingListAps      ( APS* pcAPS );
   void  codeVPS                 ( const VPS* pcVPS );
-#if JVET_Q0117_PARAMETER_SETS_CLEANUP
   void  codeDCI                 ( const DCI* dci );
-#else
-  void  codeDPS                 ( const DPS* dps );
-#endif
 #if JVET_Q0775_PH_IN_SH
   void  codePictureHeader       ( PicHeader* picHeader, bool writeRbspTrailingBits );
 #else

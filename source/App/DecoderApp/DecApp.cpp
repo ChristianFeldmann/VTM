@@ -346,11 +346,7 @@ bool DecApp::isNewPicture(ifstream *bitstreamFile, class InputByteStream *bytest
 
         // NUT that indicate the start of a new picture
         case NAL_UNIT_ACCESS_UNIT_DELIMITER:
-#if JVET_Q0117_PARAMETER_SETS_CLEANUP
         case NAL_UNIT_DCI:
-#else
-        case NAL_UNIT_DPS:
-#endif
         case NAL_UNIT_VPS:
         case NAL_UNIT_SPS:
         case NAL_UNIT_PPS:

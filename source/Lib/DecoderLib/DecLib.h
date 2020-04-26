@@ -169,9 +169,7 @@ public:
   int                     m_targetSubPicIdx;
 #endif
 
-#if JVET_Q0117_PARAMETER_SETS_CLEANUP
   DCI*                    m_dci;
-#endif
 public:
   DecLib();
   virtual ~DecLib();
@@ -248,11 +246,7 @@ protected:
   void      xDecodePicHeader( InputNALUnit& nalu );
   bool      xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDisplay);
   void      xDecodeVPS( InputNALUnit& nalu );
-#if JVET_Q0117_PARAMETER_SETS_CLEANUP
   void      xDecodeDCI( InputNALUnit& nalu );
-#else
-  void      xDecodeDPS( InputNALUnit& nalu );
-#endif
   void      xDecodeSPS( InputNALUnit& nalu );
   void      xDecodePPS( InputNALUnit& nalu );
   void      xDecodeAPS(InputNALUnit& nalu);

@@ -271,11 +271,7 @@ struct UnitAreaRelative : public UnitArea
 
 class SPS;
 class VPS;
-#if JVET_Q0117_PARAMETER_SETS_CLEANUP
 class DCI;
-#else
-class DPS;
-#endif
 class PPS;
 class Slice;
 

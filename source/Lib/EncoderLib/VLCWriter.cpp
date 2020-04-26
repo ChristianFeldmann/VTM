@@ -827,11 +827,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 #if ENABLE_TRACING
   xTraceSPSHeader ();
 #endif
-#if JVET_Q0117_PARAMETER_SETS_CLEANUP
   WRITE_CODE(pcSPS->getSPSId(), 4, "sps_seq_parameter_set_id");
-#else
-  WRITE_CODE( pcSPS->getDecodingParameterSetId (), 4,       "sps_decoding_parameter_set_id" );
-#endif
   WRITE_CODE( pcSPS->getVPSId(), 4, "sps_video_parameter_set_id" );
   CHECK(pcSPS->getMaxTLayers() == 0, "Maximum number of temporal sub-layers is '0'");
 
@@ -845,9 +841,6 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   }
   
   WRITE_FLAG(pcSPS->getGDREnabledFlag(), "gdr_enabled_flag");
-#if !JVET_Q0117_PARAMETER_SETS_CLEANUP
-  WRITE_CODE( pcSPS->getSPSId (), 4, "sps_seq_parameter_set_id" );
-#endif
   WRITE_CODE(int(pcSPS->getChromaFormatIdc ()), 2, "chroma_format_idc");
 
   const ChromaFormat format                = pcSPS->getChromaFormatIdc();
@@ -1341,7 +1334,6 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   }
   xWriteRbspTrailingBits();
 }
-#if JVET_Q0117_PARAMETER_SETS_CLEANUP
 void HLSWriter::codeDCI(const DCI* dci)
 {
 #if ENABLE_TRACING
@@ -1363,29 +1355,6 @@ void HLSWriter::codeDCI(const DCI* dci)
   WRITE_FLAG(0, "dci_extension_flag");
   xWriteRbspTrailingBits();
 }
-#else
-void HLSWriter::codeDPS( const DPS* dps )
-{
-#if ENABLE_TRACING
-  xTraceDPSHeader();
-#endif
-  WRITE_CODE( dps->getDecodingParameterSetId(),     4,        "dps_decoding_parameter_set_id" );
-  WRITE_CODE( dps->getMaxSubLayersMinus1(),         3,        "dps_max_sub_layers_minus1" );
-  WRITE_CODE( 0,                                    5,         "dps_reserved_zero_5bits" );
-  uint32_t numPTLs = (uint32_t) dps->getNumPTLs();
-  CHECK (numPTLs<1, "At least one PTL must be available in DPS");
-
-  WRITE_CODE( numPTLs - 1,                          4,         "dps_num_ptls_minus1" );
-
-  for (int i=0; i< numPTLs; i++)
-  {
-    ProfileTierLevel ptl = dps->getProfileTierLevel(i);
-    codeProfileTierLevel( &ptl, true, 0 );
-  }
-  WRITE_FLAG( 0,                                              "dps_extension_flag" );
-  xWriteRbspTrailingBits();
-}
-#endif
 void HLSWriter::codeVPS(const VPS* pcVPS)
 {
 #if ENABLE_TRACING

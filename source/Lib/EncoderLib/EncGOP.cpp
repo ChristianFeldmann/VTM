@@ -317,7 +317,6 @@ int EncGOP::xWriteVPS (AccessUnit &accessUnit, const VPS *vps)
   accessUnit.push_back(new NALUnitEBSP(nalu));
   return (int)(accessUnit.back()->m_nalUnitData.str().size()) * 8;
 }
-#if JVET_Q0117_PARAMETER_SETS_CLEANUP
 int EncGOP::xWriteDCI(AccessUnit& accessUnit, const DCI* dci)
 {
   OutputNALUnit nalu(NAL_UNIT_DCI);
@@ -327,24 +326,6 @@ int EncGOP::xWriteDCI(AccessUnit& accessUnit, const DCI* dci)
   accessUnit.push_back(new NALUnitEBSP(nalu));
   return (int)(accessUnit.back()->m_nalUnitData.str().size()) * 8;
 }
-#else
-int EncGOP::xWriteDPS (AccessUnit &accessUnit, const DPS *dps)
-{
-  if (dps->getDecodingParameterSetId() !=0)
-  {
-    OutputNALUnit nalu(NAL_UNIT_DPS);
-    m_HLSWriter->setBitstream( &nalu.m_Bitstream );
-    CHECK( nalu.m_temporalId, "The value of TemporalId of DPS NAL units shall be equal to 0" );
-    m_HLSWriter->codeDPS( dps );
-    accessUnit.push_back(new NALUnitEBSP(nalu));
-    return (int)(accessUnit.back()->m_nalUnitData.str().size()) * 8;
-  }
-  else
-  {
-    return 0;
-  }
-}
-#endif
 
 int EncGOP::xWriteSPS( AccessUnit &accessUnit, const SPS *sps, const int layerId )
 {
@@ -390,14 +371,10 @@ int EncGOP::xWriteParameterSets(AccessUnit &accessUnit, Slice *slice, const bool
   {
     if (layerIdx == 0)
     {
-#if JVET_Q0117_PARAMETER_SETS_CLEANUP
       if (m_pcCfg->getDCIEnabled())
       {
         actualTotalBits += xWriteDCI(accessUnit, m_pcEncLib->getDCI());
       }
-#else
-      actualTotalBits += xWriteDPS(accessUnit, m_pcEncLib->getDPS());
-#endif
       if (slice->getSPS()->getVPSId() != 0)
       {
         actualTotalBits += xWriteVPS(accessUnit, m_pcEncLib->getVPS());
@@ -503,7 +480,6 @@ void EncGOP::xWriteLeadingSEIOrdered (SEIMessages& seiMessages, SEIMessages& duI
 {
   AccessUnit::iterator itNalu = accessUnit.begin();
 
-#if JVET_Q0117_PARAMETER_SETS_CLEANUP
   while ((itNalu != accessUnit.end()) &&
     ((*itNalu)->m_nalUnitType == NAL_UNIT_ACCESS_UNIT_DELIMITER
       || (*itNalu)->m_nalUnitType == NAL_UNIT_VPS
@@ -511,15 +487,6 @@ void EncGOP::xWriteLeadingSEIOrdered (SEIMessages& seiMessages, SEIMessages& duI
       || (*itNalu)->m_nalUnitType == NAL_UNIT_SPS
       || (*itNalu)->m_nalUnitType == NAL_UNIT_PPS
       ))
-#else
-  while ((itNalu != accessUnit.end()) &&
-    ((*itNalu)->m_nalUnitType == NAL_UNIT_ACCESS_UNIT_DELIMITER
-      || (*itNalu)->m_nalUnitType == NAL_UNIT_VPS
-      || (*itNalu)->m_nalUnitType == NAL_UNIT_DPS
-      || (*itNalu)->m_nalUnitType == NAL_UNIT_SPS
-      || (*itNalu)->m_nalUnitType == NAL_UNIT_PPS
-      ))
-#endif
   {
     itNalu++;
   }
@@ -4182,11 +4149,7 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
     if( ( *it )->m_nalUnitType != NAL_UNIT_PREFIX_SEI && ( *it )->m_nalUnitType != NAL_UNIT_SUFFIX_SEI )
     {
       numRBSPBytes += numRBSPBytes_nal;
-#if JVET_Q0117_PARAMETER_SETS_CLEANUP
       if (it == accessUnit.begin() || (*it)->m_nalUnitType == NAL_UNIT_VPS || (*it)->m_nalUnitType == NAL_UNIT_DCI || (*it)->m_nalUnitType == NAL_UNIT_SPS || (*it)->m_nalUnitType == NAL_UNIT_PPS)
-#else
-      if (it == accessUnit.begin() || (*it)->m_nalUnitType == NAL_UNIT_VPS || (*it)->m_nalUnitType == NAL_UNIT_DPS || (*it)->m_nalUnitType == NAL_UNIT_SPS || (*it)->m_nalUnitType == NAL_UNIT_PPS)
-#endif
       {
         numRBSPBytes += 4;
       }

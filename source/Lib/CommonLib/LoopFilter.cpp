@@ -450,11 +450,7 @@ void LoopFilter::xDeblockCU( CodingUnit& cu, const DeblockEdgeDir edgeDir )
       xEdgeFilterLuma( cu, edgeDir, edge );
     }
 
-#if JVET_Q0438_MONOCHROME_BUGFIXES
     if ( pcv.chrFormat != CHROMA_400 && cu.blocks[COMPONENT_Cb].valid() )
-#else
-    if ( cu.blocks[COMPONENT_Cb].valid() && pcv.chrFormat != CHROMA_400 )
-#endif
     {
       if ( !cu.ispMode || edge == 0 )
       {
@@ -514,11 +510,7 @@ void LoopFilter::xSetMaxFilterLengthPQFromTransformSizes( const DeblockEdgeDir e
 
   if ( edgeDir == EDGE_HOR )
   {
-#if JVET_Q0438_MONOCHROME_BUGFIXES
     for ( int cIdx = 0; cIdx < ::getNumberValidComponents(tuQ.chromaFormat); cIdx++ ) // per component
-#else
-    for ( int cIdx = 0; cIdx < MAX_NUM_COMPONENT; cIdx++ ) // per component
-#endif
     {
       const ComponentID comp = ComponentID(cIdx);
       const ChannelType ch   = toChannelType(comp);
@@ -563,11 +555,7 @@ void LoopFilter::xSetMaxFilterLengthPQFromTransformSizes( const DeblockEdgeDir e
   }
   if ( edgeDir == EDGE_VER )
   {
-#if JVET_Q0438_MONOCHROME_BUGFIXES
     for ( int cIdx = 0; cIdx < ::getNumberValidComponents(tuQ.chromaFormat); cIdx++ ) // per component
-#else
-    for ( int cIdx = 0; cIdx < MAX_NUM_COMPONENT; cIdx++ ) // per component
-#endif
     {
       const ComponentID comp = ComponentID(cIdx);
       const ChannelType ch   = toChannelType(comp);
@@ -802,10 +790,8 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
   }
   else 
   {
-#if JVET_Q0438_MONOCHROME_BUGFIXES
   if (pcv.chrFormat != CHROMA_400)
   {
-#endif
   // U
   if (m_aapucBS[edgeDir][rasterIdx] && (TU::getCbf(tuQ, COMPONENT_Cb) || TU::getCbf(tuP, COMPONENT_Cb) || tuQ.jointCbCr || tuP.jointCbCr))
   {
@@ -816,9 +802,7 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
   {
     tmpBs += BsSet(1, COMPONENT_Cr);
   }
-#if JVET_Q0438_MONOCHROME_BUGFIXES
   }
-#endif
   }
   if (BsGet(tmpBs, COMPONENT_Y) == 1)
   {

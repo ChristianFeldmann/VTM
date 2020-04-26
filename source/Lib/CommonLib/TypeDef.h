@@ -103,7 +103,6 @@
 
 
 
-#define JVET_Q0438_MONOCHROME_BUGFIXES                    1 // JVET-Q0438: Monochrome bug fixes
 
 #define JVET_Q0441_SAO_MOD_12_BIT                         1 // JVET-Q0441: SAO modification for 12 bit. Also removes old HEVC RExt SAO modification, which was broken.
 

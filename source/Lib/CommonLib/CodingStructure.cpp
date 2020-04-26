@@ -1000,11 +1000,7 @@ void CodingStructure::createCoeffs(const bool isPLTused)
 
   if (isPLTused)
   {
-#if JVET_Q0438_MONOCHROME_BUGFIXES
     for (unsigned i = 0; i < (isChromaEnabled(area.chromaFormat) ? 2 : 1); i++)
-#else
-    for (unsigned i = 0; i < numCh - 1; i++)
-#endif
     {
       unsigned _area = area.blocks[i].area();
 

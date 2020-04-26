@@ -809,15 +809,10 @@ int InterSearch::xIBCSearchMVChromaRefine(PredictionUnit& pu,
 
 )
 {
-#if JVET_Q0438_MONOCHROME_BUGFIXES
   if ( (!isChromaEnabled(pu.chromaFormat)) || (!pu.Cb().valid()) )
   {
     return 0;
   }
-#else
-  if (!pu.Cb().valid())
-    return 0;
-#endif
 
   int bestCandIdx = 0;
   Distortion  sadBest = std::numeric_limits<Distortion>::max();
@@ -6993,11 +6988,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
       }
     }
 
-#if JVET_Q0438_MONOCHROME_BUGFIXES
     if ( chroma && isChromaEnabled(tu.chromaFormat) && tu.blocks[COMPONENT_Cb].valid() )
-#else
-    if ( chroma && tu.blocks[COMPONENT_Cb].valid() )
-#endif
     {
       const CompArea& cbArea = tu.blocks[COMPONENT_Cb];
       const CompArea& crArea = tu.blocks[COMPONENT_Cr];
@@ -7306,13 +7297,8 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
     m_CABACEstimator->resetBits();
     if( !tu.noResidual )
     {
-#if JVET_Q0438_MONOCHROME_BUGFIXES
       static const ComponentID cbf_getComp[MAX_NUM_COMPONENT] = { COMPONENT_Cb, COMPONENT_Cr, COMPONENT_Y };
       for( unsigned c = isChromaEnabled(tu.chromaFormat)?0 : 2; c < MAX_NUM_COMPONENT; c++)
-#else
-    static const ComponentID cbf_getComp[3] = { COMPONENT_Cb, COMPONENT_Cr, COMPONENT_Y };
-    for( unsigned c = 0; c < numTBlocks; c++)
-#endif
     {
       const ComponentID compID = cbf_getComp[c];
       if (compID == COMPONENT_Y && !luma)
@@ -7587,11 +7573,7 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
     else
     cs.getResiBuf().bufs[0].subtract(cs.getPredBuf().bufs[0]);
   }
-#if JVET_Q0438_MONOCHROME_BUGFIXES
   if (chroma && isChromaEnabled(cs.pcv->chrFormat))
-#else
-  if (chroma)
-#endif
   {
     cs.getResiBuf().bufs[1].copyFrom(cs.getOrgBuf().bufs[1]);
     cs.getResiBuf().bufs[2].copyFrom(cs.getOrgBuf().bufs[2]);
@@ -7722,11 +7704,7 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
   {
     cs.getOrgResiBuf().bufs[0].copyFrom(orgResidual.bufs[0]);
   }
-#if JVET_Q0438_MONOCHROME_BUGFIXES
   if (chroma && isChromaEnabled(cs.pcv->chrFormat))
-#else
-  if (chroma)
-#endif
   {
     cs.getOrgResiBuf().bufs[1].copyFrom(orgResidual.bufs[1]);
     cs.getOrgResiBuf().bufs[2].copyFrom(orgResidual.bufs[2]);
@@ -7833,11 +7811,7 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
     {
       cs.getResiBuf().bufs[0].fill(0); // Clear the residual image, if we didn't code it.
     }
-#if JVET_Q0438_MONOCHROME_BUGFIXES
     if (chroma && isChromaEnabled(cs.pcv->chrFormat))
-#else
-    if (chroma)
-#endif
     {
       cs.getResiBuf().bufs[1].fill(0); // Clear the residual image, if we didn't code it.
       cs.getResiBuf().bufs[2].fill(0); // Clear the residual image, if we didn't code it.
@@ -7875,11 +7849,7 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
       }
     }
   }
-#if JVET_Q0438_MONOCHROME_BUGFIXES
   if (chroma && isChromaEnabled(cs.pcv->chrFormat))
-#else
-  if (chroma)
-#endif
   {
     cs.getRecoBuf().bufs[1].reconstruct(cs.getPredBuf().bufs[1], cs.getResiBuf().bufs[1], cs.slice->clpRngs().comp[1]);
     cs.getRecoBuf().bufs[2].reconstruct(cs.getPredBuf().bufs[2], cs.getResiBuf().bufs[2], cs.slice->clpRngs().comp[2]);

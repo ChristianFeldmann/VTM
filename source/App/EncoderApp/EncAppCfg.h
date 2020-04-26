@@ -311,10 +311,8 @@ protected:
   unsigned  m_uiMaxMTTHierarchyDepth;
   unsigned  m_uiMaxMTTHierarchyDepthI;
   unsigned  m_uiMaxMTTHierarchyDepthIChroma;
-#if JVET_Q0330_BLOCK_PARTITION
   unsigned  m_uiMaxBT[3];
   unsigned  m_uiMaxTT[3];
-#endif 
   bool      m_dualTree;
   bool      m_LFNST;
   bool      m_useFastLFNST;

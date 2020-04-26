@@ -419,9 +419,7 @@ void QTBTPartitioner::canSplit( const CodingStructure &cs, bool& canNo, bool& ca
 #else
     if (chType == CHANNEL_TYPE_CHROMA && areaC.width == 4) canBv = false;
 #endif
-#if JVET_Q0330_BLOCK_PARTITION
     if( !canBh && !canBv && !canQt ) canQt = true;
-#endif
     return;
   }
 
@@ -564,11 +562,7 @@ PartSplit QTBTPartitioner::getImplicitSplit( const CodingStructure &cs )
 
     const CompArea& area      = currArea().Y();
     const unsigned maxBtSize  = cs.pcv->getMaxBtSize( *cs.slice, chType );
-#if JVET_Q0330_BLOCK_PARTITION
     const bool isBtAllowed    = area.width <= maxBtSize && area.height <= maxBtSize && currMtDepth < (cs.pcv->getMaxBtDepth(*cs.slice, chType) + currImplicitBtDepth);
-#else
-    const bool isBtAllowed    = area.width <= maxBtSize && area.height <= maxBtSize;
-#endif
     const unsigned minQtSize  = cs.pcv->getMinQtSize( *cs.slice, chType );
 #if JVET_Q0471_CHROMA_QT_SPLIT
     // minQtSize is in luma samples unit
@@ -582,19 +576,11 @@ PartSplit QTBTPartitioner::getImplicitSplit( const CodingStructure &cs )
     {
       split = CU_QUAD_SPLIT;
     }
-#if JVET_Q0330_BLOCK_PARTITION
     else if( !isBlInPic && isBtAllowed && area.width <= MAX_TB_SIZEY )
-#else
-    else if( !isBlInPic && isBtAllowed )
-#endif
     {
       split = CU_HORZ_SPLIT;
     }
-#if JVET_Q0330_BLOCK_PARTITION
     else if( !isTrInPic && isBtAllowed && area.height <= MAX_TB_SIZEY )
-#else
-    else if( !isTrInPic && isBtAllowed )
-#endif
     {
       split = CU_VERT_SPLIT;
     }
@@ -606,17 +592,10 @@ PartSplit QTBTPartitioner::getImplicitSplit( const CodingStructure &cs )
     {
       split = CU_QUAD_SPLIT;
     }
-#if JVET_Q0330_BLOCK_PARTITION
     if( (!isBlInPic || !isTrInPic) && split == CU_DONT_SPLIT )
     {
       split = CU_QUAD_SPLIT;
     }
-#else
-    if ((!isBlInPic || !isTrInPic) && (currArea().Y().width > MAX_TB_SIZEY || currArea().Y().height > MAX_TB_SIZEY))
-    {
-      split = CU_QUAD_SPLIT;
-    }
-#endif
   }
 
   m_partStack.back().checkdIfImplicit = true;

@@ -1250,31 +1250,8 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
   m_uiMinQT[2] <<= getChannelTypeScaleX(CHANNEL_TYPE_CHROMA, m_chromaFormatIDC);
   sps.setMinQTSizes                          ( m_uiMinQT );
   sps.setMaxMTTHierarchyDepth                ( m_uiMaxMTTHierarchyDepth, m_uiMaxMTTHierarchyDepthI, m_uiMaxMTTHierarchyDepthIChroma );
-#if JVET_Q0330_BLOCK_PARTITION
   sps.setMaxBTSize( m_uiMaxBT[1], m_uiMaxBT[0], m_uiMaxBT[2] );
   sps.setMaxTTSize( m_uiMaxTT[1], m_uiMaxTT[0], m_uiMaxTT[2] );
-#else  
-  unsigned maxBtSize[3], maxTtSize[3];
-  memcpy(maxBtSize, m_uiMinQT, sizeof(maxBtSize));
-  memcpy(maxTtSize, m_uiMinQT, sizeof(maxTtSize));
-  if (m_uiMaxMTTHierarchyDepth)
-  {
-    maxBtSize[1] = std::min(m_CTUSize, (unsigned)MAX_BT_SIZE_INTER);
-    maxTtSize[1] = std::min(m_CTUSize, (unsigned)MAX_TT_SIZE_INTER);
-  }
-  if (m_uiMaxMTTHierarchyDepthI)
-  {
-    maxBtSize[0] = std::min(m_CTUSize, (unsigned)MAX_BT_SIZE);
-    maxTtSize[0] = std::min(m_CTUSize, (unsigned)MAX_TT_SIZE);
-  }
-  if (m_uiMaxMTTHierarchyDepthIChroma)
-  {
-    maxBtSize[2] = std::min(m_CTUSize, (unsigned)MAX_BT_SIZE_C);
-    maxTtSize[2] = std::min(m_CTUSize, (unsigned)MAX_TT_SIZE_C);
-  }
-  sps.setMaxBTSize                           ( maxBtSize[1], maxBtSize[0], maxBtSize[2] );
-  sps.setMaxTTSize                           ( maxTtSize[1], maxTtSize[0], maxTtSize[2] );
-#endif  
   sps.setIDRRefParamListPresent              ( m_idrRefParamList );
   sps.setUseDualITree                        ( m_dualITree );
   sps.setUseLFNST                            ( m_LFNST );

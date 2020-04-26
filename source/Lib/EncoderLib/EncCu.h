@@ -284,9 +284,7 @@ protected:
   bool xCheckRDCostIntra(CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode, bool adaptiveColorTrans);
 
   void xCheckDQP              ( CodingStructure& cs, Partitioner& partitioner, bool bKeepCtx = false);
-#if JVET_Q0267_RESET_CHROMA_QP_OFFSET
   void xCheckChromaQPOffset   ( CodingStructure& cs, Partitioner& partitioner);
-#endif
   void xFillPCMBuffer         ( CodingUnit &cu);
 
   void xCheckRDCostHashInter  ( CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &pm, const EncTestMode& encTestMode );

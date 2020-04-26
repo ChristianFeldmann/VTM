@@ -481,9 +481,7 @@ void CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
   if( cs.slice->getUseChromaQpAdj() && partitioner.currQgChromaEnable() )
   {
     cuCtx.isChromaQpAdjCoded  = false;
-#if JVET_Q0267_RESET_CHROMA_QP_OFFSET
     cs.chromaQpAdj = 0;
-#endif
   }
 
   // Reset delta QP coding flag and ChromaQPAdjustemt coding flag
@@ -497,9 +495,7 @@ void CABACReader::coding_tree( CodingStructure& cs, Partitioner& partitioner, CU
     if (cs.slice->getUseChromaQpAdj() && pPartitionerChroma->currQgChromaEnable())
     {
       pCuCtxChroma->isChromaQpAdjCoded = false;
-#if JVET_Q0267_RESET_CHROMA_QP_OFFSET
       cs.chromaQpAdj = 0;
-#endif
     }
   }
 

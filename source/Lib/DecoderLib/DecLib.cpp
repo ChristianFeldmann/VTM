@@ -2072,11 +2072,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   {
     if (m_bFirstSliceInPicture)
       m_sliceLmcsApsId = -1;
-#if JVET_Q0346_LMCS_ENABLE_IN_SH
     if (pcSlice->getLmcsEnabledFlag())
-#else
-    if (pcSlice->getPicHeader()->getLmcsEnabledFlag())
-#endif
     {
       APS* lmcsAPS = pcSlice->getPicHeader()->getLmcsAPS();
       if (m_sliceLmcsApsId == -1)
@@ -2094,11 +2090,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
       memcpy(tInfo.reshaperModelBinCWDelta, sInfo.reshaperModelBinCWDelta, sizeof(int)*(PIC_CODE_CW_BINS));
       tInfo.maxNbitsNeededDeltaCW = sInfo.maxNbitsNeededDeltaCW;
       tInfo.chrResScalingOffset = sInfo.chrResScalingOffset;
-#if JVET_Q0346_LMCS_ENABLE_IN_SH
       tInfo.setUseSliceReshaper(pcSlice->getLmcsEnabledFlag());
-#else
-      tInfo.setUseSliceReshaper(pcSlice->getPicHeader()->getLmcsEnabledFlag());
-#endif
       tInfo.setSliceReshapeChromaAdj(pcSlice->getPicHeader()->getLmcsChromaResidualScaleFlag());
       tInfo.setSliceReshapeModelPresentFlag(true);
     }
@@ -2109,11 +2101,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
       tInfo.setSliceReshapeChromaAdj(false);
       tInfo.setSliceReshapeModelPresentFlag(false);
     }
-#if JVET_Q0346_LMCS_ENABLE_IN_SH
     if (pcSlice->getLmcsEnabledFlag())
-#else
-    if (pcSlice->getPicHeader()->getLmcsEnabledFlag())
-#endif
     {
       m_cReshaper.constructReshaper();
     }

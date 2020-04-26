@@ -1842,15 +1842,6 @@ void EncGOP::xPicInitLMCS(Picture *pic, PicHeader *picHeader, Slice *slice)
 
       m_pcReshaper->setCTUFlag(false);
 
-#if !JVET_Q0346_LMCS_ENABLE_IN_SH
-      //reshape original signal
-      if (m_pcReshaper->getSliceReshaperInfo().getUseSliceReshaper())
-      {
-        pic->getOrigBuf(COMPONENT_Y).rspSignal(m_pcReshaper->getFwdLUT());
-        m_pcReshaper->setSrcReshaped(true);
-        m_pcReshaper->setRecReshaped(true);
-      }
-#endif
     }
     else
     {
@@ -1885,9 +1876,7 @@ void EncGOP::xPicInitLMCS(Picture *pic, PicHeader *picHeader, Slice *slice)
 
     //set all necessary information in LMCS APS and picture header
     picHeader->setLmcsEnabledFlag(m_pcReshaper->getSliceReshaperInfo().getUseSliceReshaper());
-#if JVET_Q0346_LMCS_ENABLE_IN_SH
     slice->setLmcsEnabledFlag(m_pcReshaper->getSliceReshaperInfo().getUseSliceReshaper());
-#endif
     picHeader->setLmcsChromaResidualScaleFlag(m_pcReshaper->getSliceReshaperInfo().getSliceReshapeChromaAdj() == 1);
     if (m_pcReshaper->getSliceReshaperInfo().getSliceReshapeModelPresentFlag())
     {
@@ -2761,7 +2750,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
           pcSlice->setSliceSubPicId( pcPic->cs->pps->getSubPic( subPicIdx ).getSubPicID() );
         }
-#if JVET_Q0346_LMCS_ENABLE_IN_SH
         if (pcPic->cs->sps->getUseLmcs())
         {
           pcSlice->setLmcsEnabledFlag(picHeader->getLmcsEnabledFlag());
@@ -2782,7 +2770,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
             }
           }
         }
-#endif
         m_pcSliceEncoder->precompressSlice( pcPic );
         m_pcSliceEncoder->compressSlice   ( pcPic, false, false );
 
@@ -2807,7 +2794,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       CodingStructure& cs = *pcPic->cs;
       pcSlice = pcPic->slices[0];
 
-#if JVET_Q0346_LMCS_ENABLE_IN_SH
       if (cs.sps->getUseLmcs() && m_pcReshaper->getSliceReshaperInfo().getUseSliceReshaper())
       {
         picHeader->setLmcsEnabledFlag(true);
@@ -2832,23 +2818,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         m_pcReshaper->setRecReshaped(false);
         pcPic->getOrigBuf().copyFrom(pcPic->getTrueOrigBuf());
       }
-#else
-      if (pcSlice->getSPS()->getUseLmcs() && m_pcReshaper->getSliceReshaperInfo().getUseSliceReshaper())
-      {
-        picHeader->setLmcsEnabledFlag(true);
-#if JVET_Q0346_LMCS_ENABLE_IN_SH
-        pcSlice->setLmcsEnabledFlag(true);
-#endif
-        int apsId = std::min<int>( 3, m_pcEncLib->getVPS() == nullptr ? 0 : m_pcEncLib->getVPS()->getGeneralLayerIdx( m_pcEncLib->getLayerId() ) );
-
-        picHeader->setLmcsAPSId(apsId);
-          CHECK((m_pcReshaper->getRecReshaped() == false), "Rec picture is not reshaped!");
-          pcPic->getRecoBuf(COMPONENT_Y).rspSignal(m_pcReshaper->getInvLUT());
-          m_pcReshaper->setRecReshaped(false);
-
-          pcPic->getOrigBuf().copyFrom(pcPic->getTrueOrigBuf());
-      }
-#endif
 
       // create SAO object based on the picture size
       if( pcSlice->getSPS()->getSAOEnabledFlag() )

@@ -132,7 +132,6 @@
 
 
 
-#define JVET_Q0346_LMCS_ENABLE_IN_SH                      1 // JVET-Q0346 aspect 1: LMCS enabled flag in SH
 
 #define JVET_Q0346_SCALING_LIST_USED_IN_SH               1 // JVET-Q0346 aspect 2: Scaling list used flag in SH
 

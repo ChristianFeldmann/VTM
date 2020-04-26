@@ -2552,9 +2552,7 @@ private:
   int                        m_iSliceQp;
   int                        m_iSliceQpBase;
   bool                       m_ChromaQpAdjEnabled;
-#if JVET_Q0346_LMCS_ENABLE_IN_SH
   bool                       m_lmcsEnabledFlag;
-#endif
 #if JVET_Q0346_SCALING_LIST_USED_IN_SH
   bool                       m_explicitScalingListUsed;
 #endif
@@ -2708,11 +2706,9 @@ public:
   bool                        getPendingRasInit() const                              { return m_pendingRasInit;                                      }
   void                        setPendingRasInit( bool val )                          { m_pendingRasInit = val;                                       }
 
-#if JVET_Q0346_LMCS_ENABLE_IN_SH
   void                        setLmcsEnabledFlag(bool b)                              { m_lmcsEnabledFlag = b;                                       }
   bool                        getLmcsEnabledFlag()                                    { return m_lmcsEnabledFlag;                                    }
   const bool                  getLmcsEnabledFlag() const                              { return m_lmcsEnabledFlag;                                    }
-#endif
 
 #if JVET_Q0346_SCALING_LIST_USED_IN_SH
   void                        setExplicitScalingListUsed(bool b)                      { m_explicitScalingListUsed = b;                               }

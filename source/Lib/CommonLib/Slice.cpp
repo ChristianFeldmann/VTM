@@ -61,9 +61,7 @@ Slice::Slice()
 , m_eSliceType                    ( I_SLICE )
 , m_iSliceQp                      ( 0 )
 , m_ChromaQpAdjEnabled            ( false )
-#if JVET_Q0346_LMCS_ENABLE_IN_SH
 , m_lmcsEnabledFlag               ( 0 )
-#endif
 #if JVET_Q0346_SCALING_LIST_USED_IN_SH
 , m_explicitScalingListUsed       ( 0 )
 #endif
@@ -167,9 +165,7 @@ void Slice::initSlice()
   m_colFromL0Flag = true;
   m_colourPlaneId = 0;
   m_colRefIdx = 0;
-#if JVET_Q0346_LMCS_ENABLE_IN_SH
   m_lmcsEnabledFlag = 0;
-#endif
 #if JVET_Q0346_SCALING_LIST_USED_IN_SH
   m_explicitScalingListUsed = 0;
 #endif
@@ -1023,9 +1019,7 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
   m_independentSliceIdx           = pSrc->m_independentSliceIdx;
   m_nextSlice                     = pSrc->m_nextSlice;
   m_clpRngs                       = pSrc->m_clpRngs;
-#if JVET_Q0346_LMCS_ENABLE_IN_SH
   m_lmcsEnabledFlag               = pSrc->m_lmcsEnabledFlag;
-#endif
 #if JVET_Q0346_SCALING_LIST_USED_IN_SH
   m_explicitScalingListUsed       = pSrc->m_explicitScalingListUsed;
 #endif

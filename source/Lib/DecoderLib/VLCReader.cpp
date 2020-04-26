@@ -3953,7 +3953,6 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
 	READ_FLAG(uiCode, "slice_ts_residual_coding_disabled_flag");
 	pcSlice->setTSResidualCodingDisabledFlag(uiCode != 0);
 
-#if JVET_Q0346_LMCS_ENABLE_IN_SH
   if (picHeader->getLmcsEnabledFlag())
   {
     READ_FLAG(uiCode, "slice_lmcs_enabled_flag");
@@ -3963,7 +3962,6 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
   {
     pcSlice->setLmcsEnabledFlag(false);
   }
-#endif
 #if JVET_Q0346_SCALING_LIST_USED_IN_SH
   if (picHeader->getExplicitScalingListEnabledFlag())
   {

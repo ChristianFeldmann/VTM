@@ -241,11 +241,7 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
     }
   }
   const Slice           &slice = *cs.slice;
-#if JVET_Q0346_LMCS_ENABLE_IN_SH
   bool flag = slice.getLmcsEnabledFlag() && (slice.isIntra() || (!slice.isIntra() && m_pcReshape->getCTUFlag()));
-#else
-  bool flag = slice.getPicHeader()->getLmcsEnabledFlag() && (slice.isIntra() || (!slice.isIntra() && m_pcReshape->getCTUFlag()));
-#endif
   if (flag && slice.getPicHeader()->getLmcsChromaResidualScaleFlag() && (compID != COMPONENT_Y) && (tu.cbf[COMPONENT_Cb] || tu.cbf[COMPONENT_Cr]))
   {
     const Area area = tu.Y().valid() ? tu.Y() : Area(recalcPosition(tu.chromaFormat, tu.chType, CHANNEL_TYPE_LUMA, tu.blocks[tu.chType].pos()), recalcSize(tu.chromaFormat, tu.chType, CHANNEL_TYPE_LUMA, tu.blocks[tu.chType].size()));
@@ -311,11 +307,7 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
   CompArea    tmpArea(COMPONENT_Y, area.chromaFormat, Position(0, 0), area.size());
   PelBuf tmpPred;
 #endif
-#if JVET_Q0346_LMCS_ENABLE_IN_SH
   if (slice.getLmcsEnabledFlag() && (m_pcReshape->getCTUFlag() || slice.isIntra()) && compID == COMPONENT_Y)
-#else
-  if (slice.getPicHeader()->getLmcsEnabledFlag() && (m_pcReshape->getCTUFlag() || slice.isIntra()) && compID == COMPONENT_Y)
-#endif
   {
 #if REUSE_CU_RESULTS
     {
@@ -332,11 +324,7 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
 #if !KEEP_PRED_AND_RESI_SIGNALS
   pReco.copyFrom( piPred );
 #endif
-#if JVET_Q0346_LMCS_ENABLE_IN_SH
   if (slice.getLmcsEnabledFlag() && (m_pcReshape->getCTUFlag() || slice.isIntra()) && compID == COMPONENT_Y)
-#else
-  if (slice.getPicHeader()->getLmcsEnabledFlag() && (m_pcReshape->getCTUFlag() || slice.isIntra()) && compID == COMPONENT_Y)
-#endif
   {
 #if REUSE_CU_RESULTS
     {
@@ -364,11 +352,7 @@ void DecCu::xIntraRecACTBlk(TransformUnit& tu)
   CHECK(tu.cu->ispMode, "adaptive color transform cannot be applied to ISP");
   CHECK(pu.intraDir[CHANNEL_TYPE_CHROMA] != DM_CHROMA_IDX, "chroma should use DM mode for adaptive color transform");
 
-#if JVET_Q0346_LMCS_ENABLE_IN_SH
   bool flag = slice.getLmcsEnabledFlag() && (slice.isIntra() || (!slice.isIntra() && m_pcReshape->getCTUFlag()));
-#else
-  bool flag = slice.getPicHeader()->getLmcsEnabledFlag() && (slice.isIntra() || (!slice.isIntra() && m_pcReshape->getCTUFlag()));
-#endif
   if (flag && slice.getPicHeader()->getLmcsChromaResidualScaleFlag() && (tu.cbf[COMPONENT_Cb] || tu.cbf[COMPONENT_Cr]))
   {
     const Area      area = tu.Y().valid() ? tu.Y() : Area(recalcPosition(tu.chromaFormat, tu.chType, CHANNEL_TYPE_LUMA, tu.blocks[tu.chType].pos()), recalcSize(tu.chromaFormat, tu.chType, CHANNEL_TYPE_LUMA, tu.blocks[tu.chType].size()));
@@ -450,11 +434,7 @@ void DecCu::xIntraRecACTBlk(TransformUnit& tu)
     PelBuf piReco = cs.getRecoBuf(area);
 
     PelBuf tmpPred;
-#if JVET_Q0346_LMCS_ENABLE_IN_SH
     if (slice.getLmcsEnabledFlag() && (m_pcReshape->getCTUFlag() || slice.isIntra()) && compID == COMPONENT_Y)
-#else
-    if (slice.getPicHeader()->getLmcsEnabledFlag() && (m_pcReshape->getCTUFlag() || slice.isIntra()) && compID == COMPONENT_Y)
-#endif
     {
       CompArea tmpArea(COMPONENT_Y, area.chromaFormat, Position(0, 0), area.size());
       tmpPred = m_tmpStorageLCU->getBuf(tmpArea);
@@ -464,11 +444,7 @@ void DecCu::xIntraRecACTBlk(TransformUnit& tu)
     piPred.reconstruct(piPred, piResi, tu.cu->cs->slice->clpRng(compID));
     piReco.copyFrom(piPred);
 
-#if JVET_Q0346_LMCS_ENABLE_IN_SH
     if (slice.getLmcsEnabledFlag() && (m_pcReshape->getCTUFlag() || slice.isIntra()) && compID == COMPONENT_Y)
-#else
-    if (slice.getPicHeader()->getLmcsEnabledFlag() && (m_pcReshape->getCTUFlag() || slice.isIntra()) && compID == COMPONENT_Y)
-#endif
     {
       piPred.copyFrom(tmpPred);
     }
@@ -717,11 +693,7 @@ void DecCu::xReconInter(CodingUnit &cu)
 
   if (cu.firstPU->ciipFlag)
   {
-#if JVET_Q0346_LMCS_ENABLE_IN_SH
     if (cu.cs->slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag())
-#else
-    if (cu.cs->picHeader->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag())
-#endif
     {
       cu.cs->getPredBuf(*cu.firstPU).Y().rspSignal(m_pcReshape->getFwdLUT());
     }
@@ -753,11 +725,7 @@ void DecCu::xReconInter(CodingUnit &cu)
     CompArea    tmpArea(COMPONENT_Y, area.chromaFormat, Position(0, 0), area.size());
     PelBuf tmpPred;
 #endif
-#if JVET_Q0346_LMCS_ENABLE_IN_SH
     if (cs.slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag())
-#else
-    if (cs.picHeader->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag())
-#endif
     {
 #if REUSE_CU_RESULTS
       if (cs.pcv->isEncoder)
@@ -775,11 +743,7 @@ void DecCu::xReconInter(CodingUnit &cu)
     cs.getResiBuf( cu ).reconstruct( cs.getPredBuf( cu ), cs.getResiBuf( cu ), cs.slice->clpRngs() );
     cs.getRecoBuf( cu ).copyFrom   (                      cs.getResiBuf( cu ) );
 #endif
-#if JVET_Q0346_LMCS_ENABLE_IN_SH
     if (cs.slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag())
-#else
-    if (cs.picHeader->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag())
-#endif
     {
 #if REUSE_CU_RESULTS
       if (cs.pcv->isEncoder)
@@ -792,11 +756,7 @@ void DecCu::xReconInter(CodingUnit &cu)
   else
   {
     cs.getRecoBuf(cu).copyClip(cs.getPredBuf(cu), cs.slice->clpRngs());
-#if JVET_Q0346_LMCS_ENABLE_IN_SH
     if (cs.slice->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag() && !cu.firstPU->ciipFlag && !CU::isIBC(cu))
-#else
-    if (cs.picHeader->getLmcsEnabledFlag() && m_pcReshape->getCTUFlag() && !cu.firstPU->ciipFlag && !CU::isIBC(cu))
-#endif
     {
       cs.getRecoBuf(cu).get(COMPONENT_Y).rspSignal(m_pcReshape->getFwdLUT());
     }
@@ -850,13 +810,8 @@ void DecCu::xDecodeInterTU( TransformUnit & currTU, const ComponentID compID )
 
   //===== reconstruction =====
   const Slice           &slice = *cs.slice;
-#if JVET_Q0346_LMCS_ENABLE_IN_SH
   if (slice.getLmcsEnabledFlag() && isChroma(compID) && (TU::getCbf(currTU, compID) || currTU.jointCbCr)
    && slice.getPicHeader()->getLmcsChromaResidualScaleFlag() && currTU.blocks[compID].width * currTU.blocks[compID].height > 4)
-#else
-  if (slice.getPicHeader()->getLmcsEnabledFlag() && isChroma(compID) && (TU::getCbf(currTU, compID) || currTU.jointCbCr)
-   && slice.getPicHeader()->getLmcsChromaResidualScaleFlag() && currTU.blocks[compID].width * currTU.blocks[compID].height > 4)
-#endif
   {
     resiBuf.scaleSignal(currTU.getChromaAdj(), 0, currTU.cu->cs->slice->clpRng(compID));
   }
@@ -885,11 +840,7 @@ void DecCu::xDecodeInterTexture(CodingUnit &cu)
     {
       CodingStructure  &cs = *cu.cs;
       const Slice &slice = *cs.slice;
-#if JVET_Q0346_LMCS_ENABLE_IN_SH
       if (slice.getLmcsEnabledFlag() && slice.getPicHeader()->getLmcsChromaResidualScaleFlag() && (compID == COMPONENT_Y) && (currTU.cbf[COMPONENT_Cb] || currTU.cbf[COMPONENT_Cr]))
-#else
-      if (slice.getPicHeader()->getLmcsEnabledFlag() && slice.getPicHeader()->getLmcsChromaResidualScaleFlag() && (compID == COMPONENT_Y) && (currTU.cbf[COMPONENT_Cb] || currTU.cbf[COMPONENT_Cr]))
-#endif
       {
         const CompArea &areaY = currTU.blocks[COMPONENT_Y];
         int adj = m_pcReshape->calculateChromaAdjVpduNei(currTU, areaY);

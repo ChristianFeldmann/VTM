@@ -1632,7 +1632,6 @@ void DecLib::xCheckParameterSetConstraints(const int layerId)
   }
 #endif
 
-#if JVET_Q0157_SUBPICTURE_REORDERING_CONSTRAINT
   // When the current picture is not the first picture of the CLVS, if the value of SubpicId[ i ] is not equal to the value of SubpicId[ i ] of previous picture in decoding order in the same layer,
   // the nal_unit_type for all coded slice NAL units of the the subpicture with subpicture index i shall be in the range of IDR_W_RADL to CRA_NUT, inclusive.
   if( sps->getSubPicInfoPresentFlag() )
@@ -1677,7 +1676,6 @@ void DecLib::xCheckParameterSetConstraints(const int layerId)
       }
     }    
   }
-#endif
 }
 
 

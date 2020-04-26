@@ -447,7 +447,6 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
     READ_UVLC( uiCode, "scaling_win_top_offset" );                scalingWindow.setWindowTopOffset( uiCode );
     READ_UVLC( uiCode, "scaling_win_bottom_offset" );             scalingWindow.setWindowBottomOffset( uiCode );
   }
-#if JVET_Q0399_SCALING_INFERENCE
   else
   {
     Window &scalingWindow = pcPPS->getScalingWindow();
@@ -457,7 +456,6 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
     scalingWindow.setWindowTopOffset( conf.getWindowTopOffset() );
     scalingWindow.setWindowBottomOffset( conf.getWindowBottomOffset() );
   }
-#endif
 
   READ_FLAG( uiCode, "output_flag_present_flag" );                    pcPPS->setOutputFlagPresentFlag( uiCode==1 );
 

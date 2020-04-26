@@ -171,7 +171,6 @@
 
 
 
-#define JVET_Q0399_SCALING_INFERENCE                      1  // JVET-Q0399 infer scaling window to conformance window, if not present
 
 #define JVET_Q0630_SUBPIC_LEVEL                           1  // JVET-Q0630 parsing dependency fix for subpicture level info SEI
 

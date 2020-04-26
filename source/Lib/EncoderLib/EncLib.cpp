@@ -315,7 +315,6 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 #endif
     pps.setScalingWindow( scalingWindow );
 
-#if JVET_Q0179_SCALING_WINDOW_SIZE_CONSTRAINT
     //register the width/height of the current pic into reference SPS
     if (!sps0.getPPSValidFlag(pps.getPPSId()))
     {
@@ -338,7 +337,6 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
           printf("Potential violation: (curScaledHeight * curSeqMaxPicHeightY) should be greater than or equal to refScaledHeight * (curPicHeightY - max(8, MinCbSizeY)\n");
       }
     }
-#endif
 
     // disable picture partitioning for scaled RPR pictures (slice/tile config only provided for the original resolution)
     m_noPicPartitionFlag = true;

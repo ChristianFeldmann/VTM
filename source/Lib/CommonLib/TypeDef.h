@@ -88,7 +88,6 @@
 
 
 
-#define JVET_Q0179_SCALING_WINDOW_SIZE_CONSTRAINT         1 // JVET-Q0179: Scaling window size constraint for constraining worst case memory bandwidth
 
 #define JVET_Q0257_SCALING_WINDOW_CONSTRAINT              1 // JVET-Q0257: Constraint expression to limit actual scaling ratios rather than the picture sizes
 

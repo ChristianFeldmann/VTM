@@ -1478,10 +1478,8 @@ private:
 #if JVET_Q0297_MER
   uint32_t          m_log2ParallelMergeLevelMinus2;
 #endif
-#if JVET_Q0179_SCALING_WINDOW_SIZE_CONSTRAINT
   bool              m_ppsValidFlag[64];
   Size              m_scalingWindowSizeInPPS[64];
-#endif
   uint32_t          m_maxNumMergeCand;
   uint32_t          m_maxNumAffineMergeCand;
   uint32_t          m_maxNumIBCMergeCand;
@@ -1887,12 +1885,10 @@ void                    setCCALFEnabledFlag( bool b )                           
   uint32_t  getLog2ParallelMergeLevelMinus2() const { return m_log2ParallelMergeLevelMinus2; }
   void      setLog2ParallelMergeLevelMinus2(uint32_t mrgLevel) { m_log2ParallelMergeLevelMinus2 = mrgLevel; }
 #endif
-#if JVET_Q0179_SCALING_WINDOW_SIZE_CONSTRAINT
   void          setPPSValidFlag(int i, bool b) { m_ppsValidFlag[i] = b; }
   bool          getPPSValidFlag(int i)         { return m_ppsValidFlag[i]; }
   void          setScalingWindowSizeInPPS(int i, int scWidth, int scHeight) { m_scalingWindowSizeInPPS[i].width = scWidth; m_scalingWindowSizeInPPS[i].height = scHeight;}
   const Size&   getScalingWindowSizeInPPS(int i)                            { return m_scalingWindowSizeInPPS[i]; }
-#endif
 };
 
 #if !REMOVE_PPS_REXT

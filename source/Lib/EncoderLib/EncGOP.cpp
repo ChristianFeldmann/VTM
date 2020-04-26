@@ -2211,12 +2211,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       {
         bool isSTSA=true;
 
-#if !JVET_Q0156_STSA
-        if( !m_pcEncLib->getVPS()->getAllIndependentLayersFlag() && m_pcEncLib->getVPS()->getGeneralLayerIdx( m_pcEncLib->getLayerId() ) )
-        {
-          isSTSA = false;
-        }
-#endif
 
         for(int ii=0;(ii<m_pcCfg->getGOPSize() && isSTSA==true);ii++)
         {

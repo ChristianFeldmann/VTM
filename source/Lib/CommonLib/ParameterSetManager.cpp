@@ -63,13 +63,6 @@ bool ParameterSetManager::activatePPS(int ppsId, bool isIRAP)
   if (pps)
   {
     int spsId = pps->getSPSId();
-#if !ENABLING_MULTI_SPS
-    if (!isIRAP && (spsId != m_activeSPSId ))
-    {
-      msg( WARNING, "Warning: tried to activate a PPS referring to an inactive SPS at non-IDR.");
-    }
-    else
-#endif
     {
       SPS *sps = m_spsMap.getPS(spsId);
 

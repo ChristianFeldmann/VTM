@@ -382,17 +382,12 @@ int EncGOP::xWriteAPS( AccessUnit &accessUnit, APS *aps, const int layerId, cons
   return (int)(accessUnit.back()->m_nalUnitData.str().size()) * 8;
 }
 
-#if ENABLING_MULTI_SPS
 int EncGOP::xWriteParameterSets(AccessUnit &accessUnit, Slice *slice, const bool bSeqFirst, const int layerIdx)
-#else
-int EncGOP::xWriteParameterSets(AccessUnit &accessUnit, Slice *slice, const bool bSeqFirst)
-#endif
 {
   int actualTotalBits = 0;
 
   if( bSeqFirst )
   {
-#if ENABLING_MULTI_SPS
     if (layerIdx == 0)
     {
 #if JVET_Q0117_PARAMETER_SETS_CLEANUP
@@ -408,17 +403,6 @@ int EncGOP::xWriteParameterSets(AccessUnit &accessUnit, Slice *slice, const bool
         actualTotalBits += xWriteVPS(accessUnit, m_pcEncLib->getVPS());
       }
     }
-#else
-    if (slice->getSPS()->getVPSId() != 0)
-    {
-      actualTotalBits += xWriteVPS(accessUnit, m_pcEncLib->getVPS());
-    }
-#if JVET_Q0117_PARAMETER_SETS_CLEANUP
-    actualTotalBits += xWriteDCI( accessUnit, m_pcEncLib->getDCI() );
-#else
-    actualTotalBits += xWriteDPS( accessUnit, m_pcEncLib->getDPS() );
-#endif
-#endif
     if( m_pcEncLib->SPSNeedsWriting( slice->getSPS()->getSPSId() ) ) // Note this assumes that all changes to the SPS are made at the EncLib level prior to picture creation (EncLib::xGetNewPicBuffer).
     {
       CHECK( !( bSeqFirst ), "Unspecified error" ); // Implementations that use more than 1 SPS need to be aware of activation issues.
@@ -3081,11 +3065,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       int layerIdx = m_pcEncLib->getVPS() == nullptr ? 0 : m_pcEncLib->getVPS()->getGeneralLayerIdx( m_pcEncLib->getLayerId() );
 
       // it is assumed that layerIdx equal to 0 is always present
-#if ENABLING_MULTI_SPS
       actualTotalBits += xWriteParameterSets(accessUnit, pcSlice, writePS, layerIdx);
-#else
-      actualTotalBits += xWriteParameterSets(accessUnit, pcSlice, writePS && !layerIdx);
-#endif
       if (writePS)
       {
         // create prefix SEI messages at the beginning of the sequence

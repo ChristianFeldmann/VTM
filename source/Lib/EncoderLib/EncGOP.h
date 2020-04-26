@@ -326,11 +326,7 @@ protected:
   int xWriteSPS( AccessUnit &accessUnit, const SPS *sps, const int layerId = 0 );
   int xWritePPS( AccessUnit &accessUnit, const PPS *pps, const int layerId = 0 );
   int xWriteAPS( AccessUnit &accessUnit, APS *aps, const int layerId, const bool isPrefixNUT );
-#if ENABLING_MULTI_SPS
   int xWriteParameterSets(AccessUnit &accessUnit, Slice *slice, const bool bSeqFirst, const int layerIdx);
-#else
-  int xWriteParameterSets(AccessUnit &accessUnit, Slice *slice, const bool bSeqFirst);
-#endif
   int xWritePicHeader( AccessUnit &accessUnit, PicHeader *picHeader );
 
   void applyDeblockingFilterMetric( Picture* pcPic, uint32_t uiNumSlices );

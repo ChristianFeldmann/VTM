@@ -6588,10 +6588,8 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
           m_CABACEstimator->resetBits();
 
           {
-#if JVET_AHG14_LOSSLESS
             if( !( m_pcEncCfg->getCostMode() == COST_LOSSLESS_CODING ) )
             {
-#endif
             if (bestTU.mtsIdx[compID] == MTS_SKIP && m_pcEncCfg->getUseTransformSkipFast())
             {
               continue;
@@ -6600,9 +6598,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
             {
               continue;
             }
-#if JVET_AHG14_LOSSLESS
             }
-#endif
             tu.mtsIdx[compID] = trModes[transformMode].first;
           }
           QpParam cQP(tu, compID);  // note: uses tu.transformSkip[compID]
@@ -6640,14 +6636,10 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
               m_pcTrQuant->transformNxN( tu, compID, cQP, &trModes, m_pcEncCfg->getMTSInterMaxCand() );
               tu.mtsIdx[compID] = trModes[0].first;
             }
-#if JVET_AHG14_LOSSLESS
             if( !( m_pcEncCfg->getCostMode() == COST_LOSSLESS_CODING && tu.mtsIdx[compID] == 0 ) )
             {
               m_pcTrQuant->transformNxN( tu, compID, cQP, currAbsSum, m_CABACEstimator->getCtx(), true );
             }
-#else
-            m_pcTrQuant->transformNxN( tu, compID, cQP, currAbsSum, m_CABACEstimator->getCtx(), true );
-#endif
           }
           else
           {
@@ -6693,12 +6685,10 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
             *puiZeroDist += nonCoeffDist; // initialized with zero residual distortion
           }
 
-#if JVET_AHG14_LOSSLESS
           if( m_pcEncCfg->getCostMode() == COST_LOSSLESS_CODING && tu.mtsIdx[compID] == 0 )
           {
             currAbsSum = 0;
           }
-#endif
 
           if (currAbsSum > 0) //if non-zero coefficients are present, a residual needs to be derived for further prediction
           {

@@ -3162,14 +3162,10 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
       m_pcTrQuant->transformNxN(tu, compID, cQP, trModes, m_pcEncCfg->getMTSIntraMaxCand());
       tu.mtsIdx[compID] = trModes->at(0).first;
     }
-#if JVET_AHG14_LOSSLESS
     if( !( m_pcEncCfg->getCostMode() == COST_LOSSLESS_CODING && tu.mtsIdx[compID] == 0 ) || tu.cu->bdpcmMode != 0 )
     {
       m_pcTrQuant->transformNxN(tu, compID, cQP, uiAbsSum, m_CABACEstimator->getCtx(), loadTr);
     }
-#else
-    m_pcTrQuant->transformNxN(tu, compID, cQP, uiAbsSum, m_CABACEstimator->getCtx(), loadTr);
-#endif
 
 
   DTRACE( g_trace_ctx, D_TU_ABS_SUM, "%d: comp=%d, abssum=%d\n", DTRACE_GET_COUNTER( g_trace_ctx, D_TU_ABS_SUM ), compID, uiAbsSum );
@@ -3181,14 +3177,12 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
     return;
   }
 
-#if JVET_AHG14_LOSSLESS
   if( ( m_pcEncCfg->getCostMode() == COST_LOSSLESS_CODING && tu.mtsIdx[compID] == 0 ) && 0 == tu.cu->bdpcmMode )
   {
     uiAbsSum = 0;
     tu.getCoeffs( compID ).fill( 0 );
     TU::setCbfAtDepth( tu, compID, tu.depth, 0 );
   }
-#endif
 
   //--- inverse transform ---
   if (uiAbsSum > 0)
@@ -3225,23 +3219,17 @@ void IntraSearch::xIntraCodingTUBlock(TransformUnit &tu, const ComponentID &comp
         }
     }
     // encoder bugfix: Set loadTr to aovid redundant transform process
-#if JVET_AHG14_LOSSLESS
     if (!(m_pcEncCfg->getCostMode() == COST_LOSSLESS_CODING && tu.mtsIdx[compID] == 0) || tu.cu->bdpcmModeChroma != 0)
     {
         m_pcTrQuant->transformNxN(tu, codeCompId, qpCbCr, uiAbsSum, m_CABACEstimator->getCtx(), loadTr);
     }
-#else
-    m_pcTrQuant->transformNxN(tu, codeCompId, qpCbCr, uiAbsSum, m_CABACEstimator->getCtx(), loadTr);
-#endif
 
-#if JVET_AHG14_LOSSLESS
     if ((m_pcEncCfg->getCostMode() == COST_LOSSLESS_CODING && tu.mtsIdx[compID] == 0) && 0 == tu.cu->bdpcmModeChroma)
     {
         uiAbsSum = 0;
         tu.getCoeffs(compID).fill(0);
         TU::setCbfAtDepth(tu, compID, tu.depth, 0);
     }
-#endif
 
     DTRACE( g_trace_ctx, D_TU_ABS_SUM, "%d: comp=%d, abssum=%d\n", DTRACE_GET_COUNTER( g_trace_ctx, D_TU_ABS_SUM ), codeCompId, uiAbsSum );
     if( uiAbsSum > 0 )
@@ -3758,10 +3746,8 @@ bool IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
       }
       else
       {
-#if JVET_AHG14_LOSSLESS
         if( !( m_pcEncCfg->getCostMode() == COST_LOSSLESS_CODING ) )
         {
-#endif
         if( !cbfDCT2 || ( m_pcEncCfg->getUseTransformSkipFast() && bestModeId[ COMPONENT_Y ] == MTS_SKIP))
         {
           break;
@@ -3775,9 +3761,7 @@ bool IntraSearch::xRecurIntraCodingLumaQT( CodingStructure &cs, Partitioner &par
         {
           continue;
         }
-#if JVET_AHG14_LOSSLESS
         }
-#endif
         tu.mtsIdx[COMPONENT_Y] = trModes[modeId].first;
       }
 
@@ -4316,10 +4300,8 @@ bool IntraSearch::xRecurIntraCodingACTQT(CodingStructure &cs, Partitioner &parti
       }
       else
       {
-#if JVET_AHG14_LOSSLESS
         if (!(m_pcEncCfg->getCostMode() == COST_LOSSLESS_CODING))
         {
-#endif
         if (!cbfDCT2 || (m_pcEncCfg->getUseTransformSkipFast() && bestLumaModeId == 1))
         {
           break;
@@ -4328,9 +4310,7 @@ bool IntraSearch::xRecurIntraCodingACTQT(CodingStructure &cs, Partitioner &parti
         {
           continue;
         }
-#if JVET_AHG14_LOSSLESS
         }
-#endif
         tu.mtsIdx[COMPONENT_Y] = trModes[modeId].first;
       }
 
@@ -5078,10 +5058,8 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
           const bool isFirstMode = (currModeId == 1);
           const bool isLastMode  = false; // Always store output to saveCS and tmpTU
 
-#if JVET_AHG14_LOSSLESS
           if( !( m_pcEncCfg->getCostMode() == COST_LOSSLESS_CODING ) )
           {
-#endif
            //if DCT2's cbf==0, skip ts search
           if (!cbfDCT2 && trModes[modeId].first == MTS_SKIP)
           {
@@ -5091,9 +5069,7 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
           {
               continue;
           }
-#if JVET_AHG14_LOSSLESS
           }
-#endif
 
           if (!isFirstMode) // if not first mode to be tested
           {

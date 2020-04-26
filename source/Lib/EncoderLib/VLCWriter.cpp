@@ -341,14 +341,10 @@ void HLSWriter::codePPS( const PPS* pcPPS )
     }
      
     // rectangular slice signalling
-#if JVET_Q0289_BUGFIX_RECT_SLICE_FLAG
     if (pcPPS->getNumTiles() > 1)
     {
       WRITE_FLAG(pcPPS->getRectSliceFlag() ? 1 : 0, "rect_slice_flag");
     }
-#else
-    WRITE_FLAG( pcPPS->getRectSliceFlag( ) ? 1 : 0, "rect_slice_flag");
-#endif
     if (pcPPS->getRectSliceFlag())
     {
       WRITE_FLAG(pcPPS->getSingleSlicePerSubPicFlag( ) ? 1 : 0, "single_slice_per_subpic_flag");

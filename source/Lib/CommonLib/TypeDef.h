@@ -56,7 +56,6 @@
 
 
 
-#define JVET_Q0289_BUGFIX_RECT_SLICE_FLAG                 1 //JVET-Q0289: If NumTilesInPic is equal to 1, don't signal the rect_slice_flag and infer its value to be 1.
 
 #define CABAC_RETRAIN                                     1 // CABAC retraining based on VTM8rc1
 

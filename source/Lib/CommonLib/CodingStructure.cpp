@@ -944,7 +944,6 @@ void CodingStructure::reorderPrevPLT(PLTBuf& prevPLT, uint8_t curPLTSize[MAX_NUM
   }
 }
 
-#if JVET_Q0501_PALETTE_WPP_INIT_ABOVECTU
 void CodingStructure::setPrevPLT(PLTBuf predictor)
 {
   for (int comp = 0; comp < MAX_NUM_CHANNEL_TYPE; comp++)
@@ -967,7 +966,6 @@ void CodingStructure::storePrevPLT(PLTBuf& predictor)
     memcpy(predictor.curPLT[comp], prevPLT.curPLT[comp], MAXPLTPREDSIZE * sizeof(Pel));
   }
 }
-#endif
 
 void CodingStructure::rebindPicBufs()
 {

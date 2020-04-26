@@ -125,7 +125,6 @@
 
 
 
-#define JVET_Q0501_PALETTE_WPP_INIT_ABOVECTU              1 // JVET-Q0501: Initialize palette predictor from above CTU row in WPP 
 
 #define JVET_Q0503_Q0712_PLT_ENCODER_IMPROV_BUGFIX        1 // JVET-Q0503/Q0712: Platte encoder improvement/bugfix
 

@@ -1514,9 +1514,7 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
       {
         // Top is available, we use it.
         pCABACWriter->getCtx() = pEncLib->m_entropyCodingSyncContextState;
-#if JVET_Q0501_PALETTE_WPP_INIT_ABOVECTU
         cs.setPrevPLT(pEncLib->m_palettePredictorSyncState);
-#endif
       }
       prevQP[0] = prevQP[1] = pcSlice->getSliceQp();
     }
@@ -1639,9 +1637,7 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
     if( cs.pps->ctuIsTileColBd( ctuXPosInCtus ) && pEncLib->getEntropyCodingSyncEnabledFlag() )
     {
       pEncLib->m_entropyCodingSyncContextState = pCABACWriter->getCtx();
-#if JVET_Q0501_PALETTE_WPP_INIT_ABOVECTU
       cs.storePrevPLT(pEncLib->m_palettePredictorSyncState);
-#endif
     }
 
     int actualBits = int(cs.fracBits >> SCALE_BITS);
@@ -1791,9 +1787,7 @@ void EncSlice::encodeSlice   ( Picture* pcPic, OutputBitstream* pcSubstreams, ui
       {
         // Top is available, so use it.
         m_CABACWriter->getCtx() = m_entropyCodingSyncContextState;
-#if JVET_Q0501_PALETTE_WPP_INIT_ABOVECTU
         cs.setPrevPLT(m_palettePredictorSyncState);
-#endif
       }
     }
 
@@ -1809,9 +1803,7 @@ void EncSlice::encodeSlice   ( Picture* pcPic, OutputBitstream* pcSubstreams, ui
     if( cs.pps->ctuIsTileColBd( ctuXPosInCtus ) && wavefrontsEnabled )
     {
       m_entropyCodingSyncContextState = m_CABACWriter->getCtx();
-#if JVET_Q0501_PALETTE_WPP_INIT_ABOVECTU
       cs.storePrevPLT(m_palettePredictorSyncState);
-#endif
     }
 
     // terminate the sub-stream, if required (end of slice-segment, end of tile, end of wavefront-CTU-row):

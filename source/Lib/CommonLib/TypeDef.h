@@ -112,7 +112,6 @@
 
 
 
-#define JVET_Q0446_MIP_CONST_SHIFT_OFFSET                 1 // JVET-Q0446: MIP with constant shift and offset
 
 #define JVET_Q0265                                        1 // JVET-Q0265: Cleanup for monochrome and independently coded color planes
 

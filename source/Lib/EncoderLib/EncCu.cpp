@@ -1874,12 +1874,10 @@ bool EncCu::xCheckRDCostIntra(CodingStructure *&tempCS, CodingStructure *&bestCS
             }
           }
 
-#if JVET_Q0516_MTS_SIGNALLING_DC_ONLY_COND
           if (isLuma(partitioner.chType) && cu.firstTU->mtsIdx[COMPONENT_Y] > MTS_SKIP)
           {
             CHECK(!cuCtx.mtsLastScanPos, "MTS is disallowed to only contain DC coefficient");
           }
-#endif 
 
           if( mtsFlag == 0 && lfnstIdx == 0 )
           {

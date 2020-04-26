@@ -1331,9 +1331,7 @@ void CABACWriter::cu_residual( const CodingUnit& cu, Partitioner& partitioner, C
   cuCtx.violatesLfnstConstrained[CHANNEL_TYPE_CHROMA] = false;
   cuCtx.lfnstLastScanPos                              = false;
   cuCtx.violatesMtsCoeffConstraint                    = false;
-#if JVET_Q0516_MTS_SIGNALLING_DC_ONLY_COND 
   cuCtx.mtsLastScanPos                                = false;
-#endif
 
   if( cu.ispMode && isLuma( partitioner.chType ) )
   {
@@ -2756,12 +2754,10 @@ void CABACWriter::residual_coding( const TransformUnit& tu, ComponentID compID, 
     cuCtx->violatesMtsCoeffConstraint = true;
   }
 #endif
-#if JVET_Q0516_MTS_SIGNALLING_DC_ONLY_COND 
   if (cuCtx && isLuma(compID) && tu.mtsIdx[compID] != MTS_SKIP)
   {
     cuCtx->mtsLastScanPos |= cctx.scanPosLast() >= 1;
   }
-#endif  
 
 
   // code last coeff position
@@ -2815,11 +2811,7 @@ void CABACWriter::mts_idx( const CodingUnit& cu, CUCtx* cuCtx )
   int        mtsIdx = tu.mtsIdx[COMPONENT_Y];
   
   if( CU::isMTSAllowed( cu, COMPONENT_Y ) && cuCtx && !cuCtx->violatesMtsCoeffConstraint && 
-#if JVET_Q0516_MTS_SIGNALLING_DC_ONLY_COND 
       cuCtx->mtsLastScanPos && cu.lfnstIdx == 0 && mtsIdx != MTS_SKIP)
-#else
-      cu.lfnstIdx == 0 && mtsIdx != MTS_SKIP && TU::getCbf(tu, COMPONENT_Y) )
-#endif
   {
     int symbol = mtsIdx != MTS_DCT2_DCT2 ? 1 : 0;
     int ctxIdx = 0;

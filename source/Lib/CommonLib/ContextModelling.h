@@ -416,9 +416,7 @@ public:
                            violatesLfnstConstrained[CHANNEL_TYPE_CHROMA] = false;
                            lfnstLastScanPos                              = false;
                            violatesMtsCoeffConstraint                    = false;
-#if JVET_Q0516_MTS_SIGNALLING_DC_ONLY_COND
                            mtsLastScanPos                                = false;
-#endif
                          }
   CUCtx(int _qp)       : isDQPCoded(false), isChromaQpAdjCoded(false),
                          qgStart(false),
@@ -428,9 +426,7 @@ public:
                            violatesLfnstConstrained[CHANNEL_TYPE_CHROMA] = false;
                            lfnstLastScanPos                              = false;
                            violatesMtsCoeffConstraint                    = false;
-#if JVET_Q0516_MTS_SIGNALLING_DC_ONLY_COND
                            mtsLastScanPos                                = false;
-#endif
                          }
   ~CUCtx() {}
 public:
@@ -441,9 +437,7 @@ public:
   int8_t    qp;                   // used as a previous(last) QP and for QP prediction
   bool      violatesLfnstConstrained[MAX_NUM_CHANNEL_TYPE];
   bool      violatesMtsCoeffConstraint;
-#if JVET_Q0516_MTS_SIGNALLING_DC_ONLY_COND 
   bool      mtsLastScanPos;
-#endif
 };
 
 class MergeCtx

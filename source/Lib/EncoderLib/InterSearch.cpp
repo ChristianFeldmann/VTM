@@ -6779,7 +6779,6 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
               m_CABACEstimator->cross_comp_pred( tu, compID );
             }
 #endif
-#if JVET_Q0516_MTS_SIGNALLING_DC_ONLY_COND
             CUCtx cuCtx;
             cuCtx.isDQPCoded = true;
             cuCtx.isChromaQpAdjCoded = true;
@@ -6792,9 +6791,6 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
             }
             else
             {
-#else
-            m_CABACEstimator->residual_coding(tu, compID);
-#endif
 
             currCompFracBits = m_CABACEstimator->getEstFracBits();
 
@@ -6820,9 +6816,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
 #else
             currCompCost = m_pcRdCost->calcRdCost(currCompFracBits, currCompDist);
 #endif
-#if JVET_Q0516_MTS_SIGNALLING_DC_ONLY_COND 
             }
-#endif
           }
 #if !REMOVE_PPS_REXT
           else if( transformMode > 0 && !bUseCrossCPrediction )

@@ -1652,20 +1652,6 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
 {
   // pps ID already initialised.
   pps.setSPSId(sps.getSPSId());
-#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
-  pps.setConstantSliceHeaderParamsEnabledFlag(getConstantSliceHeaderParamsEnabledFlag());
-  pps.setPPSDepQuantEnabledIdc(getPPSDepQuantEnabledIdc());
-  pps.setPPSRefPicListSPSIdc0(getPPSRefPicListSPSIdc0());
-  pps.setPPSRefPicListSPSIdc1(getPPSRefPicListSPSIdc1());
-  pps.setPPSMvdL1ZeroIdc(getPPSMvdL1ZeroIdc());
-  pps.setPPSCollocatedFromL0Idc(getPPSCollocatedFromL0Idc());
-  pps.setPPSSixMinusMaxNumMergeCandPlus1(getPPSSixMinusMaxNumMergeCandPlus1());
-#if !JVET_Q0806
-  pps.setPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1(getPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1());
-#else
-  pps.setPPSMaxNumMergeCandMinusMaxNumGeoCandPlus1(getPPSMaxNumMergeCandMinusMaxNumGeoCandPlus1());
-#endif
-#endif
 
   pps.setNumSubPics(sps.getNumSubPics());
 #if JVET_Q0119_CLEANUPS

@@ -1176,10 +1176,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
                                                                                                                "\t1: use MD5\n"
                                                                                                                "\t0: disable")
   ("TMVPMode",                                        m_TMVPModeId,                                         1, "TMVP mode 0: TMVP disable for all slices. 1: TMVP enable for all slices (default) 2: TMVP enable for certain slices only")
-#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
-  ("PPSorSliceMode",                                  m_PPSorSliceMode,                                     0, "Enable signalling certain parameters either in PPS or per slice\n"
-                                                                                                                "\tmode 0: Always per slice (default), 1: RA settings, 2: LDB settings, 3: LDP settings")
-#endif 
   ("SliceLevelRpl",                                   m_sliceLevelRpl,                                   true, "Code reference picture lists in slice headers rather than picture header.")
   ("SliceLevelDblk",                                  m_sliceLevelDblk,                                  true, "Code deblocking filter parameters in slice headers rather than picture header.")
   ("SliceLevelSao",                                   m_sliceLevelSao,                                   true, "Code SAO parameters in slice headers rather than picture header.")
@@ -3547,74 +3543,6 @@ bool EncAppCfg::xCheckParameter()
     m_BIO = false;
   }
 
-#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
-  // If m_PPSorSliceFlag is equal to 1, for each PPS parameter below,
-  //     0:  value is signaled in slice header
-  //     >0: value is derived from PPS parameter as value - 1
-  switch (m_PPSorSliceMode)
-  {
-  case 0: // All parameter values are signaled in slice header
-    m_constantSliceHeaderParamsEnabledFlag = 0;
-    m_PPSDepQuantEnabledIdc = 0;
-    m_PPSRefPicListSPSIdc0 = 0;
-    m_PPSRefPicListSPSIdc1 = 0;
-    m_PPSMvdL1ZeroIdc = 0;
-    m_PPSCollocatedFromL0Idc = 0;
-    m_PPSSixMinusMaxNumMergeCandPlus1 = 0;
-#if !JVET_Q0806
-    m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 = 0;
-#else
-    m_PPSMaxNumMergeCandMinusMaxNumGeoCandPlus1 = 0;
-#endif
-    break;
-  case 1: // RA setting
-    m_constantSliceHeaderParamsEnabledFlag = 1;
-    m_PPSDepQuantEnabledIdc = (m_depQuantEnabledFlag ? 1 : 0) + 1;
-    m_PPSRefPicListSPSIdc0 = 0;
-    m_PPSRefPicListSPSIdc1 = 0;
-    m_PPSMvdL1ZeroIdc = 0;
-    m_PPSCollocatedFromL0Idc = 0;
-    m_PPSSixMinusMaxNumMergeCandPlus1 = 6 - m_maxNumMergeCand + 1;
-#if !JVET_Q0806
-    m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 = m_maxNumMergeCand - m_maxNumTriangleCand + 1;
-#else
-    m_PPSMaxNumMergeCandMinusMaxNumGeoCandPlus1 = m_maxNumMergeCand - m_maxNumGeoCand + 1;
-#endif
-    break;
-  case 2: // LDB setting
-    m_constantSliceHeaderParamsEnabledFlag = 1;
-    m_PPSDepQuantEnabledIdc = (m_depQuantEnabledFlag ? 1 : 0) + 1;
-    m_PPSRefPicListSPSIdc0 = 2;
-    m_PPSRefPicListSPSIdc1 = 2;
-    m_PPSMvdL1ZeroIdc = 2;
-    m_PPSCollocatedFromL0Idc = 1;
-    m_PPSSixMinusMaxNumMergeCandPlus1 = 6 - m_maxNumMergeCand + 1;
-#if !JVET_Q0806
-    m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 = m_maxNumMergeCand - m_maxNumTriangleCand + 1;
-#else
-    m_PPSMaxNumMergeCandMinusMaxNumGeoCandPlus1 = m_maxNumMergeCand - m_maxNumGeoCand + 1;
-#endif
-    break;
-  case 3: // LDP setting
-    m_constantSliceHeaderParamsEnabledFlag = 1;
-    m_PPSDepQuantEnabledIdc = (m_depQuantEnabledFlag ? 1 : 0) + 1;
-    m_PPSRefPicListSPSIdc0 = 2;
-    m_PPSRefPicListSPSIdc1 = 2;
-    m_PPSMvdL1ZeroIdc = 0;
-    m_PPSCollocatedFromL0Idc = 0;
-    m_PPSSixMinusMaxNumMergeCandPlus1 = 6 - m_maxNumMergeCand + 1;
-#if !JVET_Q0806
-    m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 = 0;
-#else
-    m_PPSMaxNumMergeCandMinusMaxNumGeoCandPlus1 = 0;
-#endif
-    break;
-  default:
-    THROW("Invalid value for PPSorSliceMode");
-  }
-  xConfirmPara(m_drapPeriod > 0 && m_PPSRefPicListSPSIdc0 > 0, "PPSRefPicListSPSIdc0 shall be 0 when DRAP is used. This can be fixed by setting PPSorSliceMode=0.");
-  xConfirmPara(m_drapPeriod > 0 && m_PPSRefPicListSPSIdc1 > 0, "PPSRefPicListSPSIdc1 shall be 0 when DRAP is used. This can be fixed by setting PPSorSliceMode=0.");
-#endif
 
   xConfirmPara( m_sariAspectRatioIdc < 0 || m_sariAspectRatioIdc > 255, "SEISARISampleAspectRatioIdc must be in the range of 0 to 255");
 

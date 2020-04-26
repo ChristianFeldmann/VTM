@@ -517,22 +517,6 @@ void HLSWriter::codePPS( const PPS* pcPPS )
   WRITE_FLAG(pcPPS->getQpDeltaInfoInPhFlag() ? 1 : 0, "qp_delta_info_in_ph_flag");
 #endif
 
-#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
-  WRITE_FLAG( pcPPS->getConstantSliceHeaderParamsEnabledFlag(),              "constant_slice_header_params_enabled_flag");
-  if ( pcPPS->getConstantSliceHeaderParamsEnabledFlag() ) {
-    WRITE_CODE( pcPPS->getPPSDepQuantEnabledIdc(), 2,                        "pps_dep_quant_enabled_idc");
-    WRITE_CODE( pcPPS->getPPSRefPicListSPSIdc0(), 2,                         "pps_ref_pic_list_sps_idc[0]");
-    WRITE_CODE( pcPPS->getPPSRefPicListSPSIdc1(), 2,                         "pps_ref_pic_list_sps_idc[1]");
-    WRITE_CODE( pcPPS->getPPSMvdL1ZeroIdc(), 2,                              "pps_mvd_l1_zero_idc");
-    WRITE_CODE( pcPPS->getPPSCollocatedFromL0Idc(), 2,                       "pps_collocated_from_l0_idc");
-    WRITE_UVLC( pcPPS->getPPSSixMinusMaxNumMergeCandPlus1(),                 "pps_six_minus_max_num_merge_cand_plus1");
-#if !JVET_Q0806
-    WRITE_UVLC( pcPPS->getPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1(),  "pps_max_num_merge_cand_minus_max_num_triangle_cand_plus1");
-#else
-    WRITE_UVLC(pcPPS->getPPSMaxNumMergeCandMinusMaxNumGeoCandPlus1(), "pps_max_num_merge_cand_minus_max_num_gpm_cand_plus1");
-#endif
-  }
-#endif
 
 
   WRITE_FLAG( pcPPS->getPictureHeaderExtensionPresentFlag() ? 1 : 0, "picture_header_extension_present_flag");
@@ -2092,13 +2076,8 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
     // List0 and List1
     for(int listIdx = 0; listIdx < 2; listIdx++) 
     {                 
-#if JVET_Q0482_REMOVE_CONSTANT_PARAMS
       if(sps->getNumRPL(listIdx) > 0 &&
           (listIdx == 0 || (listIdx == 1 && pps->getRpl1IdxPresentFlag())))
-#else
-      if(sps->getNumRPL(listIdx) > 0 && !pps->getPPSRefPicListSPSIdc(listIdx) &&
-          (listIdx == 0 || (listIdx == 1 && pps->getRpl1IdxPresentFlag())))
-#endif
       {
         WRITE_FLAG(picHeader->getRPLIdx(listIdx) != -1 ? 1 : 0, "rpl_sps_flag[i]");
       }
@@ -2311,16 +2290,6 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
     }
 
   // mvd L1 zero flag
-#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
-    if (!pps->getPPSMvdL1ZeroIdc())
-    {
-      WRITE_FLAG(picHeader->getMvdL1ZeroFlag(), "mvd_l1_zero_flag");
-    }
-    else
-    {
-      picHeader->setMvdL1ZeroFlag( pps->getPPSMvdL1ZeroIdc() - 1 );
-    }
-#else
 #if !JVET_Q0259_COLLOCATED_PIC_IN_PH
     if (picHeader->getEnableTMVPFlag() && pps->getRplInfoInPhFlag())
     {
@@ -2328,20 +2297,8 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
     }
 #endif
     WRITE_FLAG(picHeader->getMvdL1ZeroFlag(), "mvd_l1_zero_flag");
-#endif
    
   // merge candidate list size
-#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
-    if (!pps->getPPSSixMinusMaxNumMergeCandPlus1())
-    {
-#endif
-#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
-    }
-    else
-    {
-      picHeader->setMaxNumMergeCand(MRG_MAX_NUM_CANDS - (pps->getPPSSixMinusMaxNumMergeCandPlus1() - 1));
-    }
-#endif
   // subblock merge candidate list size
     if ( sps->getUseAffine() )
     {
@@ -2536,18 +2493,7 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
   // dependent quantization
   if (sps->getDepQuantEnabledFlag())
   {
-#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
-    if (!pps->getPPSDepQuantEnabledIdc())
-    {
-      WRITE_FLAG(picHeader->getDepQuantEnabledFlag(), "ph_dep_quant_enabled_flag");
-    }
-    else
-    {
-      picHeader->setDepQuantEnabledFlag(pps->getPPSDepQuantEnabledIdc() - 1);
-    }
-#else
     WRITE_FLAG(picHeader->getDepQuantEnabledFlag(), "ph_dep_quant_enabled_flag");
-#endif
   }
   else
   {
@@ -2839,14 +2785,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
       //Write L0 related syntax elements
       if (pcSlice->getSPS()->getNumRPL0() > 0)
       {
-#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
-        if (!pcSlice->getPPS()->getPPSRefPicListSPSIdc0())
-        {
-#endif
           WRITE_FLAG(pcSlice->getRPL0idx() != -1 ? 1 : 0, "ref_pic_list_sps_flag[0]");
-#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
-        }
-#endif
       }
       if (pcSlice->getRPL0idx() != -1)
       {
@@ -2886,11 +2825,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
       }
 
       //Write L1 related syntax elements
-#if JVET_Q0482_REMOVE_CONSTANT_PARAMS
       if (pcSlice->getSPS()->getNumRPL1() > 0 && pcSlice->getPPS()->getRpl1IdxPresentFlag())
-#else
-      if (pcSlice->getSPS()->getNumRPL1() > 0 && pcSlice->getPPS()->getRpl1IdxPresentFlag() && !pcSlice->getPPS()->getPPSRefPicListSPSIdc1())
-#endif
       {
         WRITE_FLAG(pcSlice->getRPL1idx() != -1 ? 1 : 0, "ref_pic_list_sps_flag[1]");
       }
@@ -3017,7 +2952,6 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
     if( pcSlice->getPicHeader()->getEnableTMVPFlag() )
 #endif
     {
-#if JVET_Q0482_REMOVE_CONSTANT_PARAMS
       if(!pcSlice->getPPS()->getRplInfoInPhFlag())
       {
         if (pcSlice->getSliceType() == B_SLICE)
@@ -3025,15 +2959,6 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
           WRITE_FLAG(pcSlice->getColFromL0Flag(), "collocated_from_l0_flag");
         }
       }
-#else
-      if( pcSlice->getSliceType() == B_SLICE )
-      {
-        if (!pcSlice->getPPS()->getPPSCollocatedFromL0Idc())
-        {
-          WRITE_FLAG( pcSlice->getColFromL0Flag(), "collocated_from_l0_flag" );
-        }
-      }
-#endif
 
       if( pcSlice->getSliceType() != I_SLICE &&
         ( ( pcSlice->getColFromL0Flag() == 1 && pcSlice->getNumRefIdx( REF_PIC_LIST_0 ) > 1 ) ||

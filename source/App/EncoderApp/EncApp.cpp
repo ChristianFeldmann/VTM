@@ -803,23 +803,8 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setSliceLevelDeltaQp                                 ( m_sliceLevelDeltaQp );
 #endif
   m_cEncLib.setSliceLevelAlf                                     ( m_sliceLevelAlf  );
-#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
-  m_cEncLib.setConstantSliceHeaderParamsEnabledFlag              ( m_constantSliceHeaderParamsEnabledFlag );
-  m_cEncLib.setPPSDepQuantEnabledIdc                             ( m_PPSDepQuantEnabledIdc );
-  m_cEncLib.setPPSRefPicListSPSIdc0                              ( m_PPSRefPicListSPSIdc0 );
-  m_cEncLib.setPPSRefPicListSPSIdc1                              ( m_PPSRefPicListSPSIdc1 );
-  m_cEncLib.setPPSMvdL1ZeroIdc                                   ( m_PPSMvdL1ZeroIdc );
-  m_cEncLib.setPPSCollocatedFromL0Idc                            ( m_PPSCollocatedFromL0Idc );
-  m_cEncLib.setPPSSixMinusMaxNumMergeCandPlus1                   ( m_PPSSixMinusMaxNumMergeCandPlus1 );
-#endif
 #if !JVET_Q0806
-#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
-  m_cEncLib.setPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1    ( m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 );
-#endif
 #else
-#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
-  m_cEncLib.setPPSMaxNumMergeCandMinusMaxNumGeoCandPlus1    ( m_PPSMaxNumMergeCandMinusMaxNumGeoCandPlus1 );
-#endif
 #endif
   m_cEncLib.setUseScalingListId                                  ( m_useScalingListId  );
   m_cEncLib.setScalingListFileName                               ( m_scalingListFileName );

@@ -2041,20 +2041,6 @@ private:
   bool             m_entropyCodingSyncEnabledFlag;      //!< Indicates the presence of wavefronts
 #endif
 
-#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
-  bool              m_constantSliceHeaderParamsEnabledFlag;
-  int               m_PPSDepQuantEnabledIdc;
-  int               m_PPSRefPicListSPSIdc0;
-  int               m_PPSRefPicListSPSIdc1;
-  int               m_PPSMvdL1ZeroIdc;
-  int               m_PPSCollocatedFromL0Idc;
-  uint32_t          m_PPSSixMinusMaxNumMergeCandPlus1;
-#if !JVET_Q0806
-  uint32_t          m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1;
-#else
-  uint32_t          m_PPSMaxNumMergeCandMinusMaxNumGeoCandPlus1;
-#endif
-#endif
 
   bool             m_cabacInitPresentFlag;
 
@@ -2289,30 +2275,6 @@ public:
 #endif
 
 
-#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
-  bool                    getConstantSliceHeaderParamsEnabledFlag() const                 { return m_constantSliceHeaderParamsEnabledFlag; }
-  void                    setConstantSliceHeaderParamsEnabledFlag(bool b)                 { m_constantSliceHeaderParamsEnabledFlag = b;   }
-  int                     getPPSDepQuantEnabledIdc() const                                { return m_PPSDepQuantEnabledIdc;               }
-  void                    setPPSDepQuantEnabledIdc(int u)                                 { m_PPSDepQuantEnabledIdc = u;                  }
-  int                     getPPSRefPicListSPSIdc( bool b ) const                          { return b==1 ? m_PPSRefPicListSPSIdc1: m_PPSRefPicListSPSIdc0; }
-  int                     getPPSRefPicListSPSIdc0() const                                 { return m_PPSRefPicListSPSIdc0;                }
-  void                    setPPSRefPicListSPSIdc0(int u)                                  { m_PPSRefPicListSPSIdc0 = u;                   }
-  int                     getPPSRefPicListSPSIdc1() const                                 { return m_PPSRefPicListSPSIdc1;                }
-  void                    setPPSRefPicListSPSIdc1(int u)                                  { m_PPSRefPicListSPSIdc1 = u;                   }
-  int                     getPPSMvdL1ZeroIdc() const                                      { return m_PPSMvdL1ZeroIdc;                     }
-  void                    setPPSMvdL1ZeroIdc(int u)                                       { m_PPSMvdL1ZeroIdc = u;                        }
-  int                     getPPSCollocatedFromL0Idc() const                               { return m_PPSCollocatedFromL0Idc;              }
-  void                    setPPSCollocatedFromL0Idc(int u)                                { m_PPSCollocatedFromL0Idc = u;                 }
-  uint32_t                getPPSSixMinusMaxNumMergeCandPlus1() const                      { return m_PPSSixMinusMaxNumMergeCandPlus1;     }
-  void                    setPPSSixMinusMaxNumMergeCandPlus1(uint32_t u)                  { m_PPSSixMinusMaxNumMergeCandPlus1 = u;        }
-#if !JVET_Q0806
-  uint32_t                getPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1() const       { return m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1; }
-  void                    setPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1(uint32_t u)   { m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 = u; }
-#else
-  uint32_t                getPPSMaxNumMergeCandMinusMaxNumGeoCandPlus1() const            { return m_PPSMaxNumMergeCandMinusMaxNumGeoCandPlus1; }
-  void                    setPPSMaxNumMergeCandMinusMaxNumGeoCandPlus1(uint32_t u)        { m_PPSMaxNumMergeCandMinusMaxNumGeoCandPlus1 = u; }
-#endif
-#endif
 
   void                   setCabacInitPresentFlag( bool flag )                             { m_cabacInitPresentFlag = flag;                }
   bool                   getCabacInitPresentFlag() const                                  { return m_cabacInitPresentFlag;                }
@@ -2505,9 +2467,7 @@ private:
   uint32_t                    m_cuChromaQpOffsetSubdivIntra;                            //!< CU chroma QP offset maximum subdivision for intra slices 
   uint32_t                    m_cuChromaQpOffsetSubdivInter;                            //!< CU chroma QP offset maximum subdivision for inter slices 
   bool                        m_enableTMVPFlag;                                         //!< enable temporal motion vector prediction
-#if JVET_Q0482_REMOVE_CONSTANT_PARAMS
   bool                        m_picColFromL0Flag;                                       //!< syntax element collocated_from_l0_flag
-#endif
 #if JVET_Q0259_COLLOCATED_PIC_IN_PH
   uint32_t                    m_colRefIdx;
 #endif
@@ -2668,10 +2628,8 @@ public:
   uint32_t                    getCuChromaQpOffsetSubdivInter() const                    { return m_cuChromaQpOffsetSubdivInter;                                                        }
   void                        setEnableTMVPFlag( bool b )                               { m_enableTMVPFlag = b;                                                                        }
   bool                        getEnableTMVPFlag() const                                 { return m_enableTMVPFlag;                                                                     }
-#if JVET_Q0482_REMOVE_CONSTANT_PARAMS
   void                        setPicColFromL0Flag(bool val)                             { m_picColFromL0Flag = val;                                                                     }
   bool                        getPicColFromL0Flag() const                               { return m_picColFromL0Flag;                                                                    }
-#endif
 #if JVET_Q0259_COLLOCATED_PIC_IN_PH
   void                        setColRefIdx( uint32_t refIdx)                             { m_colRefIdx = refIdx;                                                                       }
   uint32_t                    getColRefIdx()                                             { return m_colRefIdx;                                                                         }

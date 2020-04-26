@@ -77,7 +77,6 @@ void BitstreamExtractorApp::xPrintVPSInfo (VPS *vps)
   }
 }
 
-#if JVET_Q0397_SUB_PIC_EXTRACT
 void BitstreamExtractorApp::xPrintSubPicInfo (PPS *pps)
 {
   msg (VERBOSE, "Subpic Info: \n");
@@ -280,7 +279,6 @@ void BitstreamExtractorApp::xRewritePPS (PPS &targetPPS, const PPS &sourcePPS, S
 
 }
 
-#endif
 
 void BitstreamExtractorApp::xWriteVPS(VPS *vps, std::ostream& out, int layerId, int temporalId)
 {
@@ -460,7 +458,6 @@ uint32_t BitstreamExtractorApp::decode()
         // *** add modifications here ***
         // only write, if not dropped earlier
         // rewrite the SPS
-#if JVET_Q0397_SUB_PIC_EXTRACT
         if (m_subPicId >= 0)
         {
           // we generally don't write SPS to the bitstream unless referred to by PPS
@@ -468,7 +465,6 @@ uint32_t BitstreamExtractorApp::decode()
           xSetSPSUpdated(sps->getSPSId());
           writeInpuNalUnitToStream = false;
         }
-#endif
         if (writeInpuNalUnitToStream)
         {
           xWriteSPS(sps, bitstreamFileOut, nalu.m_nuhLayerId, nalu.m_temporalId);
@@ -488,7 +484,6 @@ uint32_t BitstreamExtractorApp::decode()
         pps = m_parameterSetManager.getPPS(ppsId);
         msg (VERBOSE, "PPS Info: PPS ID = %d\n", pps->getPPSId());
 
-#if JVET_Q0397_SUB_PIC_EXTRACT
         SPS *sps = m_parameterSetManager.getSPS(pps->getSPSId());
         if ( nullptr == sps)
         {
@@ -530,7 +525,6 @@ uint32_t BitstreamExtractorApp::decode()
             writeInpuNalUnitToStream = false;
           }
         }
-#endif
 
         // example: just write the parsed PPS back to the stream
         // *** add modifications here ***
@@ -541,7 +535,6 @@ uint32_t BitstreamExtractorApp::decode()
           writeInpuNalUnitToStream = false;
         }
       }
-#if JVET_Q0397_SUB_PIC_EXTRACT
       // when re-using code for slice header parsing, we need to store APSs
       if( ( nalu.m_nalUnitType == NAL_UNIT_PREFIX_APS ) || ( nalu.m_nalUnitType == NAL_UNIT_SUFFIX_APS ))
       {
@@ -560,7 +553,6 @@ uint32_t BitstreamExtractorApp::decode()
       {
         xReadPicHeader(nalu);
       }
-#endif
       if (m_targetOlsIdx>=0)
       {
         if (nalu.m_nalUnitType == NAL_UNIT_PREFIX_SEI)
@@ -602,7 +594,6 @@ uint32_t BitstreamExtractorApp::decode()
           delete vps;
         }
       }
-#if JVET_Q0397_SUB_PIC_EXTRACT
       if (m_subPicId>=0)
       {
         if ( nalu.isSlice() )
@@ -612,7 +603,6 @@ uint32_t BitstreamExtractorApp::decode()
         }
 
       }
-#endif
       unitCnt++;
 
       if( writeInpuNalUnitToStream )

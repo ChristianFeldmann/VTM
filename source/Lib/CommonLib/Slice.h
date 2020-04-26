@@ -805,7 +805,6 @@ public:
     return pos.x >= m_subPicCtuTopLeftX && pos.x < m_subPicCtuTopLeftX + m_subPicWidth &&
            pos.y >= m_subPicCtuTopLeftY && pos.y < m_subPicCtuTopLeftY + m_subPicHeight;
   }
-#if JVET_Q0397_SUB_PIC_EXTRACT
   bool             containsCtu(int ctuAddr) const
   {
     for (auto & addr : m_ctuAddrInSubPic)
@@ -817,7 +816,6 @@ public:
     }
     return false;
   }
-  #endif
 };
 
 class DCI

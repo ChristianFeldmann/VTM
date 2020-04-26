@@ -752,34 +752,19 @@ void AdaptiveLoopFilter::create( const int picWidth, const int picHeight, const 
   m_alfVBChmaCTUHeight = (m_maxCUHeight >> ((m_chromaFormat == CHROMA_420) ? 1 : 0));
 
   static_assert( AlfNumClippingValues[CHANNEL_TYPE_LUMA] > 0, "AlfNumClippingValues[CHANNEL_TYPE_LUMA] must be at least one" );
-#if JVET_Q0495_NLALF_CLIP_CLEANUP
   m_alfClippingValues[CHANNEL_TYPE_LUMA][0] = 1 << m_inputBitDepth[CHANNEL_TYPE_LUMA];
   int shiftLuma = m_inputBitDepth[CHANNEL_TYPE_LUMA] - 8;
   for (int i = 1; i < AlfNumClippingValues[CHANNEL_TYPE_LUMA]; ++i)
   {
     m_alfClippingValues[CHANNEL_TYPE_LUMA][i] = 1 << (7 - 2 * i + shiftLuma);
   }
-#else
-  for( int i = 0; i < AlfNumClippingValues[CHANNEL_TYPE_LUMA]; ++i )
-  {
-    m_alfClippingValues[CHANNEL_TYPE_LUMA][i] = (Pel)std::round( std::pow(2., double(m_inputBitDepth[CHANNEL_TYPE_LUMA] - 2.35*i)) );
-  }
-#endif
   static_assert( AlfNumClippingValues[CHANNEL_TYPE_CHROMA] > 0, "AlfNumClippingValues[CHANNEL_TYPE_CHROMA] must be at least one" );
-#if JVET_Q0495_NLALF_CLIP_CLEANUP
   m_alfClippingValues[CHANNEL_TYPE_CHROMA][0] = 1 << m_inputBitDepth[CHANNEL_TYPE_CHROMA];
   int shiftChroma = m_inputBitDepth[CHANNEL_TYPE_CHROMA] - 8;
   for (int i = 1; i < AlfNumClippingValues[CHANNEL_TYPE_CHROMA]; ++i)
   {
     m_alfClippingValues[CHANNEL_TYPE_CHROMA][i] = 1 << (7 - 2 * i + shiftChroma);
   }
-#else
-  m_alfClippingValues[CHANNEL_TYPE_CHROMA][0] = 1 << m_inputBitDepth[CHANNEL_TYPE_CHROMA];
-  for( int i = 1; i < AlfNumClippingValues[CHANNEL_TYPE_CHROMA]; ++i )
-  {
-    m_alfClippingValues[CHANNEL_TYPE_CHROMA][i] = (Pel)std::round( std::pow(2., double(m_inputBitDepth[CHANNEL_TYPE_CHROMA] - 2.35*i)) );
-  }
-#endif
   if (m_created)
   {
     return;

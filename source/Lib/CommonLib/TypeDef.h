@@ -142,7 +142,6 @@
 
 
 
-#define JVET_Q0495_NLALF_CLIP_CLEANUP                     1 // JVET-Q0495: Cleanup of clipping table for NL-ALF
 
 #define JVET_Q0156_STSA                                   1 // JVET-Q0156: Enable inter-layer prediction for STSA pictures
 

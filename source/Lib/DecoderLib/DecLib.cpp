@@ -1477,7 +1477,6 @@ void DecLib::xCheckParameterSetConstraints(const int layerId)
   }
 #endif
 
-#if JVET_Q0172_CHROMA_FORMAT_BITDEPTH_CONSTRAINT
   static std::unordered_map<int, int> m_layerChromaFormat;
   static std::unordered_map<int, int> m_layerBitDepth;
 
@@ -1513,7 +1512,6 @@ void DecLib::xCheckParameterSetConstraints(const int layerId)
       }
     }
   }
-#endif
 
 #if JVET_Q0114_CONSTRAINT_FLAGS
   if (sps->getProfileTierLevel()->getConstraintInfo()->getOneTilePerPicConstraintFlag())

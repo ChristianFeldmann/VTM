@@ -1415,13 +1415,8 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
   sps.getSpsRangeExtension().setPersistentRiceAdaptationEnabledFlag(m_persistentRiceAdaptationEnabledFlag);
   sps.getSpsRangeExtension().setCabacBypassAlignmentEnabledFlag(m_cabacBypassAlignmentEnabledFlag);
 
-#if JVET_Q0119_CLEANUPS
   sps.setSubPicInfoPresentFlag(m_subPicInfoPresentFlag);
   if (m_subPicInfoPresentFlag)
-#else
-  sps.setSubPicPresentFlag(m_subPicPresentFlag);
-  if (m_subPicPresentFlag) 
-#endif
   {
     sps.setNumSubPics(m_numSubPics);
     sps.setSubPicCtuTopLeftX(m_subPicCtuTopLeftX);
@@ -1431,7 +1426,6 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
     sps.setSubPicTreatedAsPicFlag(m_subPicTreatedAsPicFlag);
     sps.setLoopFilterAcrossSubpicEnabledFlag(m_loopFilterAcrossSubpicEnabledFlag);
     sps.setSubPicIdLen(m_subPicIdLen);
-#if JVET_Q0119_CLEANUPS
     sps.setSubPicIdMappingExplicitlySignalledFlag(m_subPicIdMappingExplicitlySignalledFlag);
     if (m_subPicIdMappingExplicitlySignalledFlag)
     {
@@ -1441,17 +1435,6 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
         sps.setSubPicId(m_subPicId);
       }
     }
-#else
-    sps.setSubPicIdPresentFlag(m_subPicIdPresentFlag);
-    if (m_subPicIdPresentFlag)
-    {
-      sps.setSubPicIdSignallingPresentFlag(m_subPicIdSignallingPresentFlag);
-      if (m_subPicIdSignallingPresentFlag)
-      {
-        sps.setSubPicId(m_subPicId);
-      }
-    }
-#endif
   }
   else   //In that case, there is only one subpicture that contains the whole picture
   {
@@ -1463,11 +1446,7 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
     sps.setSubPicTreatedAsPicFlag(0, 1);
     sps.setLoopFilterAcrossSubpicEnabledFlag(0, 0);
     sps.setSubPicIdLen(0);
-#if JVET_Q0119_CLEANUPS
     sps.setSubPicIdMappingExplicitlySignalledFlag(false);
-#else
-    sps.setSubPicIdPresentFlag(false);
-#endif
   }
   sps.setDepQuantEnabledFlag( m_DepQuantEnabledFlag );
   if (!sps.getDepQuantEnabledFlag())
@@ -1552,11 +1531,7 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
   pps.setSPSId(sps.getSPSId());
 
   pps.setNumSubPics(sps.getNumSubPics());
-#if JVET_Q0119_CLEANUPS
   pps.setSubPicIdMappingInPpsFlag(false);
-#else
-  pps.setSubPicIdSignallingPresentFlag(false);
-#endif
   pps.setSubPicIdLen(sps.getSubPicIdLen());
   for(int picIdx=0; picIdx<pps.getNumSubPics(); picIdx++)
   {
@@ -1931,14 +1906,6 @@ void EncLib::xInitPicHeader(PicHeader &picHeader, const SPS &sps, const PPS &pps
     picHeader.setCuChromaQpOffsetSubdivInter(0);
   }
   
-#if !JVET_Q0119_CLEANUPS
-  // sub-pictures
-  picHeader.setSubPicIdSignallingPresentFlag(sps.getSubPicIdSignallingPresentFlag());
-  picHeader.setSubPicIdLen(sps.getSubPicIdLen());
-  for(i=0; i<sps.getNumSubPics(); i++) {
-    picHeader.setSubPicId(i, sps.getSubPicId(i));
-  }
-#endif
 
   // virtual boundaries
   if( sps.getVirtualBoundariesEnabledFlag() )

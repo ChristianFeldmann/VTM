@@ -831,11 +831,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("FrameOnly",                                       m_frameOnlyConstraintFlag,                        false, "Indicate that the bitstream contains only frames")
   ("CTUSize",                                         m_uiCTUSize,                                       128u, "CTUSize (specifies the CTU size if QTBT is on) [default: 128]")
   ("Log2MinCuSize",                                   m_log2MinCuSize,                                     2u, "Log2 min CU size")
-#if JVET_Q0119_CLEANUPS
   ("SubPicInfoPresentFlag",                           m_subPicInfoPresentFlag,                          false, "equal to 1 specifies that subpicture parameters are present in in the SPS RBSP syntax")
-#else
-  ("SubPicPresentFlag",                               m_subPicPresentFlag,                              false, "equal to 1 specifies that subpicture parameters are present in in the SPS RBSP syntax")
-#endif
   ("NumSubPics",                                      m_numSubPics,                                        0u, "specifies the number of subpictures")
   ("SubPicCtuTopLeftX",                               cfg_subPicCtuTopLeftX,            cfg_subPicCtuTopLeftX, "specifies horizontal position of top left CTU of i-th subpicture in unit of CtbSizeY")
   ("SubPicCtuTopLeftY",                               cfg_subPicCtuTopLeftY,            cfg_subPicCtuTopLeftY, "specifies vertical position of top left CTU of i-th subpicture in unit of CtbSizeY")
@@ -843,13 +839,8 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("SubPicHeight",                                    cfg_subPicHeight,                      cfg_subPicHeight, "specifies the height of the i-th subpicture in units of CtbSizeY")
   ("SubPicTreatedAsPicFlag",                          cfg_subPicTreatedAsPicFlag,  cfg_subPicTreatedAsPicFlag, "equal to 1 specifies that the i-th subpicture of each coded picture in the CLVS is treated as a picture in the decoding process excluding in-loop filtering operations")
   ("LoopFilterAcrossSubpicEnabledFlag",               cfg_loopFilterAcrossSubpicEnabledFlag, cfg_loopFilterAcrossSubpicEnabledFlag, "equal to 1 specifies that in-loop filtering operations may be performed across the boundaries of the i-th subpicture in each coded picture in the CLVS")
-#if JVET_Q0119_CLEANUPS
   ("SubPicIdMappingExplicitlySignalledFlag",          m_subPicIdMappingExplicitlySignalledFlag,         false, "equal to 1 specifies that the subpicture ID mapping is explicitly signalled, either in the SPS or in the PPSs")
   ("SubPicIdMappingInSpsFlag",                        m_subPicIdMappingInSpsFlag,                       false, "equal to 1 specifies that subpicture ID mapping is signalled in the SPS")
-#else
-  ("SubPicIdPresentFlag",                             m_subPicIdPresentFlag,                            false, "equal to 1 specifies that subpicture ID mapping is present in the SPS")
-  ("SubPicIdSignallingPresentFlag",                   m_subPicIdSignallingPresentFlag,                  false, "equal to 1 specifies that subpicture ID mapping is signalled in the SPS")
-#endif
   ("SubPicIdLen",                                     m_subPicIdLen,                                       0u, "specifies the number of bits used to represent the syntax element sps_subpic_id[ i ]. ")
   ("SubPicId",                                        cfg_subPicId,                              cfg_subPicId, "specifies that subpicture ID of the i-th subpicture")
   ("SingleSlicePerSubpic",                            m_singleSlicePerSubPicFlag,                       false, "Enables setting of a single slice per sub-picture (no explicit configuration required)")
@@ -1591,11 +1582,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     //number of fields to encode
     m_framesToBeEncoded *= 2;
   }
-#if JVET_Q0119_CLEANUPS
   if ( m_subPicInfoPresentFlag )
-#else
-  if ( m_subPicPresentFlag )
-#endif
   {
     CHECK( m_numSubPics > MAX_NUM_SUB_PICS || m_numSubPics < 1, "Number of subpicture must be within 1 to 2^16" );
     CHECK( cfg_subPicCtuTopLeftX.values.size() != m_numSubPics, "Number of SubPicCtuTopLeftX values must be equal to NumSubPics");
@@ -3585,13 +3572,8 @@ void EncAppCfg::xPrintParameter()
   }
   msg(DETAILS, "CTU size / min CU size                 : %d / %d \n", m_uiMaxCUWidth, 1 << m_log2MinCuSize);
 
-#if JVET_Q0119_CLEANUPS
   msg(DETAILS, "subpicture info present flag                       : %d\n", m_subPicInfoPresentFlag);
   if (m_subPicInfoPresentFlag)
-#else
-  msg(DETAILS, "subpicture present flag                            : %d\n", m_subPicPresentFlag);
-  if (m_subPicPresentFlag) 
-#endif
   {
     msg(DETAILS, "number of subpictures                            : %d\n", m_numSubPics);
     for (int i = 0; i < m_numSubPics; i++) 
@@ -3604,17 +3586,10 @@ void EncAppCfg::xPrintParameter()
     }
   }
 
-#if JVET_Q0119_CLEANUPS
   msg(DETAILS, "subpicture ID present flag                            : %d\n", m_subPicIdMappingExplicitlySignalledFlag);
   if (m_subPicIdMappingExplicitlySignalledFlag)
   {
     msg(DETAILS, "subpicture ID signalling present flag                            : %d\n", m_subPicIdMappingInSpsFlag);
-#else
-  msg(DETAILS, "subpicture ID present flag                            : %d\n", m_subPicIdPresentFlag);
-  if (m_subPicIdPresentFlag) 
-  {
-    msg(DETAILS, "subpicture ID signalling present flag                            : %d\n", m_subPicIdSignallingPresentFlag);
-#endif
     for (int i = 0; i < m_numSubPics; i++) 
     {
       msg(DETAILS, "[%d]th subpictures ID length                           :%d\n", i, m_subPicIdLen);

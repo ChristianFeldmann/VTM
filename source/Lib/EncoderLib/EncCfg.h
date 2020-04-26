@@ -275,11 +275,7 @@ protected:
 
   int       m_maxTempLayer;                      ///< Max temporal layer
   unsigned  m_CTUSize;
-#if JVET_Q0119_CLEANUPS
   bool                  m_subPicInfoPresentFlag;
-#else
-  bool                  m_subPicPresentFlag;
-#endif
   uint32_t              m_numSubPics;
   std::vector<uint32_t> m_subPicCtuTopLeftX;
   std::vector<uint32_t> m_subPicCtuTopLeftY;
@@ -287,13 +283,8 @@ protected:
   std::vector<uint32_t> m_subPicHeight;
   std::vector<bool>     m_subPicTreatedAsPicFlag;
   std::vector<bool>     m_loopFilterAcrossSubpicEnabledFlag;
-#if JVET_Q0119_CLEANUPS
   bool                  m_subPicIdMappingExplicitlySignalledFlag;
   bool                  m_subPicIdMappingInSpsFlag;
-#else
-  bool                  m_subPicIdPresentFlag;
-  bool                  m_subPicIdSignallingPresentFlag;
-#endif
   unsigned              m_subPicIdLen;
   std::vector<uint16_t> m_subPicId;
   bool      m_useSplitConsOverride;
@@ -973,11 +964,7 @@ public:
   bool      getUseSplitConsOverride         ()         const { return m_useSplitConsOverride; }
   void      setDualITree                    ( bool b )       { m_dualITree = b; }
   bool      getDualITree                    ()         const { return m_dualITree; }
-#if JVET_Q0119_CLEANUPS
   void      setSubPicInfoPresentFlag                        (bool b)                    { m_subPicInfoPresentFlag = b; }
-#else
-  void      setSubPicPresentFlag                        (bool b)                    { m_subPicPresentFlag = b; }
-#endif
   void      setNumSubPics                               ( uint32_t u )              { CHECK( u >= MAX_NUM_SUB_PICS, "Maximum number of subpictures exceeded" );
                                                                                       m_numSubPics = u;
                                                                                       m_subPicCtuTopLeftX.resize(m_numSubPics);
@@ -1002,22 +989,13 @@ public:
   void      setSubPicTreatedAsPicFlag                   (const std::vector<bool> &v)       { CHECK(v.size()!=m_numSubPics, "number of vector entries must be equal to numSubPics") ;m_subPicTreatedAsPicFlag = v; }
   void      setLoopFilterAcrossSubpicEnabledFlag        (const std::vector<bool> &v)       { CHECK(v.size()!=m_numSubPics, "number of vector entries must be equal to numSubPics") ;m_loopFilterAcrossSubpicEnabledFlag = v; }
 
-#if JVET_Q0119_CLEANUPS
   void      setSubPicIdMappingExplicitlySignalledFlag   (bool b)                    { m_subPicIdMappingExplicitlySignalledFlag = b; }
   void      setSubPicIdMappingInSpsFlag                 (bool b)                    { m_subPicIdMappingInSpsFlag = b; }
-#else
-  void      setSubPicIdPresentFlag                      (bool b)                    { m_subPicIdPresentFlag = b; }
-  void      setSubPicIdSignallingPresentFlag            (bool b)                    { m_subPicIdSignallingPresentFlag = b; }
-#endif
   void      setSubPicIdLen                              (uint32_t u)                { m_subPicIdLen = u; }
   void      setSubPicId                                 (uint32_t b, int i)         { m_subPicId[i] = b; }
   void      setSubPicId                                 (const std::vector<uint16_t> &v)   { CHECK(v.size()!=m_numSubPics, "number of vector entries must be equal to numSubPics"); m_subPicId = v; }
 
-#if JVET_Q0119_CLEANUPS
   bool      getSubPicInfoPresentFlag                    ()                          { return m_subPicInfoPresentFlag; }
-#else
-  bool      getSubPicPresentFlag                        ()                          { return m_subPicPresentFlag; }
-#endif
   uint32_t  getNumSubPics                               ()                          { return m_numSubPics; }
   uint32_t  getSubPicCtuTopLeftX                        (int i)                     { return m_subPicCtuTopLeftX[i]; }
   uint32_t  getSubPicCtuTopLeftY                        (int i)                     { return m_subPicCtuTopLeftY[i]; }
@@ -1025,13 +1003,8 @@ public:
   uint32_t  getSubPicHeight                             (int i)                     { return m_subPicHeight[i]; }
   bool      getSubPicTreatedAsPicFlag                   (int i)                     { return m_subPicTreatedAsPicFlag[i]; }
   uint32_t  getLoopFilterAcrossSubpicEnabledFlag        (int i)                     { return m_loopFilterAcrossSubpicEnabledFlag[i]; }
-#if JVET_Q0119_CLEANUPS
   bool      getSubPicIdMappingExplicitlySignalledFlag   ()                          { return m_subPicIdMappingExplicitlySignalledFlag; }
   bool      getSubPicIdMappingInSpsFlag                 ()                          { return m_subPicIdMappingInSpsFlag; }
-#else
-  bool      getSubPicIdPresentFlag                      ()                          { return m_subPicIdPresentFlag; }
-  bool      getSubPicIdSignallingPresentFlag            ()                          { return m_subPicIdSignallingPresentFlag; }
-#endif
   uint32_t  getSubPicIdLen                              ()                          { return m_subPicIdLen; }
   uint32_t  getSubPicId                                 (int i)                     { return m_subPicId[i]; }
   void      setLFNST                        ( bool b )       { m_LFNST = b; }

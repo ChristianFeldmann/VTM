@@ -410,13 +410,8 @@ void EncApp::xInitLibCfg()
 #endif
   m_cEncLib.setRDpenalty                                         ( m_rdPenalty );
   m_cEncLib.setCTUSize                                           ( m_uiCTUSize );
-#if JVET_Q0119_CLEANUPS
   m_cEncLib.setSubPicInfoPresentFlag                             ( m_subPicInfoPresentFlag );
   if(m_subPicInfoPresentFlag)
-#else
-  m_cEncLib.setSubPicPresentFlag                                 ( m_subPicPresentFlag );
-  if(m_subPicPresentFlag)
-#endif
   {
     m_cEncLib.setNumSubPics                                      ( m_numSubPics );
     m_cEncLib.setSubPicCtuTopLeftX                               ( m_subPicCtuTopLeftX );
@@ -427,13 +422,8 @@ void EncApp::xInitLibCfg()
     m_cEncLib.setLoopFilterAcrossSubpicEnabledFlag               ( m_loopFilterAcrossSubpicEnabledFlag );
     m_cEncLib.setSubPicIdMappingInSpsFlag                        ( m_subPicIdMappingInSpsFlag );
     m_cEncLib.setSubPicIdLen                                     ( m_subPicIdLen );
-#if JVET_Q0119_CLEANUPS
     m_cEncLib.setSubPicIdMappingExplicitlySignalledFlag          ( m_subPicIdMappingExplicitlySignalledFlag );
     if (m_subPicIdMappingExplicitlySignalledFlag)
-#else
-    m_cEncLib.setSubPicIdSignallingPresentFlag                   ( m_subPicIdSignallingPresentFlag );
-    if(m_subPicIdSignallingPresentFlag)
-#endif
     {
       m_cEncLib.setSubPicId                                      ( m_subPicId );
     }

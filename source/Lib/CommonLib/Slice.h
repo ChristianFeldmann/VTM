@@ -1298,11 +1298,7 @@ private:
   uint32_t              m_maxWidthInLumaSamples;
   uint32_t              m_maxHeightInLumaSamples;
   Window                m_conformanceWindow;
-#if JVET_Q0119_CLEANUPS
   bool                  m_subPicInfoPresentFlag;                // indicates the presence of sub-picture info
-#else
-  bool                  m_subPicPresentFlag;                    // indicates the presence of sub-pictures
-#endif
   uint32_t              m_numSubPics;                        //!< number of sub-pictures used
   std::vector<uint32_t> m_subPicCtuTopLeftX;
   std::vector<uint32_t> m_subPicCtuTopLeftY;
@@ -1310,13 +1306,8 @@ private:
   std::vector<uint32_t> m_subPicHeight;
   std::vector<bool>     m_subPicTreatedAsPicFlag;
   std::vector<bool>     m_loopFilterAcrossSubpicEnabledFlag;
-#if JVET_Q0119_CLEANUPS
   bool                  m_subPicIdMappingExplicitlySignalledFlag;
   bool                  m_subPicIdMappingInSpsFlag;
-#else
-  bool                  m_subPicIdPresentFlag;               //!< indicates the presence of sub-picture IDs
-  bool                  m_subPicIdSignallingPresentFlag;     //!< indicates the presence of sub-picture ID signalling in the SPS
-#endif
   uint32_t              m_subPicIdLen;                       //!< sub-picture ID length in bits
   std::vector<uint16_t> m_subPicId;                          //!< sub-picture ID for each sub-picture in the sequence
 
@@ -1497,13 +1488,8 @@ public:
   const Window&           getConformanceWindow() const                                                    { return  m_conformanceWindow; }
   void                    setConformanceWindow( Window& conformanceWindow )                               { m_conformanceWindow = conformanceWindow; }
 
-#if JVET_Q0119_CLEANUPS
   void      setSubPicInfoPresentFlag(bool b)                                                { m_subPicInfoPresentFlag = b;            }
   bool      getSubPicInfoPresentFlag() const                                                { return m_subPicInfoPresentFlag;         }
-#else
-  void      setSubPicPresentFlag(bool b)                                                    { m_subPicPresentFlag = b;                }
-  bool      getSubPicPresentFlag() const                                                    { return m_subPicPresentFlag;             }
-#endif
 
   void      setNumSubPics( uint32_t u )                                                     { CHECK( u >= MAX_NUM_SUB_PICS, "Maximum number of subpictures exceeded" );
                                                                                               m_numSubPics = u;
@@ -1537,17 +1523,10 @@ public:
   void      setLoopFilterAcrossSubpicEnabledFlag        (const std::vector<bool> &v)       { CHECK(v.size()!=m_numSubPics, "number of vector entries must be equal to numSubPics") ;m_loopFilterAcrossSubpicEnabledFlag = v; }
 
 
-#if JVET_Q0119_CLEANUPS
   void                    setSubPicIdMappingExplicitlySignalledFlag( bool b )                             { m_subPicIdMappingExplicitlySignalledFlag = b;    }
   bool                    getSubPicIdMappingExplicitlySignalledFlag() const                               { return m_subPicIdMappingExplicitlySignalledFlag; }
   void                    setSubPicIdMappingInSpsFlag( bool b )                                           { m_subPicIdMappingInSpsFlag = b;                  }
   bool                    getSubPicIdMappingInSpsFlag() const                                             { return  m_subPicIdMappingInSpsFlag;              }
-#else
-  void                    setSubPicIdPresentFlag( bool b )                                                { m_subPicIdPresentFlag = b;               }
-  bool                    getSubPicIdPresentFlag() const                                                  { return  m_subPicIdPresentFlag;           }
-  void                    setSubPicIdSignallingPresentFlag( bool b )                                      { m_subPicIdSignallingPresentFlag = b;     }
-  bool                    getSubPicIdSignallingPresentFlag() const                                        { return  m_subPicIdSignallingPresentFlag; }
-#endif
   void                    setSubPicIdLen( uint32_t u )                                                    { m_subPicIdLen = u;                       }
   uint32_t                getSubPicIdLen() const                                                          { return  m_subPicIdLen;                   }
   void                    setSubPicId( int i, uint16_t u )                                                { m_subPicId[i] = u;     }
@@ -1923,11 +1902,7 @@ private:
   bool             m_useWeightedBiPred;                 //!< Use of Weighting Bi-Prediction (B_SLICE)
   bool             m_OutputFlagPresentFlag;             //!< Indicates the presence of output_flag in slice header
   uint32_t         m_numSubPics;                        //!< number of sub-pictures used - must match SPS
-#if JVET_Q0119_CLEANUPS
   bool             m_subPicIdMappingInPpsFlag;
-#else
-  bool             m_subPicIdSignallingPresentFlag;     //!< indicates the presence of sub-picture ID signalling in the PPS
-#endif
   uint32_t         m_subPicIdLen;                       //!< sub-picture ID length in bits
   std::vector<uint16_t> m_subPicId;                     //!< sub-picture ID for each sub-picture in the sequence
   bool             m_noPicPartitionFlag;                //!< no picture partitioning flag - single slice, single tile
@@ -2093,13 +2068,8 @@ public:
                                                                                             m_subPicId.resize(m_numSubPics);
                                                                                           }
   uint32_t               getNumSubPics( ) const                                           { return  m_numSubPics;                         }
-#if JVET_Q0119_CLEANUPS
   void                   setSubPicIdMappingInPpsFlag( bool b )                            { m_subPicIdMappingInPpsFlag = b;               }
   bool                   getSubPicIdMappingInPpsFlag() const                              { return m_subPicIdMappingInPpsFlag;            }
-#else
-  void                   setSubPicIdSignallingPresentFlag( bool b )                       { m_subPicIdSignallingPresentFlag = b;          }
-  bool                   getSubPicIdSignallingPresentFlag() const                         { return  m_subPicIdSignallingPresentFlag;      }
-#endif
   void                   setSubPicIdLen( uint32_t u )                                     { m_subPicIdLen = u;                            }
   uint32_t               getSubPicIdLen() const                                           { return  m_subPicIdLen;                        }
   void                   setSubPicId( int i, uint16_t u )                                 { m_subPicId[i] = u;     }
@@ -2340,11 +2310,6 @@ private:
   int                         m_ppsId;                                                  //!< picture parameter set ID
   bool                        m_pocMsbPresentFlag;                                      //!< ph_poc_msb_present_flag
   int                         m_pocMsbVal;                                              //!< poc_msb_val
-#if !JVET_Q0119_CLEANUPS
-  bool                        m_subPicIdSignallingPresentFlag;                          //!< indicates the presence of sub-picture ID signalling in the SPS
-  uint32_t                    m_subPicIdLen;                                            //!< sub-picture ID length in bits
-  uint16_t                    m_subPicId[MAX_NUM_SUB_PICS];                             //!< sub-picture ID for each sub-picture in the sequence
-#endif
   bool                        m_virtualBoundariesEnabledFlag;                           //!< loop filtering across virtual boundaries disabled
   bool                        m_virtualBoundariesPresentFlag;                           //!< loop filtering across virtual boundaries disabled
   unsigned                    m_numVerVirtualBoundaries;                                //!< number of vertical virtual boundaries
@@ -2471,14 +2436,6 @@ public:
   bool                        getPocMsbPresentFlag() const                              { return m_pocMsbPresentFlag;                                                                  }
   void                        setPocMsbVal(int i)                                       { m_pocMsbVal = i;                                                                             }
   int                         getPocMsbVal()                                            { return m_pocMsbVal;                                                                          }
-#if !JVET_Q0119_CLEANUPS
-  void                        setSubPicIdSignallingPresentFlag( bool b )                { m_subPicIdSignallingPresentFlag = b;                                                         }
-  bool                        getSubPicIdSignallingPresentFlag() const                  { return  m_subPicIdSignallingPresentFlag;                                                     }
-  void                        setSubPicIdLen( uint32_t u )                              { m_subPicIdLen = u;                                                                           }
-  uint32_t                    getSubPicIdLen() const                                    { return  m_subPicIdLen;                                                                       }
-  void                        setSubPicId( int i, uint16_t u )                          { m_subPicId[i] = u;      }
-  uint16_t                    getSubPicId( int i ) const                                { return  m_subPicId[i];  }
-#endif
   void                        setVirtualBoundariesPresentFlag( bool b )                 { m_virtualBoundariesPresentFlag = b;                                                          }
   bool                        getVirtualBoundariesPresentFlag() const                   { return m_virtualBoundariesPresentFlag;                                                       }
   void                        setNumVerVirtualBoundaries(unsigned u)                    { m_numVerVirtualBoundaries = u;                                                               }

@@ -784,11 +784,8 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 
   WRITE_CODE(floorLog2(pcSPS->getCTUSize()) - 5, 2, "sps_log2_ctu_size_minus5");
 
-#if JVET_Q0043_RPR_and_Subpics | JVET_Q0119_CLEANUPS
   WRITE_FLAG(pcSPS->getSubPicInfoPresentFlag(), "subpic_info_present_flag");
-#else
-  WRITE_FLAG(pcSPS->getSubPicPresentFlag(), "subpics_present_flag");
-#endif
+
   if (pcSPS->getSubPicInfoPresentFlag())
   {
     CHECK(pcSPS->getNumSubPics() < 1, "SPS: NumSubPics cannot be less than 1");

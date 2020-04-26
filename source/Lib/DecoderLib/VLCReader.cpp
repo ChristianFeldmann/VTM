@@ -1268,11 +1268,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   pcSPS->setMaxCUWidth(pcSPS->getCTUSize());
   pcSPS->setMaxCUHeight(pcSPS->getCTUSize());
 
-#if JVET_Q0043_RPR_and_Subpics | JVET_Q0119_CLEANUPS
   READ_FLAG( uiCode, "subpic_info_present_flag" );               pcSPS->setSubPicInfoPresentFlag(uiCode);
-#else
-  READ_FLAG( uiCode, "subpics_present_flag" );                   pcSPS->setSubPicPresentFlag(uiCode);
-#endif
 
   if (pcSPS->getSubPicInfoPresentFlag())
   {

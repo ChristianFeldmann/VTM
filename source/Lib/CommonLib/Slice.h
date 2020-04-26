@@ -1003,10 +1003,8 @@ public:
 
   GeneralHrdParams*          getGeneralHrdParameters() { return &m_generalHrdParams; }
   const GeneralHrdParams*    getGeneralHrdParameters() const { return &m_generalHrdParams; }
-#if JVET_P0288_PIC_OUTPUT
   int               getTargetOlsIdx() { return m_targetOlsIdx; }
   void              setTargetOlsIdx(uint32_t t) { m_targetOlsIdx = t; }
-#endif
 
   int               getMaxDecPicBuffering( int temporalId ) const        { return m_dpbParameters[m_olsDpbParamsIdx[m_targetOlsIdx]].m_maxDecPicBuffering[temporalId]; }
   int               getNumReorderPics( int temporalId ) const            { return m_dpbParameters[m_olsDpbParamsIdx[m_targetOlsIdx]].m_numReorderPics[temporalId]; }

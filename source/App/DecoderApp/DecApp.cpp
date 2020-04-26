@@ -181,11 +181,7 @@ uint32_t DecApp::decode()
               bPicSkipped = false;
             }
           }
-#if JVET_P0288_PIC_OUTPUT
           m_cDecLib.decode(nalu, m_iSkipFrame, m_iPOCLastDisplay, m_targetOlsIdx);
-#else
-          m_cDecLib.decode(nalu, m_iSkipFrame, m_iPOCLastDisplay);
-#endif
           if (nalu.m_nalUnitType == NAL_UNIT_VPS)
           {
             m_cDecLib.deriveTargetOutputLayerSet( m_targetOlsIdx );

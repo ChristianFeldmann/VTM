@@ -728,7 +728,6 @@ public:
 
 };
 
-#if JVET_O1143_SUBPIC_BOUNDARY
 class SubPic
 {
 private:
@@ -839,7 +838,6 @@ public:
   }
   #endif
 };
-#endif
 
 class DCI
 {
@@ -1861,9 +1859,7 @@ private:
   bool             m_tileIdxDeltaPresentFlag;           //!< tile index delta present flag
   std::vector<RectSlice> m_rectSlices;                  //!< list of rectangular slice signalling parameters
   std::vector<SliceMap>  m_sliceMap;                    //!< list of CTU maps for each slice in the picture
-#if JVET_O1143_SUBPIC_BOUNDARY
   std::vector<SubPic>      m_subPics;                   //!< list of subpictures in the picture
-#endif
   bool             m_loopFilterAcrossTilesEnabledFlag;  //!< loop filtering applied across tiles flag
   bool             m_loopFilterAcrossSlicesEnabledFlag; //!< loop filtering applied across slices flag
 
@@ -2064,13 +2060,11 @@ public:
   void                   initTiles();
   void                   initRectSlices();
   void                   initRectSliceMap(const SPS  *sps);
-#if JVET_O1143_SUBPIC_BOUNDARY
   std::vector<SubPic>    getSubPics()  const                                              {return m_subPics;          };
   SubPic                 getSubPic(uint32_t idx) const                                    { return m_subPics[idx]; }
   void                   initSubPic(const SPS &sps);
   const SubPic&          getSubPicFromPos(const Position& pos)  const;
   const SubPic&          getSubPicFromCU (const CodingUnit& cu) const;
-#endif
   void                   initRasterSliceMap( std::vector<uint32_t> sizes );
   void                   checkSliceMap(); 
   SliceMap               getSliceMap( int idx ) const                                     { CHECK( idx >= m_numSlicesInPic, "Slice index exceeds valid range" );    return m_sliceMap[idx];                             }

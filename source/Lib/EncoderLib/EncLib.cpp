@@ -1596,9 +1596,7 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
     {
       pps.initRasterSliceMap( m_rasterSliceSize );
     }
-    #if JVET_O1143_SUBPIC_BOUNDARY
     pps.initSubPic(sps);
-    #endif
     pps.setLoopFilterAcrossTilesEnabledFlag( m_bLFCrossTileBoundaryFlag );
     pps.setLoopFilterAcrossSlicesEnabledFlag( m_bLFCrossSliceBoundaryFlag );
   }
@@ -1616,9 +1614,7 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
     pps.setTileIdxDeltaPresentFlag( 0 );
     pps.setSliceTileIdx( 0, 0 );
     pps.initRectSliceMap( &sps );
-#if JVET_O1143_SUBPIC_BOUNDARY
     pps.initSubPic(sps);
-#endif
     pps.setLoopFilterAcrossTilesEnabledFlag( true );
     pps.setLoopFilterAcrossSlicesEnabledFlag( true );
   }

@@ -160,10 +160,8 @@ private:
   int                     m_maxDecSubPicIdx;
   int                     m_maxDecSliceAddrInSubPic;
 
-#if JVET_O1143_SUBPIC_BOUNDARY
 public:
   int                     m_targetSubPicIdx;
-#endif
 
   DCI*                    m_dci;
 public:

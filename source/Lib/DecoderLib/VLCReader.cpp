@@ -2530,10 +2530,8 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
     pps->setTileIdxDeltaPresentFlag( 0 );
     pps->setSliceTileIdx( 0, 0 );
     pps->initRectSliceMap(sps);
-#if JVET_O1143_SUBPIC_BOUNDARY
     // when no Pic partition, number of sub picture shall be less than 2
     CHECK(pps->getNumSubPics()>=2, "error, no picture partitions, but have equal to or more than 2 sub pictures");
-#endif
   }
   else 
   {

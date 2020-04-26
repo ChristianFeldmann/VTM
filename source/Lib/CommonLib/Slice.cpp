@@ -2609,7 +2609,6 @@ RectSlice::~RectSlice()
 {
 }
 
-#if JVET_O1143_SUBPIC_BOUNDARY
 SubPic::SubPic()
 : m_subPicID              (0)
 , m_numCTUsInSubPic       (0)
@@ -2633,7 +2632,6 @@ SubPic::~SubPic()
 {
   m_ctuAddrInSubPic.clear();
 }
-#endif
 
 #if !REMOVE_PPS_REXT
 PPSRExt::PPSRExt()
@@ -2701,9 +2699,7 @@ PPS::PPS()
   m_ctuToSubPicIdx.clear();
   m_rectSlices.clear();
   m_sliceMap.clear();
-#if JVET_O1143_SUBPIC_BOUNDARY
   m_subPics.clear();
-#endif
 }
 
 PPS::~PPS()
@@ -2718,9 +2714,7 @@ PPS::~PPS()
   m_rectSlices.clear();
   m_sliceMap.clear();
 
-#if JVET_O1143_SUBPIC_BOUNDARY
   m_subPics.clear();
-#endif
   delete pcv;
 }
 
@@ -3002,7 +2996,6 @@ void PPS::initRectSliceMap(const SPS  *sps)
 /**
 - initialize mapping between subpicture and CTUs
 */
-#if JVET_O1143_SUBPIC_BOUNDARY
 void PPS::initSubPic(const SPS &sps)
 {
   if (getSubPicIdMappingInPpsFlag())
@@ -3120,7 +3113,6 @@ const SubPic&  PPS::getSubPicFromCU(const CodingUnit& cu) const
   const Position lumaPos = cu.Y().valid() ? cu.Y().pos() : recalcPosition(cu.chromaFormat, cu.chType, CHANNEL_TYPE_LUMA, cu.blocks[cu.chType].pos());
   return getSubPicFromPos(lumaPos);
 }
-#endif
 
 uint32_t PPS::getSubPicIdxFromSubPicId( uint32_t subPicId ) const
 {

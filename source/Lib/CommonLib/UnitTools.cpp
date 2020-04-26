@@ -186,12 +186,10 @@ bool CU::isSameSliceAndTile(const CodingUnit& cu, const CodingUnit& cu2)
   return ( cu.slice->getIndependentSliceIdx() == cu2.slice->getIndependentSliceIdx() ) && ( cu.tileIdx == cu2.tileIdx );
 }
 
-#if JVET_O1143_SUBPIC_BOUNDARY
 bool CU::isSameSubPic(const CodingUnit& cu, const CodingUnit& cu2)
 {
   return (cu.slice->getPPS()->getSubPicFromCU(cu).getSubPicIdx() == cu2.slice->getPPS()->getSubPicFromCU(cu2).getSubPicIdx()) ;
 }
-#endif 
 
 bool CU::isSameCtu(const CodingUnit& cu, const CodingUnit& cu2)
 {

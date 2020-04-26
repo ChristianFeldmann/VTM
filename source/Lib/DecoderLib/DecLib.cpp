@@ -630,7 +630,6 @@ void DecLib::executeLoopFilters()
     m_cALF.ALFProcess(cs);
   }
 
-#if JVET_O1143_SUBPIC_BOUNDARY
   for (int i = 0; i < cs.pps->getNumSubPics() && m_targetSubPicIdx; i++)
   {
     // keep target subpic samples untouched, for other subpics mask their output sample value to 0
@@ -654,7 +653,6 @@ void DecLib::executeLoopFilters()
       }
     } 
   }
-#endif
 
   m_pcPic->cs->slice->stopProcessingTimer();
 }

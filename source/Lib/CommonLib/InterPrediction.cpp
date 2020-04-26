@@ -2477,7 +2477,6 @@ bool InterPrediction::xPredInterBlkRPR( const std::pair<int, int>& scalingRatio,
         yFilter = 3;
       }
     }
-#if JVET_Q0517_RPR_AFFINE_DS 
     if (filterIndex == 2)
     {
       if (isLuma(compID))
@@ -2521,7 +2520,6 @@ bool InterPrediction::xPredInterBlkRPR( const std::pair<int, int>& scalingRatio,
         }
       }
     }
-#endif
 
     const int posShift = SCALE_RATIO_BITS - 4;
     int stepX = ( scalingRatio.first + 8 ) >> 4;

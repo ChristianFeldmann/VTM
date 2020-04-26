@@ -136,7 +136,6 @@ const TFilterCoeff InterpolationFilter::m_lumaFilterRPR2[LUMA_INTERPOLATION_FILT
   { -2, -4,  5, 21, 29, 19,  0, -4 }
 };
 
-#if JVET_Q0517_RPR_AFFINE_DS
 // 1.5x
 const TFilterCoeff InterpolationFilter::m_affineLumaFilterRPR1[LUMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS][NTAPS_LUMA] =
 {
@@ -178,7 +177,6 @@ const TFilterCoeff InterpolationFilter::m_affineLumaFilterRPR2[LUMA_INTERPOLATIO
   {  0, -6,  6, 22, 29, 18, -5,  0 },
   {  0, -6,  5, 21, 29, 19, -4,  0 }
 };
-#endif
 
 const TFilterCoeff InterpolationFilter::m_lumaAltHpelIFilter[NTAPS_LUMA] = {  0, 3, 9, 20, 20, 9, 3, 0 };
 const TFilterCoeff InterpolationFilter::m_chromaFilter[CHROMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS][NTAPS_CHROMA] =
@@ -765,7 +763,6 @@ void InterpolationFilter::filterHor(const ComponentID compID, Pel const *src, in
     {
       filterHor<NTAPS_LUMA>( clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_lumaFilterRPR2[frac], biMCForDMVR );
     }
-#if JVET_Q0517_RPR_AFFINE_DS
     else if (nFilterIdx == 5)
     {
       filterHor<NTAPS_LUMA>(clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_affineLumaFilterRPR1[frac], biMCForDMVR);
@@ -774,7 +771,6 @@ void InterpolationFilter::filterHor(const ComponentID compID, Pel const *src, in
     {
       filterHor<NTAPS_LUMA>(clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_affineLumaFilterRPR2[frac], biMCForDMVR);
     }
-#endif
     else if( frac == 8 && useAltHpelIf )
     {
       filterHor<NTAPS_LUMA>( clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_lumaAltHpelIFilter, biMCForDMVR );
@@ -850,7 +846,6 @@ void InterpolationFilter::filterVer(const ComponentID compID, Pel const *src, in
     {
       filterVer<NTAPS_LUMA>( clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_lumaFilterRPR2[frac], biMCForDMVR );
     }
-#if JVET_Q0517_RPR_AFFINE_DS
     else if (nFilterIdx == 5)
     {
       filterVer<NTAPS_LUMA>(clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_affineLumaFilterRPR1[frac], biMCForDMVR);
@@ -859,7 +854,6 @@ void InterpolationFilter::filterVer(const ComponentID compID, Pel const *src, in
     {
       filterVer<NTAPS_LUMA>(clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_affineLumaFilterRPR2[frac], biMCForDMVR);
     }
-#endif
     else if( frac == 8 && useAltHpelIf )
     {
       filterVer<NTAPS_LUMA>( clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_lumaAltHpelIFilter, biMCForDMVR );

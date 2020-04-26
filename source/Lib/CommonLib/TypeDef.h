@@ -89,7 +89,6 @@
 
 
 
-#define JVET_Q0257_SCALING_WINDOW_CONSTRAINT              1 // JVET-Q0257: Constraint expression to limit actual scaling ratios rather than the picture sizes
 
 #define JVET_P2008_OUTPUT_LOG                             1 // Output log file for conformance tests
 

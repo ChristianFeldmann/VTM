@@ -974,7 +974,6 @@ void DecLib::checkTidLayerIdInAccessUnit()
   CHECK(!isFdNaluLayerIdSameAsVclNaluLayerId, "The nuh_layer_id of a filler data NAL unit shall be equal to the nuh_layer_id of associated VCL NAL unit");
 
 }
-#if JVET_P0125_SEI_CONSTRAINTS
 void DecLib::checkSEIInAccessUnit()
 {
   for (auto &sei : m_accessUnitSeiPayLoadTypes)
@@ -1001,7 +1000,6 @@ void DecLib::checkSEIInAccessUnit()
     }
   }
 }
-#endif
 
 /**
  - Determine if the first VCL NAL unit of a picture is also the first VCL NAL of an Access Unit
@@ -1679,14 +1677,10 @@ void DecLib::xParsePrefixSEImessages()
   {
     InputNALUnit &nalu=*m_prefixSEINALUs.front();
     m_accessUnitSeiTids.push_back(nalu.m_temporalId);
-#if JVET_P0125_SEI_CONSTRAINTS
     const SPS *sps = m_parameterSetManager.getActiveSPS();
     const VPS *vps = m_parameterSetManager.getVPS(sps->getVPSId());
     m_seiReader.parseSEImessage( &(nalu.getBitstream()), m_SEIs, nalu.m_nalUnitType, nalu.m_nuhLayerId, nalu.m_temporalId, vps, sps, m_HRD, m_pDecodedSEIOutputStream );
     m_accessUnitSeiPayLoadTypes.push_back(std::tuple<NalUnitType, int, SEI::PayloadType>(nalu.m_nalUnitType, nalu.m_nuhLayerId, m_SEIs.back()->payloadType()));
-#else
-    m_seiReader.parseSEImessage( &(nalu.getBitstream()), m_SEIs, nalu.m_nalUnitType, nalu.m_temporalId, m_parameterSetManager.getActiveSPS(), m_HRD, m_pDecodedSEIOutputStream );
-#endif
     delete m_prefixSEINALUs.front();
     m_prefixSEINALUs.pop_front();
   }
@@ -2571,14 +2565,10 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
       if (m_pcPic)
       {
         m_accessUnitSeiTids.push_back(nalu.m_temporalId);
-#if JVET_P0125_SEI_CONSTRAINTS
         const SPS *sps = m_parameterSetManager.getActiveSPS();
         const VPS *vps = m_parameterSetManager.getVPS(sps->getVPSId());
         m_seiReader.parseSEImessage( &(nalu.getBitstream()), m_pcPic->SEIs, nalu.m_nalUnitType, nalu.m_nuhLayerId, nalu.m_temporalId, vps, sps, m_HRD, m_pDecodedSEIOutputStream );
         m_accessUnitSeiPayLoadTypes.push_back(std::tuple<NalUnitType, int, SEI::PayloadType>(nalu.m_nalUnitType, nalu.m_nuhLayerId, m_pcPic->SEIs.back()->payloadType()));
-#else
-        m_seiReader.parseSEImessage( &(nalu.getBitstream()), m_pcPic->SEIs, nalu.m_nalUnitType, nalu.m_temporalId, m_parameterSetManager.getActiveSPS(), m_HRD, m_pDecodedSEIOutputStream );
-#endif
       }
       else
       {

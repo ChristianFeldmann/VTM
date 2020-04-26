@@ -327,10 +327,8 @@ uint32_t DecApp::decode()
     {
       m_cDecLib.checkTidLayerIdInAccessUnit();
       m_cDecLib.resetAccessUnitSeiTids();
-#if JVET_P0125_SEI_CONSTRAINTS
       m_cDecLib.checkSEIInAccessUnit();
       m_cDecLib.resetAccessUnitSeiPayLoadTypes();
-#endif
         m_cDecLib.resetAccessUnitNals();
         m_cDecLib.resetAccessUnitApsNals();
 #if JVET_P0101_POC_MULTILAYER

@@ -164,10 +164,8 @@ private:
   std::vector<int> m_accessUnitApsNals;
   std::vector<int> m_accessUnitSeiTids;
 
-#if JVET_P0125_SEI_CONSTRAINTS
   // NAL unit type, layer ID, and SEI payloadType
   std::vector<std::tuple<NalUnitType, int, SEI::PayloadType>> m_accessUnitSeiPayLoadTypes;
-#endif
   VPS*                    m_vps;
 #if !JVET_Q0346_SCALING_LIST_USED_IN_SH
   bool                    m_scalingListUpdateFlag;
@@ -240,10 +238,8 @@ public:
   void resetAccessUnitApsNals()           { m_accessUnitApsNals.clear(); }
   void resetAccessUnitSeiTids()           { m_accessUnitSeiTids.clear(); }
   void checkTidLayerIdInAccessUnit();
-#if JVET_P0125_SEI_CONSTRAINTS
   void resetAccessUnitSeiPayLoadTypes()   { m_accessUnitSeiPayLoadTypes.clear(); }
   void checkSEIInAccessUnit();
-#endif
   bool isSliceNaluFirstInAU( bool newPicture, InputNALUnit &nalu );
 
   const VPS* getVPS()                     { return m_vps; }

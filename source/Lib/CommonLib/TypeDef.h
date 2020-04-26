@@ -65,7 +65,6 @@
 
 
 
-#define JVET_P0125_SEI_CONSTRAINTS                        1 // JVET-P0125: 4th aspect: SEI constraints 
 
 #define JVET_Q0471_CHROMA_QT_SPLIT                        1 // JVET-Q0471: Chroma QT split
 

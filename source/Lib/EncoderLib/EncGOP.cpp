@@ -774,9 +774,7 @@ void EncGOP::xCreateIRAPLeadingSEIMessages (SEIMessages& seiMessages, const SPS 
 void EncGOP::xCreatePerPictureSEIMessages (int picInGOP, SEIMessages& seiMessages, SEIMessages& nestedSeiMessages, Slice *slice)
 {
   if ((m_pcCfg->getBufferingPeriodSEIEnabled()) && (slice->isIRAP() || slice->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR) &&
-#if JVET_P0125_SEI_CONSTRAINTS
     slice->getNalUnitLayerId()==slice->getVPS()->getLayerId(0) && 
-#endif
   (slice->getSPS()->getGeneralHrdParametersPresentFlag()))
   {
     SEIBufferingPeriod *bufferingPeriodSEI = new SEIBufferingPeriod();
@@ -853,11 +851,7 @@ void EncGOP::xCreatePictureTimingSEI  (int IRAPGOPid, SEIMessages& seiMessages, 
   const GeneralHrdParams *hrd = slice->getSPS()->getGeneralHrdParameters();
 
   // update decoding unit parameters
-#if JVET_P0125_SEI_CONSTRAINTS
   if ((m_pcCfg->getPictureTimingSEIEnabled() || m_pcCfg->getDecodingUnitInfoSEIEnabled()) && slice->getNalUnitLayerId() == slice->getVPS()->getLayerId(0))
-#else
-  if( ( m_pcCfg->getPictureTimingSEIEnabled() || m_pcCfg->getDecodingUnitInfoSEIEnabled() ) )
-#endif
   {
     int picSptDpbOutputDuDelay = 0;
     SEIPictureTiming *pictureTimingSEI = new SEIPictureTiming();

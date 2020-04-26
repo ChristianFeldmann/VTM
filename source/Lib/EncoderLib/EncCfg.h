@@ -659,10 +659,8 @@ protected:
   bool      m_sliceLevelDblk;                     ///< code deblocking filter parameters in slice headers rather than picture header
   bool      m_sliceLevelSao;                      ///< code SAO parameters in slice headers rather than picture header
   bool      m_sliceLevelAlf;                      ///< code ALF parameters in slice headers rather than picture header
-#if JVET_Q0819_PH_CHANGES 
   bool      m_sliceLevelWp;                       ///< code weighted prediction parameters in slice headers rather than picture header
   bool      m_sliceLevelDeltaQp;                  ///< code delta in slice headers rather than picture header
-#endif
   bool      m_disableScalingMatrixForLfnstBlks;
   int       m_TMVPModeId;
   bool      m_constantSliceHeaderParamsEnabledFlag;
@@ -1730,12 +1728,10 @@ public:
   bool         getSliceLevelSao  ()                                  { return m_sliceLevelSao;  }
   void         setSliceLevelAlf  ( bool b )                          { m_sliceLevelAlf = b;     }
   bool         getSliceLevelAlf  ()                                  { return m_sliceLevelAlf;  }
-#if JVET_Q0819_PH_CHANGES
   void         setSliceLevelWp(bool b)                               { m_sliceLevelWp = b;      }
   bool         getSliceLevelWp()                                     { return m_sliceLevelWp;   }
   void         setSliceLevelDeltaQp(bool b)                          { m_sliceLevelDeltaQp = b; }
   bool         getSliceLevelDeltaQp()                                { return m_sliceLevelDeltaQp; }
-#endif
   void         setDisableScalingMatrixForLfnstBlks(bool u) { m_disableScalingMatrixForLfnstBlks = u; }
   bool         getDisableScalingMatrixForLfnstBlks() const          { return m_disableScalingMatrixForLfnstBlks; }
   void         setTMVPModeId ( int  u )                              { m_TMVPModeId = u;    }

@@ -1715,14 +1715,12 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
   pps.setNumRefIdxL1DefaultActive(bestPos);
   pps.setPictureHeaderExtensionPresentFlag(false);
 
-#if JVET_Q0819_PH_CHANGES 
   pps.setRplInfoInPhFlag(getSliceLevelRpl() ? false : true);
   pps.setDbfInfoInPhFlag(getSliceLevelDblk() ? false : true);
   pps.setSaoInfoInPhFlag(getSliceLevelSao() ? false : true);
   pps.setAlfInfoInPhFlag(getSliceLevelAlf() ? false : true);
   pps.setWpInfoInPhFlag(getSliceLevelWp() ? false : true);
   pps.setQpDeltaInfoInPhFlag(getSliceLevelDeltaQp() ? false : true);
-#endif
 
   pps.pcv = new PreCalcValues( sps, pps, true );
   pps.setRpl1IdxPresentFlag(sps.getRPL1IdxPresentFlag());

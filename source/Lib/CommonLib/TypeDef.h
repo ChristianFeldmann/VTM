@@ -127,7 +127,6 @@
 
 
 
-#define JVET_Q0819_PH_CHANGES                             1 // JVET-Q0819: Combination of PH related syntax changes
 
 #define JVET_Q0481_PARTITION_CONSTRAINTS_ORDER            1 // JVET-Q0481: Ordering of partition constraints syntax elements in the SPS
 
@@ -139,9 +138,7 @@
 
 #define JVET_Q0346_LMCS_ENABLE_IN_SH                      1 // JVET-Q0346 aspect 1: LMCS enabled flag in SH
 
-#if JVET_Q0819_PH_CHANGES
 #define JVET_Q0346_SCALING_LIST_USED_IN_SH               1 // JVET-Q0346 aspect 2: Scaling list used flag in SH
-#endif
 
 #define JVET_Q0267_RESET_CHROMA_QP_OFFSET                 1 // JVET-Q0267: Reset chroma QP offsets at the start of each chroma QP offset group
 

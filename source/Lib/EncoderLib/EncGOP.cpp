@@ -2037,11 +2037,9 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     picHeader->setSPSId( pcPic->cs->pps->getSPSId() );
     picHeader->setPPSId( pcPic->cs->pps->getPPSId() );
     picHeader->setSplitConsOverrideFlag(false);
-#if JVET_Q0819_PH_CHANGES
     // initial two flags to be false
     picHeader->setPicInterSliceAllowedFlag(false);
     picHeader->setPicIntraSliceAllowedFlag(false);
-#endif
 #if ER_CHROMA_QP_WCG_PPS
     // th this is a hot fix for the choma qp control
     if( m_pcEncLib->getWCGChromaQPControl().isEnabled() && m_pcEncLib->getSwitchPOC() != -1 )
@@ -2105,7 +2103,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
     // Set the nal unit type
     pcSlice->setNalUnitType(getNalUnitType(pocCurr, m_iLastIDR, isField));
-#if JVET_Q0819_PH_CHANGES
     // set two flags according to slice type presented in the picture
     if (pcSlice->getSliceType() != I_SLICE)
     {
@@ -2116,7 +2113,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       picHeader->setPicIntraSliceAllowedFlag(true);
     }
     picHeader->setGdrOrIrapPicFlag(picHeader->getGdrPicFlag() || pcSlice->isIRAP());
-#endif
 
     if (m_pcCfg->getEfficientFieldIRAPEnabled())
     {
@@ -3168,9 +3164,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
           // code RPL in picture header or slice headers
           if( !m_pcCfg->getSliceLevelRpl() && (!pcSlice->getIdrPicFlag() || pcSlice->getSPS()->getIDRRefParamListPresent()) )
           {
-#if !JVET_Q0819_PH_CHANGES 
-            picHeader->setPicRplPresentFlag(true);
-#endif
             picHeader->setRPL0idx(pcSlice->getRPL0idx());
             picHeader->setRPL1idx(pcSlice->getRPL1idx());
             picHeader->setRPL0(pcSlice->getRPL0());
@@ -3178,18 +3171,10 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
             *picHeader->getLocalRPL0() = *pcSlice->getLocalRPL0();
             *picHeader->getLocalRPL1() = *pcSlice->getLocalRPL1();
           }
-#if !JVET_Q0819_PH_CHANGES  
-          else {
-            picHeader->setPicRplPresentFlag(false);
-          }
-#endif
           
           // code DBLK in picture header or slice headers
           if( !m_pcCfg->getSliceLevelDblk() )
           {
-#if !JVET_Q0819_PH_CHANGES 
-            picHeader->setDeblockingFilterOverridePresentFlag(true);
-#endif
             picHeader->setDeblockingFilterOverrideFlag   ( pcSlice->getDeblockingFilterOverrideFlag()   );
             picHeader->setDeblockingFilterDisable        ( pcSlice->getDeblockingFilterDisable()        ); 
             picHeader->setDeblockingFilterBetaOffsetDiv2 ( pcSlice->getDeblockingFilterBetaOffsetDiv2() ); 
@@ -3201,42 +3186,22 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
             picHeader->setDeblockingFilterCrTcOffsetDiv2  ( pcSlice->getDeblockingFilterCrTcOffsetDiv2() );
 #endif
           }
-#if !JVET_Q0819_PH_CHANGES 
-          else
-          {
-            picHeader->setDeblockingFilterOverridePresentFlag( false );
-          }
-#endif
 
-#if JVET_Q0819_PH_CHANGES 
           if (!m_pcCfg->getSliceLevelDeltaQp())
           {
             picHeader->setQpDelta(pcSlice->getSliceQp() - (pcSlice->getPPS()->getPicInitQPMinus26() + 26));
           }
-#endif
 
           // code SAO parameters in picture header or slice headers
           if( !m_pcCfg->getSliceLevelSao() )
           {
-#if !JVET_Q0819_PH_CHANGES 
-            picHeader->setSaoEnabledPresentFlag(true);
-#endif
             picHeader->setSaoEnabledFlag(CHANNEL_TYPE_LUMA,   pcSlice->getSaoEnabledFlag(CHANNEL_TYPE_LUMA  ));
             picHeader->setSaoEnabledFlag(CHANNEL_TYPE_CHROMA, pcSlice->getSaoEnabledFlag(CHANNEL_TYPE_CHROMA));
           }
-#if !JVET_Q0819_PH_CHANGES 
-          else
-          {
-            picHeader->setSaoEnabledPresentFlag( false );
-          }
-#endif
           
           // code ALF parameters in picture header or slice headers
           if( !m_pcCfg->getSliceLevelAlf() )
           {
-#if !JVET_Q0819_PH_CHANGES 
-            picHeader->setAlfEnabledPresentFlag(true);
-#endif
             picHeader->setAlfEnabledFlag(COMPONENT_Y,  pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Y ) );
             picHeader->setAlfEnabledFlag(COMPONENT_Cb, pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Cb) );
             picHeader->setAlfEnabledFlag(COMPONENT_Cr, pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Cr) );            
@@ -3250,14 +3215,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
             picHeader->setCcAlfCrApsId(pcSlice->getTileGroupCcAlfCrApsId());
 #endif
           }
-#if !JVET_Q0819_PH_CHANGES 
-          else
-          {
-            picHeader->setAlfEnabledPresentFlag( false );
-          }
-#endif
 
-#if JVET_Q0819_PH_CHANGES 
           // code WP parameters in picture header or slice headers
           if (!m_pcCfg->getSliceLevelWp())
           {
@@ -3265,7 +3223,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
             picHeader->setNumL0Weights(pcSlice->getNumRefIdx(REF_PIC_LIST_0));
             picHeader->setNumL0Weights(pcSlice->getNumRefIdx(REF_PIC_LIST_1));
           }
-#endif
 
           pcPic->cs->picHeader->setPic(pcPic);
           pcPic->cs->picHeader->setValid();

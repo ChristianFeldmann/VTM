@@ -631,10 +631,8 @@ protected:
   bool      m_sliceLevelDblk;                                     ///< code deblocking filter parameters in slice headers rather than picture header
   bool      m_sliceLevelSao;                                      ///< code SAO parameters in slice headers rather than picture header
   bool      m_sliceLevelAlf;                                      ///< code ALF parameters in slice headers rather than picture header
-#if JVET_Q0819_PH_CHANGES
   bool      m_sliceLevelWp;                                       ///< code weighted prediction parameters in slice headers rather than picture header
   bool      m_sliceLevelDeltaQp;                                  ///< code delta in slice headers rather than picture header
-#endif
 
   int       m_TMVPModeId;
   bool      m_depQuantEnabledFlag;

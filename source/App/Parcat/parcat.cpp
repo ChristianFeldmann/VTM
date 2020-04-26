@@ -48,15 +48,10 @@
 class ParcatHLSyntaxReader : public VLCReader
 {
   public:
-#if JVET_Q0819_PH_CHANGES
     void  parsePictureHeaderUpToPoc ( ParameterSetManager *parameterSetManager );
     bool  parsePictureHeaderInSliceHeaderFlag ( ParameterSetManager *parameterSetManager );
-#else
-    void  parseSliceHeaderUpToPoc ( ParameterSetManager *parameterSetManager );
-#endif
 };
 
-#if JVET_Q0819_PH_CHANGES
 bool ParcatHLSyntaxReader::parsePictureHeaderInSliceHeaderFlag(ParameterSetManager *parameterSetManager) {
 
 
@@ -89,13 +84,6 @@ void ParcatHLSyntaxReader::parsePictureHeaderUpToPoc ( ParameterSetManager *para
   CHECK(sps == 0, "Invalid SPS");
   return;
 }
-#else
-void ParcatHLSyntaxReader::parseSliceHeaderUpToPoc ( ParameterSetManager *parameterSetManager )
-{
-  // POC is first syntax element in slice header
-  return;
-}
-#endif
 
 /**
  Find the beginning and end of a NAL (Network Abstraction Layer) unit in a byte buffer containing H264 bitstream data.
@@ -230,12 +218,8 @@ std::vector<uint8_t> filter_segment(const std::vector<uint8_t> & v, int idx, int
 
   int bits_for_poc = 8;
   bool skip_next_sei = false;
-#if JVET_Q0819_PH_CHANGES
   bool change_poc = false;
   bool first_idr_slice_after_ph_nal = false;
-#else
-  bool first_slice_segment_in_pic_flag = false;
-#endif
 
   while(find_nal_unit(p, sz, &nal_start, &nal_end) > 0)
   {
@@ -282,28 +266,17 @@ std::vector<uint8_t> filter_segment(const std::vector<uint8_t> & v, int idx, int
       HLSReader.parsePPS( pps );
       parameterSetManager.storePPS( pps, inp_nalu.getBitstream().getFifo() );
     }
-#if !JVET_Q0819_PH_CHANGES
-    if( inp_nalu.m_nalUnitType == NAL_UNIT_PH )
-    {
-      first_slice_segment_in_pic_flag = true;
-    }
-#endif
 
     if(nalu_type == NAL_UNIT_CODED_SLICE_IDR_W_RADL || nalu_type == NAL_UNIT_CODED_SLICE_IDR_N_LP)
     {
       poc = 0;
       new_poc = *poc_base + poc;
-#if JVET_Q0819_PH_CHANGES
       if (first_idr_slice_after_ph_nal)
       {
         cnt--;
       }
       first_idr_slice_after_ph_nal = false;
-#else
-      first_slice_segment_in_pic_flag = false;
-#endif
     }
-#if JVET_Q0819_PH_CHANGES
     if(inp_nalu.m_nalUnitType == NAL_UNIT_PH || (nalu_type < NAL_UNIT_CODED_SLICE_IDR_W_RADL) || (nalu_type > NAL_UNIT_CODED_SLICE_IDR_N_LP && nalu_type <= NAL_UNIT_RESERVED_IRAP_VCL_12) )
     {
       parcatHLSReader.setBitstream( &inp_nalu.getBitstream() );
@@ -348,44 +321,6 @@ std::vector<uint8_t> filter_segment(const std::vector<uint8_t> & v, int idx, int
         change_poc = false;
       }
     }
-#else
-    if((nalu_type < NAL_UNIT_CODED_SLICE_IDR_W_RADL) || (nalu_type > NAL_UNIT_CODED_SLICE_IDR_N_LP && nalu_type <= NAL_UNIT_RESERVED_IRAP_VCL_12) )
-    {
-      parcatHLSReader.setBitstream( &inp_nalu.getBitstream() );
-      
-      // beginning of slice header parsing, taken from VLCReader
-      parcatHLSReader.parseSliceHeaderUpToPoc( &parameterSetManager );
-      int num_bits_up_to_poc_lsb = parcatHLSReader.getBitstream()->getNumBitsRead();
-      int offset = num_bits_up_to_poc_lsb;
-
-      int byte_offset = offset / 8;
-      int hi_bits = offset % 8;
-      uint16_t data = (nalu[byte_offset] << 8) | nalu[byte_offset + 1];
-      int low_bits = 16 - hi_bits - bits_for_poc;
-      poc_lsb = (data >> low_bits) & 0xff;
-      poc = poc_lsb; //calc_poc(poc_lsb, 0, bits_for_poc, nalu_type);
-
-      new_poc = poc + *poc_base;
-      // int picOrderCntLSB = (pcSlice->getPOC()-pcSlice->getLastIDR()+(1<<pcSlice->getSPS()->getBitsForPOC())) & ((1<<pcSlice->getSPS()->getBitsForPOC())-1);
-      unsigned picOrderCntLSB = (new_poc - *last_idr_poc +(1 << bits_for_poc)) & ((1<<bits_for_poc)-1);
-
-      int low = data & ((1 << low_bits) - 1);
-      int hi = data >> (16 - hi_bits);
-      data = (hi << (16 - hi_bits)) | (picOrderCntLSB << low_bits) | low;
-
-      nalu[byte_offset] = data >> 8;
-      nalu[byte_offset + 1] = data & 0xff;
-
-      if( first_slice_segment_in_pic_flag )
-      {
-#if ENABLE_TRACING
-        std::cout << "Changed poc " << poc << " to " << new_poc << std::endl;
-#endif
-        ++cnt;
-        first_slice_segment_in_pic_flag = false;
-      }
-    }
-#endif
 
     if(idx > 1 && (nalu_type == NAL_UNIT_CODED_SLICE_IDR_W_RADL || nalu_type == NAL_UNIT_CODED_SLICE_IDR_N_LP))
     {

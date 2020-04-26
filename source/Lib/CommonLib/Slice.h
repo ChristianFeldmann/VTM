@@ -1892,14 +1892,12 @@ private:
 #endif
   bool             m_listsModificationPresentFlag;
 
-#if JVET_Q0819_PH_CHANGES
   bool             m_rplInfoInPhFlag;
   bool             m_dbfInfoInPhFlag;
   bool             m_saoInfoInPhFlag;
   bool             m_alfInfoInPhFlag;
   bool             m_wpInfoInPhFlag;
   bool             m_qpDeltaInfoInPhFlag;
-#endif
   bool             m_mixedNaluTypesInPicFlag;
 
   uint32_t         m_picWidthInLumaSamples;
@@ -2121,7 +2119,6 @@ public:
   bool                   getSliceHeaderExtensionPresentFlag() const                       { return m_sliceHeaderExtensionPresentFlag;     }
   void                   setSliceHeaderExtensionPresentFlag(bool val)                     { m_sliceHeaderExtensionPresentFlag = val;      }
 
-#if JVET_Q0819_PH_CHANGES 
   void                   setRplInfoInPhFlag(bool flag)                                    { m_rplInfoInPhFlag = flag;                     }
   bool                   getRplInfoInPhFlag() const                                       { return m_rplInfoInPhFlag;                     }
   void                   setDbfInfoInPhFlag(bool flag)                                    { m_dbfInfoInPhFlag = flag;                     }
@@ -2134,7 +2131,6 @@ public:
   bool                   getWpInfoInPhFlag() const                                        { return m_wpInfoInPhFlag;                      }
   void                   setQpDeltaInfoInPhFlag(bool flag)                                { m_qpDeltaInfoInPhFlag = flag;                 }
   bool                   getQpDeltaInfoInPhFlag() const                                   { return m_qpDeltaInfoInPhFlag; }
-#endif
 
 #if !REMOVE_PPS_REXT
   const PPSRExt&         getPpsRangeExtension() const                                     { return m_ppsRangeExtension;                   }
@@ -2227,9 +2223,7 @@ class PicHeader
 private:
   bool                        m_valid;                                                  //!< picture header is valid yet or not
   Picture*                    m_pcPic;                                                  //!< pointer to picture structure
-#if JVET_Q0819_PH_CHANGES
   int                         m_pocLsb;                                                 //!< least significant bits of picture order count
-#endif
   bool                        m_nonReferencePictureFlag;                                //!< non-reference picture flag
   bool                        m_gdrOrIrapPicFlag;                                       //!< gdr or irap picture flag
   bool                        m_gdrPicFlag;                                             //!< gradual decoding refresh picture flag
@@ -2252,9 +2246,6 @@ private:
   unsigned                    m_colourPlaneId;                                          //!< 4:4:4 colour plane ID
 #endif
   bool                        m_picOutputFlag;                                          //!< picture output flag
-#if !JVET_Q0819_PH_CHANGES  
-  bool                        m_picRplPresentFlag;                                      //!< reference lists present in picture header or not
-#endif
   const ReferencePictureList
     *m_pRPL0;   //!< pointer to RPL for L0, either in the SPS or the local RPS in the picture header
   const ReferencePictureList* m_pRPL1;                                                  //!< pointer to RPL for L1, either in the SPS or the local RPS in the picture header
@@ -2262,10 +2253,8 @@ private:
   ReferencePictureList        m_localRPL1;                                              //!< RPL for L1 when present in picture header
   int                         m_rpl0Idx;                                                //!< index of used RPL in the SPS or -1 for local RPL in the picture header
   int                         m_rpl1Idx;                                                //!< index of used RPL in the SPS or -1 for local RPL in the picture header
-#if JVET_Q0819_PH_CHANGES
   bool                        m_picInterSliceAllowedFlag;                               //!< inter slice allowed flag in PH
   bool                        m_picIntraSliceAllowedFlag;                               //!< intra slice allowed flag in PH
-#endif
   bool                        m_splitConsOverrideFlag;                                  //!< partitioning constraint override flag  
   uint32_t                    m_cuQpDeltaSubdivIntra;                                   //!< CU QP delta maximum subdivision for intra slices
   uint32_t                    m_cuQpDeltaSubdivInter;                                   //!< CU QP delta maximum subdivision for inter slices 
@@ -2281,15 +2270,8 @@ private:
   bool                        m_disDmvrFlag;                                            //!< picture level DMVR disable flag
   bool                        m_disProfFlag;                                            //!< picture level PROF disable flag
   bool                        m_jointCbCrSignFlag;                                      //!< joint Cb/Cr residual sign flag  
-#if JVET_Q0819_PH_CHANGES 
   int                         m_qpDelta;                                                //!< value of Qp delta
-#else
-  bool                        m_saoEnabledPresentFlag;                                  //!< sao enabled flags present in the picture header
-#endif
   bool                        m_saoEnabledFlag[MAX_NUM_CHANNEL_TYPE];                   //!< sao enabled flags for each channel
-#if !JVET_Q0819_PH_CHANGES 
-  bool                        m_alfEnabledPresentFlag;                                  //!< alf enabled flags present in the picture header
-#endif
   bool                        m_alfEnabledFlag[MAX_NUM_COMPONENT];                      //!< alf enabled flags for each component
   int                         m_numAlfAps;                                              //!< number of alf aps active for the picture
   std::vector<int>            m_alfApsId;                                               //!< list of alf aps for the picture
@@ -2302,9 +2284,6 @@ private:
 #endif
   bool                        m_depQuantEnabledFlag;                                    //!< dependent quantization enabled flag
   bool                        m_signDataHidingEnabledFlag;                              //!< sign data hiding enabled flag
-#if !JVET_Q0819_PH_CHANGES  
-  bool                        m_deblockingFilterOverridePresentFlag;                    //!< deblocking filter override controls present in picture header
-#endif
   bool                        m_deblockingFilterOverrideFlag;                           //!< deblocking filter override controls enabled
   bool                        m_deblockingFilterDisable;                                //!< deblocking filter disabled flag
   int                         m_deblockingFilterBetaOffsetDiv2;                         //!< beta offset for deblocking filter
@@ -2331,11 +2310,9 @@ private:
   unsigned                    m_maxBTSize[3];                                           //!< maximum BT size
   unsigned                    m_maxTTSize[3];                                           //!< maximum TT size
 
-#if JVET_Q0819_PH_CHANGES  
   WPScalingParam              m_weightPredTable[NUM_REF_PIC_LIST_01][MAX_NUM_REF][MAX_NUM_COMPONENT];   // [REF_PIC_LIST_0 or REF_PIC_LIST_1][refIdx][0:Y, 1:U, 2:V]
   int                         m_numL0Weights;                                           //!< number of weights for L0 list
   int                         m_numL1Weights;                                           //!< number of weights for L1 list
-#endif
 
 public:
                               PicHeader();
@@ -2346,10 +2323,8 @@ public:
   void                        setPic( Picture* p )                                      { m_pcPic = p;                                                                                 }
   Picture*                    getPic()                                                  { return m_pcPic;                                                                              }
   const Picture*              getPic() const                                            { return m_pcPic;                                                                              }
-#if JVET_Q0819_PH_CHANGES
   void                        setPocLsb(int i)                                          { m_pocLsb = i;                                                                                }
   int                         getPocLsb()                                               { return m_pocLsb;                                                                             }
-#endif
   void                        setNonReferencePictureFlag( bool b )                      { m_nonReferencePictureFlag = b;                                                               }
   bool                        getNonReferencePictureFlag() const                        { return m_nonReferencePictureFlag;                                                            }
   void                        setGdrOrIrapPicFlag( bool b )                             { m_gdrOrIrapPicFlag = b;                                                                      }
@@ -2384,10 +2359,6 @@ public:
 #endif
   void                        setPicOutputFlag( bool b )                                { m_picOutputFlag = b;                                                                         }
   bool                        getPicOutputFlag() const                                  { return m_picOutputFlag;                                                                      }
-#if !JVET_Q0819_PH_CHANGES 
-  void                        setPicRplPresentFlag( bool b )                            { m_picRplPresentFlag = b;                                                                     }
-  bool                        getPicRplPresentFlag() const                              { return m_picRplPresentFlag;                                                                  }
-#endif
   void                        setRPL( bool b, const ReferencePictureList *pcRPL)        { if(b==1) { m_pRPL1 = pcRPL; } else { m_pRPL0 = pcRPL; }                                      }
   const ReferencePictureList* getRPL( bool b )                                          { return b==1 ? m_pRPL1 : m_pRPL0;                                                             }
   ReferencePictureList*       getLocalRPL( bool b )                                     { return b==1 ? &m_localRPL1 : &m_localRPL0;                                                   }
@@ -2403,12 +2374,10 @@ public:
   void                        setRPL1idx(int rplIdx)                                    { m_rpl1Idx = rplIdx;                                                                          }
   int                         getRPL0idx() const                                        { return m_rpl0Idx;                                                                            }
   int                         getRPL1idx() const                                        { return m_rpl1Idx;                                                                            }
-#if JVET_Q0819_PH_CHANGES
   void                        setPicInterSliceAllowedFlag(bool b)                       { m_picInterSliceAllowedFlag = b; }
   bool                        getPicInterSliceAllowedFlag() const                       { return m_picInterSliceAllowedFlag; }
   void                        setPicIntraSliceAllowedFlag(bool b)                       { m_picIntraSliceAllowedFlag = b; }
   bool                        getPicIntraSliceAllowedFlag() const                       { return m_picIntraSliceAllowedFlag; }
-#endif 
   void                        setSplitConsOverrideFlag( bool b )                        { m_splitConsOverrideFlag = b;                                                                 }
   bool                        getSplitConsOverrideFlag() const                          { return m_splitConsOverrideFlag;                                                              }  
   void                        setCuQpDeltaSubdivIntra( uint32_t u )                     { m_cuQpDeltaSubdivIntra = u;                                                                  }
@@ -2439,19 +2408,10 @@ public:
   bool                        getDisProfFlag() const                                    { return m_disProfFlag;                                                                        }
   void                        setJointCbCrSignFlag( bool b )                            { m_jointCbCrSignFlag = b;                                                                     }
   bool                        getJointCbCrSignFlag() const                              { return m_jointCbCrSignFlag;                                                                  }
-#if JVET_Q0819_PH_CHANGES 
   void                        setQpDelta(int b)                                         { m_qpDelta = b;                                                                               }
   int                         getQpDelta() const                                        { return m_qpDelta;                                                                            }
-#else
-  void                        setSaoEnabledPresentFlag( bool b )                        { m_saoEnabledPresentFlag = b;                                                                 }
-  bool                        getSaoEnabledPresentFlag() const                          { return m_saoEnabledPresentFlag;                                                              }
-#endif
   void                        setSaoEnabledFlag(ChannelType chType, bool b)             { m_saoEnabledFlag[chType] = b;                                                                }
   bool                        getSaoEnabledFlag(ChannelType chType) const               { return m_saoEnabledFlag[chType];                                                             }  
-#if !JVET_Q0819_PH_CHANGES   
-  void                        setAlfEnabledPresentFlag( bool b )                        { m_alfEnabledPresentFlag = b;                                                                 }
-  bool                        getAlfEnabledPresentFlag() const                          { return m_alfEnabledPresentFlag;                                                              }
-#endif
   void                        setAlfEnabledFlag(ComponentID compId, bool b)             { m_alfEnabledFlag[compId] = b;                                                                }
   bool                        getAlfEnabledFlag(ComponentID compId) const               { return m_alfEnabledFlag[compId];                                                             }
   void                        setNumAlfAps(int i)                                       { m_numAlfAps = i;                                                                             }
@@ -2473,10 +2433,6 @@ public:
   bool                        getDepQuantEnabledFlag() const                            { return m_depQuantEnabledFlag;                                                                }  
   void                        setSignDataHidingEnabledFlag( bool b )                    { m_signDataHidingEnabledFlag = b;                                                             }
   bool                        getSignDataHidingEnabledFlag() const                      { return m_signDataHidingEnabledFlag;                                                          }  
-#if !JVET_Q0819_PH_CHANGES 
-  void                        setDeblockingFilterOverridePresentFlag( bool b )          { m_deblockingFilterOverridePresentFlag = b;                                                   }
-  bool                        getDeblockingFilterOverridePresentFlag() const            { return m_deblockingFilterOverridePresentFlag;                                                }
-#endif
   void                        setDeblockingFilterOverrideFlag( bool b )                 { m_deblockingFilterOverrideFlag = b;                                                          }
   bool                        getDeblockingFilterOverrideFlag() const                   { return m_deblockingFilterOverrideFlag;                                                       }    
   void                        setDeblockingFilterDisable( bool b )                      { m_deblockingFilterDisable= b;                                                                }  
@@ -2552,7 +2508,6 @@ public:
 
   std::vector<int>            getAlfAPSs() const                                        { return m_alfApsId; }
 
-#if JVET_Q0819_PH_CHANGES 
   void                        setWpScaling(WPScalingParam *wp)
   {
     memcpy(m_weightPredTable, wp, sizeof(WPScalingParam) * NUM_REF_PIC_LIST_01 * MAX_NUM_REF * MAX_NUM_COMPONENT);
@@ -2564,7 +2519,6 @@ public:
   int                         getNumL0Weights()                                        { return m_numL0Weights;                       }
   void                        setNumL1Weights(int b)                                   { m_numL1Weights = b;                          }
   int                         getNumL1Weights()                                        { return m_numL1Weights;                       }
-#endif
 
   void                        setNoOutputBeforeRecoveryFlag( bool val )                { m_noOutputBeforeRecoveryFlag = val;  }
   bool                        getNoOutputBeforeRecoveryFlag() const                    { return m_noOutputBeforeRecoveryFlag; }
@@ -2931,13 +2885,11 @@ public:
   {
     memcpy(m_weightPredTable, wp, sizeof(WPScalingParam)*NUM_REF_PIC_LIST_01*MAX_NUM_REF*MAX_NUM_COMPONENT);
   }
-#if JVET_Q0819_PH_CHANGES  
   void                        setWpScaling(WPScalingParam *wp)
   {
     memcpy(m_weightPredTable, wp, sizeof(WPScalingParam) * NUM_REF_PIC_LIST_01 * MAX_NUM_REF * MAX_NUM_COMPONENT);
   }
   WPScalingParam *            getWpScalingAll()                                      { return (WPScalingParam *) m_weightPredTable;                  }
-#endif
   void                        getWpScaling( RefPicList e, int iRefIdx, WPScalingParam *&wp) const;
 
   void                        resetWpScaling();

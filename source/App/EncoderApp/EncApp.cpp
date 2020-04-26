@@ -758,10 +758,8 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setSliceLevelRpl                                     ( m_sliceLevelRpl  );
   m_cEncLib.setSliceLevelDblk                                    ( m_sliceLevelDblk );
   m_cEncLib.setSliceLevelSao                                     ( m_sliceLevelSao  );
-#if JVET_Q0819_PH_CHANGES 
   m_cEncLib.setSliceLevelWp                                      ( m_sliceLevelWp );
   m_cEncLib.setSliceLevelDeltaQp                                 ( m_sliceLevelDeltaQp );
-#endif
   m_cEncLib.setSliceLevelAlf                                     ( m_sliceLevelAlf  );
 #if !JVET_Q0806
 #else

@@ -69,7 +69,6 @@
 #define JVET_Q0471_CHROMA_QT_SPLIT                        1 // JVET-Q0471: Chroma QT split
 
 
-#define JVET_Q0358_ALF_NALU_TID_CONSTRAINT                1 // JVET-Q0358: TemporalId constraint between ALF_APS NALU and the pic associated with PH
 
 #define JVET_Q0118_CLEANUPS                               1 // JVET-Q0118: AHG8/AHG9: Scalability HLS cleanups
 

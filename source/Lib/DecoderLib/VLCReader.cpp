@@ -2830,9 +2830,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
         {
           alfChromaIdc = 0;
         }
-#if JVET_Q0358_ALF_NALU_TID_CONSTRAINT
         picHeader->setAlfChromaIdc(alfChromaIdc);
-#endif
         if (alfChromaIdc)
         {
           READ_CODE(3, uiCode, "ph_alf_aps_id_chroma");
@@ -3864,7 +3862,6 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
 #endif
 }
 
-#if JVET_Q0358_ALF_NALU_TID_CONSTRAINT
 void  HLSyntaxReader::checkAlfNaluTidAndPicTid(Slice* pcSlice, PicHeader* picHeader, ParameterSetManager *parameterSetManager)
 {
   SPS* sps = parameterSetManager->getSPS(picHeader->getSPSId());
@@ -3890,7 +3887,6 @@ void  HLSyntaxReader::checkAlfNaluTidAndPicTid(Slice* pcSlice, PicHeader* picHea
     }
   }
 }
-#endif
 void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, ParameterSetManager *parameterSetManager, const int prevTid0POC)
 {
   uint32_t  uiCode;
@@ -3912,9 +3908,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
 #endif
   CHECK(picHeader==0, "Invalid Picture Header");
   CHECK(picHeader->isValid()==false, "Invalid Picture Header");
-#if JVET_Q0358_ALF_NALU_TID_CONSTRAINT
   checkAlfNaluTidAndPicTid(pcSlice, picHeader, parameterSetManager);
-#endif
   pps = parameterSetManager->getPPS( picHeader->getPPSId() );
   //!KS: need to add error handling code here, if PPS is not available
   CHECK(pps==0, "Invalid PPS");

@@ -2531,9 +2531,7 @@ private:
   int                         m_numAlfAps;                                              //!< number of alf aps active for the picture
   std::vector<int>            m_alfApsId;                                               //!< list of alf aps for the picture
   int                         m_alfChromaApsId;                                         //!< chroma alf aps ID
-#if JVET_Q0358_ALF_NALU_TID_CONSTRAINT
   int                         m_alfChromaIdc;                                            //!< alf chroma idc
-#endif
 #if JVET_Q0795_CCALF
   bool m_ccalfEnabledFlag[MAX_NUM_COMPONENT];
   int  m_ccalfCbApsId;
@@ -2711,10 +2709,8 @@ public:
   int                         getNumAlfAps() const                                      { return m_numAlfAps;                                                                          }
   void                        setAlfApsIdChroma(int i)                                  { m_alfChromaApsId = i;                                                                        }
   int                         getAlfApsIdChroma() const                                 { return m_alfChromaApsId;                                                                     }
-#if JVET_Q0358_ALF_NALU_TID_CONSTRAINT
   void                        setAlfChromaIdc(int i)                                    { m_alfChromaIdc = i;                                                                          }
   int                         getAlfChromaIdc() const                                   { return m_alfChromaIdc;                                                                       }
-#endif
 #if JVET_Q0795_CCALF
   void setCcAlfEnabledFlag(ComponentID compId, bool b) { m_ccalfEnabledFlag[compId] = b; }
   bool getCcAlfEnabledFlag(ComponentID compId) const { return m_ccalfEnabledFlag[compId]; }

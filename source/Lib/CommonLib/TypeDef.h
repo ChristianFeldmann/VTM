@@ -80,7 +80,6 @@
 
 
 
-#define JVET_Q0260_CONFORMANCE_WINDOW_IN_SPS              1 // JVET-Q0260: Conformance cropping window in the SPS that applies to the max picture size
 
 #define JVET_Q0210_UEK_REMOVAL                            1 // JVET-Q0210 Aspect 8: Replace uek signalling in alf_data with ue(v).
 

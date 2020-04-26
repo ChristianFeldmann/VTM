@@ -1810,14 +1810,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   m_inputColourSpaceConvert = stringToInputColourSpaceConvert(inputColourSpaceConvert, true);
   m_rgbFormat = (m_inputColourSpaceConvert == IPCOLOURSPACE_RGBtoGBR && m_chromaFormatIDC == CHROMA_444) ? true : false;
 
-#if JVET_Q0260_CONFORMANCE_WINDOW_IN_SPS
   // Picture width and height must be multiples of 8 and minCuSize
   const int minResolutionMultiple = std::max(8, 1 << m_log2MinCuSize);
   CHECK(((m_iSourceWidth% minResolutionMultiple) || (m_iSourceHeight % minResolutionMultiple)) && m_conformanceWindowMode != 1, "Picture width or height is not a multiple of 8 or minCuSize, please use ConformanceMode 1!");
-#else
-  const int minCuSize = 1 << m_log2MinCuSize;
-  CHECK(((m_iSourceWidth % minCuSize ) || (m_iSourceHeight % minCuSize )) && m_conformanceWindowMode != 1, "Picture width or height is not a multiple of minCuSize, please use ConformanceMode 1!");
-#endif
   switch (m_conformanceWindowMode)
   {
   case 0:
@@ -1830,7 +1825,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   case 1:
     {
       // automatic padding to minimum CU size
-#if JVET_Q0260_CONFORMANCE_WINDOW_IN_SPS
       if (m_iSourceWidth % minResolutionMultiple)
       {
         m_aiPad[0] = m_confWinRight  = ((m_iSourceWidth / minResolutionMultiple) + 1) * minResolutionMultiple - m_iSourceWidth;
@@ -1839,16 +1833,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
       if (m_iSourceHeight % minResolutionMultiple)
       {
         m_aiPad[1] = m_confWinBottom = ((m_iSourceHeight / minResolutionMultiple) + 1) * minResolutionMultiple - m_iSourceHeight;
-#else
-      if (m_iSourceWidth % minCuSize)
-      {
-        m_aiPad[0] = m_confWinRight  = ((m_iSourceWidth / minCuSize) + 1) * minCuSize - m_iSourceWidth;
-        m_iSourceWidth  += m_confWinRight;
-      }
-      if (m_iSourceHeight % minCuSize)
-      {
-        m_aiPad[1] = m_confWinBottom = ((m_iSourceHeight / minCuSize) + 1) * minCuSize - m_iSourceHeight;
-#endif
         m_iSourceHeight += m_confWinBottom;
         if ( m_isField )
         {

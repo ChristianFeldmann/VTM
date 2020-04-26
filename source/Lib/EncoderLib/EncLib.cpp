@@ -1237,9 +1237,7 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
     sps.setMaxPicWidthInLumaSamples( maxPicWidth );
     sps.setMaxPicHeightInLumaSamples( maxPicHeight );
   }
-#if JVET_Q0260_CONFORMANCE_WINDOW_IN_SPS
   sps.setConformanceWindow( m_conformanceWindow );
-#endif
 
   sps.setMaxCUWidth             ( m_maxCUWidth        );
   sps.setMaxCUHeight            ( m_maxCUHeight       );

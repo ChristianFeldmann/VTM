@@ -1528,7 +1528,6 @@ void DecLib::xCheckParameterSetConstraints(const int layerId)
   }
 #endif
 
-#if JVET_Q0260_CONFORMANCE_WINDOW_IN_SPS
   if (sps->getMaxPicWidthInLumaSamples() == pps->getPicWidthInLumaSamples() &&
       sps->getMaxPicHeightInLumaSamples() == pps->getPicHeightInLumaSamples())
   {
@@ -1539,7 +1538,6 @@ void DecLib::xCheckParameterSetConstraints(const int layerId)
     CHECK(spsConfWin.getWindowTopOffset() != ppsConfWin.getWindowTopOffset(), "When picture size is equal to maximum picutre size, conformance window top offset in SPS and PPS shall be equal");
     CHECK(spsConfWin.getWindowBottomOffset() != ppsConfWin.getWindowBottomOffset(), "When picture size is equal to maximum picutre size, conformance window bottom offset in SPS and PPS shall be equal");
   }
-#endif
   int levelIdcSps = int(sps->getProfileTierLevel()->getLevelIdc());
   int maxLevelIdxDci = 0;
   if (m_dci)

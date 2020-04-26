@@ -2115,10 +2115,8 @@ void VPS::deriveOutputLayerSets()
   std::vector<std::vector<int>> layerIncludedInOlsFlag( m_totalNumOLSs, std::vector<int>( m_uiMaxLayers, 0 ) );
   std::vector<std::vector<int>> dependencyFlag( m_uiMaxLayers, std::vector<int>( m_uiMaxLayers, NOT_VALID ) );
   std::vector<std::vector<int>> refLayerIdx( m_uiMaxLayers, std::vector<int>( m_uiMaxLayers, NOT_VALID ) );
-#if JVET_Q0118_CLEANUPS
   std::vector<int> layerUsedAsRefLayerFlag( m_uiMaxLayers, 0 );
   std::vector<int> layerUsedAsOutputLayerFlag( m_uiMaxLayers, NOT_VALID );
-#endif
 
   for( int i = 0; i < m_uiMaxLayers; i++ )
   {
@@ -2135,12 +2133,10 @@ void VPS::deriveOutputLayerSets()
           dependencyFlag[i][j] = 1;
         }
       }
-#if JVET_Q0118_CLEANUPS
       if (m_vpsDirectRefLayerFlag[i][j])
       {
         layerUsedAsRefLayerFlag[j] = 1;
       }
-#endif
 
       if( dependencyFlag[i][j] )
       {
@@ -2153,7 +2149,6 @@ void VPS::deriveOutputLayerSets()
 
   m_numOutputLayersInOls[0] = 1;
   m_outputLayerIdInOls[0][0] = m_vpsLayerId[0];
-#if JVET_Q0118_CLEANUPS
   layerUsedAsOutputLayerFlag[0] = 1;
   for (int i = 1; i < m_uiMaxLayers; i++)
   {
@@ -2166,7 +2161,6 @@ void VPS::deriveOutputLayerSets()
       layerUsedAsOutputLayerFlag[i] = 0;
     }
   }
-#endif
 
   for( int i = 1; i < m_totalNumOLSs; i++ )
   {
@@ -2192,9 +2186,7 @@ void VPS::deriveOutputLayerSets()
         if( m_vpsOlsOutputLayerFlag[i][k] )
         {
           layerIncludedInOlsFlag[i][k] = 1;
-#if JVET_Q0118_CLEANUPS
           layerUsedAsOutputLayerFlag[k] = 1;
-#endif
           outputLayerIdx[i][j] = k;
           m_outputLayerIdInOls[i][j++] = m_vpsLayerId[k];
         }
@@ -2211,12 +2203,10 @@ void VPS::deriveOutputLayerSets()
       }
     }
   }
-#if JVET_Q0118_CLEANUPS
   for (int i = 0; i < m_uiMaxLayers; i++)
   {
     CHECK(layerUsedAsRefLayerFlag[i] == 0 && layerUsedAsOutputLayerFlag[i] == 0, "There shall be no layer that is neither an output layer nor a direct reference layer");
   }
-#endif
 
   m_numLayersInOls[0] = 1;
   m_layerIdInOls[0][0] = m_vpsLayerId[0];

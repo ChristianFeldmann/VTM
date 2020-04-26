@@ -1722,9 +1722,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   }
 
   m_apcSlicePilot->setNalUnitType(nalu.m_nalUnitType);
-#if JVET_Q0118_CLEANUPS
   m_apcSlicePilot->setNalUnitLayerId(nalu.m_nuhLayerId);
-#endif
   m_apcSlicePilot->setTLayer(nalu.m_temporalId);
 
   for( auto& naluTemporalId : m_accessUnitNals )

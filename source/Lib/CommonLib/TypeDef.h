@@ -70,7 +70,6 @@
 
 
 
-#define JVET_Q0118_CLEANUPS                               1 // JVET-Q0118: AHG8/AHG9: Scalability HLS cleanups
 
 #define JVET_Q0416_WRAPAROUND_OFFSET                      1  //JVET-Q0416: subtract CtbSizeY / MinCbSizeY + 2 from wraparound offset before signaling
 

@@ -564,7 +564,7 @@ void AreaBuf<Pel>::roundToOutputBitdepth( const AreaBuf<const Pel> &src, const C
   const int32_t clipbd            = clpRng.bd;
   const int32_t shiftDefault      = std::max<int>(2, (IF_INTERNAL_PREC - clipbd));
   const int32_t offsetDefault     = (1<<(shiftDefault-1)) + IF_INTERNAL_OFFS;
-   
+
   if( width == 1 )
   {
     THROW( "Blocks of width = 1 not supported" );

@@ -178,7 +178,7 @@ void EncApp::xInitLibCfg()
   {
     if( i > 0 )
       vps.setPtPresentFlag                                         (i, 0);
-    vps.setPtlMaxTemporalId                                      (i, vps.getMaxSubLayers() - 1); 
+    vps.setPtlMaxTemporalId                                      (i, vps.getMaxSubLayers() - 1);
   }
   for (int i = 0; i < vps.getNumOutputLayerSets(); i++)
   {
@@ -607,11 +607,11 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setFramePackingArrangementSEIId                      ( m_framePackingSEIId );
   m_cEncLib.setFramePackingArrangementSEIQuincunx                ( m_framePackingSEIQuincunx );
   m_cEncLib.setFramePackingArrangementSEIInterpretation          ( m_framePackingSEIInterpretation );
-  m_cEncLib.setErpSEIEnabled                                     ( m_erpSEIEnabled );           
-  m_cEncLib.setErpSEICancelFlag                                  ( m_erpSEICancelFlag );        
-  m_cEncLib.setErpSEIPersistenceFlag                             ( m_erpSEIPersistenceFlag );   
-  m_cEncLib.setErpSEIGuardBandFlag                               ( m_erpSEIGuardBandFlag );     
-  m_cEncLib.setErpSEIGuardBandType                               ( m_erpSEIGuardBandType );     
+  m_cEncLib.setErpSEIEnabled                                     ( m_erpSEIEnabled );
+  m_cEncLib.setErpSEICancelFlag                                  ( m_erpSEICancelFlag );
+  m_cEncLib.setErpSEIPersistenceFlag                             ( m_erpSEIPersistenceFlag );
+  m_cEncLib.setErpSEIGuardBandFlag                               ( m_erpSEIGuardBandFlag );
+  m_cEncLib.setErpSEIGuardBandType                               ( m_erpSEIGuardBandType );
   m_cEncLib.setErpSEILeftGuardBandWidth                          ( m_erpSEILeftGuardBandWidth );
   m_cEncLib.setErpSEIRightGuardBandWidth                         ( m_erpSEIRightGuardBandWidth );
   m_cEncLib.setSphereRotationSEIEnabled                          ( m_sphereRotationSEIEnabled );
@@ -620,16 +620,16 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setSphereRotationSEIYaw                              ( m_sphereRotationSEIYaw );
   m_cEncLib.setSphereRotationSEIPitch                            ( m_sphereRotationSEIPitch );
   m_cEncLib.setSphereRotationSEIRoll                             ( m_sphereRotationSEIRoll );
-  m_cEncLib.setOmniViewportSEIEnabled                            ( m_omniViewportSEIEnabled );          
-  m_cEncLib.setOmniViewportSEIId                                 ( m_omniViewportSEIId );               
-  m_cEncLib.setOmniViewportSEICancelFlag                         ( m_omniViewportSEICancelFlag );       
-  m_cEncLib.setOmniViewportSEIPersistenceFlag                    ( m_omniViewportSEIPersistenceFlag );  
-  m_cEncLib.setOmniViewportSEICntMinus1                          ( m_omniViewportSEICntMinus1 );        
-  m_cEncLib.setOmniViewportSEIAzimuthCentre                      ( m_omniViewportSEIAzimuthCentre );    
-  m_cEncLib.setOmniViewportSEIElevationCentre                    ( m_omniViewportSEIElevationCentre );  
-  m_cEncLib.setOmniViewportSEITiltCentre                         ( m_omniViewportSEITiltCentre );       
-  m_cEncLib.setOmniViewportSEIHorRange                           ( m_omniViewportSEIHorRange );         
-  m_cEncLib.setOmniViewportSEIVerRange                           ( m_omniViewportSEIVerRange );         
+  m_cEncLib.setOmniViewportSEIEnabled                            ( m_omniViewportSEIEnabled );
+  m_cEncLib.setOmniViewportSEIId                                 ( m_omniViewportSEIId );
+  m_cEncLib.setOmniViewportSEICancelFlag                         ( m_omniViewportSEICancelFlag );
+  m_cEncLib.setOmniViewportSEIPersistenceFlag                    ( m_omniViewportSEIPersistenceFlag );
+  m_cEncLib.setOmniViewportSEICntMinus1                          ( m_omniViewportSEICntMinus1 );
+  m_cEncLib.setOmniViewportSEIAzimuthCentre                      ( m_omniViewportSEIAzimuthCentre );
+  m_cEncLib.setOmniViewportSEIElevationCentre                    ( m_omniViewportSEIElevationCentre );
+  m_cEncLib.setOmniViewportSEITiltCentre                         ( m_omniViewportSEITiltCentre );
+  m_cEncLib.setOmniViewportSEIHorRange                           ( m_omniViewportSEIHorRange );
+  m_cEncLib.setOmniViewportSEIVerRange                           ( m_omniViewportSEIVerRange );
   m_cEncLib.setRwpSEIEnabled                                     (m_rwpSEIEnabled);
   m_cEncLib.setRwpSEIRwpCancelFlag                               (m_rwpSEIRwpCancelFlag);
   m_cEncLib.setRwpSEIRwpPersistenceFlag                          (m_rwpSEIRwpPersistenceFlag);
@@ -657,15 +657,15 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setRwpSEIRwpGuardBandType                            (m_rwpSEIRwpGuardBandType);
   m_cEncLib.setGcmpSEIEnabled                                    ( m_gcmpSEIEnabled );
   m_cEncLib.setGcmpSEICancelFlag                                 ( m_gcmpSEICancelFlag );
-  m_cEncLib.setGcmpSEIPersistenceFlag                            ( m_gcmpSEIPersistenceFlag );                                                              
+  m_cEncLib.setGcmpSEIPersistenceFlag                            ( m_gcmpSEIPersistenceFlag );
   m_cEncLib.setGcmpSEIPackingType                                ( (uint8_t)m_gcmpSEIPackingType );
-  m_cEncLib.setGcmpSEIMappingFunctionType                        ( (uint8_t)m_gcmpSEIMappingFunctionType );                                                              
+  m_cEncLib.setGcmpSEIMappingFunctionType                        ( (uint8_t)m_gcmpSEIMappingFunctionType );
   m_cEncLib.setGcmpSEIFaceIndex                                  ( m_gcmpSEIFaceIndex );
   m_cEncLib.setGcmpSEIFaceRotation                               ( m_gcmpSEIFaceRotation );
   m_cEncLib.setGcmpSEIFunctionCoeffU                             ( m_gcmpSEIFunctionCoeffU );
   m_cEncLib.setGcmpSEIFunctionUAffectedByVFlag                   ( m_gcmpSEIFunctionUAffectedByVFlag );
   m_cEncLib.setGcmpSEIFunctionCoeffV                             ( m_gcmpSEIFunctionCoeffV );
-  m_cEncLib.setGcmpSEIFunctionVAffectedByUFlag                   ( m_gcmpSEIFunctionVAffectedByUFlag );                                                              
+  m_cEncLib.setGcmpSEIFunctionVAffectedByUFlag                   ( m_gcmpSEIFunctionVAffectedByUFlag );
   m_cEncLib.setGcmpSEIGuardBandFlag                              ( m_gcmpSEIGuardBandFlag );
   m_cEncLib.setGcmpSEIGuardBandType                              ( m_gcmpSEIGuardBandType );
   m_cEncLib.setGcmpSEIGuardBandBoundaryExteriorFlag              ( m_gcmpSEIGuardBandBoundaryExteriorFlag );

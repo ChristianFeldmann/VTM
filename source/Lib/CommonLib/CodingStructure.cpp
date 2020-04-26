@@ -665,7 +665,7 @@ void CodingStructure::addEmptyTUs( Partitioner &partitioner )
 
   if( split )
   {
-    partitioner.splitCurrArea( TU_MAX_TR_SPLIT, *this );  
+    partitioner.splitCurrArea( TU_MAX_TR_SPLIT, *this );
     do
     {
       addEmptyTUs( partitioner );

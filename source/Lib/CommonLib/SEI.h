@@ -141,7 +141,7 @@ public:
   bool     m_omniViewportCancelFlag;
   bool     m_omniViewportPersistenceFlag;
   uint8_t  m_omniViewportCntMinus1;
-  std::vector<OmniViewport> m_omniViewportRegions;  
+  std::vector<OmniViewport> m_omniViewportRegions;
 };
 
 class SEIRegionWisePacking : public SEI
@@ -494,7 +494,7 @@ void xTraceSEIHeader();
 void xTraceSEIMessageType( SEI::PayloadType payloadType );
 #endif
 
-#if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI 
+#if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
 class SEIAlternativeTransferCharacteristics : public SEI
 {
 public:

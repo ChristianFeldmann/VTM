@@ -1470,13 +1470,13 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
       int subPicWidth = (int)curSubPic.getSubPicWidthInLumaSample();
       int subPicHeight = (int)curSubPic.getSubPicHeightInLumaSample();
 
-      for (int rlist = REF_PIC_LIST_0; rlist < NUM_REF_PIC_LIST_01; rlist++) 
+      for (int rlist = REF_PIC_LIST_0; rlist < NUM_REF_PIC_LIST_01; rlist++)
       {
         int n = pcSlice->getNumRefIdx((RefPicList)rlist);
-        for (int idx = 0; idx < n; idx++) 
+        for (int idx = 0; idx < n; idx++)
         {
           Picture *refPic = pcSlice->getRefPic((RefPicList)rlist, idx);
-          if (!refPic->getSubPicSaved()) 
+          if (!refPic->getSubPicSaved())
           {
             refPic->saveSubPicBorder(refPic->getPOC(), subPicX, subPicY, subPicWidth, subPicHeight);
             refPic->extendSubPicBorder(refPic->getPOC(), subPicX, subPicY, subPicWidth, subPicHeight);
@@ -1677,7 +1677,7 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
 
     m_uiPicTotalBits += actualBits;
     m_uiPicDist       = cs.dist;
-    // for last Ctu in the slice    
+    // for last Ctu in the slice
     if (pcSlice->getPPS()->getNumSubPics() >= 2 && curSubPic.getTreatedAsPicFlag() && ctuIdx == (pcSlice->getNumCtuInSlice() - 1))
     {
 
@@ -1686,13 +1686,13 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
       int subPicWidth = (int)curSubPic.getSubPicWidthInLumaSample();
       int subPicHeight = (int)curSubPic.getSubPicHeightInLumaSample();
 
-      for (int rlist = REF_PIC_LIST_0; rlist < NUM_REF_PIC_LIST_01; rlist++) 
+      for (int rlist = REF_PIC_LIST_0; rlist < NUM_REF_PIC_LIST_01; rlist++)
       {
         int n = pcSlice->getNumRefIdx((RefPicList)rlist);
-        for (int idx = 0; idx < n; idx++) 
+        for (int idx = 0; idx < n; idx++)
         {
           Picture *refPic = pcSlice->getRefPic((RefPicList)rlist, idx);
-          if (refPic->getSubPicSaved()) 
+          if (refPic->getSubPicSaved())
           {
             refPic->restoreSubPicBorder(refPic->getPOC(), subPicX, subPicY, subPicWidth, subPicHeight);
             refPic->setSubPicSaved(false);

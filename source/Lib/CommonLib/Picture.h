@@ -165,8 +165,8 @@ struct Picture : public UnitArea
                                 const int bitDepth, const bool useLumaFilter, const bool downsampling,
                                 const bool horCollocatedPositionFlag, const bool verCollocatedPositionFlag );
 
-  static void   rescalePicture( const std::pair<int, int> scalingRatio, 
-                                const CPelUnitBuf& beforeScaling, const Window& scalingWindowBefore, 
+  static void   rescalePicture( const std::pair<int, int> scalingRatio,
+                                const CPelUnitBuf& beforeScaling, const Window& scalingWindowBefore,
                                 const PelUnitBuf& afterScaling, const Window& scalingWindowAfter,
                                 const ChromaFormat chromaFormatIDC, const BitDepths& bitDepths, const bool useLumaFilter, const bool downsampling,
                                 const bool horCollocatedChromaFlag, const bool verCollocatedChromaFlag );

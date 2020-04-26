@@ -723,8 +723,8 @@ void Picture::rescalePicture( const std::pair<int, int> scalingRatio,
     const PelBuf& afterScale = afterScaling.get( compID );
 
     sampleRateConv( scalingRatio, std::pair<int, int>( ::getComponentScaleX( compID, chromaFormatIDC ), ::getComponentScaleY( compID, chromaFormatIDC ) ),
-                    beforeScale, scalingWindowBefore.getWindowLeftOffset() * SPS::getWinUnitX( chromaFormatIDC ), scalingWindowBefore.getWindowTopOffset() * SPS::getWinUnitY( chromaFormatIDC ), 
-                    afterScale, scalingWindowAfter.getWindowLeftOffset() * SPS::getWinUnitX( chromaFormatIDC ), scalingWindowAfter.getWindowTopOffset() * SPS::getWinUnitY( chromaFormatIDC ), 
+                    beforeScale, scalingWindowBefore.getWindowLeftOffset() * SPS::getWinUnitX( chromaFormatIDC ), scalingWindowBefore.getWindowTopOffset() * SPS::getWinUnitY( chromaFormatIDC ),
+                    afterScale, scalingWindowAfter.getWindowLeftOffset() * SPS::getWinUnitX( chromaFormatIDC ), scalingWindowAfter.getWindowTopOffset() * SPS::getWinUnitY( chromaFormatIDC ),
                     bitDepths.recon[toChannelType(compID)], downsampling || useLumaFilter ? true : isLuma( compID ), downsampling,
                     isLuma( compID ) ? 1 : horCollocatedChromaFlag, isLuma( compID ) ? 1 : verCollocatedChromaFlag );
   }
@@ -749,7 +749,7 @@ void Picture::saveSubPicBorder(int POC, int subPicX0, int subPicY0, int subPicWi
   m_bufSubPicLeft.create(unitAreaLeftRight);
   m_bufSubPicRight.create(unitAreaLeftRight);
 
-  for (int comp = 0; comp < getNumberValidComponents(cs->area.chromaFormat); comp++) 
+  for (int comp = 0; comp < getNumberValidComponents(cs->area.chromaFormat); comp++)
   {
     ComponentID compID = ComponentID(comp);
 
@@ -782,7 +782,7 @@ void Picture::saveSubPicBorder(int POC, int subPicX0, int subPicY0, int subPicWi
     // 3.2.3 copy to recon picture to back up buffer
     Pel *srcLeft  = src - xmargin;
     Pel *srcRight = src + width;
-    for (int y = 0; y < height; y++) 
+    for (int y = 0; y < height; y++)
     {
       ::memcpy(dstLeft  + y *  dBufLeft.stride, srcLeft  + y * s.stride, sizeof(Pel) * xmargin);
       ::memcpy(dstRight + y * dBufRight.stride, srcRight + y * s.stride, sizeof(Pel) * xmargin);
@@ -799,7 +799,7 @@ void Picture::saveSubPicBorder(int POC, int subPicX0, int subPicY0, int subPicWi
     // 3.3.3 copy to recon picture to back up buffer
     Pel *srcTop    = src - xmargin - ymargin * s.stride;
     Pel *srcBottom = src - xmargin +  height * s.stride;
-    for (int y = 0; y < ymargin; y++) 
+    for (int y = 0; y < ymargin; y++)
     {
       ::memcpy(dstTop    + y *    dBufTop.stride, srcTop    + y * s.stride, sizeof(Pel) * (2 * xmargin + width));
       ::memcpy(dstBottom + y * dBufBottom.stride, srcBottom + y * s.stride, sizeof(Pel) * (2 * xmargin + width));
@@ -810,7 +810,7 @@ void Picture::saveSubPicBorder(int POC, int subPicX0, int subPicY0, int subPicWi
 void Picture::extendSubPicBorder(int POC, int subPicX0, int subPicY0, int subPicWidth, int subPicHeight)
 {
 
-  for (int comp = 0; comp < getNumberValidComponents(cs->area.chromaFormat); comp++) 
+  for (int comp = 0; comp < getNumberValidComponents(cs->area.chromaFormat); comp++)
   {
     ComponentID compID = ComponentID(comp);
 
@@ -837,9 +837,9 @@ void Picture::extendSubPicBorder(int POC, int subPicX0, int subPicY0, int subPic
       Pel *srcLeft  = src + 0;
       Pel *srcRight = src + width - 1;
 
-      for (int y = 0; y < height; y++) 
+      for (int y = 0; y < height; y++)
       {
-        for (int x = 0; x < xmargin; x++) 
+        for (int x = 0; x < xmargin; x++)
         {
           dstLeft[x]  = *srcLeft;
           dstRight[x] = *srcRight;
@@ -851,7 +851,7 @@ void Picture::extendSubPicBorder(int POC, int subPicX0, int subPicY0, int subPic
       }
     }
 
-    // 4.2 apply padding on bottom 
+    // 4.2 apply padding on bottom
     Pel *srcBottom = src + s.stride * (height - 1) - xmargin;
     Pel *dstBottom = srcBottom + s.stride;
     for (int y = 0; y < ymargin; y++)
@@ -870,12 +870,12 @@ void Picture::extendSubPicBorder(int POC, int subPicX0, int subPicY0, int subPic
       ::memcpy(dstTop, srcTop, sizeof(Pel)*(2 * xmargin + width));
       dstTop -= s.stride;
     }
-  } // end of for  
+  } // end of for
 }
 
 void Picture::restoreSubPicBorder(int POC, int subPicX0, int subPicY0, int subPicWidth, int subPicHeight)
 {
-  for (int comp = 0; comp < getNumberValidComponents(cs->area.chromaFormat); comp++) 
+  for (int comp = 0; comp < getNumberValidComponents(cs->area.chromaFormat); comp++)
   {
     ComponentID compID = ComponentID(comp);
 
@@ -907,7 +907,7 @@ void Picture::restoreSubPicBorder(int POC, int subPicX0, int subPicY0, int subPi
     Pel *srcLeft  = src - xmargin;
     Pel *srcRight = src + width;
 
-    for (int y = 0; y < height; y++) 
+    for (int y = 0; y < height; y++)
     {
       // the destination and source position is reversed on purpose
       ::memcpy(srcLeft  + y * s.stride,  dstLeft + y *  dBufLeft.stride, sizeof(Pel) * xmargin);
@@ -927,7 +927,7 @@ void Picture::restoreSubPicBorder(int POC, int subPicX0, int subPicY0, int subPi
     Pel *srcTop = src - xmargin - ymargin * s.stride;
     Pel *srcBottom = src - xmargin + height * s.stride;
 
-    for (int y = 0; y < ymargin; y++) 
+    for (int y = 0; y < ymargin; y++)
     {
       ::memcpy(srcTop    + y * s.stride, dstTop    + y *    dBufTop.stride, sizeof(Pel) * (2 * xmargin + width));
       ::memcpy(srcBottom + y * s.stride, dstBottom + y * dBufBottom.stride, sizeof(Pel) * (2 * xmargin + width));

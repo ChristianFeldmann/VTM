@@ -327,12 +327,12 @@ void SEIWriter::xWriteSEIBufferingPeriod(const SEIBufferingPeriod& sei)
 
 void SEIWriter::xWriteSEIPictureTiming(const SEIPictureTiming& sei, const SEIBufferingPeriod &bp, const uint32_t temporalId)
 {
-  
+
   WRITE_CODE( sei.m_auCpbRemovalDelay[bp.m_bpMaxSubLayers - 1] - 1, bp.m_cpbRemovalDelayLength,               "cpb_removal_delay_minus1[bp_max_sub_layers_minus1]" );
-  if( bp.m_altCpbParamsPresentFlag ) 
+  if( bp.m_altCpbParamsPresentFlag )
   {
     WRITE_FLAG( sei.m_cpbAltTimingInfoPresentFlag, "cpb_alt_timing_info_present_flag" );
-    if( sei.m_cpbAltTimingInfoPresentFlag ) 
+    if( sei.m_cpbAltTimingInfoPresentFlag )
     {
       for (int i = (bp.m_sublayerInitialCpbRemovalDelayPresentFlag ? 0 : bp.m_bpMaxSubLayers - 1);
            i <= bp.m_bpMaxSubLayers - 1; ++i)
@@ -552,9 +552,9 @@ void SEIWriter::xWriteSEIEquirectangularProjection(const SEIEquirectangularProje
     WRITE_CODE( 0, 2, "erp_reserved_zero_2bits" );
     if ( sei.m_erpGuardBandFlag == 1)
     {
-      WRITE_CODE( sei.m_erpGuardBandType,       3, "erp_guard_band_type" );  
-      WRITE_CODE( sei.m_erpLeftGuardBandWidth,  8, "erp_left_guard_band_width" );  
-      WRITE_CODE( sei.m_erpRightGuardBandWidth, 8, "erp_right_guard_band_width" );  
+      WRITE_CODE( sei.m_erpGuardBandType,       3, "erp_guard_band_type" );
+      WRITE_CODE( sei.m_erpLeftGuardBandWidth,  8, "erp_left_guard_band_width" );
+      WRITE_CODE( sei.m_erpRightGuardBandWidth, 8, "erp_right_guard_band_width" );
     }
   }
 }
@@ -566,9 +566,9 @@ void SEIWriter::xWriteSEISphereRotation(const SEISphereRotation &sei)
   {
     WRITE_FLAG( sei.m_sphereRotationPersistenceFlag,    "sphere_rotation_persistence_flag" );
     WRITE_CODE( 0,                                   6, "sphere_rotation_reserved_zero_6bits" );
-    WRITE_SCODE(sei.m_sphereRotationYaw,            32, "sphere_rotation_yaw" );  
-    WRITE_SCODE(sei.m_sphereRotationPitch,          32, "sphere_rotation_pitch" );  
-    WRITE_SCODE(sei.m_sphereRotationRoll,           32, "sphere_rotation_roll" );  
+    WRITE_SCODE(sei.m_sphereRotationYaw,            32, "sphere_rotation_yaw" );
+    WRITE_SCODE(sei.m_sphereRotationPitch,          32, "sphere_rotation_pitch" );
+    WRITE_SCODE(sei.m_sphereRotationRoll,           32, "sphere_rotation_roll" );
   }
 }
 
@@ -584,9 +584,9 @@ void SEIWriter::xWriteSEIOmniViewport(const SEIOmniViewport &sei)
     for(uint32_t region=0; region<numRegions; region++)
     {
       const SEIOmniViewport::OmniViewport &viewport=sei.m_omniViewportRegions[region];
-      WRITE_SCODE( viewport.azimuthCentre,     32,  "omni_viewport_azimuth_centre"   );  
-      WRITE_SCODE( viewport.elevationCentre,   32,  "omni_viewport_elevation_centre" );  
-      WRITE_SCODE( viewport.tiltCentre,        32,  "omni_viewport_tilt_center" );  
+      WRITE_SCODE( viewport.azimuthCentre,     32,  "omni_viewport_azimuth_centre"   );
+      WRITE_SCODE( viewport.elevationCentre,   32,  "omni_viewport_elevation_centre" );
+      WRITE_SCODE( viewport.tiltCentre,        32,  "omni_viewport_tilt_center" );
       WRITE_CODE( viewport.horRange,           32, "omni_viewport_hor_range[i]" );
       WRITE_CODE( viewport.verRange,           32, "omni_viewport_ver_range[i]" );
     }
@@ -607,7 +607,7 @@ void SEIWriter::xWriteSEIRegionWisePacking(const SEIRegionWisePacking &sei)
     WRITE_CODE( (uint32_t)sei.m_packedPictureWidth,               16,            "packed_picture_width" );
     WRITE_CODE( (uint32_t)sei.m_packedPictureHeight,              16,            "packed_picture_height" );
     for( int i=0; i < sei.m_numPackedRegions; i++ )
-    { 
+    {
       WRITE_CODE( 0, 4,                                                      "rwp_reserved_zero_4bits" );
       WRITE_CODE( (uint32_t)sei.m_rwpTransformType[i],            3,             "rwp_tTransform_type" );
       WRITE_FLAG( sei.m_rwpGuardBandFlag[i],                                 "rwp_guard_band_flag" );
@@ -642,18 +642,18 @@ void SEIWriter::xWriteSEIGeneralizedCubemapProjection(const SEIGeneralizedCubema
   if (!sei.m_gcmpCancelFlag)
   {
     WRITE_FLAG( sei.m_gcmpPersistenceFlag,                    "gcmp_persistence_flag" );
-    WRITE_CODE( sei.m_gcmpPackingType,                     3, "gcmp_packing_type" );  
+    WRITE_CODE( sei.m_gcmpPackingType,                     3, "gcmp_packing_type" );
     WRITE_CODE( sei.m_gcmpMappingFunctionType,             2, "gcmp_mapping_function_type" );
     int numFace = sei.m_gcmpPackingType == 4 || sei.m_gcmpPackingType == 5 ? 5 : 6;
     for (int i = 0; i < numFace; i++)
     {
-      WRITE_CODE( sei.m_gcmpFaceIndex[i],                  3, "gcmp_face_index" );  
-      WRITE_CODE( sei.m_gcmpFaceRotation[i],               2, "gcmp_face_rotation" );  
+      WRITE_CODE( sei.m_gcmpFaceIndex[i],                  3, "gcmp_face_index" );
+      WRITE_CODE( sei.m_gcmpFaceRotation[i],               2, "gcmp_face_rotation" );
       if (sei.m_gcmpMappingFunctionType == 2)
       {
-        WRITE_CODE( sei.m_gcmpFunctionCoeffU[i],           7, "gcmp_function_coeff_u" );  
+        WRITE_CODE( sei.m_gcmpFunctionCoeffU[i],           7, "gcmp_function_coeff_u" );
         WRITE_FLAG( sei.m_gcmpFunctionUAffectedByVFlag[i],    "gcmp_function_u_affected_by_v_flag" );
-        WRITE_CODE( sei.m_gcmpFunctionCoeffV[i],           7, "gcmp_function_coeff_v" );  
+        WRITE_CODE( sei.m_gcmpFunctionCoeffV[i],           7, "gcmp_function_coeff_v" );
         WRITE_FLAG( sei.m_gcmpFunctionVAffectedByUFlag[i],    "gcmp_function_v_affected_by_u_flag" );
       }
     }
@@ -662,7 +662,7 @@ void SEIWriter::xWriteSEIGeneralizedCubemapProjection(const SEIGeneralizedCubema
     {
       WRITE_CODE( sei.m_gcmpGuardBandType,                 3, "gcmp_guard_band_type" );
       WRITE_FLAG( sei.m_gcmpGuardBandBoundaryExteriorFlag,    "gcmp_guard_band_boundary_exterior_flag" );
-      WRITE_CODE( sei.m_gcmpGuardBandSamplesMinus1,        4, "gcmp_guard_band_samples_minus1" );  
+      WRITE_CODE( sei.m_gcmpGuardBandSamplesMinus1,        4, "gcmp_guard_band_samples_minus1" );
     }
   }
 }

@@ -133,7 +133,7 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
   {
     const unsigned  ctuRsAddr       = slice->getCtuAddrInSlice(ctuIdx);
     const unsigned  ctuXPosInCtus   = ctuRsAddr % widthInCtus;
-    const unsigned  ctuYPosInCtus   = ctuRsAddr / widthInCtus;    
+    const unsigned  ctuYPosInCtus   = ctuRsAddr / widthInCtus;
     const unsigned  tileColIdx      = slice->getPPS()->ctuToTileCol( ctuXPosInCtus );
     const unsigned  tileRowIdx      = slice->getPPS()->ctuToTileRow( ctuYPosInCtus );
     const unsigned  tileXPosInCtus  = slice->getPPS()->getTileColumnBd( tileColIdx );
@@ -152,13 +152,13 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
       int subPicY      = (int)curSubPic.getSubPicTop();
       int subPicWidth  = (int)curSubPic.getSubPicWidthInLumaSample();
       int subPicHeight = (int)curSubPic.getSubPicHeightInLumaSample();
-      for (int rlist = REF_PIC_LIST_0; rlist < NUM_REF_PIC_LIST_01; rlist++) 
+      for (int rlist = REF_PIC_LIST_0; rlist < NUM_REF_PIC_LIST_01; rlist++)
       {
         int n = slice->getNumRefIdx((RefPicList)rlist);
-        for (int idx = 0; idx < n; idx++) 
+        for (int idx = 0; idx < n; idx++)
         {
           Picture *refPic = slice->getRefPic((RefPicList)rlist, idx);
-          if (!refPic->getSubPicSaved()) 
+          if (!refPic->getSubPicSaved())
           {
             refPic->saveSubPicBorder(refPic->getPOC(), subPicX, subPicY, subPicWidth, subPicHeight);
             refPic->extendSubPicBorder(refPic->getPOC(), subPicX, subPicY, subPicWidth, subPicHeight);
@@ -248,7 +248,7 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
       unsigned binVal = cabacReader.terminating_bit();
       CHECK( !binVal, "Expecting a terminating bit" );
       bool isLastTileCtu = (ctuXPosInCtus + 1 == tileXPosInCtus + tileColWidth) && (ctuYPosInCtus + 1 == tileYPosInCtus + tileRowHeight);
-      if( isLastTileCtu || wavefrontsEntryPointPresent ) 
+      if( isLastTileCtu || wavefrontsEntryPointPresent )
       {
 #if DECODER_CHECK_SUBSTREAM_AND_SLICE_TRAILING_BYTES
         cabacReader.remaining_bytes( true );
@@ -263,13 +263,13 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
       int subPicY = (int)curSubPic.getSubPicTop();
       int subPicWidth = (int)curSubPic.getSubPicWidthInLumaSample();
       int subPicHeight = (int)curSubPic.getSubPicHeightInLumaSample();
-      for (int rlist = REF_PIC_LIST_0; rlist < NUM_REF_PIC_LIST_01; rlist++) 
+      for (int rlist = REF_PIC_LIST_0; rlist < NUM_REF_PIC_LIST_01; rlist++)
       {
         int n = slice->getNumRefIdx((RefPicList)rlist);
-        for (int idx = 0; idx < n; idx++) 
+        for (int idx = 0; idx < n; idx++)
         {
           Picture *refPic = slice->getRefPic((RefPicList)rlist, idx);
-          if (refPic->getSubPicSaved()) 
+          if (refPic->getSubPicSaved())
           {
             refPic->restoreSubPicBorder(refPic->getPOC(), subPicX, subPicY, subPicWidth, subPicHeight);
             refPic->setSubPicSaved(false);

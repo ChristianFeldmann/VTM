@@ -1254,7 +1254,7 @@ void Quant::lambdaAdjustColorTrans(bool forward)
     }
     m_resetStore = false;
   }
-  
+
   if (forward)
   {
     CHECK(m_pairCheck == 1, "lambda has been already adjusted");

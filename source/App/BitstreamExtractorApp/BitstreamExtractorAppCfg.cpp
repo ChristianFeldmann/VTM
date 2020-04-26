@@ -109,7 +109,7 @@ namespace po = df::program_options_lite;
   }
   DTRACE_UPDATE( g_trace_ctx, std::make_pair( "final", 1 ) );
 #endif
-  
+
   g_verbosity = MsgLevel( verbosity );
 
   if (err.is_errored)

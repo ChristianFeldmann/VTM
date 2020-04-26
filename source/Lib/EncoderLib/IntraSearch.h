@@ -155,7 +155,7 @@ public:
     {
       data[comp] = element.data[comp];
       sumData[comp] = data[comp];
-      shift[comp] = 0; 
+      shift[comp] = 0;
       lastCnt[comp] = 1;
     }
   }
@@ -391,7 +391,7 @@ protected:
   uint16_t*       m_escapeNumBins;
   bool            m_bestEscape;
   double*         m_indexError[MAXPLTSIZE + 1];
-  uint8_t*        m_minErrorIndexMap; // store the best index in terms of distortion for each pixel 
+  uint8_t*        m_minErrorIndexMap; // store the best index in terms of distortion for each pixel
   uint8_t         m_indexMapRDOQ   [2][NUM_TRELLIS_STATE][2 * MAX_CU_BLKSIZE_PLT];
   bool            m_runMapRDOQ     [2][NUM_TRELLIS_STATE][2 * MAX_CU_BLKSIZE_PLT];
   uint8_t*        m_statePtRDOQ    [NUM_TRELLIS_STATE];

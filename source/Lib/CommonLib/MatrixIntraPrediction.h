@@ -83,7 +83,7 @@ public:
     const uint8_t* getMatrixData(const int modeIdx) const;
 
 
-    void computeReducedPred( int*const result, const int* const input, 
+    void computeReducedPred( int*const result, const int* const input,
                              const uint8_t* matrix,
                              const bool transpose, const int bitDepth );
   };

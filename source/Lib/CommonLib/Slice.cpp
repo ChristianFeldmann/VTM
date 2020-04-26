@@ -191,7 +191,7 @@ void Slice::initSlice()
 }
 
 void Slice::inheritFromPicHeader( PicHeader *picHeader, const PPS *pps, const SPS *sps )
-{ 
+{
   if (pps->getRplInfoInPhFlag())
   {
     setRPL0idx( picHeader->getRPL0idx() );
@@ -204,7 +204,7 @@ void Slice::inheritFromPicHeader( PicHeader *picHeader, const PPS *pps, const SP
     {
       setRPL0(getLocalRPL0());
     }
-    
+
     setRPL1idx( picHeader->getRPL1idx() );
     *getLocalRPL1() = *picHeader->getLocalRPL1();
     if(getRPL1idx() != -1)
@@ -242,7 +242,7 @@ void Slice::inheritFromPicHeader( PicHeader *picHeader, const PPS *pps, const SP
   m_ccAlfFilterParam.ccAlfFilterEnabled[COMPONENT_Cr - 1] = picHeader->getCcAlfEnabledFlag(COMPONENT_Cr);
 }
 
-void Slice::setNumSubstream(const SPS* sps, const PPS* pps) 
+void Slice::setNumSubstream(const SPS* sps, const PPS* pps)
 {
   uint32_t ctuAddr, ctuX, ctuY;
   m_numSubstream = 0;
@@ -270,7 +270,7 @@ void Slice::setNumEntryPoints(const SPS *sps, const PPS *pps)
 
   // count the number of CTUs that align with either the start of a tile, or with an entropy coding sync point
   // ignore the first CTU since it doesn't count as an entry point
-  for( uint32_t i = 1; i < m_sliceMap.getNumCtuInSlice(); i++ ) 
+  for( uint32_t i = 1; i < m_sliceMap.getNumCtuInSlice(); i++ )
   {
     ctuAddr = m_sliceMap.getCtuAddrInSlice( i );
     ctuX = ( ctuAddr % pps->getPicWidthInCtu() );
@@ -671,7 +671,7 @@ void Slice::checkRPL(const ReferencePictureList* pRPL0, const ReferencePictureLi
     // entry in RefPicList[0] or RefPicList[1] that precedes the associated IRAP picture in output order or decoding order"
     // Note that when not in field coding, we know that all leading pictures of an IRAP precedes all trailing pictures of the
     // same IRAP picture.
-    if (currentPictureIsTrailing && !fieldSeqFlag) // 
+    if (currentPictureIsTrailing && !fieldSeqFlag) //
     {
       CHECK(refPicPOC < irapPOC || refPicDecodingOrderNumber < associatedIRAPDecodingOrderNumber, "Trailing picture detected that follows one or more leading pictures, if any, and violates the rule that no entry in RefPicList[] shall precede the associated IRAP picture in output order or decoding order.");
     }
@@ -1222,7 +1222,7 @@ void Slice::applyReferencePictureListBasedMarking( PicList& rcListPic, const Ref
     {
       continue;
     }
-          
+
     int isAvailable = 0;
     PicList::iterator iterPic = rcListPic.begin();
     while (iterPic != rcListPic.end())
@@ -1288,7 +1288,7 @@ void Slice::applyReferencePictureListBasedMarking( PicList& rcListPic, const Ref
     {
       continue;
     }
-          
+
     int isAvailable = 0;
     PicList::iterator iterPic = rcListPic.begin();
     while (iterPic != rcListPic.end())
@@ -2601,7 +2601,7 @@ SubPic::~SubPic()
   m_ctuAddrInSubPic.clear();
 }
 
-  
+
 PPS::PPS()
 : m_PPSId                            (0)
 , m_SPSId                            (0)
@@ -2625,7 +2625,7 @@ PPS::PPS()
 , m_picHeightInCtu                   (0)
 , m_numTileCols                      (1)
 , m_numTileRows                      (1)
-, m_rectSliceFlag                    (1)  
+, m_rectSliceFlag                    (1)
 , m_singleSlicePerSubPicFlag         (0)
 , m_numSlicesInPic                   (1)
 , m_tileIdxDeltaPresentFlag          (0)
@@ -2705,7 +2705,7 @@ void PPS::initTiles()
 {
   int       colIdx, rowIdx;
   int       ctuX, ctuY;
-  
+
   // check explicit tile column sizes
   uint32_t  remainingWidthInCtu  = m_picWidthInCtu;
   for( colIdx = 0; colIdx < m_numExpTileCols; colIdx++ )
@@ -2716,7 +2716,7 @@ void PPS::initTiles()
 
   // divide remaining picture width into uniform tile columns
   uint32_t  uniformTileColWidth = m_tileColWidth[colIdx-1];
-  while( remainingWidthInCtu > 0 ) 
+  while( remainingWidthInCtu > 0 )
   {
     CHECK(colIdx >= MAX_TILE_COLS, "Number of tile columns exceeds valid range");
     uniformTileColWidth = std::min(remainingWidthInCtu, uniformTileColWidth);
@@ -2725,7 +2725,7 @@ void PPS::initTiles()
     colIdx++;
   }
   m_numTileCols = colIdx;
-    
+
   // check explicit tile row sizes
   uint32_t  remainingHeightInCtu  = m_picHeightInCtu;
   for( rowIdx = 0; rowIdx < m_numExpTileRows; rowIdx++ )
@@ -2733,10 +2733,10 @@ void PPS::initTiles()
     CHECK(m_tileRowHeight[rowIdx] > remainingHeightInCtu,     "Tile row height exceeds picture height");
     remainingHeightInCtu -= m_tileRowHeight[rowIdx];
   }
-    
+
   // divide remaining picture height into uniform tile rows
   uint32_t  uniformTileRowHeight = m_tileRowHeight[rowIdx - 1];
-  while( remainingHeightInCtu > 0 ) 
+  while( remainingHeightInCtu > 0 )
   {
     CHECK(rowIdx >= MAX_TILE_ROWS, "Number of tile rows exceeds valid range");
     uniformTileRowHeight = std::min(remainingHeightInCtu, uniformTileRowHeight);
@@ -2752,7 +2752,7 @@ void PPS::initTiles()
   {
     m_tileColBd.push_back( m_tileColBd[ colIdx ] + m_tileColWidth[ colIdx ] );
   }
-  
+
   // set top row bounaries
   m_tileRowBd.push_back( 0 );
   for( rowIdx = 0; rowIdx < m_numTileRows; rowIdx++ )
@@ -2762,7 +2762,7 @@ void PPS::initTiles()
 
   // set mapping between horizontal CTU address and tile column index
   colIdx = 0;
-  for( ctuX = 0; ctuX <= m_picWidthInCtu; ctuX++ ) 
+  for( ctuX = 0; ctuX <= m_picWidthInCtu; ctuX++ )
   {
     if( ctuX == m_tileColBd[ colIdx + 1 ] )
     {
@@ -2770,10 +2770,10 @@ void PPS::initTiles()
     }
     m_ctuToTileCol.push_back( colIdx );
   }
-  
+
   // set mapping between vertical CTU address and tile row index
   rowIdx = 0;
-  for( ctuY = 0; ctuY <= m_picHeightInCtu; ctuY++ ) 
+  for( ctuY = 0; ctuY <= m_picHeightInCtu; ctuY++ )
   {
     if( ctuY == m_tileRowBd[ rowIdx + 1 ] )
     {
@@ -2787,7 +2787,7 @@ void PPS::initTiles()
  - initialize memory for rectangular slice parameters
  */
 void PPS::initRectSlices()
-{ 
+{
   CHECK(m_numSlicesInPic > MAX_SLICES, "Number of slices in picture exceeds valid range");
   m_rectSlices.resize(m_numSlicesInPic);
 }
@@ -2846,7 +2846,7 @@ void PPS::initRectSliceMap(const SPS  *sps)
       uint32_t leftX = sps->getSubPicCtuTopLeftX(i);
       uint32_t rightX = leftX + sps->getSubPicWidth(i) - 1;
       subpicWidthInTiles[i] = m_ctuToTileCol[rightX] + 1 - m_ctuToTileCol[leftX];
-      
+
       uint32_t topY = sps->getSubPicCtuTopLeftY(i);
       uint32_t bottomY = topY + sps->getSubPicHeight(i) - 1;
       subpicHeightInTiles[i] = m_ctuToTileRow[bottomY] + 1 - m_ctuToTileRow[topY];
@@ -2867,7 +2867,7 @@ void PPS::initRectSliceMap(const SPS  *sps)
       m_sliceMap[ i ].initSliceMap();
       if (subpicHeightLessThanOneTileFlag[i])
       {
-        m_sliceMap[i].addCtusToSlice(sps->getSubPicCtuTopLeftX(i), sps->getSubPicCtuTopLeftX(i) + sps->getSubPicWidth(i), 
+        m_sliceMap[i].addCtusToSlice(sps->getSubPicCtuTopLeftX(i), sps->getSubPicCtuTopLeftX(i) + sps->getSubPicWidth(i),
                                      sps->getSubPicCtuTopLeftY(i), sps->getSubPicCtuTopLeftY(i) + sps->getSubPicHeight(i), m_picWidthInCtu);
       }
       else
@@ -2875,7 +2875,7 @@ void PPS::initRectSliceMap(const SPS  *sps)
         tileX = m_ctuToTileCol[sps->getSubPicCtuTopLeftX(i)];
         tileY = m_ctuToTileRow[sps->getSubPicCtuTopLeftY(i)];
         for (uint32_t j = 0; j< subpicHeightInTiles[i]; j++)
-        { 
+        {
           for (uint32_t k = 0; k < subpicWidthInTiles[i]; k++)
           {
             m_sliceMap[i].addCtusToSlice(getTileColumnBd(tileX + k), getTileColumnBd(tileX + k + 1), getTileRowBd(tileY + j), getTileRowBd(tileY + j + 1), m_picWidthInCtu);
@@ -2999,31 +2999,31 @@ void PPS::initSubPic(const SPS &sps)
     m_subPics[i].setSubPicCtuTopLeftY(sps.getSubPicCtuTopLeftY(i));
     m_subPics[i].setSubPicWidthInCTUs(sps.getSubPicWidth(i));
     m_subPics[i].setSubPicHeightInCTUs(sps.getSubPicHeight(i));
-    
+
     uint32_t firstCTU = sps.getSubPicCtuTopLeftY(i) * m_picWidthInCtu + sps.getSubPicCtuTopLeftX(i); 	
-    m_subPics[i].setFirstCTUInSubPic(firstCTU);  
+    m_subPics[i].setFirstCTUInSubPic(firstCTU);
     uint32_t lastCTU = (sps.getSubPicCtuTopLeftY(i) + sps.getSubPicHeight(i) - 1) * m_picWidthInCtu + sps.getSubPicCtuTopLeftX(i) + sps.getSubPicWidth(i) - 1;
     m_subPics[i].setLastCTUInSubPic(lastCTU);
-    
+
     uint32_t left = sps.getSubPicCtuTopLeftX(i) * m_ctuSize;
     m_subPics[i].setSubPicLeft(left);
-    
+
     uint32_t right = std::min(m_picWidthInLumaSamples - 1, (sps.getSubPicCtuTopLeftX(i) + sps.getSubPicWidth(i)) * m_ctuSize - 1);
     m_subPics[i].setSubPicRight(right);
-    
+
     m_subPics[i].setSubPicWidthInLumaSample(right - left + 1);
 
     uint32_t top = sps.getSubPicCtuTopLeftY(i) * m_ctuSize;
     m_subPics[i].setSubPicTop(top);
-    
+
     uint32_t bottom = std::min(m_picHeightInLumaSamples - 1, (sps.getSubPicCtuTopLeftY(i) + sps.getSubPicHeight(i)) * m_ctuSize - 1);
 
     m_subPics[i].setSubPicHeightInLumaSample(bottom - top + 1);
 
     m_subPics[i].setSubPicBottom(bottom);
-    
+
     m_subPics[i].clearCTUAddrList();
-    
+
     if (m_numSlicesInPic == 1)
     {
       CHECK(getNumSubPics() != 1, "only one slice in picture, but number of subpic is not one");
@@ -3041,7 +3041,7 @@ void PPS::initSubPic(const SPS &sps)
         if (ctu_x >= sps.getSubPicCtuTopLeftX(i) &&
           ctu_x < (sps.getSubPicCtuTopLeftX(i) + sps.getSubPicWidth(i)) &&
           ctu_y >= sps.getSubPicCtuTopLeftY(i) &&
-          ctu_y < (sps.getSubPicCtuTopLeftY(i) + sps.getSubPicHeight(i)))  
+          ctu_y < (sps.getSubPicCtuTopLeftY(i) + sps.getSubPicHeight(i)))
         {
           // add ctus in a slice to the subpicture it belongs to
           m_subPics[i].addCTUsToSubPic(m_sliceMap[j].getCtuAddrList());
@@ -3067,7 +3067,7 @@ const SubPic& PPS::getSubPicFromPos(const Position& pos)  const
   return m_subPics[0];
 }
 
-const SubPic&  PPS::getSubPicFromCU(const CodingUnit& cu) const 
+const SubPic&  PPS::getSubPicFromCU(const CodingUnit& cu) const
 {
   const Position lumaPos = cu.Y().valid() ? cu.Y().pos() : recalcPosition(cu.chromaFormat, cu.chType, CHANNEL_TYPE_LUMA, cu.blocks[cu.chType].pos());
   return getSubPicFromPos(lumaPos);
@@ -3094,7 +3094,7 @@ void PPS::initRasterSliceMap( std::vector<uint32_t> numTilesInSlice )
   CHECK(m_numSlicesInPic > MAX_SLICES, "Number of slices in picture exceeds valid range");
   m_sliceMap.resize( m_numSlicesInPic );
 
-  for( uint32_t sliceIdx = 0; sliceIdx < numTilesInSlice.size(); sliceIdx++ ) 
+  for( uint32_t sliceIdx = 0; sliceIdx < numTilesInSlice.size(); sliceIdx++ )
   {
     m_sliceMap[sliceIdx].initSliceMap();
     m_sliceMap[sliceIdx].setSliceID( tileIdx );
@@ -3106,7 +3106,7 @@ void PPS::initRasterSliceMap( std::vector<uint32_t> numTilesInSlice )
       CHECK(tileY >= getNumTileRows(), "Number of tiles in slice exceeds the remaining number of tiles in picture");
 
       m_sliceMap[sliceIdx].addCtusToSlice(getTileColumnBd(tileX), getTileColumnBd(tileX + 1),
-                                          getTileRowBd(tileY), getTileRowBd(tileY + 1), 
+                                          getTileRowBd(tileY), getTileRowBd(tileY + 1),
                                           getPicWidthInCtu());
       tileIdx++;
     }
@@ -3128,10 +3128,10 @@ void PPS::checkSliceMap()
   {
     sliceList = m_sliceMap[ i ].getCtuAddrList();
     ctuList.insert( ctuList.end(), sliceList.begin(), sliceList.end() );
-  }  
+  }
   CHECK( ctuList.size() < picSizeInCtu, "Slice map contains too few CTUs");
   CHECK( ctuList.size() > picSizeInCtu, "Slice map contains too many CTUs");
-  std::sort( ctuList.begin(), ctuList.end() );   
+  std::sort( ctuList.begin(), ctuList.end() );
   for( i = 1; i < ctuList.size(); i++ )
   {
     CHECK( ctuList[i] > ctuList[i-1]+1, "CTU missing in slice map");
@@ -3715,7 +3715,7 @@ uint32_t PreCalcValues::getValIdx( const Slice &slice, const ChannelType chType 
 
 uint32_t PreCalcValues::getMaxBtDepth( const Slice &slice, const ChannelType chType ) const
 {
-  if ( slice.getPicHeader()->getSplitConsOverrideFlag() )    
+  if ( slice.getPicHeader()->getSplitConsOverrideFlag() )
     return slice.getPicHeader()->getMaxMTTHierarchyDepth( slice.getSliceType(), ISingleTree ? CHANNEL_TYPE_LUMA : chType);
   else
   return maxBtDepth[getValIdx( slice, chType )];
@@ -3761,7 +3761,7 @@ void Slice::scaleRefPicList( Picture *scaledRefPic[ ], PicHeader *picHeader, APS
   const PPS* pps = getPPS();
 
   bool refPicIsSameRes = false;
-   
+
   // this is needed for IBC
   m_pcPic->unscaledPic = m_pcPic;
 
@@ -3850,9 +3850,9 @@ void Slice::scaleRefPicList( Picture *scaledRefPic[ ], PicHeader *picHeader, APS
 
           // rescale the reference picture
           const bool downsampling = m_apcRefPicList[refList][rIdx]->getRecoBuf().Y().width >= scaledRefPic[j]->getRecoBuf().Y().width && m_apcRefPicList[refList][rIdx]->getRecoBuf().Y().height >= scaledRefPic[j]->getRecoBuf().Y().height;
-          Picture::rescalePicture( m_scalingRatio[refList][rIdx], 
-                                   m_apcRefPicList[refList][rIdx]->getRecoBuf(), m_apcRefPicList[refList][rIdx]->slices[0]->getPPS()->getScalingWindow(), 
-                                   scaledRefPic[j]->getRecoBuf(), pps->getScalingWindow(), 
+          Picture::rescalePicture( m_scalingRatio[refList][rIdx],
+                                   m_apcRefPicList[refList][rIdx]->getRecoBuf(), m_apcRefPicList[refList][rIdx]->slices[0]->getPPS()->getScalingWindow(),
+                                   scaledRefPic[j]->getRecoBuf(), pps->getScalingWindow(),
                                    sps->getChromaFormatIdc(), sps->getBitDepths(), true, downsampling,
                                    sps->getHorCollocatedChromaFlag(), sps->getVerCollocatedChromaFlag() );
           scaledRefPic[j]->extendPicBorder();
@@ -3884,7 +3884,7 @@ void Slice::scaleRefPicList( Picture *scaledRefPic[ ], PicHeader *picHeader, APS
       m_apcRefPicList[refList][rIdx]->unscaledPic = m_savedRefPicList[refList][rIdx];
     }
   }
-  
+
   //Make sure that TMVP is disabled when there are no reference pictures with the same resolution
   if(!refPicIsSameRes)
   {

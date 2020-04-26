@@ -94,7 +94,7 @@ public:
   int                   cShiftX;
   int                   cShiftY;
   DistParam() :
-  org(), cur(), 
+  org(), cur(),
   mask( nullptr ),
   maskStride( 0 ),
   stepX(0),

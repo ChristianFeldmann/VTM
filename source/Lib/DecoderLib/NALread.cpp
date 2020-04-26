@@ -150,7 +150,7 @@ void readNalUnitHeader(InputNALUnit& nalu)
     else
     {
       CHECK(nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_STSA
-        , "When NAL unit type is equal to STSA_NUT, TemporalId shall not be equal to 0"); 
+        , "When NAL unit type is equal to STSA_NUT, TemporalId shall not be equal to 0");
     }
   }
 }

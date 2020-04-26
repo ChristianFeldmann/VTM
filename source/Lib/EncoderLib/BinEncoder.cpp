@@ -215,7 +215,7 @@ void BinEncoderBase::encodeRemAbsEP(unsigned bins, unsigned goRicePar, unsigned 
     encodeBinsEP((1 << length) - 2, length);
     encodeBinsEP(bins & bitMask, goRicePar);
   }
-  else 
+  else
   {
     const unsigned  maxPrefixLength = 32 - cutoff - maxLog2TrDynamicRange;
     unsigned        prefixLength = 0;
@@ -419,7 +419,7 @@ void BitEstimatorBase::encodeRemAbsEP(unsigned bins, unsigned goRicePar, unsigne
   {
     m_EstFracBits += BinProbModelBase::estFracBitsEP((bins >> goRicePar) + 1 + goRicePar);
   }
-  else 
+  else
   {
     const unsigned  maxPrefixLength = 32 - cutoff - maxLog2TrDynamicRange;
     unsigned        prefixLength = 0;

@@ -132,8 +132,8 @@ uint32_t DecApp::decode()
     // determine if next NAL unit will be the first one from a new picture
     bool bNewPicture = isNewPicture(&bitstreamFile, &bytestream);
     bool bNewAccessUnit = bNewPicture && isNewAccessUnit( bNewPicture, &bitstreamFile, &bytestream );
-    if(!bNewPicture) 
-    { 
+    if(!bNewPicture)
+    {
       AnnexBStats stats = AnnexBStats();
 
       // find next NAL unit in stream
@@ -270,7 +270,7 @@ uint32_t DecApp::decode()
         xWriteOutput( pcListPic, nalu.m_temporalId );
       }
     }
-    if(bNewAccessUnit) 
+    if(bNewAccessUnit)
     {
       m_cDecLib.checkTidLayerIdInAccessUnit();
       m_cDecLib.resetAccessUnitSeiTids();
@@ -378,7 +378,7 @@ bool DecApp::isNewPicture(ifstream *bitstreamFile, class InputByteStream *bytest
           ret = false;
           finished = true;
           break;
-        
+
         // NUT that might indicate the start of a new picture - keep looking
         case NAL_UNIT_PREFIX_APS:
         case NAL_UNIT_PREFIX_SEI:
@@ -393,7 +393,7 @@ bool DecApp::isNewPicture(ifstream *bitstreamFile, class InputByteStream *bytest
       }
     }
   }
-  
+
   // restore previous stream location - minus 3 due to the need for the annexB parser to read three extra bytes
 #if RExt__DECODER_DEBUG_BIT_STATISTICS
   bitstreamFile->clear();
@@ -418,7 +418,7 @@ bool DecApp::isNewAccessUnit( bool newPicture, ifstream *bitstreamFile, class In
 {
   bool ret = false;
   bool finished = false;
-  
+
   // can only be the start of an AU if this is the start of a new picture
   if( newPicture == false )
   {
@@ -448,7 +448,7 @@ bool DecApp::isNewAccessUnit( bool newPicture, ifstream *bitstreamFile, class In
       // get next NAL unit type
       read(nalu);
       switch( nalu.m_nalUnitType ) {
-        
+
         // AUD always indicates the start of a new access unit
         case NAL_UNIT_ACCESS_UNIT_DELIMITER:
           ret = true;
@@ -464,10 +464,10 @@ bool DecApp::isNewAccessUnit( bool newPicture, ifstream *bitstreamFile, class In
         case NAL_UNIT_CODED_SLICE_IDR_N_LP:
         case NAL_UNIT_CODED_SLICE_CRA:
         case NAL_UNIT_CODED_SLICE_GDR:
-          ret = m_cDecLib.isSliceNaluFirstInAU( newPicture, nalu );          
+          ret = m_cDecLib.isSliceNaluFirstInAU( newPicture, nalu );
           finished = true;
           break;
-          
+
         // NUT that are not the start of a new access unit
         case NAL_UNIT_EOS:
         case NAL_UNIT_EOB:
@@ -477,14 +477,14 @@ bool DecApp::isNewAccessUnit( bool newPicture, ifstream *bitstreamFile, class In
           ret = false;
           finished = true;
           break;
-        
+
         // all other NUT - keep looking to find first VCL
         default:
           break;
       }
     }
   }
-  
+
   // restore previous stream location
 #if RExt__DECODER_DEBUG_BIT_STATISTICS
   bitstreamFile->clear();

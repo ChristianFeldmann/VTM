@@ -293,7 +293,7 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
     int curSeqMaxPicWidthY = sps0.getMaxPicWidthInLumaSamples();    // pic_width_max_in_luma_samples
     int curSeqMaxPicHeightY = sps0.getMaxPicHeightInLumaSamples();  // pic_height_max_in_luma_samples
     int curPicWidthY = width;                                       // pic_width_in_luma_samples
-    int curPicHeightY = height;                                     // pic_height_in_luma_samples 
+    int curPicHeightY = height;                                     // pic_height_in_luma_samples
     int max8MinCbSizeY = std::max((int)8, (1 << sps0.getLog2MinCodingBlockSize())); // Max(8, MinCbSizeY)
     //Warning message of potential scaling window size violation
     for (int i = 0; i < 64; i++)
@@ -713,7 +713,7 @@ bool EncLib::encodePrep( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYu
  */
 
 bool EncLib::encode( const InputColourSpaceConversion snrCSC, std::list<PelUnitBuf*>& rcListPicYuvRecOut, int& iNumEncoded )
-{ 
+{
   // compress GOP
   m_cGOPEncoder.compressGOP( m_iPOCLast, m_iNumPicRcvd, m_cListPic, rcListPicYuvRecOut,
     false, false, snrCSC, m_printFrameMSE, false, m_picIdInGOP );
@@ -850,7 +850,7 @@ bool EncLib::encode( const InputColourSpaceConversion snrCSC, std::list<PelUnitB
 
     m_picIdInGOP++;
   }
-   
+
   // go over all pictures in a GOP excluding first top field and first bottom field
   if( m_picIdInGOP != m_iGOPSize && m_iPOCLast > 1 )
   {
@@ -860,7 +860,7 @@ bool EncLib::encode( const InputColourSpaceConversion snrCSC, std::list<PelUnitB
   iNumEncoded += m_iNumPicRcvd;
   m_uiNumAllPicCoded += m_iNumPicRcvd;
   m_iNumPicRcvd = 0;
-  
+
   return false;
 }
 
@@ -1545,7 +1545,7 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
     pps.setTileRowHeights( m_tileRowHeight );
     pps.initTiles();
     pps.setRectSliceFlag( m_rectSliceFlag );
-    if( m_rectSliceFlag ) 
+    if( m_rectSliceFlag )
     {
       pps.setSingleSlicePerSubPicFlag(m_singleSlicePerSubPicFlag);
       pps.setNumSlicesInPic( m_numSlicesInPic );
@@ -1674,8 +1674,8 @@ void EncLib::xInitPicHeader(PicHeader &picHeader, const SPS &sps, const PPS &pps
 
   // parameter sets
   picHeader.setSPSId( sps.getSPSId() );
-  picHeader.setPPSId( pps.getPPSId() );  
-  
+  picHeader.setPPSId( pps.getPPSId() );
+
   // merge list sizes
   picHeader.setMaxNumAffineMergeCand(getMaxNumAffineMergeCand());
   // copy partitioning constraints from SPS
@@ -1688,7 +1688,7 @@ void EncLib::xInitPicHeader(PicHeader &picHeader, const SPS &sps, const PPS &pps
   // quantization
   picHeader.setDepQuantEnabledFlag( sps.getDepQuantEnabledFlag() );
   picHeader.setSignDataHidingEnabledFlag( sps.getSignDataHidingEnabledFlag() );
-  
+
   bool bUseDQP = (getCuQpDeltaSubdiv() > 0)? true : false;
 
   if( (getMaxDeltaQP() != 0 )|| getUseAdaptiveQP() )
@@ -1741,7 +1741,7 @@ void EncLib::xInitPicHeader(PicHeader &picHeader, const SPS &sps, const PPS &pps
     picHeader.setCuChromaQpOffsetSubdivIntra(0);
     picHeader.setCuChromaQpOffsetSubdivInter(0);
   }
-  
+
 
   // virtual boundaries
   if( sps.getVirtualBoundariesEnabledFlag() )
@@ -1757,7 +1757,7 @@ void EncLib::xInitPicHeader(PicHeader &picHeader, const SPS &sps, const PPS &pps
 
   // gradual decoder refresh flag
   picHeader.setGdrPicFlag(false);
-  
+
   // BDOF / DMVR / PROF
   picHeader.setDisBdofFlag(false);
   picHeader.setDisDmvrFlag(false);

@@ -110,7 +110,7 @@ class FastGeoCostList
 {
 public:
   FastGeoCostList() { numGeoTemplatesInitialized = 0; };
-  ~FastGeoCostList() 
+  ~FastGeoCostList()
   {
     for (int partIdx = 0; partIdx < 2; partIdx++)
     {

@@ -492,7 +492,7 @@ static inline istream& operator >> (std::istream& in, std::map<T1, T2>& map)
 
 static uint32_t getMaxTileColsByLevel( Level::Name level )
 {
-  switch( level ) 
+  switch( level )
   {
     case Level::LEVEL1:
     case Level::LEVEL2:
@@ -519,7 +519,7 @@ static uint32_t getMaxTileColsByLevel( Level::Name level )
 
 static uint32_t getMaxTileRowsByLevel( Level::Name level )
 {
-  switch( level ) 
+  switch( level )
   {
     case Level::LEVEL1:
     case Level::LEVEL2:
@@ -546,7 +546,7 @@ static uint32_t getMaxTileRowsByLevel( Level::Name level )
 
 static uint32_t getMaxSlicesByLevel( Level::Name level )
 {
-  switch( level ) 
+  switch( level )
   {
     case Level::LEVEL1:
     case Level::LEVEL2:
@@ -653,7 +653,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   SMultiValueInput<uint32_t> cfg_omniViewportSEIHorRange         (        1, 23592960, 0, 15);
   SMultiValueInput<uint32_t> cfg_omniViewportSEIVerRange         (        1, 11796480, 0, 15);
   SMultiValueInput<uint32_t>   cfg_rwpSEIRwpTransformType                 (0, 7, 0, std::numeric_limits<uint8_t>::max());
-  SMultiValueInput<bool>       cfg_rwpSEIRwpGuardBandFlag                 (0, 1, 0, std::numeric_limits<uint8_t>::max()); 
+  SMultiValueInput<bool>       cfg_rwpSEIRwpGuardBandFlag                 (0, 1, 0, std::numeric_limits<uint8_t>::max());
   SMultiValueInput<uint32_t>   cfg_rwpSEIProjRegionWidth                  (0, std::numeric_limits<uint32_t>::max(), 0, std::numeric_limits<uint8_t>::max());
   SMultiValueInput<uint32_t>   cfg_rwpSEIProjRegionHeight                 (0, std::numeric_limits<uint32_t>::max(), 0, std::numeric_limits<uint8_t>::max());
   SMultiValueInput<uint32_t>   cfg_rwpSEIRwpSEIProjRegionTop              (0, std::numeric_limits<uint32_t>::max(), 0, std::numeric_limits<uint8_t>::max());
@@ -1597,7 +1597,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     }
   }
 
-  if( m_picPartitionFlag ) 
+  if( m_picPartitionFlag )
   {
     // store tile column widths
     m_tileColumnWidth.resize(cfgTileColumnWidth.values.size());
@@ -1614,7 +1614,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     }
 
     // store rectangular slice positions
-    if( !m_rasterSliceFlag ) 
+    if( !m_rasterSliceFlag )
     {
       m_rectSlicePos.resize(cfgRectSlicePos.values.size());
       for(uint32_t i=0; i<cfgRectSlicePos.values.size(); i++)
@@ -1624,7 +1624,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     }
 
     // store raster-scan slice sizes
-    else 
+    else
     {
       m_rasterSliceSize.resize(cfgRasterSliceSize.values.size());
       for(uint32_t i=0; i<cfgRasterSliceSize.values.size(); i++)
@@ -1633,7 +1633,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
       }
     }
   }
-  else 
+  else
   {
     m_tileColumnWidth.clear();
     m_tileRowHeight.clear();
@@ -1676,7 +1676,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     m_outputBitDepth     [CHANNEL_TYPE_CHROMA] = m_outputBitDepth     [CHANNEL_TYPE_LUMA  ];
   }
 
-  if( !m_entropyCodingSyncEnabledFlag ) 
+  if( !m_entropyCodingSyncEnabledFlag )
   {
     m_entropyCodingSyncEntryPointPresentFlag = false;
   }
@@ -2101,7 +2101,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
       m_rwpSEIPackedRegionWidth[i]                    = cfg_rwpSEIPackedRegionWidth.values[i];
       m_rwpSEIPackedRegionHeight[i]                   = cfg_rwpSEIPackedRegionHeight.values[i];
       m_rwpSEIPackedRegionTop[i]                      = cfg_rwpSEIPackedRegionTop.values[i];
-      m_rwpSEIPackedRegionLeft[i]                     = cfg_rwpSEIPackedRegionLeft.values[i]; 
+      m_rwpSEIPackedRegionLeft[i]                     = cfg_rwpSEIPackedRegionLeft.values[i];
       if( m_rwpSEIRwpGuardBandFlag[i] )
       {
         m_rwpSEIRwpLeftGuardBandWidth[i]              =  cfg_rwpSEIRwpLeftGuardBandWidth.values[i];
@@ -2544,14 +2544,14 @@ bool EncAppCfg::xCheckParameter()
   xConfirmPara( m_uiMaxBT[0] > m_uiCTUSize,                                                 "Maximum BT size for luma block in I slice should be smaller than or equal to CTUSize");
   xConfirmPara( m_uiMaxBT[1] < m_uiMinQT[1],                                                "Maximum BT size for luma block in non I slice should be larger than minimum QT size");
   xConfirmPara( m_uiMaxBT[1] > m_uiCTUSize,                                                 "Maximum BT size for luma block in non I slice should be smaller than or equal to CTUSize");
-  xConfirmPara( m_uiMaxBT[2] < (m_uiMinQT[2] << (int)getChannelTypeScaleX(CHANNEL_TYPE_CHROMA, m_chromaFormatIDC)), 
+  xConfirmPara( m_uiMaxBT[2] < (m_uiMinQT[2] << (int)getChannelTypeScaleX(CHANNEL_TYPE_CHROMA, m_chromaFormatIDC)),
                                                                                             "Maximum BT size for chroma block in I slice should be larger than minimum QT size");
   xConfirmPara( m_uiMaxBT[2] > m_uiCTUSize,                                                 "Maximum BT size for chroma block in I slice should be smaller than or equal to CTUSize");
   xConfirmPara( m_uiMaxTT[0] < m_uiMinQT[0],                                                "Maximum TT size for luma block in I slice should be larger than minimum QT size");
   xConfirmPara( m_uiMaxTT[0] > m_uiCTUSize,                                                 "Maximum TT size for luma block in I slice should be smaller than or equal to CTUSize");
   xConfirmPara( m_uiMaxTT[1] < m_uiMinQT[1],                                                "Maximum TT size for luma block in non I slice should be larger than minimum QT size");
   xConfirmPara( m_uiMaxTT[1] > m_uiCTUSize,                                                 "Maximum TT size for luma block in non I slice should be smaller than or equal to CTUSize");
-  xConfirmPara( m_uiMaxTT[2] < (m_uiMinQT[2] << (int)getChannelTypeScaleX(CHANNEL_TYPE_CHROMA, m_chromaFormatIDC)), 
+  xConfirmPara( m_uiMaxTT[2] < (m_uiMinQT[2] << (int)getChannelTypeScaleX(CHANNEL_TYPE_CHROMA, m_chromaFormatIDC)),
                                                                                             "Maximum TT size for chroma block in I slice should be larger than minimum QT size");
   xConfirmPara( m_uiMaxTT[2] > m_uiCTUSize,                                                 "Maximum TT size for chroma block in I slice should be smaller than or equal to CTUSize");
   xConfirmPara( (m_iSourceWidth  % (std::max(8u, m_log2MinCuSize))) != 0,                   "Resulting coded frame width must be a multiple of Max(8, the minimum CU size)");
@@ -3039,23 +3039,23 @@ bool EncAppCfg::xCheckParameter()
     m_maxDecPicBuffering[MAX_TLAYER-1] = m_numReorderPics[MAX_TLAYER-1] + 1;
   }
 
-  if( m_picPartitionFlag ) 
+  if( m_picPartitionFlag )
   {
     PPS pps;
     uint32_t colIdx, rowIdx;
     uint32_t remSize;
- 
+
     pps.setPicWidthInLumaSamples( m_iSourceWidth );
     pps.setPicHeightInLumaSamples( m_iSourceHeight );
     pps.setLog2CtuSize( floorLog2(m_uiCTUSize) );
 
     // set default tile column if not provided
-    if( m_tileColumnWidth.size() == 0 ) 
+    if( m_tileColumnWidth.size() == 0 )
     {
       m_tileColumnWidth.push_back( pps.getPicWidthInCtu() );
     }
     // set default tile row if not provided
-    if( m_tileRowHeight.size() == 0 ) 
+    if( m_tileRowHeight.size() == 0 )
     {
       m_tileRowHeight.push_back( pps.getPicHeightInCtu() );
     }
@@ -3082,7 +3082,7 @@ bool EncAppCfg::xCheckParameter()
       remSize -= m_tileColumnWidth[ colIdx ];
     }
     m_tileColumnWidth.resize( colIdx );
-    pps.setNumExpTileColumns( (uint32_t)m_tileColumnWidth.size() );    
+    pps.setNumExpTileColumns( (uint32_t)m_tileColumnWidth.size() );
     remSize = pps.getPicHeightInCtu();
     for( rowIdx=0; remSize > 0 && rowIdx<m_tileRowHeight.size(); rowIdx++ )
     {
@@ -3267,7 +3267,7 @@ bool EncAppCfg::xCheckParameter()
       uint32_t remTiles = pps.getNumTiles();
 
       // set default slice size if not provided
-      if( m_rasterSliceSize.size() == 0 ) 
+      if( m_rasterSliceSize.size() == 0 )
       {
         m_rasterSliceSize.push_back( remTiles );
       }
@@ -3291,12 +3291,12 @@ bool EncAppCfg::xCheckParameter()
       }
       // shrink list if too many sizes were provided
       m_rasterSliceSize.resize( listIdx );
-      
+
       m_numSlicesInPic = (uint32_t)m_rasterSliceSize.size();
       xConfirmPara(m_rasterSliceSize.size() > getMaxSlicesByLevel( m_level ), "Number of raster-scan slices exceeds maximum number allowed according to specified level");
     }
   }
-  else 
+  else
   {
     m_numTileCols = 1;
     m_numTileRows = 1;
@@ -3484,7 +3484,7 @@ void EncAppCfg::xPrintParameter()
   if (m_subPicInfoPresentFlag)
   {
     msg(DETAILS, "number of subpictures                            : %d\n", m_numSubPics);
-    for (int i = 0; i < m_numSubPics; i++) 
+    for (int i = 0; i < m_numSubPics; i++)
     {
       msg(DETAILS, "[%d]th subpictures location                           :[%d %d]\n", i, m_subPicCtuTopLeftX[i], m_subPicCtuTopLeftY[i]);
       msg(DETAILS, "[%d]th subpictures size                           :[%d %d]\n", i, m_subPicWidth[i], m_subPicHeight[i]);
@@ -3498,7 +3498,7 @@ void EncAppCfg::xPrintParameter()
   if (m_subPicIdMappingExplicitlySignalledFlag)
   {
     msg(DETAILS, "subpicture ID signalling present flag                            : %d\n", m_subPicIdMappingInSpsFlag);
-    for (int i = 0; i < m_numSubPics; i++) 
+    for (int i = 0; i < m_numSubPics; i++)
     {
       msg(DETAILS, "[%d]th subpictures ID length                           :%d\n", i, m_subPicIdLen);
       msg(DETAILS, "[%d]th subpictures ID                          :%d\n", i, m_subPicId[i]);

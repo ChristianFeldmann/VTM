@@ -171,7 +171,7 @@ public:
 
   void       setRefMatrixId(uint32_t scalingListId, uint32_t u)               { m_refMatrixId[scalingListId] = u;                         } //!< set reference matrix ID
   uint32_t       getRefMatrixId(uint32_t scalingListId) const                 { return m_refMatrixId[scalingListId];                      } //!< get reference matrix ID
-  
+
   static const int* getScalingListDefaultAddress(uint32_t scalinListId);                                                                           //!< get default matrix coefficient
   void       processDefaultMatrix(uint32_t scalinListId);
 
@@ -661,7 +661,7 @@ public:
   uint32_t               getCtuAddrInSlice( int idx ) const   { CHECK(idx >= m_ctuAddrInSlice.size(), "CTU index exceeds number of CTUs in slice."); return m_ctuAddrInSlice[idx]; }
   void                   pushToCtuAddrInSlice( uint32_t u )   { m_ctuAddrInSlice.push_back(u); m_numCtuInSlice++;}
 
-  void  initSliceMap() 
+  void  initSliceMap()
   {
     m_sliceID = 0;
     m_numTilesInSlice = 0;
@@ -669,12 +669,12 @@ public:
     m_ctuAddrInSlice.clear();
   }
 
-  void  addCtusToSlice( uint32_t startX, uint32_t stopX, uint32_t startY, uint32_t stopY, uint32_t picWidthInCtbsY ) 
+  void  addCtusToSlice( uint32_t startX, uint32_t stopX, uint32_t startY, uint32_t stopY, uint32_t picWidthInCtbsY )
   {
     CHECK( startX >= stopX || startY >= stopY, "Invalid slice definition");
-    for( uint32_t ctbY = startY; ctbY < stopY; ctbY++ ) 
+    for( uint32_t ctbY = startY; ctbY < stopY; ctbY++ )
     {
-      for( uint32_t ctbX = startX; ctbX < stopX; ctbX++ ) 
+      for( uint32_t ctbX = startX; ctbX < stopX; ctbX++ )
       {
         m_ctuAddrInSlice.push_back( ctbY * picWidthInCtbsY + ctbX );
         m_numCtuInSlice++;
@@ -691,11 +691,11 @@ private:
   uint32_t         m_sliceHeightInTiles;                //!< slice height in units of tiles
   uint32_t         m_numSlicesInTile;                   //!< number of slices in current tile for the special case of multiple slices inside a single tile
   uint32_t         m_sliceHeightInCtu;                  //!< slice height in units of CTUs for the special case of multiple slices inside a single tile
-  
+
 public:
   RectSlice();
   virtual ~RectSlice();
-  
+
   void             setSliceWidthInTiles( uint32_t u )   { m_sliceWidthInTiles = u;      }
   uint32_t         getSliceWidthInTiles( ) const        { return  m_sliceWidthInTiles;  }
   void             setSliceHeightInTiles( uint32_t u )  { m_sliceHeightInTiles = u;     }
@@ -723,7 +723,7 @@ private:
   uint32_t         m_subPicHeightInLumaSample;                  //!< the height of subpicture in units of luma sample
   uint32_t         m_firstCtuInSubPic;                          //!< the raster scan index of the first CTU in a subpicture
   uint32_t         m_lastCtuInSubPic;                           //!< the raster scan index of the last CTU in a subpicture
-  uint32_t         m_subPicLeft;                                //!< the position of left boundary 
+  uint32_t         m_subPicLeft;                                //!< the position of left boundary
   uint32_t         m_subPicRight;                               //!< the position of right boundary
   uint32_t         m_subPicTop;                                 //!< the position of top boundary
   uint32_t         m_subPicBottom;                              //!< the position of bottom boundary
@@ -732,7 +732,7 @@ private:
   bool             m_treatedAsPicFlag;                          //!< whether the subpicture is treated as a picture in the decoding process excluding in-loop filtering operations
   bool             m_loopFilterAcrossSubPicEnabledFlag;         //!< whether in-loop filtering operations may be performed across the boundaries of the subpicture
   uint32_t         m_numSlicesInSubPic;                         //!< Number of slices contained in this subpicture
-  
+
 public:
   SubPic();
   virtual ~SubPic();
@@ -774,7 +774,7 @@ public:
   void                  addCTUsToSubPic(std::vector<uint32_t> ctuAddrInSlice)
   {
     for (auto ctu:ctuAddrInSlice)
-      m_ctuAddrInSubPic.push_back(ctu);    
+      m_ctuAddrInSubPic.push_back(ctu);
   }
   void  addAllCtusInPicToSubPic(uint32_t startX, uint32_t stopX, uint32_t startY, uint32_t stopY, uint32_t picWidthInCtbsY)
   {
@@ -871,7 +871,7 @@ private:
   std::vector<ProfileTierLevel> m_vpsProfileTierLevel;
   uint32_t              m_olsPtlIdx[MAX_NUM_OLSS];
 
-  // stores index ( ilrp_idx within 0 .. NumDirectRefLayers ) of the dependent reference layers 
+  // stores index ( ilrp_idx within 0 .. NumDirectRefLayers ) of the dependent reference layers
   uint32_t              m_interLayerRefIdx[MAX_VPS_LAYERS][MAX_VPS_LAYERS];
   bool                  m_vpsExtensionFlag;
   bool                  m_vpsGeneralHrdParamsPresentFlag;
@@ -973,7 +973,7 @@ public:
   uint32_t          getHrdMaxTid(int olsIdx)                   const { return m_hrdMaxTid[olsIdx]; }
   void              setHrdMaxTid(int olsIdx, uint32_t val)           { m_hrdMaxTid[olsIdx] = val; }
   uint32_t          getOlsHrdIdx(int olsIdx)                   const { return m_olsHrdIdx[olsIdx]; }
-  void              setOlsHrdIdx(int olsIdx, uint32_t val)           { m_olsHrdIdx[olsIdx] = val; }  
+  void              setOlsHrdIdx(int olsIdx, uint32_t val)           { m_olsHrdIdx[olsIdx] = val; }
 
   OlsHrdParams*          getOlsHrdParameters(int olsIdx) { return &m_olsHrdParams[olsIdx][0]; }
   const OlsHrdParams*    getOlsHrdParameters(int olsIdx) const { return &m_olsHrdParams[olsIdx][0]; }
@@ -993,7 +993,7 @@ public:
 
   int               getOlsDpbParamsIdx( int olsIdx ) const               { return m_olsDpbParamsIdx[olsIdx];        }
   void              setOlsDpbParamsIdx( int olsIdx, int paramIdx )       { m_olsDpbParamsIdx[olsIdx] = paramIdx;    }
-  
+
   void              deriveOutputLayerSets();
   void              deriveTargetOutputLayerSet( int targetOlsIdx );
 
@@ -1781,10 +1781,10 @@ private:
   std::vector<uint32_t> m_tileColWidth;                 //!< tile column widths in units of CTUs
   std::vector<uint32_t> m_tileRowHeight;                //!< tile row heights in units of CTUs
   std::vector<uint32_t> m_tileColBd;                    //!< tile column left-boundaries in units of CTUs
-  std::vector<uint32_t> m_tileRowBd;                    //!< tile row top-boundaries in units of CTUs  
+  std::vector<uint32_t> m_tileRowBd;                    //!< tile row top-boundaries in units of CTUs
   std::vector<uint32_t> m_ctuToTileCol;                 //!< mapping between CTU horizontal address and tile column index
   std::vector<uint32_t> m_ctuToTileRow;                 //!< mapping between CTU vertical address and tile row index
-  bool             m_rectSliceFlag;                     //!< rectangular slice flag  
+  bool             m_rectSliceFlag;                     //!< rectangular slice flag
   bool             m_singleSlicePerSubPicFlag;          //!< single slice per sub-picture flag
   std::vector<uint32_t> m_ctuToSubPicIdx;               //!< mapping between CTU and Sub-picture index
   uint32_t         m_numSlicesInPic;                    //!< number of rectangular slices in the picture (raster-scan slice specified at slice level)
@@ -1824,7 +1824,7 @@ private:
   Window           m_conformanceWindow;
   Window           m_scalingWindow;
 
-  
+
 public:
   PreCalcValues   *pcv;
 
@@ -1853,7 +1853,7 @@ public:
 
 
   bool                   getJointCbCrQpOffsetPresentFlag() const                          { return m_chromaJointCbCrQpOffsetPresentFlag;   }
-  void                   setJointCbCrQpOffsetPresentFlag(bool b)                          { m_chromaJointCbCrQpOffsetPresentFlag = b;      } 
+  void                   setJointCbCrQpOffsetPresentFlag(bool b)                          { m_chromaJointCbCrQpOffsetPresentFlag = b;      }
 
   void                   setQpOffset(ComponentID compID, int i )
   {
@@ -1928,8 +1928,8 @@ public:
   uint32_t               getSubPicIdxFromSubPicId( uint32_t subPicId ) const;
   void                   setNoPicPartitionFlag( bool b )                                  { m_noPicPartitionFlag = b;                     }
   bool                   getNoPicPartitionFlag( ) const                                   { return  m_noPicPartitionFlag;                 }
-  void                   setLog2CtuSize( uint8_t u )                                      { m_log2CtuSize = u; m_ctuSize = 1 << m_log2CtuSize; 
-                                                                                            m_picWidthInCtu = (m_picWidthInLumaSamples  + m_ctuSize - 1) / m_ctuSize;  
+  void                   setLog2CtuSize( uint8_t u )                                      { m_log2CtuSize = u; m_ctuSize = 1 << m_log2CtuSize;
+                                                                                            m_picWidthInCtu = (m_picWidthInLumaSamples  + m_ctuSize - 1) / m_ctuSize;
                                                                                             m_picHeightInCtu = (m_picHeightInLumaSamples  + m_ctuSize - 1) / m_ctuSize; }
   uint8_t                getLog2CtuSize( ) const                                          { return  m_log2CtuSize;                        }
   uint8_t                getCtuSize( ) const                                              { return  m_ctuSize;                            }
@@ -1949,7 +1949,7 @@ public:
   void                   addTileColumnWidth( uint32_t u )                                 { CHECK( m_tileColWidth.size()  >= MAX_TILE_COLS, "Number of tile columns exceeds valid range" ); m_tileColWidth.push_back(u);    }
   void                   addTileRowHeight( uint32_t u )                                   { CHECK( m_tileRowHeight.size() >= MAX_TILE_ROWS, "Number of tile rows exceeds valid range" );    m_tileRowHeight.push_back(u);   }
   uint32_t               getTileColumnWidth( int idx ) const                              { CHECK( idx >= m_tileColWidth.size(), "Tile column index exceeds valid range" );                 return  m_tileColWidth[idx];    }
-  uint32_t               getTileRowHeight( int idx ) const                                { CHECK( idx >= m_tileRowHeight.size(), "Tile row index exceeds valid range" );                   return  m_tileRowHeight[idx];   }  
+  uint32_t               getTileRowHeight( int idx ) const                                { CHECK( idx >= m_tileRowHeight.size(), "Tile row index exceeds valid range" );                   return  m_tileRowHeight[idx];   }
   uint32_t               getTileColumnBd( int idx ) const                                 { CHECK( idx >= m_tileColBd.size(), "Tile column index exceeds valid range" );                    return  m_tileColBd[idx];       }
   uint32_t               getTileRowBd( int idx ) const                                    { CHECK( idx >= m_tileRowBd.size(), "Tile row index exceeds valid range" );                       return  m_tileRowBd[idx];       }
   uint32_t               ctuToTileCol( int ctuX ) const                                   { CHECK( ctuX >= m_ctuToTileCol.size(), "CTU address index exceeds valid range" ); return  m_ctuToTileCol[ctuX];                  }
@@ -1995,7 +1995,7 @@ public:
   const SubPic&          getSubPicFromPos(const Position& pos)  const;
   const SubPic&          getSubPicFromCU (const CodingUnit& cu) const;
   void                   initRasterSliceMap( std::vector<uint32_t> sizes );
-  void                   checkSliceMap(); 
+  void                   checkSliceMap();
   SliceMap               getSliceMap( int idx ) const                                     { CHECK( idx >= m_numSlicesInPic, "Slice index exceeds valid range" );    return m_sliceMap[idx];                             }
 
 
@@ -2152,21 +2152,21 @@ private:
   int                         m_rpl1Idx;                                                //!< index of used RPL in the SPS or -1 for local RPL in the picture header
   bool                        m_picInterSliceAllowedFlag;                               //!< inter slice allowed flag in PH
   bool                        m_picIntraSliceAllowedFlag;                               //!< intra slice allowed flag in PH
-  bool                        m_splitConsOverrideFlag;                                  //!< partitioning constraint override flag  
+  bool                        m_splitConsOverrideFlag;                                  //!< partitioning constraint override flag
   uint32_t                    m_cuQpDeltaSubdivIntra;                                   //!< CU QP delta maximum subdivision for intra slices
-  uint32_t                    m_cuQpDeltaSubdivInter;                                   //!< CU QP delta maximum subdivision for inter slices 
-  uint32_t                    m_cuChromaQpOffsetSubdivIntra;                            //!< CU chroma QP offset maximum subdivision for intra slices 
-  uint32_t                    m_cuChromaQpOffsetSubdivInter;                            //!< CU chroma QP offset maximum subdivision for inter slices 
+  uint32_t                    m_cuQpDeltaSubdivInter;                                   //!< CU QP delta maximum subdivision for inter slices
+  uint32_t                    m_cuChromaQpOffsetSubdivIntra;                            //!< CU chroma QP offset maximum subdivision for intra slices
+  uint32_t                    m_cuChromaQpOffsetSubdivInter;                            //!< CU chroma QP offset maximum subdivision for inter slices
   bool                        m_enableTMVPFlag;                                         //!< enable temporal motion vector prediction
   bool                        m_picColFromL0Flag;                                       //!< syntax element collocated_from_l0_flag
   uint32_t                    m_colRefIdx;
-  bool                        m_mvdL1ZeroFlag;                                          //!< L1 MVD set to zero flag  
+  bool                        m_mvdL1ZeroFlag;                                          //!< L1 MVD set to zero flag
   uint32_t                    m_maxNumAffineMergeCand;                                  //!< max number of sub-block merge candidates
   bool                        m_disFracMMVD;                                            //!< fractional MMVD offsets disabled flag
   bool                        m_disBdofFlag;                                            //!< picture level BDOF disable flag
   bool                        m_disDmvrFlag;                                            //!< picture level DMVR disable flag
   bool                        m_disProfFlag;                                            //!< picture level PROF disable flag
-  bool                        m_jointCbCrSignFlag;                                      //!< joint Cb/Cr residual sign flag  
+  bool                        m_jointCbCrSignFlag;                                      //!< joint Cb/Cr residual sign flag
   int                         m_qpDelta;                                                //!< value of Qp delta
   bool                        m_saoEnabledFlag[MAX_NUM_CHANNEL_TYPE];                   //!< sao enabled flags for each channel
   bool                        m_alfEnabledFlag[MAX_NUM_COMPONENT];                      //!< alf enabled flags for each component
@@ -2190,7 +2190,7 @@ private:
   bool                        m_lmcsEnabledFlag;                                        //!< lmcs enabled flag
   int                         m_lmcsApsId;                                              //!< lmcs APS ID
   APS*                        m_lmcsAps;                                                //!< lmcs APS
-  bool                        m_lmcsChromaResidualScaleFlag;                            //!< lmcs chroma residual scale flag  
+  bool                        m_lmcsChromaResidualScaleFlag;                            //!< lmcs chroma residual scale flag
   bool                        m_explicitScalingListEnabledFlag;                         //!< explicit quantization scaling list enabled
   int                         m_scalingListApsId;                                       //!< quantization scaling list APS ID
   APS*                        m_scalingListAps;                                         //!< quantization scaling list APS
@@ -2264,7 +2264,7 @@ public:
   void                        setPicIntraSliceAllowedFlag(bool b)                       { m_picIntraSliceAllowedFlag = b; }
   bool                        getPicIntraSliceAllowedFlag() const                       { return m_picIntraSliceAllowedFlag; }
   void                        setSplitConsOverrideFlag( bool b )                        { m_splitConsOverrideFlag = b;                                                                 }
-  bool                        getSplitConsOverrideFlag() const                          { return m_splitConsOverrideFlag;                                                              }  
+  bool                        getSplitConsOverrideFlag() const                          { return m_splitConsOverrideFlag;                                                              }
   void                        setCuQpDeltaSubdivIntra( uint32_t u )                     { m_cuQpDeltaSubdivIntra = u;                                                                  }
   uint32_t                    getCuQpDeltaSubdivIntra() const                           { return m_cuQpDeltaSubdivIntra;                                                               }
   void                        setCuQpDeltaSubdivInter( uint32_t u )                     { m_cuQpDeltaSubdivInter = u;                                                                  }
@@ -2280,11 +2280,11 @@ public:
   void                        setColRefIdx( uint32_t refIdx)                             { m_colRefIdx = refIdx;                                                                       }
   uint32_t                    getColRefIdx()                                             { return m_colRefIdx;                                                                         }
   void                        setMvdL1ZeroFlag( bool b )                                { m_mvdL1ZeroFlag = b;                                                                         }
-  bool                        getMvdL1ZeroFlag() const                                  { return m_mvdL1ZeroFlag;                                                                      }  
+  bool                        getMvdL1ZeroFlag() const                                  { return m_mvdL1ZeroFlag;                                                                      }
   void                        setMaxNumAffineMergeCand( uint32_t val )                  { m_maxNumAffineMergeCand = val;                                                               }
   uint32_t                    getMaxNumAffineMergeCand() const                          { return m_maxNumAffineMergeCand;                                                              }
   void                        setDisFracMMVD( bool val )                                { m_disFracMMVD = val;                                                                         }
-  bool                        getDisFracMMVD() const                                    { return m_disFracMMVD;                                                                        }  
+  bool                        getDisFracMMVD() const                                    { return m_disFracMMVD;                                                                        }
   void                        setDisBdofFlag( bool val )                                { m_disBdofFlag = val;                                                                         }
   bool                        getDisBdofFlag() const                                    { return m_disBdofFlag;                                                                        }
   void                        setDisDmvrFlag( bool val )                                { m_disDmvrFlag = val;                                                                         }
@@ -2296,7 +2296,7 @@ public:
   void                        setQpDelta(int b)                                         { m_qpDelta = b;                                                                               }
   int                         getQpDelta() const                                        { return m_qpDelta;                                                                            }
   void                        setSaoEnabledFlag(ChannelType chType, bool b)             { m_saoEnabledFlag[chType] = b;                                                                }
-  bool                        getSaoEnabledFlag(ChannelType chType) const               { return m_saoEnabledFlag[chType];                                                             }  
+  bool                        getSaoEnabledFlag(ChannelType chType) const               { return m_saoEnabledFlag[chType];                                                             }
   void                        setAlfEnabledFlag(ComponentID compId, bool b)             { m_alfEnabledFlag[compId] = b;                                                                }
   bool                        getAlfEnabledFlag(ComponentID compId) const               { return m_alfEnabledFlag[compId];                                                             }
   void                        setNumAlfAps(int i)                                       { m_numAlfAps = i;                                                                             }
@@ -2313,17 +2313,17 @@ public:
   void setCcAlfCrApsId(int i) { m_ccalfCrApsId = i; }
   int  getCcAlfCrApsId() const { return m_ccalfCrApsId; }
   void                        setDepQuantEnabledFlag( bool b )                          { m_depQuantEnabledFlag = b;                                                                   }
-  bool                        getDepQuantEnabledFlag() const                            { return m_depQuantEnabledFlag;                                                                }  
+  bool                        getDepQuantEnabledFlag() const                            { return m_depQuantEnabledFlag;                                                                }
   void                        setSignDataHidingEnabledFlag( bool b )                    { m_signDataHidingEnabledFlag = b;                                                             }
-  bool                        getSignDataHidingEnabledFlag() const                      { return m_signDataHidingEnabledFlag;                                                          }  
+  bool                        getSignDataHidingEnabledFlag() const                      { return m_signDataHidingEnabledFlag;                                                          }
   void                        setDeblockingFilterOverrideFlag( bool b )                 { m_deblockingFilterOverrideFlag = b;                                                          }
-  bool                        getDeblockingFilterOverrideFlag() const                   { return m_deblockingFilterOverrideFlag;                                                       }    
-  void                        setDeblockingFilterDisable( bool b )                      { m_deblockingFilterDisable= b;                                                                }  
+  bool                        getDeblockingFilterOverrideFlag() const                   { return m_deblockingFilterOverrideFlag;                                                       }
+  void                        setDeblockingFilterDisable( bool b )                      { m_deblockingFilterDisable= b;                                                                }
   bool                        getDeblockingFilterDisable() const                        { return m_deblockingFilterDisable;                                                            }
-  void                        setDeblockingFilterBetaOffsetDiv2( int i )                { m_deblockingFilterBetaOffsetDiv2 = i;                                                        }  
+  void                        setDeblockingFilterBetaOffsetDiv2( int i )                { m_deblockingFilterBetaOffsetDiv2 = i;                                                        }
   int                         getDeblockingFilterBetaOffsetDiv2()const                  { return m_deblockingFilterBetaOffsetDiv2;                                                     }
-  void                        setDeblockingFilterTcOffsetDiv2( int i )                  { m_deblockingFilterTcOffsetDiv2 = i;                                                          }  
-  int                         getDeblockingFilterTcOffsetDiv2() const                   { return m_deblockingFilterTcOffsetDiv2;                                                       }    
+  void                        setDeblockingFilterTcOffsetDiv2( int i )                  { m_deblockingFilterTcOffsetDiv2 = i;                                                          }
+  int                         getDeblockingFilterTcOffsetDiv2() const                   { return m_deblockingFilterTcOffsetDiv2;                                                       }
   void                        setDeblockingFilterCbBetaOffsetDiv2( int i )              { m_deblockingFilterCbBetaOffsetDiv2 = i;                                                      }
   int                         getDeblockingFilterCbBetaOffsetDiv2()const                { return m_deblockingFilterCbBetaOffsetDiv2;                                                   }
   void                        setDeblockingFilterCbTcOffsetDiv2( int i )                { m_deblockingFilterCbTcOffsetDiv2 = i;                                                        }
@@ -2354,7 +2354,7 @@ public:
   unsigned*                   getMaxMTTHierarchyDepths() const                          { return (unsigned *)m_maxMTTHierarchyDepth;                                                   }
   unsigned*                   getMaxBTSizes() const                                     { return (unsigned *)m_maxBTSize;                                                              }
   unsigned*                   getMaxTTSizes() const                                     { return (unsigned *)m_maxTTSize;                                                              }
-  
+
   void                        setMinQTSize(unsigned idx, unsigned minQT)                { m_minQT[idx] = minQT;                                                                        }
   void                        setMaxMTTHierarchyDepth(unsigned idx, unsigned maxMTT)    { m_maxMTTHierarchyDepth[idx] = maxMTT;                                                        }
   void                        setMaxBTSize(unsigned idx, unsigned maxBT)                { m_maxBTSize[idx] = maxBT;                                                                    }
@@ -2364,7 +2364,7 @@ public:
   void                        setMaxMTTHierarchyDepths(unsigned*   maxMTT)              { m_maxMTTHierarchyDepth[0] = maxMTT[0]; m_maxMTTHierarchyDepth[1] = maxMTT[1]; m_maxMTTHierarchyDepth[2] = maxMTT[2]; }
   void                        setMaxBTSizes(unsigned*   maxBT)                          { m_maxBTSize[0] = maxBT[0]; m_maxBTSize[1] = maxBT[1]; m_maxBTSize[2] = maxBT[2];                                     }
   void                        setMaxTTSizes(unsigned*   maxTT)                          { m_maxTTSize[0] = maxTT[0]; m_maxTTSize[1] = maxTT[1]; m_maxTTSize[2] = maxTT[2];                                     }
-    
+
   unsigned                    getMinQTSize(SliceType   slicetype,
                                        ChannelType chType = CHANNEL_TYPE_LUMA) const    { return slicetype == I_SLICE ? (chType == CHANNEL_TYPE_LUMA ? m_minQT[0] : m_minQT[2]) : m_minQT[1];                                              }
   unsigned                    getMaxMTTHierarchyDepth(SliceType   slicetype,
@@ -2373,7 +2373,7 @@ public:
                                        ChannelType chType = CHANNEL_TYPE_LUMA) const    { return slicetype == I_SLICE ? (chType == CHANNEL_TYPE_LUMA ? m_maxBTSize[0] : m_maxBTSize[2]) : m_maxBTSize[1];                                  }
   unsigned                    getMaxTTSize(SliceType   slicetype,
                                        ChannelType chType = CHANNEL_TYPE_LUMA) const    { return slicetype == I_SLICE ? (chType == CHANNEL_TYPE_LUMA ? m_maxTTSize[0] : m_maxTTSize[2]) : m_maxTTSize[1];                                  }
-  
+
   void                        setAlfAPSs(std::vector<int> apsIDs)                       { m_alfApsId.resize(m_numAlfAps);
                                                                                           for (int i = 0; i < m_numAlfAps; i++)
                                                                                           {
@@ -2500,15 +2500,15 @@ private:
 
   uint32_t                   m_sliceSubPicId;
 
-  
-  
+
+
 
 
   SliceType                  m_encCABACTableIdx;           // Used to transmit table selection across slices.
 
   clock_t                    m_iProcessingStartTime;
   double                     m_dProcessingTime;
-  
+
   int                        m_rpPicOrderCntVal;
   APS*                       m_alfApss[ALF_CTB_MAX_NUM_APS];
   bool                       m_tileGroupAlfEnabledFlag[MAX_NUM_COMPONENT];
@@ -2712,8 +2712,8 @@ public:
   uint32_t                    getNumCtuInSlice() const                               { return m_sliceMap.getNumCtuInSlice();                                     }
   uint32_t                    getCtuAddrInSlice( int idx ) const                     { return m_sliceMap.getCtuAddrInSlice( idx );                               }
   void                        initSliceMap()                                         { m_sliceMap.initSliceMap();                                                }
-  void                        addCtusToSlice( uint32_t startX, uint32_t stopX, 
-                                              uint32_t startY, uint32_t stopY, 
+  void                        addCtusToSlice( uint32_t startX, uint32_t stopX,
+                                              uint32_t startY, uint32_t stopY,
                                               uint32_t picWidthInCtbsY )             { m_sliceMap.addCtusToSlice(startX, stopX, startY, stopY, picWidthInCtbsY); }
   void                        setIndependentSliceIdx( uint32_t i)                        { m_independentSliceIdx = i;                                    }
   uint32_t                        getIndependentSliceIdx() const                         { return  m_independentSliceIdx;                                }

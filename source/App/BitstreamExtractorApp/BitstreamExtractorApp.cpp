@@ -113,7 +113,7 @@ bool BitstreamExtractorApp::xCheckSliceSubpicture(InputNALUnit &nalu, int target
   slice.setTLayer(nalu.m_temporalId);
 
   m_hlSynaxReader.parseSliceHeader(&slice, &m_picHeader, &m_parameterSetManager, m_prevTid0Poc);
-  
+
   PPS *pps = m_parameterSetManager.getPPS(m_picHeader.getPPSId());
   CHECK (nullptr==pps, "referenced PPS not found");
   SPS *sps = m_parameterSetManager.getSPS(pps->getSPSId());
@@ -129,7 +129,7 @@ bool BitstreamExtractorApp::xCheckSliceSubpicture(InputNALUnit &nalu, int target
   {
     THROW ("Subpicture signalling disbled, cannot extract.");
   }
-    
+
   return true;
 }
 
@@ -497,7 +497,7 @@ uint32_t BitstreamExtractorApp::decode()
           {
             SubPic subPic;
             bool found = false;
-            
+
             for (int i=0; i< pps->getNumSubPics() && !found; i++)
             {
               subPic = pps->getSubPic(i);

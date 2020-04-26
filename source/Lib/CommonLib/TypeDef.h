@@ -162,7 +162,6 @@
 #define JVET_M0497_MATRIX_MULT                            0 // 0: Fast method; 1: Matrix multiplication
 
 
-#define JVET_Q0216                                        1 // JVET-Q0216: modification to picture timing SEI message
 
 #define JVET_Q0218_PROPOSAL3                              1 // JVET-Q0218_PROPOSAL3: fix missing inference rule for single_slice_per_subpic_flag
 

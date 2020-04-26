@@ -2468,9 +2468,7 @@ private:
   uint32_t                    m_cuChromaQpOffsetSubdivInter;                            //!< CU chroma QP offset maximum subdivision for inter slices 
   bool                        m_enableTMVPFlag;                                         //!< enable temporal motion vector prediction
   bool                        m_picColFromL0Flag;                                       //!< syntax element collocated_from_l0_flag
-#if JVET_Q0259_COLLOCATED_PIC_IN_PH
   uint32_t                    m_colRefIdx;
-#endif
   bool                        m_mvdL1ZeroFlag;                                          //!< L1 MVD set to zero flag  
   uint32_t                    m_maxNumAffineMergeCand;                                  //!< max number of sub-block merge candidates
   bool                        m_disFracMMVD;                                            //!< fractional MMVD offsets disabled flag
@@ -2630,10 +2628,8 @@ public:
   bool                        getEnableTMVPFlag() const                                 { return m_enableTMVPFlag;                                                                     }
   void                        setPicColFromL0Flag(bool val)                             { m_picColFromL0Flag = val;                                                                     }
   bool                        getPicColFromL0Flag() const                               { return m_picColFromL0Flag;                                                                    }
-#if JVET_Q0259_COLLOCATED_PIC_IN_PH
   void                        setColRefIdx( uint32_t refIdx)                             { m_colRefIdx = refIdx;                                                                       }
   uint32_t                    getColRefIdx()                                             { return m_colRefIdx;                                                                         }
-#endif
   void                        setMvdL1ZeroFlag( bool b )                                { m_mvdL1ZeroFlag = b;                                                                         }
   bool                        getMvdL1ZeroFlag() const                                  { return m_mvdL1ZeroFlag;                                                                      }  
   void                        setMaxNumAffineMergeCand( uint32_t val )                  { m_maxNumAffineMergeCand = val;                                                               }

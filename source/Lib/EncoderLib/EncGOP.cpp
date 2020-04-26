@@ -2559,27 +2559,21 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         picHeader->setPicColFromL0Flag( uiColFromL0 );
         pcSlice->setColFromL0Flag( uiColFromL0 );
         pcSlice->setColRefIdx( uiColFromL0 ? colRefIdxL0 : colRefIdxL1 );
-#if JVET_Q0259_COLLOCATED_PIC_IN_PH
         picHeader->setColRefIdx( uiColFromL0 ? colRefIdxL0 : colRefIdxL1 );
-#endif
       }
       else if( colRefIdxL0 < 0 && colRefIdxL1 >= 0 )
       {
         picHeader->setPicColFromL0Flag( false );
         pcSlice->setColFromL0Flag( false );
         pcSlice->setColRefIdx( colRefIdxL1 );
-#if JVET_Q0259_COLLOCATED_PIC_IN_PH
         picHeader->setColRefIdx( colRefIdxL1 );
-#endif
       }
       else if( colRefIdxL0 >= 0 && colRefIdxL1 < 0 )
       {
         picHeader->setPicColFromL0Flag( true );
         pcSlice->setColFromL0Flag( true );
         pcSlice->setColRefIdx( colRefIdxL0 );
-#if JVET_Q0259_COLLOCATED_PIC_IN_PH
         picHeader->setColRefIdx( colRefIdxL0 );
-#endif
       }
       else
       {

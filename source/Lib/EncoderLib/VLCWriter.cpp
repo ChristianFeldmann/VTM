@@ -2272,7 +2272,6 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
     if (sps->getSPSTemporalMVPEnabledFlag())
     {
       WRITE_FLAG( picHeader->getEnableTMVPFlag(), "ph_temporal_mvp_enabled_flag" );
-#if JVET_Q0259_COLLOCATED_PIC_IN_PH
       if (picHeader->getEnableTMVPFlag() && pps->getRplInfoInPhFlag())
       {
         WRITE_CODE(picHeader->getPicColFromL0Flag(), 1, "ph_collocated_from_l0_flag");
@@ -2282,7 +2281,6 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
           WRITE_UVLC(picHeader->getColRefIdx(), "ph_collocated_ref_idx");
         }
       }
-#endif
     }
     else
     {
@@ -2290,12 +2288,6 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
     }
 
   // mvd L1 zero flag
-#if !JVET_Q0259_COLLOCATED_PIC_IN_PH
-    if (picHeader->getEnableTMVPFlag() && pps->getRplInfoInPhFlag())
-    {
-      WRITE_CODE(picHeader->getPicColFromL0Flag(), 1, "pic_collocated_from_l0_flag");
-    }
-#endif
     WRITE_FLAG(picHeader->getMvdL1ZeroFlag(), "mvd_l1_zero_flag");
    
   // merge candidate list size
@@ -2946,11 +2938,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
         WRITE_FLAG( encCabacInitFlag ? 1 : 0, "cabac_init_flag" );
       }
     }
-#if JVET_Q0259_COLLOCATED_PIC_IN_PH
     if (pcSlice->getPicHeader()->getEnableTMVPFlag() && !pcSlice->getPPS()->getRplInfoInPhFlag())
-#else
-    if( pcSlice->getPicHeader()->getEnableTMVPFlag() )
-#endif
     {
       if(!pcSlice->getPPS()->getRplInfoInPhFlag())
       {

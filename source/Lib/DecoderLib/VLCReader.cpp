@@ -3342,7 +3342,6 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
     {
       READ_CODE( 1, uiCode, "ph_collocated_from_l0_flag");
       picHeader->setPicColFromL0Flag(uiCode);
-#if JVET_Q0259_COLLOCATED_PIC_IN_PH
       if ((picHeader->getPicColFromL0Flag() == 1 && picHeader->getRPL(0)->getNumRefEntries() > 1) ||
         (picHeader->getPicColFromL0Flag() == 0 && picHeader->getRPL(1)->getNumRefEntries() > 1))
       {
@@ -3353,7 +3352,6 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
       {
         picHeader->setColRefIdx(0);
       }
-#endif
     }
     else
     {
@@ -4452,10 +4450,8 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
         pcSlice->setColFromL0Flag(picHeader->getPicColFromL0Flag());
       }
 
-#if JVET_Q0259_COLLOCATED_PIC_IN_PH
       if (!pps->getRplInfoInPhFlag())
       {
-#endif
       if ( pcSlice->getSliceType() != I_SLICE &&
            ((pcSlice->getColFromL0Flag() == 1 && pcSlice->getNumRefIdx(REF_PIC_LIST_0) > 1)||
            (pcSlice->getColFromL0Flag() == 0 && pcSlice->getNumRefIdx(REF_PIC_LIST_1) > 1)))
@@ -4468,13 +4464,11 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
         pcSlice->setColRefIdx(0);
       }
 
-#if JVET_Q0259_COLLOCATED_PIC_IN_PH
       }
       else
       {
         pcSlice->setColRefIdx(picHeader->getColRefIdx());
       }
-#endif
     }
     if ( (pps->getUseWP() && pcSlice->getSliceType()==P_SLICE) || (pps->getWPBiPred() && pcSlice->getSliceType()==B_SLICE) )
     {

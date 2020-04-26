@@ -55,9 +55,7 @@
 #include "CommonLib/UnitTools.h"
 #include "CommonLib/dtrace_codingstruct.h"
 #include "CommonLib/dtrace_buffer.h"
-#if JVET_Q0436_CABAC_ZERO_WORD || JVET_P0188_MINCR
 #include "CommonLib/ProfileLevelTier.h"
-#endif
 
 #include "DecoderLib/DecLib.h"
 
@@ -1178,7 +1176,6 @@ void EncGOP::xUpdateDuInfoSEI(SEIMessages &duInfoSeiMessages, SEIPictureTiming *
   }
 }
 
-#if JVET_P0188_MINCR
 static void
 validateMinCrRequirements(const ProfileLevelTierFeatures &plt, std::size_t numBytesInVclNalUnits, const Picture *pPic, const EncCfg *pCfg)
 {
@@ -1204,7 +1201,6 @@ validateMinCrRequirements(const ProfileLevelTierFeatures &plt, std::size_t numBy
     }
   }
 }
-#endif
 
 #if JVET_Q0436_CABAC_ZERO_WORD
 static void
@@ -3241,15 +3237,11 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         }
       } // end iteration over slices
 
-#if JVET_Q0436_CABAC_ZERO_WORD || JVET_P0188_MINCR
       {
         // Check picture level encoding constraints/requirements
         ProfileLevelTierFeatures profileLevelTierFeatures;
         profileLevelTierFeatures.extractPTLInformation(*(pcSlice->getSPS()));
-#endif
-#if JVET_P0188_MINCR
         validateMinCrRequirements(profileLevelTierFeatures, numBytesInVclNalUnits, pcPic, m_pcCfg);
-#endif
 #if JVET_Q0436_CABAC_ZERO_WORD
         // cabac_zero_words processing
         cabac_zero_word_padding(pcSlice, pcPic, binCountsInNalUnits, numBytesInVclNalUnits, accessUnit.back()->m_nalUnitData, m_pcCfg->getCabacZeroWordPaddingEnabled(), profileLevelTierFeatures);
@@ -3258,9 +3250,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       // cabac_zero_words processing
       cabac_zero_word_padding(pcSlice, pcPic, binCountsInNalUnits, numBytesInVclNalUnits, accessUnit.back()->m_nalUnitData, m_pcCfg->getCabacZeroWordPaddingEnabled());
 #endif
-#if JVET_Q0436_CABAC_ZERO_WORD || JVET_P0188_MINCR
       }
-#endif
 
       //-- For time output for each slice
       auto elapsed = std::chrono::steady_clock::now() - beforeTime;

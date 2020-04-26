@@ -615,27 +615,15 @@ class SEISubpicureLevelInfo : public SEI
 public:
   PayloadType payloadType() const { return SUBPICTURE_LEVEL_INFO; }
   SEISubpicureLevelInfo()
-#if !JVET_Q0630_SUBPIC_LEVEL
-  : m_sliSeqParameterSetId(0)
-  , m_numRefLevels(0)
-#else
   : m_numRefLevels(0)
-#endif
   , m_explicitFractionPresentFlag (false)
-#if JVET_Q0630_SUBPIC_LEVEL
   , m_numSubpics(0)
-#endif
   {}
   virtual ~SEISubpicureLevelInfo() {}
 
-#if !JVET_Q0630_SUBPIC_LEVEL
-  int       m_sliSeqParameterSetId;
-#endif
   int       m_numRefLevels;
   bool      m_explicitFractionPresentFlag;
-#if JVET_Q0630_SUBPIC_LEVEL
   int       m_numSubpics;
-#endif
   std::vector<Level::Name>      m_refLevelIdc;
   std::vector<std::vector<int>> m_refLevelFraction;
 };

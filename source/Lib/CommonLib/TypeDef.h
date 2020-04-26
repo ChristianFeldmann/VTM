@@ -172,7 +172,6 @@
 
 
 
-#define JVET_Q0630_SUBPIC_LEVEL                           1  // JVET-Q0630 parsing dependency fix for subpicture level info SEI
 
 #define JVET_SUBPIC_LEVEL_CFG                             1  // improved configuration of subpicture level info SEI
 

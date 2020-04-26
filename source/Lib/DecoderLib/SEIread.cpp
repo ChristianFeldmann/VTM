@@ -262,11 +262,7 @@ void SEIReader::xReadSEImessage(SEIMessages& seis, const NalUnitType nalUnitType
       break;
     case SEI::SUBPICTURE_LEVEL_INFO:
       sei = new SEISubpicureLevelInfo;
-#if JVET_Q0630_SUBPIC_LEVEL
       xParseSEISubpictureLevelInfo((SEISubpicureLevelInfo&) *sei, payloadSize, pDecodedMessageOutputStream);
-#else
-      xParseSEISubpictureLevelInfo((SEISubpicureLevelInfo&) *sei, sps, payloadSize, pDecodedMessageOutputStream);
-#endif
       break;
     case SEI::SAMPLE_ASPECT_RATIO_INFO:
       sei = new SEISampleAspectRatioInfo;
@@ -1224,27 +1220,12 @@ void SEIReader::xParseSEIGeneralizedCubemapProjection(SEIGeneralizedCubemapProje
   }
 }
 
-#if JVET_Q0630_SUBPIC_LEVEL
 void SEIReader::xParseSEISubpictureLevelInfo(SEISubpicureLevelInfo& sei, uint32_t payloadSize, std::ostream *pDecodedMessageOutputStream)
-#else
-void SEIReader::xParseSEISubpictureLevelInfo(SEISubpicureLevelInfo& sei, const SPS *sps, uint32_t payloadSize, std::ostream *pDecodedMessageOutputStream)
-#endif
 {
   output_sei_message_header(sei, pDecodedMessageOutputStream, payloadSize);
-#if !JVET_Q0630_SUBPIC_LEVEL
-  if (sps == nullptr)
-  {
-    fprintf (stderr, "no SPS available, not parsing Subpicture level information SEI");
-    return;
-  }
-#endif
   uint32_t val;
-#if !JVET_Q0630_SUBPIC_LEVEL
-  sei_read_code( pDecodedMessageOutputStream,   4,  val,    "sli_seq_parameter_set_id" );         sei.m_sliSeqParameterSetId  = val;
-#endif
   sei_read_code( pDecodedMessageOutputStream,   3,  val,    "num_ref_levels_minus1" );            sei.m_numRefLevels  = val + 1;
   sei_read_flag( pDecodedMessageOutputStream,       val,    "explicit_fraction_present_flag" );   sei.m_explicitFractionPresentFlag = val;
-#if JVET_Q0630_SUBPIC_LEVEL
   if (sei.m_explicitFractionPresentFlag)
   {
     sei_read_uvlc(pDecodedMessageOutputStream,      val,    "sli_num_subpics_minus1");             sei.m_numSubpics = val + 1;
@@ -1253,7 +1234,6 @@ void SEIReader::xParseSEISubpictureLevelInfo(SEISubpicureLevelInfo& sei, const S
       sei_read_flag( pDecodedMessageOutputStream,   val,    "sli_alignment_zero_bit" );           CHECK (val != 0, "sli_alignment_zero_bit not equal to zero" );
     }
   }
-#endif
 
   sei.m_refLevelIdc.resize(sei.m_numRefLevels);
   if (sei.m_explicitFractionPresentFlag)
@@ -1266,16 +1246,9 @@ void SEIReader::xParseSEISubpictureLevelInfo(SEISubpicureLevelInfo& sei, const S
     sei_read_code( pDecodedMessageOutputStream,   8,  val,    "ref_level_idc[i]" );         sei.m_refLevelIdc[i]  = (Level::Name) val;
     if( sei.m_explicitFractionPresentFlag )
     {
-#if !JVET_Q0630_SUBPIC_LEVEL
-      int numSubPics = sps->getNumSubPics();
-      sei.m_refLevelFraction[i].resize(numSubPics);
-
-      for( int j = 0; j  <  numSubPics; j++ )
-#else
       sei.m_refLevelFraction[i].resize(sei.m_numSubpics);
 
       for( int j = 0; j  <  sei.m_numSubpics; j++ )
-#endif
       {
         sei_read_code( pDecodedMessageOutputStream,   8,  val,    "ref_level_fraction_minus1[i][j]" );  sei.m_refLevelFraction[i][j]= val;
       }

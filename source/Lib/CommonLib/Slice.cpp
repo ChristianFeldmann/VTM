@@ -663,11 +663,7 @@ void Slice::checkRPL(const ReferencePictureList* pRPL0, const ReferencePictureLi
   int numActiveEntriesL0 = getNumRefIdx(REF_PIC_LIST_0);
   int numActiveEntriesL1 = getNumRefIdx(REF_PIC_LIST_1);
 
-#if JVET_Q0042_VUI
   bool fieldSeqFlag = getSPS()->getFieldSeqFlag();
-#else
-  bool fieldSeqFlag = getSPS()->getVuiParameters() && getSPS()->getVuiParameters()->getFieldSeqFlag();
-#endif
 
   int currentPictureIsTrailing = 0;
   if (getPic()->getDecodingOrderNumber() > associatedIRAPDecodingOrderNumber)
@@ -1257,11 +1253,7 @@ void Slice::checkLeadingPictureRestrictions(PicList& rcListPic) const
       {
         numLeadingPicsFound++;
         int limitNonLP = 0;
-#if JVET_Q0042_VUI
         if (pcSlice->getSPS()->getFieldSeqFlag())
-#else
-        if (pcSlice->getSPS()->getVuiParameters() && pcSlice->getSPS()->getVuiParameters()->getFieldSeqFlag())
-#endif
           limitNonLP = 1;
         CHECK(pcPic->poc > this->getAssociatedIRAPPOC() && numLeadingPicsFound > limitNonLP, "Invalid POC");
       }
@@ -2601,9 +2593,7 @@ SPS::SPS()
 , m_numVerVirtualBoundaries(0)
 , m_numHorVirtualBoundaries(0)
 , m_generalHrdParametersPresentFlag(false)
-#if JVET_Q0042_VUI
 , m_fieldSeqFlag              (false)
-#endif
 , m_vuiParametersPresentFlag  (false)
 , m_vuiParameters             ()
 , m_wrapAroundEnabledFlag     (false)

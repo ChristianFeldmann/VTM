@@ -109,7 +109,6 @@
 
 
 
-#define JVET_Q0042_VUI                                    1 // Modifications to VUI syntax
 
 #define JVET_Q0512_ENC_CHROMA_TS_ACT                      1 // JVET-Q0512: encoder-side improvement on enabling chroma transform-skip for ACT
 

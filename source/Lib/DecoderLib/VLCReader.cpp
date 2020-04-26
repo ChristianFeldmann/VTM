@@ -1120,7 +1120,6 @@ void HLSyntaxReader::parseScalingListAps( APS* aps )
   parseScalingList( &info );
 }
 
-#if JVET_Q0042_VUI
 void  HLSyntaxReader::parseVUI(VUI* pcVUI, SPS *pcSPS)
 {
 #if ENABLE_TRACING
@@ -1173,60 +1172,6 @@ void  HLSyntaxReader::parseVUI(VUI* pcVUI, SPS *pcSPS)
   }
 
 }
-#else
-void  HLSyntaxReader::parseVUI(VUI* pcVUI, SPS *pcSPS)
-{
-#if ENABLE_TRACING
-  DTRACE( g_trace_ctx, D_HEADER, "----------- vui_parameters -----------\n");
-#endif
-
-
-  uint32_t  symbol;
-
-  READ_FLAG( symbol, "aspect_ratio_info_present_flag");           pcVUI->setAspectRatioInfoPresentFlag(symbol);
-  if (pcVUI->getAspectRatioInfoPresentFlag())
-  {
-    READ_FLAG( symbol, "aspect_ratio_constant_flag");           pcVUI->setAspectRatioConstantFlag(symbol);
-    READ_CODE(8, symbol, "aspect_ratio_idc");                         pcVUI->setAspectRatioIdc(symbol);
-    if (pcVUI->getAspectRatioIdc() == 255)
-    {
-      READ_CODE(16, symbol, "sar_width");                             pcVUI->setSarWidth(symbol);
-      READ_CODE(16, symbol, "sar_height");                            pcVUI->setSarHeight(symbol);
-    }
-  }
-
-  READ_FLAG(   symbol, "colour_description_present_flag");          pcVUI->setColourDescriptionPresentFlag(symbol);
-  if (pcVUI->getColourDescriptionPresentFlag())
-  {
-    READ_CODE(8, symbol, "colour_primaries");                       pcVUI->setColourPrimaries(symbol);
-    READ_CODE(8, symbol, "transfer_characteristics");               pcVUI->setTransferCharacteristics(symbol);
-    READ_CODE(8, symbol, "matrix_coeffs");                          pcVUI->setMatrixCoefficients(symbol);
-    READ_FLAG(   symbol, "video_full_range_flag");                    pcVUI->setVideoFullRangeFlag(symbol);
-  }
-
-  READ_FLAG(     symbol, "field_seq_flag");                           pcVUI->setFieldSeqFlag(symbol);
-
-  READ_FLAG(     symbol, "chroma_loc_info_present_flag");             pcVUI->setChromaLocInfoPresentFlag(symbol);
-  if (pcVUI->getChromaLocInfoPresentFlag())
-  {
-    if(pcVUI->getFieldSeqFlag())
-    {
-      READ_UVLC(   symbol, "chroma_sample_loc_type_top_field" );        pcVUI->setChromaSampleLocTypeTopField(symbol);
-      READ_UVLC(   symbol, "chroma_sample_loc_type_bottom_field" );     pcVUI->setChromaSampleLocTypeBottomField(symbol);
-    }
-    else
-    {
-      READ_UVLC(   symbol, "chroma_sample_loc_type" );        pcVUI->setChromaSampleLocType(symbol);
-    }
-  }
-
-  READ_FLAG(     symbol, "overscan_info_present_flag");               pcVUI->setOverscanInfoPresentFlag(symbol);
-  if (pcVUI->getOverscanInfoPresentFlag())
-  {
-    READ_FLAG(   symbol, "overscan_appropriate_flag");                pcVUI->setOverscanAppropriateFlag(symbol);
-  }
-}
-#endif
 
 void HLSyntaxReader::parseGeneralHrdParameters(GeneralHrdParams *hrd)
 {
@@ -2113,9 +2058,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   }
   }
 
-#if JVET_Q0042_VUI
   READ_FLAG(     uiCode, "field_seq_flag");                       pcSPS->setFieldSeqFlag(uiCode);
-#endif
 
   READ_FLAG( uiCode, "vui_parameters_present_flag" );             pcSPS->setVuiParametersPresentFlag(uiCode);
 

@@ -95,7 +95,6 @@ uint32_t DecApp::decode()
     }
   }
 
-#if JVET_P2008_OUTPUT_LOG
   if (!m_oplFilename.empty() && m_oplFilename!="-")
   {
     m_oplFileStream.open(m_oplFilename.c_str(), std::ios::out);
@@ -104,7 +103,6 @@ uint32_t DecApp::decode()
       EXIT( "Unable to open file "<< m_oplFilename.c_str() << " to write an opl-file for conformance testing (see JVET-P2008 for details)");
     }
   }
-#endif //JVET_P2008_OUTPUT_LOG
 
   // create & initialize internal classes
   xCreateDecLib();
@@ -713,7 +711,6 @@ bool DecApp::isNewAccessUnit( bool newPicture, ifstream *bitstreamFile, class In
   return ret;
 }
 
-#if JVET_P2008_OUTPUT_LOG
 void DecApp::writeLineToOutputLog(Picture * pcPic)
 {
   if (m_oplFileStream.is_open() && m_oplFileStream.good())
@@ -726,7 +723,6 @@ void DecApp::writeLineToOutputLog(Picture * pcPic)
     m_oplFileStream << std::setw(8) << pcPic->getPOC() << "," << std::setw(5) << pcPic->Y().width << "," << std::setw(5) << pcPic->Y().height << "," << hashToString(recon_digest, numChar) << "\n";
   }
 }
-#endif // JVET_P2008_OUTPUT_LOG
 
 // ====================================================================================================================
 // Protected member functions
@@ -879,10 +875,8 @@ void DecApp::xWriteOutput( PicList* pcListPic, uint32_t tId )
                                           NUM_CHROMA_FORMAT, isTff );
           }
         }
-#if JVET_P2008_OUTPUT_LOG
         writeLineToOutputLog(pcPicTop);
         writeLineToOutputLog(pcPicBottom);
-#endif
 
         // update POC of display order
         m_iPOCLastDisplay = pcPicBottom->getPOC();
@@ -941,9 +935,7 @@ void DecApp::xWriteOutput( PicList* pcListPic, uint32_t tId )
                                         NUM_CHROMA_FORMAT, m_bClipOutputVideoToRec709Range );
             }
         }
-#if JVET_P2008_OUTPUT_LOG
         writeLineToOutputLog(pcPic);
-#endif
 
         // update POC of display order
         m_iPOCLastDisplay = pcPic->getPOC();
@@ -1007,10 +999,8 @@ void DecApp::xFlushOutput( PicList* pcListPic, const int layerId )
                                         conf.getWindowBottomOffset() * SPS::getWinUnitY( pcPicTop->cs->sps->getChromaFormatIdc() ),
                                         NUM_CHROMA_FORMAT, isTff );
         }
-#if JVET_P2008_OUTPUT_LOG
         writeLineToOutputLog(pcPicTop);
         writeLineToOutputLog(pcPicBottom);
-#endif
         // update POC of display order
         m_iPOCLastDisplay = pcPicBottom->getPOC();
 
@@ -1078,9 +1068,7 @@ void DecApp::xFlushOutput( PicList* pcListPic, const int layerId )
                                         NUM_CHROMA_FORMAT, m_bClipOutputVideoToRec709Range );
             }
         }
-#if JVET_P2008_OUTPUT_LOG
         writeLineToOutputLog(pcPic);
-#endif
 
         // update POC of display order
         m_iPOCLastDisplay = pcPic->getPOC();

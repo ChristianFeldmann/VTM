@@ -320,10 +320,8 @@ public:
 
 int calcAndPrintHashStatus(const CPelUnitBuf& pic, const class SEIDecodedPictureHash* pictureHashSEI, const BitDepths &bitDepths, const MsgLevel msgl);
 
-#if JVET_P2008_OUTPUT_LOG
 uint32_t calcMD5(const CPelUnitBuf& pic, PictureHash &digest, const BitDepths &bitDepths);
 std::string hashToString(const PictureHash &digest, int numChar);
-#endif // JVET_P2008_OUTPUT_LOG
 
 typedef std::list<Picture*> PicList;
 

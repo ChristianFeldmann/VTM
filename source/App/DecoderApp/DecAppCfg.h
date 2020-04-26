@@ -59,9 +59,7 @@ protected:
   std::string   m_bitstreamFileName;                    ///< input bitstream file name
   std::string   m_reconFileName;                        ///< output reconstruction file name
 
-#if JVET_P2008_OUTPUT_LOG
   std::string   m_oplFilename;                        ///< filename to output conformance log.
-#endif //JVET_P2008_OUTPUT_LOG
 
   int           m_iSkipFrame;                           ///< counter for frames prior to the random access point to skip
   int           m_outputBitDepth[MAX_NUM_CHANNEL_TYPE]; ///< bit depth used for writing output

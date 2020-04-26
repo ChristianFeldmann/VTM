@@ -66,9 +66,7 @@ private:
   int             m_iPOCLastDisplay;              ///< last POC in display order
   std::ofstream   m_seiMessageFileStream;         ///< Used for outputing SEI messages.
 
-#if JVET_P2008_OUTPUT_LOG
   std::ofstream   m_oplFileStream;                ///< Used to output log file for confomance testing
-#endif //JVET_P2008_OUTPUT_LOG
 
 
 
@@ -97,9 +95,7 @@ private:
   bool  isNewPicture(ifstream *bitstreamFile, class InputByteStream *bytestream);  ///< check if next NAL unit will be the first NAL unit from a new picture
   bool  isNewAccessUnit(bool newPicture, ifstream *bitstreamFile, class InputByteStream *bytestream);  ///< check if next NAL unit will be the first NAL unit from a new access unit
 
-#if JVET_P2008_OUTPUT_LOG 
   void  writeLineToOutputLog(Picture * pcPic);
-#endif // JVET_P2008_OUTPUT_LOG 
 
 };
 

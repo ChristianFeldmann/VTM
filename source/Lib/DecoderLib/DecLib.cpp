@@ -1697,13 +1697,11 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
 #endif
   m_HLSReader.parseSliceHeader( m_apcSlicePilot, &m_picHeader, &m_parameterSetManager, m_prevTid0POC );
 
-#if JVET_P0101_POC_MULTILAYER || JVET_P0097_REMOVE_VPS_DEP_NONSCALABLE_LAYER
   PPS *pps = m_parameterSetManager.getPPS(m_picHeader.getPPSId());
   CHECK(pps == 0, "No PPS present");
   SPS *sps = m_parameterSetManager.getSPS(pps->getSPSId());
   CHECK(sps == 0, "No SPS present");
   VPS *vps = m_parameterSetManager.getVPS(sps->getVPSId());
-#endif
 
 
   if (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_STSA && vps != nullptr && (vps->getIndependentLayerFlag(nalu.m_nuhLayerId) == 1))
@@ -1729,13 +1727,11 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
     m_maxDecSubPicIdx = currSubPicIdx; 
     m_maxDecSliceAddrInSubPic = currSliceAddr;
   }
-#if JVET_P0097_REMOVE_VPS_DEP_NONSCALABLE_LAYER
   if ((sps->getVPSId() == 0) && (m_prevLayerID != MAX_INT))
   {
     CHECK(m_prevLayerID != nalu.m_nuhLayerId, "All VCL NAL unit in the CVS shall have the same value of nuh_layer_id "
                                               "when sps_video_parameter_set_id is equal to 0");
   }
-#endif
 #if JVET_P0101_POC_MULTILAYER
   CHECK((sps->getVPSId() > 0) && (vps == 0), "Invalid VPS");
   if (vps != nullptr && (vps->getIndependentLayerFlag(nalu.m_nuhLayerId) == 0)) 

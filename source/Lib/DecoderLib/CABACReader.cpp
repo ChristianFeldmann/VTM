@@ -194,7 +194,6 @@ void CABACReader::coding_tree_unit( CodingStructure& cs, const UnitArea& area, i
       }
     }
   }
-#if JVET_Q0795_CCALF
   if (cs.sps->getCCALFEnabledFlag())
   {
     for ( int compIdx = 1; compIdx < getNumberValidComponents( cs.pcv->chrFormat ); compIdx++ )
@@ -212,7 +211,6 @@ void CABACReader::coding_tree_unit( CodingStructure& cs, const UnitArea& area, i
       }
     }
   }
-#endif
 
 
   if ( CS::isDualITree(cs) && cs.pcv->chrFormat != CHROMA_400 && cs.pcv->maxCUWidth > 64 )
@@ -270,7 +268,6 @@ void CABACReader::readAlfCtuFilterIndex(CodingStructure& cs, unsigned ctuRsAddr)
   }
   alfCtbFilterSetIndex[ctuRsAddr] = filtIndex;
 }
-#if JVET_Q0795_CCALF
 void CABACReader::ccAlfFilterControlIdc(CodingStructure &cs, const ComponentID compID, const int curIdx,
                                         uint8_t *filterControlIdc, Position lumaPos, int filterCount)
 {
@@ -307,7 +304,6 @@ void CABACReader::ccAlfFilterControlIdc(CodingStructure &cs, const ComponentID c
   DTRACE(g_trace_ctx, D_SYNTAX, "ccAlfFilterControlIdc() compID=%d pos=(%d,%d) ctxt=%d, filterCount=%d, idcVal=%d\n",
          compID, lumaPos.x, lumaPos.y, ctxt, filterCount, idcVal);
 }
-#endif
 
 //================================================================================
 //  clause 7.3.8.3

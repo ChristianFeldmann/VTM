@@ -224,12 +224,10 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
                     pcEncPic->slices[i]->setTileGroupAlfEnabledFlag(COMPONENT_Y,  pic->slices[i]->getTileGroupAlfEnabledFlag(COMPONENT_Y));
                     pcEncPic->slices[i]->setTileGroupAlfEnabledFlag(COMPONENT_Cb, pic->slices[i]->getTileGroupAlfEnabledFlag(COMPONENT_Cb));
                     pcEncPic->slices[i]->setTileGroupAlfEnabledFlag(COMPONENT_Cr, pic->slices[i]->getTileGroupAlfEnabledFlag(COMPONENT_Cr));
-#if JVET_Q0795_CCALF
                     pcEncPic->slices[i]->setTileGroupCcAlfCbApsId(pic->slices[i]->getTileGroupCcAlfCbApsId());
                     pcEncPic->slices[i]->setTileGroupCcAlfCbEnabledFlag(pic->slices[i]->getTileGroupCcAlfCbEnabledFlag());
                     pcEncPic->slices[i]->setTileGroupCcAlfCrApsId(pic->slices[i]->getTileGroupCcAlfCrApsId());
                     pcEncPic->slices[i]->setTileGroupCcAlfCrEnabledFlag(pic->slices[i]->getTileGroupCcAlfCrEnabledFlag());
-#endif
                   }
                 }
 
@@ -621,9 +619,7 @@ void DecLib::executeLoopFilters()
 
   if( cs.sps->getALFEnabledFlag() )
   {
-#if JVET_Q0795_CCALF
     m_cALF.getCcAlfFilterParam() = cs.slice->m_ccAlfFilterParam;
-#endif
     // ALF decodes the differentially coded coefficients and stores them in the parameters structure.
     // Code could be restructured to do directly after parsing. So far we just pass a fresh non-const
     // copy in case the APS gets used more than once.
@@ -1023,7 +1019,6 @@ void activateAPS(PicHeader* picHeader, Slice* pSlice, ParameterSetManager& param
     }
   }
 
-#if JVET_Q0795_CCALF
   CcAlfFilterParam &filterParam = pSlice->m_ccAlfFilterParam;
   // cleanup before copying
   for ( int filterIdx = 0; filterIdx < MAX_NUM_CC_ALF_FILTERS; filterIdx++ )
@@ -1081,7 +1076,6 @@ void activateAPS(PicHeader* picHeader, Slice* pSlice, ParameterSetManager& param
       }
     }
   }
-#endif
 
   if (picHeader->getLmcsEnabledFlag() && lmcsAPS == nullptr)
   {
@@ -1260,10 +1254,8 @@ void DecLib::xActivateParameterSets( const int layerId )
       const int maxDepth = floorLog2(sps->getMaxCUWidth()) - sps->getLog2MinCodingBlockSize();
       m_cALF.create( pps->getPicWidthInLumaSamples(), pps->getPicHeightInLumaSamples(), sps->getChromaFormatIdc(), sps->getMaxCUWidth(), sps->getMaxCUHeight(), maxDepth, sps->getBitDepths().recon);
     }
-#if JVET_Q0795_CCALF
     pSlice->m_ccAlfFilterControl[0] = m_cALF.getCcAlfControlIdc(COMPONENT_Cb);
     pSlice->m_ccAlfFilterControl[1] = m_cALF.getCcAlfControlIdc(COMPONENT_Cr);
-#endif
   }
   else
   {
@@ -1603,9 +1595,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   }
 
   m_HLSReader.setBitstream( &nalu.getBitstream() );
-#if JVET_Q0795_CCALF
   m_apcSlicePilot->m_ccAlfFilterParam = m_cALF.getCcAlfFilterParam();
-#endif
   m_HLSReader.parseSliceHeader( m_apcSlicePilot, &m_picHeader, &m_parameterSetManager, m_prevTid0POC );
 
   PPS *pps = m_parameterSetManager.getPPS(m_picHeader.getPPSId());

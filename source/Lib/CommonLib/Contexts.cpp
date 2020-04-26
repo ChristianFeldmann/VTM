@@ -824,7 +824,6 @@ const CtxSet ContextSetCfg::AlfUseTemporalFilt = ContextSetCfg::addCtxSet
   {   0, },
 });
 
-#if JVET_Q0795_CCALF
 const CtxSet ContextSetCfg::CcAlfFilterControlFlag = ContextSetCfg::addCtxSet
 ({
   {  25,  35,  37,  25,  28,  37, },
@@ -832,7 +831,6 @@ const CtxSet ContextSetCfg::CcAlfFilterControlFlag = ContextSetCfg::addCtxSet
   {  18,  29,  38,  18,  29,  38, },
   {   4,   4,   4,   4,   2,   4, },
 });
-#endif
 
 const CtxSet ContextSetCfg::CiipFlag = ContextSetCfg::addCtxSet
 ({

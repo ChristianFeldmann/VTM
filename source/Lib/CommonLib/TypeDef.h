@@ -144,7 +144,6 @@
 
 
 
-#define JVET_Q0795_CCALF                                  1 // Cross-component ALF
 
 #define JVET_Q0297_MER                                    1 // JVET_Q0297: Merge estimation region
 

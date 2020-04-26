@@ -187,7 +187,6 @@ void CABACWriter::coding_tree_unit( CodingStructure& cs, const UnitArea& area, i
     }
   }
 
-#if JVET_Q0795_CCALF
   if ( !skipAlf )
   {
     for ( int compIdx = 1; compIdx < getNumberValidComponents( cs.pcv->chrFormat ); compIdx++ )
@@ -205,7 +204,6 @@ void CABACWriter::coding_tree_unit( CodingStructure& cs, const UnitArea& area, i
       }
     }
   }
-#endif
 
   if ( CS::isDualITree(cs) && cs.pcv->chrFormat != CHROMA_400 && cs.pcv->maxCUWidth > 64 )
   {
@@ -3447,7 +3445,6 @@ void CABACWriter::codeAlfCtuEnableFlag( CodingStructure& cs, uint32_t ctuRsAddr,
   }
 }
 
-#if JVET_Q0795_CCALF
 void CABACWriter::codeCcAlfFilterControlIdc(uint8_t idcVal, CodingStructure &cs, const ComponentID compID,
                                             const int curIdx, const uint8_t *filterControlIdc, Position lumaPos,
                                             const int filterCount)
@@ -3488,7 +3485,6 @@ void CABACWriter::codeCcAlfFilterControlIdc(uint8_t idcVal, CodingStructure &cs,
   }
   DTRACE( g_trace_ctx, D_SYNTAX, "ccAlfFilterControlIdc() compID=%d pos=(%d,%d) ctxt=%d, filterCount=%d, idcVal=%d\n", compID, lumaPos.x, lumaPos.y, ctxt, filterCount, idcVal );
 }
-#endif
 
 void CABACWriter::code_unary_fixed( unsigned symbol, unsigned ctxId, unsigned unary_max, unsigned fixed )
 {

@@ -63,9 +63,7 @@ AdaptiveLoopFilter::AdaptiveLoopFilter()
   }
 
   m_deriveClassificationBlk = deriveClassificationBlk;
-#if JVET_Q0795_CCALF
   m_filterCcAlf = filterBlkCcAlf<CC_ALF>;
-#endif
   m_filter5x5Blk = filterBlk<ALF_FILTER_5>;
   m_filter7x7Blk = filterBlk<ALF_FILTER_7>;
 
@@ -298,7 +296,6 @@ const int AdaptiveLoopFilter::m_classToFilterMapping[NUM_FIXED_FILTER_SETS][MAX_
   { 16,  31,  32,  15,  60,  30,   4,  17,  19,  25,  22,  20,   4,  53,  19,  21,  22,  46,  25,  55,  26,  48,  63,  58,  55 },
 };
 
-#if JVET_Q0795_CCALF
 void AdaptiveLoopFilter::applyCcAlfFilter(CodingStructure &cs, ComponentID compID, const PelBuf &dstBuf,
                                           const PelUnitBuf &recYuvExt, uint8_t *filterControl,
                                           const short filterSet[MAX_NUM_CC_ALF_FILTERS][MAX_NUM_CC_ALF_CHROMA_COEFF],
@@ -398,7 +395,6 @@ void AdaptiveLoopFilter::applyCcAlfFilter(CodingStructure &cs, ComponentID compI
     }
   }
 }
-#endif
 
 void AdaptiveLoopFilter::ALFProcess(CodingStructure& cs)
 {
@@ -448,9 +444,7 @@ void AdaptiveLoopFilter::ALFProcess(CodingStructure& cs)
         cs.slice = cu->slice;
         reconstructCoeffAPSs(cs, true, cu->slice->getTileGroupAlfEnabledFlag(COMPONENT_Cb) || cu->slice->getTileGroupAlfEnabledFlag(COMPONENT_Cr), false);
         alfCtuFilterIndex = cu->slice->getPic()->getAlfCtbFilterIndex();
-#if JVET_Q0795_CCALF
         m_ccAlfFilterParam = cu->slice->m_ccAlfFilterParam;
-#endif
       }
       lastSliceIdx = cu->slice->getSliceID();
 
@@ -460,12 +454,10 @@ void AdaptiveLoopFilter::ALFProcess(CodingStructure& cs)
       for( int compIdx = 1; compIdx < MAX_NUM_COMPONENT; compIdx++ )
       {
         ctuEnableFlag |= m_ctuEnableFlag[compIdx][ctuIdx] > 0;
-#if JVET_Q0795_CCALF
         if (cu->slice->m_ccAlfFilterParam.ccAlfFilterEnabled[compIdx - 1])
         {
           ctuEnableFlag |= m_ccAlfFilterControl[compIdx - 1][ctuIdx] > 0;
         }
-#endif
       }
       int rasterSliceAlfPad = 0;
       if( ctuEnableFlag && isCrossedByVirtualBoundaries( cs, xPos, yPos, width, height, clipTop, clipBottom, clipLeft, clipRight, numHorVirBndry, numVerVirBndry, horVirBndryPos, verVirBndryPos, rasterSliceAlfPad ) )
@@ -541,7 +533,6 @@ void AdaptiveLoopFilter::ALFProcess(CodingStructure& cs)
                   , m_alfVBChmaCTUHeight
                    , m_alfVBChmaPos );
               }
-#if JVET_Q0795_CCALF
               if (cu->slice->m_ccAlfFilterParam.ccAlfFilterEnabled[compIdx - 1])
               {
                 const int filterIdx = m_ccAlfFilterControl[compIdx - 1][ctuIdx];
@@ -557,7 +548,6 @@ void AdaptiveLoopFilter::ALFProcess(CodingStructure& cs)
                                 m_alfVBLumaCTUHeight, m_alfVBLumaPos);
                 }
               }
-#endif
             }
 
             xStart = xEnd;
@@ -606,7 +596,6 @@ void AdaptiveLoopFilter::ALFProcess(CodingStructure& cs)
                            m_chromaClippFinal[alt_num], m_clpRngs.comp[compIdx], cs, m_alfVBChmaCTUHeight,
                            m_alfVBChmaPos);
           }
-#if JVET_Q0795_CCALF
           if (cu->slice->m_ccAlfFilterParam.ccAlfFilterEnabled[compIdx - 1])
           {
             const int filterIdx = m_ccAlfFilterControl[compIdx - 1][ctuIdx];
@@ -622,7 +611,6 @@ void AdaptiveLoopFilter::ALFProcess(CodingStructure& cs)
                             m_alfVBLumaCTUHeight, m_alfVBLumaPos);
             }
           }
-#endif
         }
       }
       ctuIdx++;
@@ -731,10 +719,8 @@ void AdaptiveLoopFilter::create( const int picWidth, const int picHeight, const 
   m_numCTUsInWidth = ( m_picWidth / m_maxCUWidth ) + ( ( m_picWidth % m_maxCUWidth ) ? 1 : 0 );
   m_numCTUsInHeight = ( m_picHeight / m_maxCUHeight ) + ( ( m_picHeight % m_maxCUHeight ) ? 1 : 0 );
   m_numCTUsInPic = m_numCTUsInHeight * m_numCTUsInWidth;
-#if JVET_Q0795_CCALF
   m_filterShapesCcAlf[0].push_back(AlfFilterShape(size_CC_ALF));
   m_filterShapesCcAlf[1].push_back(AlfFilterShape(size_CC_ALF));
-#endif
   m_filterShapes[CHANNEL_TYPE_LUMA].push_back( AlfFilterShape( 7 ) );
   m_filterShapes[CHANNEL_TYPE_CHROMA].push_back( AlfFilterShape( 5 ) );
   m_alfVBLumaPos = m_maxCUHeight - ALF_VB_POS_ABOVE_CTUROW_LUMA;
@@ -799,10 +785,8 @@ void AdaptiveLoopFilter::create( const int picWidth, const int picHeight, const 
   }
   m_created = true;
 
-#if JVET_Q0795_CCALF
   m_ccAlfFilterControl[0] = new uint8_t[m_numCTUsInPic];
   m_ccAlfFilterControl[1] = new uint8_t[m_numCTUsInPic];
-#endif
 }
 
 void AdaptiveLoopFilter::destroy()
@@ -825,7 +809,6 @@ void AdaptiveLoopFilter::destroy()
   m_filterShapes[CHANNEL_TYPE_CHROMA].clear();
   m_created = false;
 
-#if JVET_Q0795_CCALF
   m_filterShapesCcAlf[0].clear();
   m_filterShapesCcAlf[1].clear();
   if ( m_ccAlfFilterControl[0] )
@@ -839,7 +822,6 @@ void AdaptiveLoopFilter::destroy()
     delete [] m_ccAlfFilterControl[1];
     m_ccAlfFilterControl[1] = nullptr;
   }
-#endif
 }
 
 void AdaptiveLoopFilter::deriveClassification( AlfClassifier** classifier, const CPelBuf& srcLuma, const Area& blkDst, const Area& blk )
@@ -1309,7 +1291,6 @@ void AdaptiveLoopFilter::filterBlk(AlfClassifier **classifier, const PelUnitBuf 
   }
 }
 
-#if JVET_Q0795_CCALF
 template<AlfFilterType filtTypeCcAlf>
 void AdaptiveLoopFilter::filterBlkCcAlf(const PelBuf &dstBuf, const CPelUnitBuf &recSrc, const Area &blkDst,
                                         const Area &blkSrc, const ComponentID compId, const int16_t *filterCoeff,
@@ -1400,4 +1381,3 @@ void AdaptiveLoopFilter::filterBlkCcAlf(const PelBuf &dstBuf, const CPelUnitBuf 
     lumaPtr += lumaStride * clsSizeY << getComponentScaleY(compId, nChromaFormat);
   }
 }
-#endif

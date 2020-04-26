@@ -186,9 +186,7 @@ public:
   void  decodeScalingList   ( ScalingList *scalingList, uint32_t scalingListId, bool isPredictor);
   void parseReshaper        ( SliceReshapeInfo& sliceReshaperInfo, const SPS* pcSPS, const bool isIntra );
   void alfFilter( AlfParam& alfParam, const bool isChroma, const int altIdx );
-#if JVET_Q0795_CCALF
   void ccAlfFilter( Slice *pcSlice );
-#endif
   void dpb_parameters(int maxSubLayersMinus1, bool subLayerInfoFlag, SPS *pcSPS);
 #if JVET_Q0400_EXTRA_BITS
   void parseExtraPHBitsStruct( SPS *sps, int numBytes );

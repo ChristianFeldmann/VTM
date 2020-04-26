@@ -256,9 +256,7 @@ class ConstraintInfo
   bool              m_noPartitionConstraintsOverrideConstraintFlag;
   bool              m_noSaoConstraintFlag;
   bool              m_noAlfConstraintFlag;
-#if JVET_Q0795_CCALF
   bool              m_noCCAlfConstraintFlag;
-#endif
   bool              m_noRefWraparoundConstraintFlag;
   bool              m_noTemporalMvpConstraintFlag;
   bool              m_noSbtmvpConstraintFlag;
@@ -315,9 +313,7 @@ public:
     , m_noPartitionConstraintsOverrideConstraintFlag(false)
     , m_noSaoConstraintFlag      (false)
     , m_noAlfConstraintFlag      (false)
-#if JVET_Q0795_CCALF
     , m_noCCAlfConstraintFlag      (false)
-#endif
     , m_noRefWraparoundConstraintFlag(false)
     , m_noTemporalMvpConstraintFlag(false)
     , m_noSbtmvpConstraintFlag   (false)
@@ -405,10 +401,8 @@ public:
   void          setNoSaoConstraintFlag(bool bVal) { m_noSaoConstraintFlag = bVal; }
   bool          getNoAlfConstraintFlag() const { return m_noAlfConstraintFlag; }
   void          setNoAlfConstraintFlag(bool bVal) { m_noAlfConstraintFlag = bVal; }
-#if JVET_Q0795_CCALF
   bool          getNoCCAlfConstraintFlag() const { return m_noCCAlfConstraintFlag; }
   void          setNoCCAlfConstraintFlag(bool val) { m_noCCAlfConstraintFlag = val; }
-#endif
   bool          getNoJointCbCrConstraintFlag() const { return m_noJointCbCrConstraintFlag; }
   void          setNoJointCbCrConstraintFlag(bool bVal) { m_noJointCbCrConstraintFlag = bVal; }
   bool          getNoRefWraparoundConstraintFlag() const { return m_noRefWraparoundConstraintFlag; }
@@ -1342,9 +1336,7 @@ private:
   ProfileTierLevel  m_profileTierLevel;
 
   bool              m_alfEnabledFlag;
-#if JVET_Q0795_CCALF
   bool              m_ccalfEnabledFlag;
-#endif
   bool              m_wrapAroundEnabledFlag;
   unsigned          m_wrapAroundOffset;
   unsigned          m_IBCFlag;
@@ -1589,10 +1581,8 @@ public:
 
   bool                    getALFEnabledFlag() const                                                       { return m_alfEnabledFlag; }
   void                    setALFEnabledFlag( bool b )                                                     { m_alfEnabledFlag = b; }
-#if JVET_Q0795_CCALF
 bool                    getCCALFEnabledFlag() const                                                       { return m_ccalfEnabledFlag; }
 void                    setCCALFEnabledFlag( bool b )                                                     { m_ccalfEnabledFlag = b; }
-#endif
   void                    setJointCbCrEnabledFlag(bool bVal)                                              { m_JointCbCrEnabledFlag = bVal; }
   bool                    getJointCbCrEnabledFlag() const                                                 { return m_JointCbCrEnabledFlag; }
 
@@ -2143,9 +2133,7 @@ private:
   AlfParam               m_alfAPSParam;
   SliceReshapeInfo       m_reshapeAPSInfo;
   ScalingList            m_scalingListApsInfo;
-#if JVET_Q0795_CCALF
   CcAlfFilterParam       m_ccAlfAPSParam;
-#endif
 
 public:
   APS();
@@ -2168,10 +2156,8 @@ public:
   SliceReshapeInfo&      getReshaperAPSInfo()                                             { return m_reshapeAPSInfo;                      }
   void                   setScalingList( ScalingList& scalingListAPSInfo )                { m_scalingListApsInfo = scalingListAPSInfo;    }
   ScalingList&           getScalingList()                                                 { return m_scalingListApsInfo;                  }
-#if JVET_Q0795_CCALF
   void                   setCcAlfAPSParam(CcAlfFilterParam& ccAlfAPSParam)                { m_ccAlfAPSParam = ccAlfAPSParam;              }
   CcAlfFilterParam&      getCcAlfAPSParam()  { return m_ccAlfAPSParam; }
-#endif
 };
 struct WPScalingParam
 {
@@ -2253,11 +2239,9 @@ private:
   std::vector<int>            m_alfApsId;                                               //!< list of alf aps for the picture
   int                         m_alfChromaApsId;                                         //!< chroma alf aps ID
   int                         m_alfChromaIdc;                                            //!< alf chroma idc
-#if JVET_Q0795_CCALF
   bool m_ccalfEnabledFlag[MAX_NUM_COMPONENT];
   int  m_ccalfCbApsId;
   int  m_ccalfCrApsId;
-#endif
   bool                        m_depQuantEnabledFlag;                                    //!< dependent quantization enabled flag
   bool                        m_signDataHidingEnabledFlag;                              //!< sign data hiding enabled flag
   bool                        m_deblockingFilterOverrideFlag;                           //!< deblocking filter override controls enabled
@@ -2386,7 +2370,6 @@ public:
   int                         getAlfApsIdChroma() const                                 { return m_alfChromaApsId;                                                                     }
   void                        setAlfChromaIdc(int i)                                    { m_alfChromaIdc = i;                                                                          }
   int                         getAlfChromaIdc() const                                   { return m_alfChromaIdc;                                                                       }
-#if JVET_Q0795_CCALF
   void setCcAlfEnabledFlag(ComponentID compId, bool b) { m_ccalfEnabledFlag[compId] = b; }
   bool getCcAlfEnabledFlag(ComponentID compId) const { return m_ccalfEnabledFlag[compId]; }
 
@@ -2394,7 +2377,6 @@ public:
   int  getCcAlfCbApsId() const { return m_ccalfCbApsId; }
   void setCcAlfCrApsId(int i) { m_ccalfCrApsId = i; }
   int  getCcAlfCrApsId() const { return m_ccalfCrApsId; }
-#endif
   void                        setDepQuantEnabledFlag( bool b )                          { m_depQuantEnabledFlag = b;                                                                   }
   bool                        getDepQuantEnabledFlag() const                            { return m_depQuantEnabledFlag;                                                                }  
   void                        setSignDataHidingEnabledFlag( bool b )                    { m_signDataHidingEnabledFlag = b;                                                             }
@@ -2600,12 +2582,10 @@ private:
   int                        m_tileGroupNumAps;
   std::vector<int>           m_tileGroupLumaApsId;
   int                        m_tileGroupChromaApsId;
-#if JVET_Q0795_CCALF
   bool                       m_tileGroupCcAlfCbEnabledFlag;
   bool                       m_tileGroupCcAlfCrEnabledFlag;
   int                        m_tileGroupCcAlfCbApsId;
   int                        m_tileGroupCcAlfCrApsId;
-#endif
   bool                       m_disableSATDForRd;
 public:
                               Slice();
@@ -2878,7 +2858,6 @@ public:
       m_tileGroupLumaApsId[i] = ApsIDs[i];
     }
   }
-#if JVET_Q0795_CCALF
   void resetTileGroupCcAlCbfEnabledFlag() { m_tileGroupCcAlfCbEnabledFlag = 0; }
   void resetTileGroupCcAlCrfEnabledFlag() { m_tileGroupCcAlfCrEnabledFlag = 0; }
 
@@ -2891,7 +2870,6 @@ public:
   bool getTileGroupCcAlfCrEnabledFlag() { return m_tileGroupCcAlfCrEnabledFlag; }
   int  getTileGroupCcAlfCbApsId() { return m_tileGroupCcAlfCbApsId; }
   int  getTileGroupCcAlfCrApsId() { return m_tileGroupCcAlfCrApsId; }
-#endif
   void                        setDisableSATDForRD(bool b) { m_disableSATDForRd = b; }
   bool                        getDisableSATDForRD() { return m_disableSATDForRd; }
   void                        scaleRefPicList( Picture *scaledRefPic[ ], PicHeader *picHeader, APS** apss, APS* lmcsAps, APS* scalingListAps, const bool isDecoder );
@@ -2902,10 +2880,8 @@ public:
   void                        setNumEntryPoints( const SPS *sps, const PPS *pps );
   uint32_t                    getNumEntryPoints( ) const { return m_numEntryPoints;  }
 
-#if JVET_Q0795_CCALF
   CcAlfFilterParam            m_ccAlfFilterParam;
   uint8_t*                    m_ccAlfFilterControl[2];
-#endif
 
 protected:
   Picture*              xGetRefPic( PicList& rcListPic, int poc, const int layerId );

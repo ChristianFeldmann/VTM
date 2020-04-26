@@ -48,16 +48,12 @@ enum AlfFilterType
 {
   ALF_FILTER_5,
   ALF_FILTER_7,
-#if JVET_Q0795_CCALF
   CC_ALF,
-#endif
   ALF_NUM_OF_FILTER_TYPES
 };
 
 
-#if JVET_Q0795_CCALF
 static const int size_CC_ALF = -1;
-#endif
 
 struct AlfFilterShape
 {
@@ -105,7 +101,6 @@ struct AlfFilterShape
 
       filterType = ALF_FILTER_7;
     }
-#if JVET_Q0795_CCALF
     else if (size == size_CC_ALF)
     {
       size = 4;
@@ -114,7 +109,6 @@ struct AlfFilterShape
       filterSize = 8;
       filterType   = CC_ALF;
     }
-#endif
     else
     {
       filterType = ALF_NUM_OF_FILTER_TYPES;
@@ -245,7 +239,6 @@ struct AlfParam
   }
 };
 
-#if JVET_Q0795_CCALF
 struct CcAlfFilterParam
 {
   bool    ccAlfFilterEnabled[2];
@@ -281,7 +274,6 @@ struct CcAlfFilterParam
     return *this;
   }
 };
-#endif
 //! \}
 
 #endif  // end of #ifndef  __ALFPARAMETERS__

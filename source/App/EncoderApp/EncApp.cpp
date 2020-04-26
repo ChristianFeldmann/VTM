@@ -246,9 +246,7 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setNoPartitionConstraintsOverrideConstraintFlag      ( !m_SplitConsOverrideEnabledFlag );
   m_cEncLib.setNoSaoConstraintFlag                               ( !m_bUseSAO );
   m_cEncLib.setNoAlfConstraintFlag                               ( !m_alf );
-#if JVET_Q0795_CCALF
   m_cEncLib.setNoAlfConstraintFlag                               ( !m_ccalf );
-#endif
   m_cEncLib.setNoRefWraparoundConstraintFlag                     ( m_bNoRefWraparoundConstraintFlag );
   m_cEncLib.setNoTemporalMvpConstraintFlag                       ( m_TMVPModeId ? false : true );
   m_cEncLib.setNoSbtmvpConstraintFlag                            ( m_SubPuMvpMode ? false : true );
@@ -817,10 +815,8 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setForceSingleSplitThread                            ( m_forceSplitSequential );
 #endif
   m_cEncLib.setUseALF                                            ( m_alf );
-#if JVET_Q0795_CCALF
   m_cEncLib.setUseCCALF                                          ( m_ccalf );
   m_cEncLib.setCCALFQpThreshold                                  ( m_ccalfQpThreshold );
-#endif
   m_cEncLib.setLmcs                                              ( m_lmcsEnabled );
   m_cEncLib.setReshapeSignalType                                 ( m_reshapeSignalType );
   m_cEncLib.setReshapeIntraCMD                                   ( m_intraCMD );

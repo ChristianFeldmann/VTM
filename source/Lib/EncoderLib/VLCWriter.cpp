@@ -560,11 +560,9 @@ void HLSWriter::codeAlfAps( APS* pcAPS )
   WRITE_FLAG(param.newFilterFlag[CHANNEL_TYPE_LUMA], "alf_luma_new_filter");
   WRITE_FLAG(param.newFilterFlag[CHANNEL_TYPE_CHROMA], "alf_chroma_new_filter");
 
-#if JVET_Q0795_CCALF
   CcAlfFilterParam paramCcAlf = pcAPS->getCcAlfAPSParam();
   WRITE_FLAG(paramCcAlf.newCcAlfFilter[COMPONENT_Cb - 1], "alf_cc_cb_filter_signal_flag");
   WRITE_FLAG(paramCcAlf.newCcAlfFilter[COMPONENT_Cr - 1], "alf_cc_cr_filter_signal_flag");
-#endif
 
   if (param.newFilterFlag[CHANNEL_TYPE_LUMA])
   {
@@ -592,7 +590,6 @@ void HLSWriter::codeAlfAps( APS* pcAPS )
       alfFilter(param, true, altIdx);
     }
   }
-#if JVET_Q0795_CCALF
   for (int ccIdx = 0; ccIdx < 2; ccIdx++)
   {
     if (paramCcAlf.newCcAlfFilter[ccIdx])
@@ -637,7 +634,6 @@ void HLSWriter::codeAlfAps( APS* pcAPS )
       }
     }
   }
-#endif
 }
 
 void HLSWriter::codeLmcsAps( APS* pcAPS )
@@ -1028,12 +1024,10 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 
   WRITE_FLAG( pcSPS->getSAOEnabledFlag(),                                            "sps_sao_enabled_flag");
   WRITE_FLAG( pcSPS->getALFEnabledFlag(),                                            "sps_alf_enabled_flag" );
-#if JVET_Q0795_CCALF
   if (pcSPS->getALFEnabledFlag() && pcSPS->getChromaFormatIdc() != CHROMA_400)
   {
     WRITE_FLAG( pcSPS->getCCALFEnabledFlag(),                                            "sps_ccalf_enabled_flag" );
   }
-#endif
 
   WRITE_FLAG(pcSPS->getTransformSkipEnabledFlag() ? 1 : 0, "sps_transform_skip_enabled_flag");
   if (pcSPS->getTransformSkipEnabledFlag())
@@ -1565,7 +1559,6 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
         {
           WRITE_CODE(picHeader->getAlfApsIdChroma(), 3, "ph_alf_aps_id_chroma");
         }
-#if JVET_Q0795_CCALF
         if (sps->getCCALFEnabledFlag())
         {
           WRITE_FLAG(picHeader->getCcAlfEnabledFlag(COMPONENT_Cb), "ph_cc_alf_cb_enabled_flag");
@@ -1579,7 +1572,6 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
             WRITE_CODE(picHeader->getCcAlfCrApsId(), 3, "ph_cc_alf_cr_aps_id");
           }
         }
-#endif
       }
     }
     else
@@ -1587,10 +1579,8 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
       picHeader->setAlfEnabledFlag(COMPONENT_Y,  true);
       picHeader->setAlfEnabledFlag(COMPONENT_Cb, true);
       picHeader->setAlfEnabledFlag(COMPONENT_Cr, true);
-#if JVET_Q0795_CCALF
       picHeader->setCcAlfEnabledFlag(COMPONENT_Cb, sps->getCCALFEnabledFlag());
       picHeader->setCcAlfEnabledFlag(COMPONENT_Cr, sps->getCCALFEnabledFlag());
-#endif
     }
   }
   else
@@ -1598,10 +1588,8 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader )
     picHeader->setAlfEnabledFlag(COMPONENT_Y,  false);
     picHeader->setAlfEnabledFlag(COMPONENT_Cb, false);
     picHeader->setAlfEnabledFlag(COMPONENT_Cr, false);
-#if JVET_Q0795_CCALF
     picHeader->setCcAlfEnabledFlag(COMPONENT_Cb, false);
     picHeader->setCcAlfEnabledFlag(COMPONENT_Cr, false);
-#endif
   }
 
   // luma mapping / chroma scaling controls
@@ -2155,7 +2143,6 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
         WRITE_CODE(pcSlice->getTileGroupApsIdChroma(), 3, "slice_alf_aps_id_chroma");
       }
 
-#if JVET_Q0795_CCALF
       if (pcSlice->getSPS()->getCCALFEnabledFlag())
       {
         CcAlfFilterParam &filterParam = pcSlice->m_ccAlfFilterParam;
@@ -2173,7 +2160,6 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
           WRITE_CODE(pcSlice->getTileGroupCcAlfCrApsId(), 3, "slice_cc_alf_cr_aps_id");
         }
       }
-#endif
     }
   }
 
@@ -2492,9 +2478,7 @@ void  HLSWriter::codeConstraintInfo  ( const ConstraintInfo* cinfo )
   WRITE_FLAG(cinfo->getNoPartitionConstraintsOverrideConstraintFlag() ? 1 : 0, "no_partition_constraints_override_constraint_flag");
   WRITE_FLAG(cinfo->getNoSaoConstraintFlag() ? 1 : 0, "no_sao_constraint_flag");
   WRITE_FLAG(cinfo->getNoAlfConstraintFlag() ? 1 : 0, "no_alf_constraint_flag");
-#if JVET_Q0795_CCALF
   WRITE_FLAG(cinfo->getNoCCAlfConstraintFlag() ? 1 : 0, "no_ccalf_constraint_flag");
-#endif
   WRITE_FLAG(cinfo->getNoJointCbCrConstraintFlag() ? 1 : 0, "no_joint_cbcr_constraint_flag");
   WRITE_FLAG(cinfo->getNoRefWraparoundConstraintFlag() ? 1 : 0, "no_ref_wraparound_constraint_flag");
   WRITE_FLAG(cinfo->getNoTemporalMvpConstraintFlag() ? 1 : 0, "no_temporal_mvp_constraint_flag");

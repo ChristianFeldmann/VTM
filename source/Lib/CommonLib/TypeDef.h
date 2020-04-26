@@ -131,7 +131,6 @@
 
 
 
-#define JVET_Q0147_JCCR_SIGNALLING                        1 // JVET-Q0147: Conditional signaling of sps_joint_cbcr_enabled_flag based on ChromaArrayType
 
 #define JVET_Q0346_LMCS_ENABLE_IN_SH                      1 // JVET-Q0346 aspect 1: LMCS enabled flag in SH
 

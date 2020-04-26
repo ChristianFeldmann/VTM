@@ -310,9 +310,6 @@ public:
   void initCABACEstimator( CABACEncoder* cabacEncoder, CtxCache* ctxCache, Slice* pcSlice, ParameterSetMap<APS>* apsMap );
   void create( const EncCfg* encCfg, const int picWidth, const int picHeight, const ChromaFormat chromaFormatIDC, const int maxCUWidth, const int maxCUHeight, const int maxCUDepth, const int inputBitDepth[MAX_NUM_CHANNEL_TYPE], const int internalBitDepth[MAX_NUM_CHANNEL_TYPE] );
   void destroy();
-#if !JVET_Q0210_UEK_REMOVAL 
-  static int lengthGolomb( int coeffVal, int k, bool signed_coeff = true );
-#endif
   void setApsIdStart( int i) { m_apsIdStart = i; }
 
 private:

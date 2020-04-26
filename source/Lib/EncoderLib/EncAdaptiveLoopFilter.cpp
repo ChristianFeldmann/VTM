@@ -1494,13 +1494,9 @@ int EncAdaptiveLoopFilter::getChromaCoeffRate( AlfParam& alfParam, int altIdx )
   // Filter coefficients
   for( int i = 0; i < alfShape.numCoeff - 1; i++ )
   {
-#if JVET_Q0210_UEK_REMOVAL  
     iBits += lengthUvlc( abs( alfParam.chromaCoeff[ altIdx ][ i ] ) );  // alf_coeff_chroma[altIdx][i]
     if( ( alfParam.chromaCoeff[ altIdx ][ i ] ) != 0 )
       iBits += 1;
-#else
-    iBits += lengthGolomb( alfParam.chromaCoeff[ altIdx ][ i ], 3 );  // alf_coeff_chroma[altIdx][i]
-#endif
   }
 #if JVET_Q0249_ALF_CHROMA_CLIPFLAG
   if( m_alfParamTemp.nonLinearFlag[CHANNEL_TYPE_CHROMA] )
@@ -1667,24 +1663,16 @@ int EncAdaptiveLoopFilter::getCostFilterCoeffForce0( AlfFilterShape& alfShape, i
     {
       for( int i = 0; i < alfShape.numCoeff - 1; i++ )
       {
-#if JVET_Q0210_UEK_REMOVAL 
         len += lengthUvlc( abs( pDiffQFilterCoeffIntPP[ ind ][ i ] ) ); // alf_coeff_luma_delta[i][j]
         if( ( abs( pDiffQFilterCoeffIntPP[ ind ][ i ] ) != 0 ) )
           len += 1;
-#else
-        len += lengthGolomb( abs( pDiffQFilterCoeffIntPP[ ind ][ i ] ), 3 ); // alf_coeff_luma_delta[i][j]
-#endif
       }
     }
     else
     {
       for (int i = 0; i < alfShape.numCoeff - 1; i++)
       {
-#if JVET_Q0210_UEK_REMOVAL
         len += lengthUvlc( 0 ); // alf_coeff_luma_delta[i][j]
-#else
-        len += lengthGolomb( 0, 3 ); // alf_coeff_luma_delta[i][j]
-#endif
       }
     }
   }
@@ -1743,13 +1731,9 @@ int EncAdaptiveLoopFilter::lengthFilterCoeffs( AlfFilterShape& alfShape, const i
   {
     for( int i = 0; i < alfShape.numCoeff - 1; i++ )
     {
-#if JVET_Q0210_UEK_REMOVAL 
       bitCnt += lengthUvlc( abs( FilterCoeff[ ind ][ i ] ) );
       if( abs( FilterCoeff[ ind ][ i ] ) != 0 )
         bitCnt += 1;
-#else
-      bitCnt += lengthGolomb( abs( FilterCoeff[ ind ][ i ] ), 3 );
-#endif
     }
   }
   return bitCnt;
@@ -1765,24 +1749,16 @@ double EncAdaptiveLoopFilter::getDistForce0( AlfFilterShape& alfShape, const int
     bitsVarBin[ind] = 0;
     for( int i = 0; i < alfShape.numCoeff - 1; i++ )
     {
-#if JVET_Q0210_UEK_REMOVAL 
       bitsVarBin[ ind ] += lengthUvlc( abs( m_filterCoeffSet[ ind ][ i ] ) );
       if( abs( m_filterCoeffSet[ ind ][ i ] ) != 0 )
         bitsVarBin[ ind ] += 1;
-#else
-      bitsVarBin[ ind ] += lengthGolomb( abs( m_filterCoeffSet[ ind ][ i ] ), 3 );
-#endif
     }
   }
 
   int zeroBitsVarBin = 0;
   for (int i = 0; i < alfShape.numCoeff - 1; i++)
   {
-#if JVET_Q0210_UEK_REMOVAL 
     zeroBitsVarBin += lengthUvlc( 0 );
-#else
-    zeroBitsVarBin += lengthGolomb( 0, 3 );
-#endif
   }
 #if JVET_Q0249_ALF_CHROMA_CLIPFLAG
   if( m_alfParamTemp.nonLinearFlag[CHANNEL_TYPE_LUMA] )
@@ -1837,25 +1813,6 @@ int EncAdaptiveLoopFilter::lengthUvlc( int uiCode )
   return ( uiLength >> 1 ) + ( ( uiLength + 1 ) >> 1 );
 }
 
-#if !JVET_Q0210_UEK_REMOVAL 
-int EncAdaptiveLoopFilter::lengthGolomb( int coeffVal, int k, bool signed_coeff )
-{
-  int numBins = 0;
-  unsigned int symbol = abs( coeffVal );
-  while( symbol >= ( unsigned int ) ( 1 << k ) )
-  {
-    numBins++;
-    symbol -= 1 << k;
-    k++;
-  }
-  numBins += ( k + 1 );
-  if( signed_coeff && coeffVal != 0 )
-  {
-    numBins++;
-  }
-  return numBins;
-}
-#endif
 
 double EncAdaptiveLoopFilter::deriveFilterCoeffs( AlfCovariance* cov, AlfCovariance* covMerged, int clipMerged[MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_LUMA_COEFF], AlfFilterShape& alfShape, short* filterIndices, int numFilters, double errorTabForce0Coeff[MAX_NUM_ALF_CLASSES][2], AlfParam& alfParam )
 {

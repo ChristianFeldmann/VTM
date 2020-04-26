@@ -153,9 +153,6 @@ public:
   void alfFilter( const AlfParam& alfParam, const bool isChroma, const int altIdx );
   void dpb_parameters(int maxSubLayersMinus1, bool subLayerInfoFlag, const SPS *pcSPS);
 private:
-#if !JVET_Q0210_UEK_REMOVAL
-  void alfGolombEncode( const int coeff, const int k, const bool signed_coeff=true );
-#endif
 };
 
 //! \}

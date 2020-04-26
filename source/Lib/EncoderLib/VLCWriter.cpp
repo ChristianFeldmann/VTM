@@ -3541,28 +3541,6 @@ bool HLSWriter::xFindMatchingLTRP(Slice* pcSlice, uint32_t *ltrpsIndex, int ltrp
   return false;
 }
 
-#if !JVET_Q0210_UEK_REMOVAL
-void HLSWriter::alfGolombEncode( int coeff, int k, const bool signed_coeff )
-{
-  unsigned int symbol = abs( coeff );
-  while ( symbol >= (unsigned int)( 1 << k ) )
-  {
-    symbol -= 1 << k;
-    k++;
-    WRITE_FLAG( 0, "alf_coeff_abs_prefix" );
-  }
-  WRITE_FLAG( 1, "alf_coeff_abs_prefix" );
-
-  if ( k > 0 )
-  {
-    WRITE_CODE( symbol, k, "alf_coeff_abs_suffix" );
-  }
-  if ( signed_coeff && coeff != 0 )
-  {
-    WRITE_FLAG( (coeff < 0) ? 1 : 0, "alf_coeff_sign" );
-  }
-}
-#endif
 
 void HLSWriter::alfFilter( const AlfParam& alfParam, const bool isChroma, const int altIdx )
 {
@@ -3579,15 +3557,11 @@ void HLSWriter::alfFilter( const AlfParam& alfParam, const bool isChroma, const 
 
     for( int i = 0; i < alfShape.numCoeff - 1; i++ )
     {
-#if JVET_Q0210_UEK_REMOVAL 
       WRITE_UVLC( abs(coeff[ ind* MAX_NUM_ALF_LUMA_COEFF + i ]), isChroma ? "alf_chroma_coeff_abs" : "alf_luma_coeff_abs" ); //alf_coeff_chroma[i], alf_coeff_luma_delta[i][j]
       if( abs( coeff[ ind* MAX_NUM_ALF_LUMA_COEFF + i ] ) != 0 )
       {
         WRITE_FLAG( ( coeff[ ind* MAX_NUM_ALF_LUMA_COEFF + i ] < 0 ) ? 1 : 0, isChroma ? "alf_chroma_coeff_sign" : "alf_luma_coeff_sign" );
       }
-#else
-      alfGolombEncode( coeff[ind* MAX_NUM_ALF_LUMA_COEFF + i], 3 );  // alf_coeff_chroma[i], alf_coeff_luma_delta[i][j]
-#endif
     }
   }
 

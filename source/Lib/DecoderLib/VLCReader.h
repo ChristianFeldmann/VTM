@@ -205,9 +205,6 @@ public:
   void parseExtraSHBitsStruct( SPS *sps, int numBytes );
 #endif
 private:
-#if !JVET_Q0210_UEK_REMOVAL
-  int  alfGolombDecode( const int k, const bool signed_val=true );
-#endif
 
 protected:
   bool  xMoreRbspData();

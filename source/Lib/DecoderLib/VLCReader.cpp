@@ -5460,40 +5460,6 @@ bool HLSyntaxReader::xMoreRbspData()
   return (cnt>0);
 }
 
-#if !JVET_Q0210_UEK_REMOVAL
-int HLSyntaxReader::alfGolombDecode( const int k, const bool signed_val )
-{
-  int numLeadingBits = -1;
-  uint32_t b = 0;
-  for (; !b; numLeadingBits++)
-  {
-#if RExt__DECODER_DEBUG_BIT_STATISTICS
-    xReadFlag( b, "" );
-#else
-    READ_FLAG( b, "alf_coeff_abs_prefix");
-#endif
-  }
-
-  int symbol = ( ( 1 << numLeadingBits ) - 1 ) << k;
-  if ( numLeadingBits + k > 0)
-  {
-    uint32_t bins;
-    READ_CODE( numLeadingBits + k, bins, "alf_coeff_abs_suffix" );
-    symbol += bins;
-  }
-
-  if ( signed_val && symbol != 0 )
-  {
-#if RExt__DECODER_DEBUG_BIT_STATISTICS
-    xReadFlag( b, "" );
-#else
-    READ_FLAG( b, "alf_coeff_sign" );
-#endif
-    symbol = ( b ) ? -symbol : symbol;
-  }
-  return symbol;
-}
-#endif
 
 void HLSyntaxReader::alfFilter( AlfParam& alfParam, const bool isChroma, const int altIdx )
 {
@@ -5512,7 +5478,6 @@ void HLSyntaxReader::alfFilter( AlfParam& alfParam, const bool isChroma, const i
 
     for( int i = 0; i < alfShape.numCoeff - 1; i++ )
     {
-#if JVET_Q0210_UEK_REMOVAL 
       READ_UVLC( code, isChroma ? "alf_chroma_coeff_abs" : "alf_luma_coeff_abs" );
       coeff[ ind * MAX_NUM_ALF_LUMA_COEFF + i ] = code;
       if( coeff[ ind * MAX_NUM_ALF_LUMA_COEFF + i ] != 0 )
@@ -5520,9 +5485,6 @@ void HLSyntaxReader::alfFilter( AlfParam& alfParam, const bool isChroma, const i
         READ_FLAG( code, isChroma ? "alf_chroma_coeff_sign" : "alf_luma_coeff_sign" );
         coeff[ ind * MAX_NUM_ALF_LUMA_COEFF + i ] = ( code ) ? -coeff[ ind * MAX_NUM_ALF_LUMA_COEFF + i ] : coeff[ ind * MAX_NUM_ALF_LUMA_COEFF + i ];
        }
-#else
-      coeff[ind * MAX_NUM_ALF_LUMA_COEFF + i] = alfGolombDecode( 3 );
-#endif
       CHECK( isChroma &&
              ( coeff[ind * MAX_NUM_ALF_LUMA_COEFF + i] > 127 || coeff[ind * MAX_NUM_ALF_LUMA_COEFF + i] < -128 )
              , "AlfCoeffC shall be in the range of -128 to 127, inclusive" );

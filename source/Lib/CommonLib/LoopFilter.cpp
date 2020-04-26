@@ -1641,7 +1641,6 @@ inline bool LoopFilter::xUseStrongFiltering(Pel* piSrc, const int iOffset, const
   {
     Pel mP4;
     Pel m11;
-#if JVET_Q0054
     if (sidePisLarge)
     {
       if (maxFilterLengthP == 7)
@@ -1675,34 +1674,6 @@ inline bool LoopFilter::xUseStrongFiltering(Pel* piSrc, const int iOffset, const
       sq3 = (sq3 + abs(m11 - m7) + 1) >> 1;
   }
   return ((sp3 + sq3) < (beta*3 >> 5)) && (d < (beta >> 4)) && (abs(m3 - m4) < ((tc * 5 + 1) >> 1));
-#else
-    if (maxFilterLengthP == 5)
-    {
-      mP4 = piSrc[-iOffset * 6];
-    }
-    else
-    {
-      mP4 = piSrc[-iOffset * 8];
-    }
-    if (maxFilterLengthQ == 5)
-    {
-      m11 = piSrc[iOffset * 5];
-    }
-    else
-    {
-      m11 = piSrc[iOffset * 7];
-    }
-
-    if (sidePisLarge)
-    {
-      sp3 = (sp3 + abs(m0 - mP4) + 1) >> 1;
-    }
-    if (sideQisLarge)
-    {
-      sq3 = (sq3 + abs(m11 - m7) + 1) >> 1;
-    }
-    return ((sp3 + sq3) < (beta*3 >> 5)) && (d < (beta >> 2)) && (abs(m3 - m4) < ((tc * 5 + 1) >> 1));
-#endif
   }
   else
   return ( ( d_strong < ( beta >> 3 ) ) && ( d < ( beta >> 2 ) ) && ( abs( m3 - m4 ) < ( ( tc * 5 + 1 ) >> 1 ) ) );

@@ -154,7 +154,6 @@
 
 
 
-#define JVET_Q0787_SUBPIC                                 1 // JVET-Q0787: fix subpicture location signalling
 
 #define JVET_Q0400_EXTRA_BITS                             1 // JVET-Q0400: reserved bits for future extensions
 

@@ -1657,22 +1657,14 @@ void CABACWriter::cuPaletteSubblockInfo(const CodingUnit& cu, ComponentID compBe
           PLTescapeBuf    escapeValue = tu.getescapeValue((ComponentID)comp);
           if (compID == COMPONENT_Y || compBegin != COMPONENT_Y)
           {
-#if JVET_Q0491_PLT_ESCAPE
             exp_golomb_eqprob((unsigned)escapeValue.at(posx, posy), 5);
-#else
-            exp_golomb_eqprob((unsigned)escapeValue.at(posx, posy), 3);
-#endif
             DTRACE(g_trace_ctx, D_SYNTAX, "plt_escape_val() value=%d etype=%d sp=%d\n", escapeValue.at(posx, posy), comp, curPos);
           }
           if (compBegin == COMPONENT_Y && compID != COMPONENT_Y && posy % (1 << scaleY) == 0 && posx % (1 << scaleX) == 0)
           {
             uint32_t posxC = posx >> scaleX;
             uint32_t posyC = posy >> scaleY;
-#if JVET_Q0491_PLT_ESCAPE
             exp_golomb_eqprob((unsigned)escapeValue.at(posxC, posyC), 5);
-#else
-            exp_golomb_eqprob((unsigned)escapeValue.at(posxC, posyC), 3);
-#endif
             DTRACE(g_trace_ctx, D_SYNTAX, "plt_escape_val() value=%d etype=%d sp=%d\n", escapeValue.at(posx, posy), comp, curPos);
           }
       }

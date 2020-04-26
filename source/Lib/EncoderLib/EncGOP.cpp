@@ -1202,7 +1202,6 @@ validateMinCrRequirements(const ProfileLevelTierFeatures &plt, std::size_t numBy
   }
 }
 
-#if JVET_Q0436_CABAC_ZERO_WORD
 static void
 cabac_zero_word_padding(const Slice *const pcSlice,
                         const Picture *const pcPic,
@@ -1211,10 +1210,6 @@ cabac_zero_word_padding(const Slice *const pcSlice,
                               std::ostringstream &nalUnitData,
                         const bool cabacZeroWordPaddingEnabled,
                         const ProfileLevelTierFeatures &plt)
-#else
-static void
-cabac_zero_word_padding(Slice *const pcSlice, Picture *const pcPic, const std::size_t binCountsInNalUnits, const std::size_t numBytesInVclNalUnits, std::ostringstream &nalUnitData, const bool cabacZeroWordPaddingEnabled)
-#endif
 {
   const SPS &sps=*(pcSlice->getSPS());
   const ChromaFormat format = sps.getChromaFormatIdc();
@@ -1225,23 +1220,15 @@ cabac_zero_word_padding(Slice *const pcSlice, Picture *const pcPic, const std::s
   const int paddedHeight = ( ( pcSlice->getPPS()->getPicHeightInLumaSamples() + minCuHeight - 1 ) / minCuHeight ) * minCuHeight;
   const int rawBits = paddedWidth * paddedHeight *
                          (sps.getBitDepth(CHANNEL_TYPE_LUMA) + ((2*sps.getBitDepth(CHANNEL_TYPE_CHROMA))>>log2subWidthCxsubHeightC));
-#if JVET_Q0436_CABAC_ZERO_WORD
   const int vclByteScaleFactor_x3 = ( 32 + 4 * (plt.getTier()==Level::HIGH ? 1 : 0) );
   const std::size_t threshold = (vclByteScaleFactor_x3*numBytesInVclNalUnits/3) + (rawBits/32);
   // "The value of BinCountsInPicNalUnits shall be less than or equal to vclByteScaleFactor * NumBytesInPicVclNalUnits     + ( RawMinCuBits * PicSizeInMinCbsY ) / 32."
   //               binCountsInNalUnits                  <=               vclByteScaleFactor_x3 * numBytesInVclNalUnits / 3 +   rawBits / 32.
   // If it is currently not, then add cabac_zero_words to increase numBytesInVclNalUnits.
-#else
-  const std::size_t threshold = (32/3)*numBytesInVclNalUnits + (rawBits/32);
-#endif
   if (binCountsInNalUnits >= threshold)
   {
     // need to add additional cabac zero words (each one accounts for 3 bytes (=00 00 03)) to increase numBytesInVclNalUnits
-#if JVET_Q0436_CABAC_ZERO_WORD
     const std::size_t targetNumBytesInVclNalUnits = ((binCountsInNalUnits - (rawBits/32))*3+vclByteScaleFactor_x3-1)/vclByteScaleFactor_x3;
-#else
-    const std::size_t targetNumBytesInVclNalUnits = ((binCountsInNalUnits - (rawBits/32))*3+31)/32;
-#endif
 
     if (targetNumBytesInVclNalUnits>numBytesInVclNalUnits) // It should be!
     {
@@ -3242,14 +3229,8 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         ProfileLevelTierFeatures profileLevelTierFeatures;
         profileLevelTierFeatures.extractPTLInformation(*(pcSlice->getSPS()));
         validateMinCrRequirements(profileLevelTierFeatures, numBytesInVclNalUnits, pcPic, m_pcCfg);
-#if JVET_Q0436_CABAC_ZERO_WORD
         // cabac_zero_words processing
         cabac_zero_word_padding(pcSlice, pcPic, binCountsInNalUnits, numBytesInVclNalUnits, accessUnit.back()->m_nalUnitData, m_pcCfg->getCabacZeroWordPaddingEnabled(), profileLevelTierFeatures);
-#else
-
-      // cabac_zero_words processing
-      cabac_zero_word_padding(pcSlice, pcPic, binCountsInNalUnits, numBytesInVclNalUnits, accessUnit.back()->m_nalUnitData, m_pcCfg->getCabacZeroWordPaddingEnabled());
-#endif
       }
 
       //-- For time output for each slice

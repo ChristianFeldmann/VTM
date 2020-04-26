@@ -107,7 +107,6 @@
 
 
 
-#define JVET_Q0343_GCMP_GUARD_BAND_TYPE                   1 // JVET-Q0343: Add gcmp_guard_band_type to generalized cubemap projection SEI message and rename boundary guard band
 
 #define JVET_Q0110_Q0785_CHROMA_BDPCM_420                 1 // JVET-Q0110/Q0785: Enable chroma BDPCM for 420, separate contexts for chroma BDPCM and bug-fixes.
 

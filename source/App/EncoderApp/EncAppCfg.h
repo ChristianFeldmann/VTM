@@ -602,12 +602,8 @@ protected:
   std::vector<double>  m_gcmpSEIFunctionCoeffV;
   std::vector<bool>    m_gcmpSEIFunctionVAffectedByUFlag;
   bool                 m_gcmpSEIGuardBandFlag;
-#if JVET_Q0343_GCMP_GUARD_BAND_TYPE
   uint32_t             m_gcmpSEIGuardBandType;
   bool                 m_gcmpSEIGuardBandBoundaryExteriorFlag;
-#else
-  bool                 m_gcmpSEIGuardBandBoundaryType;
-#endif
   uint32_t             m_gcmpSEIGuardBandSamplesMinus1;
 
 #if JVET_SUBPIC_LEVEL_CFG

@@ -694,12 +694,8 @@ void SEIWriter::xWriteSEIGeneralizedCubemapProjection(const SEIGeneralizedCubema
     WRITE_FLAG( sei.m_gcmpGuardBandFlag,                      "gcmp_guard_band_flag" );
     if (sei.m_gcmpGuardBandFlag)
     {
-#if JVET_Q0343_GCMP_GUARD_BAND_TYPE
       WRITE_CODE( sei.m_gcmpGuardBandType,                 3, "gcmp_guard_band_type" );
       WRITE_FLAG( sei.m_gcmpGuardBandBoundaryExteriorFlag,    "gcmp_guard_band_boundary_exterior_flag" );
-#else
-      WRITE_FLAG( sei.m_gcmpGuardBandBoundaryType,            "gcmp_guard_band_boundary_type" );  
-#endif
       WRITE_CODE( sei.m_gcmpGuardBandSamplesMinus1,        4, "gcmp_guard_band_samples_minus1" );  
     }
   }

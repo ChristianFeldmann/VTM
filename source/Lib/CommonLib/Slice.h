@@ -773,9 +773,7 @@ private:
 
   bool             m_treatedAsPicFlag;                          //!< whether the subpicture is treated as a picture in the decoding process excluding in-loop filtering operations
   bool             m_loopFilterAcrossSubPicEnabledFlag;         //!< whether in-loop filtering operations may be performed across the boundaries of the subpicture
-#if JVET_Q0044_SLICE_IDX_WITH_SUBPICS
   uint32_t         m_numSlicesInSubPic;                         //!< Number of slices contained in this subpicture
-#endif
   
 public:
   SubPic();
@@ -842,7 +840,6 @@ public:
 
   bool             isFirstCTUinSubPic(uint32_t ctuAddr)    { return  ctuAddr == m_firstCtuInSubPic;  }
   bool              isLastCTUinSubPic(uint32_t ctuAddr)    { return  ctuAddr == m_lastCtuInSubPic;   }
-#if JVET_Q0044_SLICE_IDX_WITH_SUBPICS
   void             setNumSlicesInSubPic( uint32_t val )    { m_numSlicesInSubPic = val; }
   uint32_t         getNumSlicesInSubPic() const            { return m_numSlicesInSubPic; }
   bool             containsCtu(const Position& pos) const
@@ -850,7 +847,6 @@ public:
     return pos.x >= m_subPicCtuTopLeftX && pos.x < m_subPicCtuTopLeftX + m_subPicWidth &&
            pos.y >= m_subPicCtuTopLeftY && pos.y < m_subPicCtuTopLeftY + m_subPicHeight;
   }
-#endif
 #if JVET_Q0397_SUB_PIC_EXTRACT
   bool             containsCtu(int ctuAddr) const
   {
@@ -2211,9 +2207,7 @@ public:
   void                   setSubPicId( int i, uint16_t u )                                 { m_subPicId[i] = u;     }
   void                   setSubPicId(const std::vector<uint16_t> &v)                      { CHECK(v.size()!=m_numSubPics, "number of vector entries must be equal to numSubPics") ; m_subPicId = v; }
   uint16_t               getSubPicId( int i ) const                                       { return  m_subPicId[i]; }
-#if JVET_Q0044_SLICE_IDX_WITH_SUBPICS
   uint32_t               getSubPicIdxFromSubPicId( uint32_t subPicId ) const;
-#endif
   void                   setNoPicPartitionFlag( bool b )                                  { m_noPicPartitionFlag = b;                     }
   bool                   getNoPicPartitionFlag( ) const                                   { return  m_noPicPartitionFlag;                 }
   void                   setLog2CtuSize( uint8_t u )                                      { m_log2CtuSize = u; m_ctuSize = 1 << m_log2CtuSize; 
@@ -2283,9 +2277,7 @@ public:
   void                   initRectSliceMap(const SPS  *sps);
 #if JVET_O1143_SUBPIC_BOUNDARY
   std::vector<SubPic>    getSubPics()  const                                              {return m_subPics;          };
-#if JVET_Q0044_SLICE_IDX_WITH_SUBPICS
   SubPic                 getSubPic(uint32_t idx) const                                    { return m_subPics[idx]; }
-#endif
   void                   initSubPic(const SPS &sps);
   const SubPic&          getSubPicFromPos(const Position& pos)  const;
   const SubPic&          getSubPicFromCU (const CodingUnit& cu) const;

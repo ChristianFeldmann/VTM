@@ -1549,7 +1549,6 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
     }
 #endif
   }
-#if JVET_Q0044_SLICE_IDX_WITH_SUBPICS
   else   //In that case, there is only one subpicture that contains the whole picture
   {
     sps.setNumSubPics(1);
@@ -1566,7 +1565,6 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
     sps.setSubPicIdPresentFlag(false);
 #endif
   }
-#endif
   sps.setDepQuantEnabledFlag( m_DepQuantEnabledFlag );
   if (!sps.getDepQuantEnabledFlag())
   {

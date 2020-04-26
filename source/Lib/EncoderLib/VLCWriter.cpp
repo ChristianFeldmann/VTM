@@ -2784,7 +2784,6 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
   else 
   {
     // slice address is the index of the slice within the current sub-picture
-#if JVET_Q0044_SLICE_IDX_WITH_SUBPICS
     uint32_t currSubPicIdx = pcSlice->getPPS()->getSubPicIdxFromSubPicId( pcSlice->getSliceSubPicId() );
     SubPic currSubPic = pcSlice->getPPS()->getSubPic(currSubPicIdx);
     if( currSubPic.getNumSlicesInSubPic() > 1 ) 
@@ -2797,13 +2796,6 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
       int bitsSliceAddress = ceilLog2(currSubPic.getNumSlicesInSubPic());
       WRITE_CODE( pcSlice->getSliceID() - numSlicesInPreviousSubPics, bitsSliceAddress, "slice_address");
     }
-#else
-    if( pcSlice->getPPS()->getNumSlicesInPic() > 1 ) 
-    {
-      int bitsSliceAddress = ceilLog2(pcSlice->getPPS()->getNumSlicesInPic());  // change to NumSlicesInSubPic when available
-      WRITE_CODE( pcSlice->getSliceID(), bitsSliceAddress, "slice_address");
-    }
-#endif
   }
 
 #if JVET_Q0819_PH_CHANGES

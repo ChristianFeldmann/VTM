@@ -64,7 +64,6 @@
 
 
 
-#define JVET_Q0044_SLICE_IDX_WITH_SUBPICS                 1 // JVET-Q0044: slice index with subpictures
 
 #define JVET_P0125_ASPECT_TID_LAYER_ID_NUH                1 // JVET-P0125: Aspects of constraints on TemporalId and nuh_layer_id
 #define JVET_P0125_SEI_CONSTRAINTS                        1 // JVET-P0125: 4th aspect: SEI constraints 

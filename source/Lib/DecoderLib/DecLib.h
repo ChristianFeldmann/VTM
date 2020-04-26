@@ -175,10 +175,8 @@ private:
   bool                    m_scalingListUpdateFlag;
   int                     m_PreScalingListAPSId;
 #endif
-#if JVET_Q0044_SLICE_IDX_WITH_SUBPICS
   int                     m_maxDecSubPicIdx;
   int                     m_maxDecSliceAddrInSubPic;
-#endif
 
 #if JVET_O1143_SUBPIC_BOUNDARY
 public:

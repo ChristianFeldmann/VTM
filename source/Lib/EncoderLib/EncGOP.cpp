@@ -2827,7 +2827,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       for(uint32_t sliceIdx = 0; sliceIdx < pcPic->cs->pps->getNumSlicesInPic(); sliceIdx++ )
       {
         pcSlice->setSliceMap( pcPic->cs->pps->getSliceMap( sliceIdx ) );
-#if JVET_Q0044_SLICE_IDX_WITH_SUBPICS
         if( pcPic->cs->pps->getRectSliceFlag() )
         {
           Position firstCtu;
@@ -2846,7 +2845,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
           pcSlice->setSliceSubPicId( pcPic->cs->pps->getSubPic( subPicIdx ).getSubPicID() );
         }
-#endif
 #if JVET_Q0346_LMCS_ENABLE_IN_SH
         if (pcPic->cs->sps->getUseLmcs())
         {

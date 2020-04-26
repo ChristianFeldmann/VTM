@@ -153,10 +153,6 @@ public:
   void        residual_coding_subblockTS( CoeffCodingContext&           cctx,     const TCoeff*     coeff  );
   void        joint_cb_cr               ( const TransformUnit&          tu,       const int cbfMask );
 
-#if !REMOVE_PPS_REXT
-  // cross component prediction (clause 7.3.8.12)
-  void        cross_comp_pred           ( const TransformUnit&          tu,       ComponentID       compID );
-#endif
   
   void        codeAlfCtuEnableFlags     ( CodingStructure& cs, ChannelType channel, AlfParam* alfParam);
   void        codeAlfCtuEnableFlags     ( CodingStructure& cs, ComponentID compID, AlfParam* alfParam);

@@ -72,10 +72,6 @@ enum class BlockStatistic {
   IndependentSliceIdx,
   LFNSTIdx,
   JointCbCr,
-#if !REMOVE_PPS_REXT
-  CompAlphaCb,
-  CompAlphaCr,
-#endif
   RDPCM_Y,
   RDPCM_Cb,
   RDPCM_Cr,
@@ -171,10 +167,6 @@ static const std::map<BlockStatistic, std::tuple<std::string, BlockStatisticType
   { BlockStatistic::IndependentSliceIdx,    std::tuple<std::string, BlockStatisticType, std::string>{"IndependentSliceIdx",         BlockStatisticType::Integer,                ""}},
   { BlockStatistic::LFNSTIdx,               std::tuple<std::string, BlockStatisticType, std::string>{"LFNSTIdx",                    BlockStatisticType::Integer,                "[0, 3]"}},
   { BlockStatistic::JointCbCr,              std::tuple<std::string, BlockStatisticType, std::string>{"JointCbCr",                   BlockStatisticType::Flag,                   ""}},
-#if !REMOVE_PPS_REXT
-  { BlockStatistic::CompAlphaCb,            std::tuple<std::string, BlockStatisticType, std::string>{"CompAlphaCb",                 BlockStatisticType::Integer,                ""}},
-  { BlockStatistic::CompAlphaCr,            std::tuple<std::string, BlockStatisticType, std::string>{"CompAlphaCr",                 BlockStatisticType::Integer,                ""}},
-#endif
   { BlockStatistic::RDPCM_Y,                std::tuple<std::string, BlockStatisticType, std::string>{"RDPCM_Y",                     BlockStatisticType::Integer,                "[0, " + std::to_string(NUMBER_OF_RDPCM_MODES) + "]"}},
   { BlockStatistic::RDPCM_Cb,               std::tuple<std::string, BlockStatisticType, std::string>{"RDPCM_Cb",                    BlockStatisticType::Integer,                "[0, " + std::to_string(NUMBER_OF_RDPCM_MODES) + "]"}},
   { BlockStatistic::RDPCM_Cr,               std::tuple<std::string, BlockStatisticType, std::string>{"RDPCM_Cr",                    BlockStatisticType::Integer,                "[0, " + std::to_string(NUMBER_OF_RDPCM_MODES) + "]"}},

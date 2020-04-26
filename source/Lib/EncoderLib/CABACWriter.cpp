@@ -2544,12 +2544,6 @@ void CABACWriter::transform_unit( const TransformUnit& tu, CUCtx& cuCtx, Partiti
     {
       for( ComponentID compID = COMPONENT_Cb; compID <= COMPONENT_Cr; compID = ComponentID( compID + 1 ) )
       {
-#if !REMOVE_PPS_REXT
-        if( TU::hasCrossCompPredInfo( tu, compID ) )
-        {
-          cross_comp_pred( tu, compID );
-        }
-#endif
         if( cbf[ compID ] )
         {
           residual_coding( tu, compID, &cuCtx );
@@ -3208,47 +3202,6 @@ void CABACWriter::residual_coding_subblockTS( CoeffCodingContext& cctx, const TC
 
 
 
-#if !REMOVE_PPS_REXT
-//================================================================================
-//  clause 7.3.8.12
-//--------------------------------------------------------------------------------
-//    void  cross_comp_pred( tu, compID )
-//================================================================================
-
-void CABACWriter::cross_comp_pred( const TransformUnit& tu, ComponentID compID )
-{
-  CHECK(!( !isLuma( compID ) ), "Unspecified error");
-  signed char alpha   = tu.compAlpha[compID];
-  unsigned    ctxBase = ( compID == COMPONENT_Cr ? 5 : 0 );
-  if( alpha == 0 )
-  {
-    m_BinEncoder.encodeBin( 0, Ctx::CrossCompPred( ctxBase ) );
-    DTRACE( g_trace_ctx, D_SYNTAX, "cross_comp_pred() etype=%d pos=(%d,%d) alpha=%d\n", compID, tu.blocks[compID].x, tu.blocks[compID].y, tu.compAlpha[compID] );
-    return;
-  }
-
-  static const unsigned log2AbsAlphaMinus1Table[8] = { 0, 1, 1, 2, 2, 2, 3, 3 };
-  unsigned sign = ( alpha < 0 );
-  if( sign )
-  {
-    alpha = -alpha;
-  }
-  CHECK(!( alpha <= 8 ), "Unspecified error");
-  m_BinEncoder.encodeBin( 1, Ctx::CrossCompPred(ctxBase) );
-  if( alpha > 1)
-  {
-     m_BinEncoder.encodeBin( 1, Ctx::CrossCompPred(ctxBase+1) );
-     unary_max_symbol( log2AbsAlphaMinus1Table[alpha-1]-1, Ctx::CrossCompPred(ctxBase+2), Ctx::CrossCompPred(ctxBase+3), 2 );
-  }
-  else
-  {
-     m_BinEncoder.encodeBin( 0, Ctx::CrossCompPred(ctxBase+1) );
-  }
-  m_BinEncoder.encodeBin( sign, Ctx::CrossCompPred(ctxBase+4) );
-
-  DTRACE( g_trace_ctx, D_SYNTAX, "cross_comp_pred() etype=%d pos=(%d,%d) alpha=%d\n", compID, tu.blocks[compID].x, tu.blocks[compID].y, tu.compAlpha[compID] );
-}
-#endif
 
 
 

@@ -1735,30 +1735,6 @@ void                    setCCALFEnabledFlag( bool b )                           
   const Size&   getScalingWindowSizeInPPS(int i)                            { return m_scalingWindowSizeInPPS[i]; }
 };
 
-#if !REMOVE_PPS_REXT
-/// Reference Picture Lists class
-
-
-/// PPS RExt class
-class PPSRExt // TODO: remove
-{
-private:
-  bool             m_crossComponentPredictionEnabledFlag;
-
-
-public:
-  PPSRExt();
-
-  bool settingsDifferFromDefaults(const bool bTransformSkipEnabledFlag) const
-  {
-    return (getCrossComponentPredictionEnabledFlag() );
-  }
-
-  bool                   getCrossComponentPredictionEnabledFlag() const                   { return m_crossComponentPredictionEnabledFlag;   }
-  void                   setCrossComponentPredictionEnabledFlag(bool value)               { m_crossComponentPredictionEnabledFlag = value;  }
-
-};
-#endif
 
 /// PPS class
 class PPS
@@ -1852,9 +1828,6 @@ private:
   Window           m_conformanceWindow;
   Window           m_scalingWindow;
 
-#if !REMOVE_PPS_REXT
-  PPSRExt          m_ppsRangeExtension;
-#endif
   
 public:
   PreCalcValues   *pcv;
@@ -2071,10 +2044,6 @@ public:
   void                   setQpDeltaInfoInPhFlag(bool flag)                                { m_qpDeltaInfoInPhFlag = flag;                 }
   bool                   getQpDeltaInfoInPhFlag() const                                   { return m_qpDeltaInfoInPhFlag; }
 
-#if !REMOVE_PPS_REXT
-  const PPSRExt&         getPpsRangeExtension() const                                     { return m_ppsRangeExtension;                   }
-  PPSRExt&               getPpsRangeExtension()                                           { return m_ppsRangeExtension;                   }
-#endif
 
   void                    setPicWidthInLumaSamples( uint32_t u )                          { m_picWidthInLumaSamples = u; }
   uint32_t                getPicWidthInLumaSamples() const                                { return  m_picWidthInLumaSamples; }

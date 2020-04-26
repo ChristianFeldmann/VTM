@@ -478,48 +478,10 @@ void HLSWriter::codePPS( const PPS* pcPPS )
 
   if (pps_extension_present_flag)
   {
-#if !REMOVE_PPS_REXT
-#if ENABLE_TRACING /*|| RExt__DECODER_DEBUG_BIT_STATISTICS*/
-    static const char *syntaxStrings[]={ "pps_range_extension_flag",
-      "pps_multilayer_extension_flag",
-      "pps_extension_6bits[0]",
-      "pps_extension_6bits[1]",
-      "pps_extension_6bits[2]",
-      "pps_extension_6bits[3]",
-      "pps_extension_6bits[4]",
-      "pps_extension_6bits[5]" };
-#endif
-
-    for(int i=0; i<NUM_PPS_EXTENSION_FLAGS; i++)
-    {
-      WRITE_FLAG( pps_extension_flags[i]?1:0, syntaxStrings[i] );
-    }
-
-    for(int i=0; i<NUM_PPS_EXTENSION_FLAGS; i++) // loop used so that the order is determined by the enum.
-    {
-      if (pps_extension_flags[i])
-      {
-        switch (PPSExtensionFlagIndex(i))
-        {
-        case PPS_EXT__REXT:
-        {
-          const PPSRExt &ppsRangeExtension = pcPPS->getPpsRangeExtension();
-
-          WRITE_FLAG((ppsRangeExtension.getCrossComponentPredictionEnabledFlag() ? 1 : 0), "cross_component_prediction_enabled_flag" );
-        }
-        break;
-        default:
-          CHECK(pps_extension_flags[i]==false, "Unknown PPS extension signalled"); // Should never get here with an active PPS extension flag.
-          break;
-        } // switch
-      } // if flag present
-    } // loop over PPS flags
-#else
     for(int i=0; i<NUM_PPS_EXTENSION_FLAGS; i++)
     {
       WRITE_FLAG( pps_extension_flags[i]?1:0, "pps_extension_data_flag" );
     }
-#endif
   } // pps_extension_present_flag is non-zero
   xWriteRbspTrailingBits();
 }

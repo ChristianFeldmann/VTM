@@ -819,57 +819,10 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
   READ_FLAG( uiCode, "pps_extension_present_flag");
   if (uiCode)
   {
-#if !REMOVE_PPS_REXT
-#if ENABLE_TRACING || RExt__DECODER_DEBUG_BIT_STATISTICS
-    static const char *syntaxStrings[]={ "pps_range_extension_flag",
-      "pps_multilayer_extension_flag",
-      "pps_extension_6bits[0]",
-      "pps_extension_6bits[1]",
-      "pps_extension_6bits[2]",
-      "pps_extension_6bits[3]",
-      "pps_extension_6bits[4]",
-      "pps_extension_6bits[5]" };
-#endif
-
-    bool pps_extension_flags[NUM_PPS_EXTENSION_FLAGS];
-    for(int i=0; i<NUM_PPS_EXTENSION_FLAGS; i++)
-    {
-      READ_FLAG( uiCode, syntaxStrings[i] );
-      pps_extension_flags[i] = uiCode!=0;
-    }
-
-    bool bSkipTrailingExtensionBits=false;
-    for(int i=0; i<NUM_PPS_EXTENSION_FLAGS; i++) // loop used so that the order is determined by the enum.
-    {
-      if (pps_extension_flags[i])
-      {
-        switch (PPSExtensionFlagIndex(i))
-        {
-        case PPS_EXT__REXT:
-        {
-          PPSRExt &ppsRangeExtension = pcPPS->getPpsRangeExtension();
-          CHECK(bSkipTrailingExtensionBits, "Invalid state");
-
-          READ_FLAG( uiCode, "cross_component_prediction_enabled_flag");
-          ppsRangeExtension.setCrossComponentPredictionEnabledFlag(uiCode != 0);
-        }
-        break;
-        default:
-          bSkipTrailingExtensionBits=true;
-          break;
-        }
-      }
-    }
-    if (bSkipTrailingExtensionBits)
-    {
-#endif
       while ( xMoreRbspData() )
       {
         READ_FLAG( uiCode, "pps_extension_data_flag");
       }
-#if !REMOVE_PPS_REXT
-    }
-#endif
   }
   xReadRbspTrailingBits();
 }

@@ -287,12 +287,6 @@ void DecCu::xIntraRecBlk( TransformUnit& tu, const ComponentID compID )
   {
     piResi.scaleSignal(tu.getChromaAdj(), 0, tu.cu->cs->slice->clpRng(compID));
   }
-#if !REMOVE_PPS_REXT
-  if( isChroma(compID) && tu.compAlpha[compID] != 0 )
-  {
-    CrossComponentPrediction::crossComponentPrediction( tu, compID, cs.getResiBuf( tu.Y() ), piResi, piResi, true );
-  }
-#endif
 
   if( !tu.cu->ispMode || !isLuma( compID ) )
   {
@@ -799,12 +793,6 @@ void DecCu::xDecodeInterTU( TransformUnit & currTU, const ComponentID compID )
   {
     resiBuf.scaleSignal(currTU.getChromaAdj(), 0, currTU.cu->cs->slice->clpRng(compID));
   }
-#if !REMOVE_PPS_REXT
-  if( isChroma( compID ) && currTU.compAlpha[compID] != 0 )
-  {
-    CrossComponentPrediction::crossComponentPrediction( currTU, compID, cs.getResiBuf( currTU.Y() ), resiBuf, resiBuf, true );
-  }
-#endif
 }
 
 void DecCu::xDecodeInterTexture(CodingUnit &cu)

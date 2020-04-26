@@ -2796,12 +2796,6 @@ void CABACReader::transform_unit( TransformUnit& tu, CUCtx& cuCtx, Partitioner& 
     {
       for( ComponentID compID = COMPONENT_Cb; compID <= COMPONENT_Cr; compID = ComponentID( compID + 1 ) )
       {
-#if !REMOVE_PPS_REXT
-        if( TU::hasCrossCompPredInfo( tu, compID ) )
-        {
-          cross_comp_pred( tu, compID );
-        }
-#endif
         if( tu.cbf[ compID ] )
         {
           residual_coding( tu, compID, cuCtx );
@@ -3532,40 +3526,6 @@ void CABACReader::residual_coding_subblockTS( CoeffCodingContext& cctx, TCoeff* 
   }
 }
 
-#if !REMOVE_PPS_REXT
-//================================================================================
-//  clause 7.3.8.12
-//--------------------------------------------------------------------------------
-//    void  cross_comp_pred( tu, compID )
-//================================================================================
-
-void CABACReader::cross_comp_pred( TransformUnit& tu, ComponentID compID )
-{
-  RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET_SIZE2(STATS__CABAC_BITS__CROSS_COMPONENT_PREDICTION, tu.blocks[compID], compID);
-
-  signed char alpha   = 0;
-  unsigned    ctxBase = ( compID == COMPONENT_Cr ? 5 : 0 );
-  unsigned    symbol  = m_BinDecoder.decodeBin( Ctx::CrossCompPred(ctxBase) );
-  if( symbol )
-  {
-    // Cross-component prediction alpha is non-zero.
-    symbol = m_BinDecoder.decodeBin( Ctx::CrossCompPred(ctxBase+1) );
-    if( symbol )
-    {
-      // alpha is 2 (symbol=1), 4(symbol=2) or 8(symbol=3).
-      // Read up to two more bits
-      symbol += unary_max_symbol( Ctx::CrossCompPred(ctxBase+2), Ctx::CrossCompPred(ctxBase+3), 2 );
-    }
-    alpha = ( 1 << symbol );
-    if( m_BinDecoder.decodeBin( Ctx::CrossCompPred(ctxBase+4) ) )
-    {
-      alpha = -alpha;
-    }
-  }
-  DTRACE( g_trace_ctx, D_SYNTAX, "cross_comp_pred() etype=%d pos=(%d,%d) alpha=%d\n", compID, tu.blocks[compID].x, tu.blocks[compID].y, tu.compAlpha[compID] );
-  tu.compAlpha[compID] = alpha;
-}
-#endif
 
 
 //================================================================================

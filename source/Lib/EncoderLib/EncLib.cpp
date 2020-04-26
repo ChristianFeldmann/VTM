@@ -1450,9 +1450,6 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
   {
     pps.clearChromaQpOffsetList();
   }
-#if !REMOVE_PPS_REXT
-  pps.getPpsRangeExtension().setCrossComponentPredictionEnabledFlag(m_crossComponentPredictionEnabledFlag);
-#endif
   {
     int baseQp = 26;
     if( 16 == getGOPSize() )

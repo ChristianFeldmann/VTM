@@ -142,10 +142,6 @@ public:
   void        residual_coding_subblockTS( CoeffCodingContext&           cctx,   TCoeff*         coeff  );
   void        joint_cb_cr               ( TransformUnit&                tu,     const int cbfMask );
 
-#if !REMOVE_PPS_REXT
-  // cross component prediction (clause 7.3.8.12)
-  void        cross_comp_pred           ( TransformUnit&                tu,     ComponentID     compID );
-#endif
 
 private:
   unsigned    unary_max_symbol          ( unsigned ctxId0, unsigned ctxIdN, unsigned maxSymbol );

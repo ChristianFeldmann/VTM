@@ -166,7 +166,6 @@
 
 #define APPLY_SBT_SL_ON_MTS                               1 // apply save & load fast algorithm on inter MTS when SBT is on
 
-#define REMOVE_PPS_REXT                                   1  // remove RExt PPS extension
 
 #define JVET_P0118_OLS_EXTRACTION                         1  // OLS based sub-bitstream extraction
 

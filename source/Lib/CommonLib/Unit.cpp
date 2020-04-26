@@ -737,9 +737,6 @@ void TransformUnit::initData()
   {
     cbf[i]           = 0;
     rdpcm[i]         = NUMBER_OF_RDPCM_MODES;
-#if !REMOVE_PPS_REXT
-    compAlpha[i]     = 0;
-#endif
     mtsIdx[i]        = MTS_DCT2_DCT2;
   }
   depth              = 0;
@@ -783,9 +780,6 @@ TransformUnit& TransformUnit::operator=(const TransformUnit& other)
     }
     cbf[i]           = other.cbf[i];
     rdpcm[i]         = other.rdpcm[i];
-#if !REMOVE_PPS_REXT
-    compAlpha[i]     = other.compAlpha[i];
-#endif
     mtsIdx[i] = other.mtsIdx[i];
   }
   depth              = other.depth;
@@ -811,9 +805,6 @@ void TransformUnit::copyComponentFrom(const TransformUnit& other, const Componen
 
   cbf[i]           = other.cbf[i];
   rdpcm[i]         = other.rdpcm[i];
-#if !REMOVE_PPS_REXT
-  compAlpha[i]     = other.compAlpha[i];
-#endif
   depth            = other.depth;
   mtsIdx[i]        = other.mtsIdx[i];
   noResidual       = other.noResidual;

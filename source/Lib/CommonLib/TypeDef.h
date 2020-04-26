@@ -78,7 +78,6 @@
 
 
 
-#define JVET_P0978_RPL_RESTRICTIONS                       1 // JVET-P0978: A set of RPL-related bitstream conformance restrictions
 
 #define JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX       1 // JVET-Q0468: add support of min Luma coding block size; JVET-Q0469: fix for signaling of Intra Chroma Min QT size
 

@@ -403,10 +403,8 @@ DecLib::DecLib()
   , m_isFirstGeneralHrd(true)
   , m_prevGeneralHrdParams()
   , m_associatedIRAPType(NAL_UNIT_INVALID)
-#if JVET_P0978_RPL_RESTRICTIONS
   , m_associatedIRAPDecodingOrderNumber(0)
   , m_decodingOrderCounter(0)
-#endif
   , m_pocCRA(0)
   , m_pocRandomAccess(MAX_INT)
   , m_lastRasPoc(MAX_INT)
@@ -2090,7 +2088,6 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   m_pcPic->subLayerNonReferencePictureDueToSTSA = false;
 
 
-#if JVET_P0978_RPL_RESTRICTIONS
   if (m_bFirstSliceInPicture)
   {
     m_pcPic->setDecodingOrderNumber(m_decodingOrderCounter);
@@ -2098,13 +2095,8 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
     m_pcPic->setPictureType(nalu.m_nalUnitType);
   }
   pcSlice->checkCRA(pcSlice->getRPL0(), pcSlice->getRPL1(), m_pocCRA, m_cListPic);
-#else
-  pcSlice->checkCRA(pcSlice->getRPL0(), pcSlice->getRPL1(), m_pocCRA, m_associatedIRAPType, m_cListPic);
-#endif
   pcSlice->constructRefPicList(m_cListPic);
-#if JVET_P0978_RPL_RESTRICTIONS
   pcSlice->checkRPL(pcSlice->getRPL0(), pcSlice->getRPL1(), m_associatedIRAPDecodingOrderNumber, m_cListPic);
-#endif
   pcSlice->checkSTSA(m_cListPic);
 
   pcSlice->scaleRefPicList( scaledRefPic, m_pcPic->cs->picHeader, m_parameterSetManager.getAPSs(), m_picHeader.getLmcsAPS(), m_picHeader.getScalingListAPS(), true );
@@ -2367,7 +2359,6 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   return false;
 }
 
-#if JVET_P0978_RPL_RESTRICTIONS
 void DecLib::updateAssociatedIRAP()
 {
   const NalUnitType pictureType = m_pcPic->getPictureType();
@@ -2378,7 +2369,6 @@ void DecLib::updateAssociatedIRAP()
     m_associatedIRAPType = pictureType;
   }
 }
-#endif
 
 void DecLib::xDecodeVPS( InputNALUnit& nalu )
 {

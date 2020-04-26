@@ -225,9 +225,7 @@ uint32_t DecApp::decode()
         m_cDecLib.setFirstSliceInSequence(true, nalu.m_nuhLayerId);
       }
 
-#if JVET_P0978_RPL_RESTRICTIONS
       m_cDecLib.updateAssociatedIRAP();
-#endif
     }
     else if ( (bNewPicture || !bitstreamFile || nalu.m_nalUnitType == NAL_UNIT_EOS ) &&
       m_cDecLib.getFirstSliceInSequence(nalu.m_nuhLayerId))

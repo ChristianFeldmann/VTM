@@ -606,11 +606,7 @@ void Slice::checkColRefIdx(uint32_t curSliceSegmentIdx, const Picture* pic)
   }
 }
 
-#if JVET_P0978_RPL_RESTRICTIONS
 void Slice::checkCRA(const ReferencePictureList* pRPL0, const ReferencePictureList* pRPL1, const int pocCRA, PicList& rcListPic)
-#else
-void Slice::checkCRA(const ReferencePictureList *pRPL0, const ReferencePictureList *pRPL1, int& pocCRA, NalUnitType& associatedIRAPType, PicList& rcListPic)
-#endif
 {
   if (pocCRA < MAX_UINT && getPOC() > pocCRA)
   {
@@ -653,21 +649,8 @@ void Slice::checkCRA(const ReferencePictureList *pRPL0, const ReferencePictureLi
       }
     }
   }
-#if !JVET_P0978_RPL_RESTRICTIONS
-  if (getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_W_RADL || getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_N_LP) // IDR picture found
-  {
-    pocCRA = getPOC();
-    associatedIRAPType = getNalUnitType();
-  }
-  else if (getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA) // CRA picture found
-  {
-    pocCRA = getPOC();
-    associatedIRAPType = getNalUnitType();
-  }
-#endif
 }
 
-#if JVET_P0978_RPL_RESTRICTIONS
 void Slice::checkRPL(const ReferencePictureList* pRPL0, const ReferencePictureList* pRPL1, const int associatedIRAPDecodingOrderNumber, PicList& rcListPic)
 {
   Picture* pcRefPic;
@@ -805,7 +788,6 @@ void Slice::checkRPL(const ReferencePictureList* pRPL0, const ReferencePictureLi
     }
   }
 }
-#endif
 
 
 void Slice::checkSTSA(PicList& rcListPic)

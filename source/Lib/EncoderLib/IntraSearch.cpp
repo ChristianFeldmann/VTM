@@ -1827,9 +1827,7 @@ void IntraSearch::preCalcPLTIndexRD(CodingStructure& cs, Partitioner& partitione
   CodingUnit &cu = *cs.getCU(partitioner.chType);
   uint32_t height = cu.block(compBegin).height;
   uint32_t width = cu.block(compBegin).width;
-#if JVET_Q0493_PLT_ENCODER_LOSSLESS
   bool lossless = (m_pcEncCfg->getCostMode() == COST_LOSSLESS_CODING);
-#endif
 
   CPelBuf   orgBuf[3];
   for (int comp = compBegin; comp < (compBegin + numComp); comp++)
@@ -1870,16 +1868,13 @@ void IntraSearch::preCalcPLTIndexRD(CodingStructure& cs, Partitioner& partitione
       uint8_t  pltIdx = 0;
       double minError = MAX_DOUBLE;
       uint8_t  bestIdx = 0;
-#if JVET_Q0493_PLT_ENCODER_LOSSLESS
       for (uint8_t z = 0; z < cu.curPLTSize[compBegin]; z++)
       {
         m_indexError[z][rasPos] = minError;
       }
-#endif
       while (pltIdx < cu.curPLTSize[compBegin])
       {
         uint64_t sqrtError = 0;
-#if JVET_Q0493_PLT_ENCODER_LOSSLESS
         if (lossless)
         {
           for (int comp = compBegin; comp < (discardChroma ? 1 : (compBegin + numComp)); comp++)
@@ -1896,7 +1891,6 @@ void IntraSearch::preCalcPLTIndexRD(CodingStructure& cs, Partitioner& partitione
         }
         else
         {
-#endif
         for (int comp = compBegin; comp < (discardChroma ? 1 : (compBegin + numComp)); comp++)
         {
           int64_t tmpErr = int64_t(curPel[comp] - cu.curPLT[comp][pltIdx]);
@@ -1915,32 +1909,24 @@ void IntraSearch::preCalcPLTIndexRD(CodingStructure& cs, Partitioner& partitione
           minError = (double)sqrtError;
           bestIdx = pltIdx;
         }
-#if JVET_Q0493_PLT_ENCODER_LOSSLESS
       }
-#endif 
         pltIdx++;
       }
 
       Pel paPixelValue[3], paRecoValue[3];
-#if JVET_Q0493_PLT_ENCODER_LOSSLESS
       if (!lossless)
       {
-#endif
       calcPixelPredRD(cs, partitioner, curPel, paPixelValue, paRecoValue, compBegin, numComp);
-#if JVET_Q0493_PLT_ENCODER_LOSSLESS
       }
-#endif
       uint64_t error = 0, rate = 0;
       for (int comp = compBegin; comp < (discardChroma ? 1 : (compBegin + numComp)); comp++)
       {
-#if JVET_Q0493_PLT_ENCODER_LOSSLESS
         if (lossless)
         {
           rate += m_escapeNumBins[curPel[comp]];
         }
         else
         {
-#endif
         int64_t tmpErr = int64_t(curPel[comp] - paRecoValue[comp]);
         if (isChroma((ComponentID)comp))
         {
@@ -1951,9 +1937,7 @@ void IntraSearch::preCalcPLTIndexRD(CodingStructure& cs, Partitioner& partitione
           error += tmpErr*tmpErr;
         }
         rate += m_escapeNumBins[paPixelValue[comp]]; // encode quantized escape color
-#if JVET_Q0493_PLT_ENCODER_LOSSLESS
         }
-#endif
       }
       double rdCost = (double)error + m_pcRdCost->getLambda()*(double)rate;
       m_indexError[cu.curPLTSize[compBegin]][rasPos] = rdCost;
@@ -2379,9 +2363,7 @@ void IntraSearch::calcPixelPred(CodingStructure& cs, Partitioner& partitioner, u
 {
   CodingUnit    &cu = *cs.getCU(partitioner.chType);
   TransformUnit &tu = *cs.getTU(partitioner.chType);
-#if JVET_Q0493_PLT_ENCODER_LOSSLESS
   bool lossless = (m_pcEncCfg->getCostMode() == COST_LOSSLESS_CODING);
-#endif
 
   CPelBuf   orgBuf[3];
   for (int comp = compBegin; comp < (compBegin + numComp); comp++)
@@ -2409,10 +2391,8 @@ void IntraSearch::calcPixelPred(CodingStructure& cs, Partitioner& partitioner, u
   int rightShiftOffset[3];
   int invquantiserRightShift[3];
   int add[3];
-#if JVET_Q0493_PLT_ENCODER_LOSSLESS
   if (!lossless)
   {
-#endif
   for (uint32_t ch = compBegin; ch < (compBegin + numComp); ch++)
   {
     QpParam cQP(tu, ComponentID(ch));
@@ -2425,9 +2405,7 @@ void IntraSearch::calcPixelPred(CodingStructure& cs, Partitioner& partitioner, u
     invquantiserRightShift[ch] = IQUANT_SHIFT;
     add[ch] = 1 << (invquantiserRightShift[ch] - 1);
   }
-#if JVET_Q0493_PLT_ENCODER_LOSSLESS
   }
-#endif
 
   uint32_t scaleX = getComponentScaleX(COMPONENT_Cb, cs.sps->getChromaFormatIdc());
   uint32_t scaleY = getComponentScaleY(COMPONENT_Cb, cs.sps->getChromaFormatIdc());
@@ -2439,7 +2417,6 @@ void IntraSearch::calcPixelPred(CodingStructure& cs, Partitioner& partitioner, u
     PLTescapeBuf escapeValue = tu.getescapeValue((ComponentID)ch);
     if (compBegin != COMPONENT_Y || ch == 0)
     {
-#if JVET_Q0493_PLT_ENCODER_LOSSLESS
       if (lossless)
       {
         escapeValue.at(xPos, yPos) = orgBuf[ch].at(xPos, yPos);
@@ -2447,20 +2424,16 @@ void IntraSearch::calcPixelPred(CodingStructure& cs, Partitioner& partitioner, u
       }
       else
       {
-#endif
       escapeValue.at(xPos, yPos) = TCoeff(std::max<int>(0, ((orgBuf[ch].at(xPos, yPos) * quantiserScale[ch] + rightShiftOffset[ch]) >> quantiserRightShift[ch])));
       assert(escapeValue.at(xPos, yPos) < (1 << (channelBitDepth + 1)));
       recBuf.at(xPos, yPos) = (((escapeValue.at(xPos, yPos)*g_invQuantScales[0][qpRem[ch]]) << qpPer[ch]) + add[ch]) >> invquantiserRightShift[ch];
       recBuf.at(xPos, yPos) = Pel(ClipBD<int>(recBuf.at(xPos, yPos), channelBitDepth));//to be checked
-#if JVET_Q0493_PLT_ENCODER_LOSSLESS
       }
-#endif
     }
     else if (compBegin == COMPONENT_Y && ch > 0 && yPos % (1 << scaleY) == 0 && xPos % (1 << scaleX) == 0)
     {
       uint32_t yPosC = yPos >> scaleY;
       uint32_t xPosC = xPos >> scaleX;
-#if JVET_Q0493_PLT_ENCODER_LOSSLESS
       if (lossless)
       {
         escapeValue.at(xPosC, yPosC) = orgBuf[ch].at(xPosC, yPosC);
@@ -2468,14 +2441,11 @@ void IntraSearch::calcPixelPred(CodingStructure& cs, Partitioner& partitioner, u
       }
       else
       {
-#endif
       escapeValue.at(xPosC, yPosC) = TCoeff(std::max<int>(0, ((orgBuf[ch].at(xPosC, yPosC) * quantiserScale[ch] + rightShiftOffset[ch]) >> quantiserRightShift[ch])));
       assert(escapeValue.at(xPosC, yPosC) < (1 << (channelBitDepth + 1)));
       recBuf.at(xPosC, yPosC) = (((escapeValue.at(xPosC, yPosC)*g_invQuantScales[0][qpRem[ch]]) << qpPer[ch]) + add[ch]) >> invquantiserRightShift[ch];
       recBuf.at(xPosC, yPosC) = Pel(ClipBD<int>(recBuf.at(xPosC, yPosC), channelBitDepth));//to be checked
-#if JVET_Q0493_PLT_ENCODER_LOSSLESS
       }
-#endif
     }
   }
 }
@@ -2484,7 +2454,6 @@ void IntraSearch::derivePLTLossy(CodingStructure& cs, Partitioner& partitioner, 
   CodingUnit &cu = *cs.getCU(partitioner.chType);
   const int channelBitDepth_L = cs.sps->getBitDepth(CHANNEL_TYPE_LUMA);
   const int channelBitDepth_C = cs.sps->getBitDepth(CHANNEL_TYPE_CHROMA);
-#if JVET_Q0493_PLT_ENCODER_LOSSLESS
   bool lossless        = (m_pcEncCfg->getCostMode() == COST_LOSSLESS_CODING);
   int  pcmShiftRight_L = (channelBitDepth_L - PLT_ENCBITDEPTH);
   int  pcmShiftRight_C = (channelBitDepth_C - PLT_ENCBITDEPTH);
@@ -2493,10 +2462,6 @@ void IntraSearch::derivePLTLossy(CodingStructure& cs, Partitioner& partitioner, 
     pcmShiftRight_L = 0;
     pcmShiftRight_C = 0;
   }
-#else
-  const int pcmShiftRight_L = (channelBitDepth_L - PLT_ENCBITDEPTH);
-  const int pcmShiftRight_C = (channelBitDepth_C - PLT_ENCBITDEPTH);
-#endif
 
 #if JVET_Q0291_REDUCE_DUALTREE_PLT_SIZE
   int maxPltSize = cu.isSepTree() ? MAXPLTSIZE_DUALTREE : MAXPLTSIZE;
@@ -2532,12 +2497,10 @@ void IntraSearch::derivePLTLossy(CodingStructure& cs, Partitioner& partitioner, 
 #else
   int errorLimit = g_paletteQuant[cu.qp];
 #endif
-#if JVET_Q0493_PLT_ENCODER_LOSSLESS
   if (lossless)
   {
     errorLimit = 0;
   }
-#endif
   uint32_t totalSize = height*width;
   SortingElement *pelList = new SortingElement[totalSize];
   SortingElement  element;
@@ -2575,7 +2538,6 @@ void IntraSearch::derivePLTLossy(CodingStructure& cs, Partitioner& partitioner, 
         tmpCompBegin = COMPONENT_Y;
         tmpNumComp   = 1;
       }
-#if JVET_Q0493_PLT_ENCODER_LOSSLESS
       int besti = last, bestSAD = (last == -1) ? MAX_UINT : pelList[last].getSAD(element, cs.sps->getBitDepths(), tmpCompBegin, tmpNumComp, lossless);
       if (lossless)
       {
@@ -2595,18 +2557,11 @@ void IntraSearch::derivePLTLossy(CodingStructure& cs, Partitioner& partitioner, 
       }
       else
       {
-#else
-      int besti = last, bestSAD = (last == -1) ? MAX_UINT : pelList[last].getSAD(element, cs.sps->getBitDepths(), tmpCompBegin, tmpNumComp);
-#endif
       if( bestSAD )
       {
         for (int i = idx - 1; i >= 0; i--)
         {
-#if JVET_Q0493_PLT_ENCODER_LOSSLESS
           uint32_t sad = pelList[i].getSAD(element, cs.sps->getBitDepths(), tmpCompBegin, tmpNumComp, lossless);
-#else
-          uint32_t sad = pelList[i].getSAD(element, cs.sps->getBitDepths(), tmpCompBegin, tmpNumComp);
-#endif
           if (sad < bestSAD)
           {
             bestSAD = sad;
@@ -2615,12 +2570,8 @@ void IntraSearch::derivePLTLossy(CodingStructure& cs, Partitioner& partitioner, 
           }
         }
       }
-#if JVET_Q0493_PLT_ENCODER_LOSSLESS
       }
       if (besti >= 0 && pelList[besti].almostEqualData(element, errorLimit, cs.sps->getBitDepths(), tmpCompBegin, tmpNumComp, lossless))
-#else
-      if (besti >= 0 && pelList[besti].almostEqualData(element, errorLimit, cs.sps->getBitDepths(), tmpCompBegin, tmpNumComp))
-#endif
       {
         pelList[besti].addElement(element, tmpCompBegin, tmpNumComp);
         last = besti;
@@ -2676,7 +2627,6 @@ void IntraSearch::derivePLTLossy(CodingStructure& cs, Partitioner& partitioner, 
         org[comp] = orgBuf[comp].at(pX, pY);
       }
       element.setAll(org, compBegin, numComp);
-#if JVET_Q0493_PLT_ENCODER_LOSSLESS
       int besti = last, bestSAD = (last == -1) ? MAX_UINT : pelList[last].getSAD(element, cs.sps->getBitDepths(), compBegin, numComp, lossless);
       if (lossless)
       {
@@ -2696,18 +2646,11 @@ void IntraSearch::derivePLTLossy(CodingStructure& cs, Partitioner& partitioner, 
       }
       else
       {
-#else
-      int besti = last, bestSAD = (last == -1) ? MAX_UINT : pelList[last].getSAD(element, cs.sps->getBitDepths(), compBegin, numComp);
-#endif
       if (bestSAD)
       {
         for (int i = idx - 1; i >= 0; i--)
         {
-#if JVET_Q0493_PLT_ENCODER_LOSSLESS
           uint32_t sad = pelList[i].getSAD(element, cs.sps->getBitDepths(), compBegin, numComp, lossless);
-#else
-          uint32_t sad = pelList[i].getSAD(element, cs.sps->getBitDepths(), compBegin, numComp);
-#endif
           if (sad < bestSAD)
           {
             bestSAD = sad;
@@ -2716,12 +2659,8 @@ void IntraSearch::derivePLTLossy(CodingStructure& cs, Partitioner& partitioner, 
           }
         }
       }
-#if JVET_Q0493_PLT_ENCODER_LOSSLESS
       }
       if (besti >= 0 && pelList[besti].almostEqualData(element, errorLimit, cs.sps->getBitDepths(), compBegin, numComp, lossless))
-#else
-      if (besti >= 0 && pelList[besti].almostEqualData(element, errorLimit, cs.sps->getBitDepths(), compBegin, numComp))
-#endif
       {
         pelList[besti].addElement(element, compBegin, numComp);
         last = besti;

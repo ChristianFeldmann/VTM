@@ -126,12 +126,8 @@ void InterPrediction::destroy()
     }
   }
 
-#if !JVET_Q0806
-  m_triangleBuf.destroy();
-#else
   m_geoPartBuf[0].destroy();
   m_geoPartBuf[1].destroy();
-#endif
   m_colorTransResiBuf[0].destroy();
   m_colorTransResiBuf[1].destroy();
   m_colorTransResiBuf[2].destroy();
@@ -197,12 +193,8 @@ void InterPrediction::init( RdCost* pcRdCost, ChromaFormat chromaFormatIDC, cons
       }
     }
 
-#if !JVET_Q0806
-    m_triangleBuf.create(UnitArea(chromaFormatIDC, Area(0, 0, MAX_CU_SIZE, MAX_CU_SIZE)));
-#else
     m_geoPartBuf[0].create(UnitArea(chromaFormatIDC, Area(0, 0, MAX_CU_SIZE, MAX_CU_SIZE)));
     m_geoPartBuf[1].create(UnitArea(chromaFormatIDC, Area(0, 0, MAX_CU_SIZE, MAX_CU_SIZE)));
-#endif
     m_colorTransResiBuf[0].create(UnitArea(chromaFormatIDC, Area(0, 0, MAX_CU_SIZE, MAX_CU_SIZE)));
     m_colorTransResiBuf[1].create(UnitArea(chromaFormatIDC, Area(0, 0, MAX_CU_SIZE, MAX_CU_SIZE)));
     m_colorTransResiBuf[2].create(UnitArea(chromaFormatIDC, Area(0, 0, MAX_CU_SIZE, MAX_CU_SIZE)));
@@ -635,11 +627,7 @@ void InterPrediction::xPredInterBi(PredictionUnit &pu, PelUnitBuf &pcYuvPred, co
       }
       else
       {
-#if !JVET_Q0806
-        xPredInterUni( pu, eRefPicList, pcMbBuf, pu.cu->triangle
-#else
         xPredInterUni(pu, eRefPicList, pcMbBuf, pu.cu->geoFlag
-#endif
           , bioApplied
           , luma, chroma
         );
@@ -654,21 +642,13 @@ void InterPrediction::xPredInterBi(PredictionUnit &pu, PelUnitBuf &pcYuvPred, co
                            CPelUnitBuf(pu.chromaFormat, PelBuf(m_acYuvPred[1][0], pcYuvPred.Y()), PelBuf(m_acYuvPred[1][1], pcYuvPred.Cb()), PelBuf(m_acYuvPred[1][2], pcYuvPred.Cr())) );
   const bool lumaOnly   = luma && !chroma;
   const bool chromaOnly = !luma && chroma;
-#if !JVET_Q0806  
-  if( !pu.cu->triangle && (!dmvrApplied) && (!bioApplied) && pps.getWPBiPred() && slice.getSliceType() == B_SLICE && pu.cu->BcwIdx==BCW_DEFAULT)
-#else
   if( !pu.cu->geoFlag && (!dmvrApplied) && (!bioApplied) && pps.getWPBiPred() && slice.getSliceType() == B_SLICE && pu.cu->BcwIdx == BCW_DEFAULT)
-#endif
   {
     xWeightedPredictionBi( pu, srcPred0, srcPred1, pcYuvPred, m_maxCompIDToPred, lumaOnly, chromaOnly );
     if (yuvPredTmp)
       yuvPredTmp->copyFrom(pcYuvPred);
   }
-#if !JVET_Q0806
-  else if( !pu.cu->triangle && pps.getUseWP() && slice.getSliceType() == P_SLICE )
-#else
   else if( !pu.cu->geoFlag && pps.getUseWP() && slice.getSliceType() == P_SLICE )
-#endif
   {
     xWeightedPredictionUni( pu, srcPred0, REF_PIC_LIST_0, pcYuvPred, -1, m_maxCompIDToPred, lumaOnly, chromaOnly );
     if (yuvPredTmp)
@@ -1438,38 +1418,22 @@ void InterPrediction::xWeightedAverage(const PredictionUnit& pu, const CPelUnitB
   }
   else if( iRefIdx0 >= 0 && iRefIdx1 < 0 )
   {
-#if !JVET_Q0806
-    if( pu.cu->triangle )
-    {
-      pcYuvDst.copyFrom( pcYuvSrc0 );
-    }
-    else
-#else
     if( pu.cu->geoFlag )
     {
       pcYuvDst.copyFrom( pcYuvSrc0 );
     }
     else
-#endif
       pcYuvDst.copyClip( pcYuvSrc0, clpRngs, lumaOnly, chromaOnly );
     if (yuvDstTmp)
       yuvDstTmp->copyFrom( pcYuvDst, lumaOnly, chromaOnly );
   }
   else if( iRefIdx0 < 0 && iRefIdx1 >= 0 )
   {
-#if !JVET_Q0806
-    if( pu.cu->triangle )
-    {
-      pcYuvDst.copyFrom( pcYuvSrc1 );
-    }
-    else
-#else
     if( pu.cu->geoFlag )
     {
       pcYuvDst.copyFrom( pcYuvSrc1 );
     }
     else
-#endif
       pcYuvDst.copyClip( pcYuvSrc1, clpRngs, lumaOnly, chromaOnly );
     if (yuvDstTmp)
       yuvDstTmp->copyFrom(pcYuvDst, lumaOnly, chromaOnly);
@@ -1655,62 +1619,6 @@ int InterPrediction::rightShiftMSB(int numer, int denom)
   return numer >> floorLog2(denom);
 }
 
-#if !JVET_Q0806
-void InterPrediction::motionCompensation4Triangle( CodingUnit &cu, MergeCtx &triangleMrgCtx, const bool splitDir, const uint8_t candIdx0, const uint8_t candIdx1 )
-{
-  for( auto &pu : CU::traversePUs( cu ) )
-  {
-    const UnitArea localUnitArea( cu.cs->area.chromaFormat, Area( 0, 0, pu.lwidth(), pu.lheight() ) );
-    PelUnitBuf tmpTriangleBuf = m_triangleBuf.getBuf( localUnitArea );
-    PelUnitBuf predBuf        = cu.cs->getPredBuf( pu );
-
-    triangleMrgCtx.setMergeInfo( pu, candIdx0 );
-    PU::spanMotionInfo( pu );
-    motionCompensation( pu, tmpTriangleBuf );
-
-    {
-      if( g_mctsDecCheckEnabled && !MCTSHelper::checkMvBufferForMCTSConstraint( pu, true ) )
-      {
-        printf( "DECODER_TRIANGLE_PU: pu motion vector across tile boundaries (%d,%d,%d,%d)\n", pu.lx(), pu.ly(), pu.lwidth(), pu.lheight() );
-      }
-    }
-
-    triangleMrgCtx.setMergeInfo( pu, candIdx1 );
-    PU::spanMotionInfo( pu );
-    motionCompensation( pu, predBuf );
-
-    {
-      if( g_mctsDecCheckEnabled && !MCTSHelper::checkMvBufferForMCTSConstraint( pu, true ) )
-      {
-        printf( "DECODER_TRIANGLE_PU: pu motion vector across tile boundaries (%d,%d,%d,%d)\n", pu.lx(), pu.ly(), pu.lwidth(), pu.lheight() );
-      }
-    }
-    weightedTriangleBlk( pu, splitDir, MAX_NUM_CHANNEL_TYPE, predBuf, tmpTriangleBuf, predBuf );
-  }
-}
-
-void InterPrediction::weightedTriangleBlk( PredictionUnit &pu, const bool splitDir, int32_t channel, PelUnitBuf& predDst, PelUnitBuf& predSrc0, PelUnitBuf& predSrc1 )
-{
-  if( channel == CHANNEL_TYPE_LUMA )
-  {
-    m_if.weightedTriangleBlk( pu, pu.lumaSize().width, pu.lumaSize().height, COMPONENT_Y, splitDir, predDst, predSrc0, predSrc1 );
-  }
-  else if( channel == CHANNEL_TYPE_CHROMA )
-  {
-    m_if.weightedTriangleBlk( pu, pu.chromaSize().width, pu.chromaSize().height, COMPONENT_Cb, splitDir, predDst, predSrc0, predSrc1 );
-    m_if.weightedTriangleBlk( pu, pu.chromaSize().width, pu.chromaSize().height, COMPONENT_Cr, splitDir, predDst, predSrc0, predSrc1 );
-  }
-  else
-  {
-    m_if.weightedTriangleBlk( pu, pu.lumaSize().width,   pu.lumaSize().height,   COMPONENT_Y,  splitDir, predDst, predSrc0, predSrc1 );
-    if (isChromaEnabled(pu.chromaFormat))
-    {
-    m_if.weightedTriangleBlk( pu, pu.chromaSize().width, pu.chromaSize().height, COMPONENT_Cb, splitDir, predDst, predSrc0, predSrc1 );
-    m_if.weightedTriangleBlk( pu, pu.chromaSize().width, pu.chromaSize().height, COMPONENT_Cr, splitDir, predDst, predSrc0, predSrc1 );
-    }
-  }
-}
-#else
 void InterPrediction::motionCompensationGeo( CodingUnit &cu, MergeCtx &geoMrgCtx )
 {
   const uint8_t splitDir = cu.firstPU->geoSplitDir;
@@ -1763,7 +1671,6 @@ void InterPrediction::weightedGeoBlk( PredictionUnit &pu, const uint8_t splitDir
     }
   }
 }
-#endif
 
 void InterPrediction::xPrefetch(PredictionUnit& pu, PelUnitBuf &pcPad, RefPicList refId, bool forLuma)
 {

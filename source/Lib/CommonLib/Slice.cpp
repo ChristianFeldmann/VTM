@@ -2436,11 +2436,7 @@ SPS::SPS()
 , m_AffineType                ( false )
 , m_PROF                      ( false )
 , m_ciip                   ( false )
-#if !JVET_Q0806
-, m_Triangle                  ( false )
-#else
 , m_Geo                       ( false )
-#endif
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
 , m_LadfEnabled               ( false )
 , m_LadfNumIntervals          ( 0 )
@@ -3983,9 +3979,6 @@ bool             operator == (const ConstraintInfo& op1, const ConstraintInfo& o
   if( op1.m_noIbcConstraintFlag                          != op2.m_noIbcConstraintFlag                            ) return false;
   if( op1.m_noCiipConstraintFlag                         != op2.m_noCiipConstraintFlag                           ) return false;
   if( op1.m_noFPelMmvdConstraintFlag                     != op2.m_noFPelMmvdConstraintFlag                       ) return false;
-#if !JVET_Q0806
-  if( op1.m_noTriangleConstraintFlag                     != op2.m_noTriangleConstraintFlag                       ) return false;
-#endif
   if( op1.m_noLadfConstraintFlag                         != op2.m_noLadfConstraintFlag                           ) return false;
   if( op1.m_noTransformSkipConstraintFlag                != op2.m_noTransformSkipConstraintFlag                  ) return false;
   if( op1.m_noBDPCMConstraintFlag                        != op2.m_noBDPCMConstraintFlag                          ) return false;

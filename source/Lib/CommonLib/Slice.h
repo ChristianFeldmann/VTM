@@ -271,11 +271,7 @@ class ConstraintInfo
   bool              m_noIbcConstraintFlag;
   bool              m_noCiipConstraintFlag;
   bool              m_noFPelMmvdConstraintFlag;
-#if !JVET_Q0806
-  bool              m_noTriangleConstraintFlag;
-#else
   bool              m_noGeoConstraintFlag;
-#endif
   bool              m_noLadfConstraintFlag;
   bool              m_noTransformSkipConstraintFlag;
   bool              m_noBDPCMConstraintFlag;
@@ -328,11 +324,7 @@ public:
     , m_noIbcConstraintFlag      (false)
     , m_noCiipConstraintFlag  (false)
     , m_noFPelMmvdConstraintFlag (false)
-#if !JVET_Q0806
-    , m_noTriangleConstraintFlag (false)
-#else
     , m_noGeoConstraintFlag      (false)
-#endif
     , m_noLadfConstraintFlag     (false)
     , m_noTransformSkipConstraintFlag(false)
     , m_noBDPCMConstraintFlag    (false)
@@ -433,13 +425,8 @@ public:
   void          setNoCiipConstraintFlag(bool bVal) { m_noCiipConstraintFlag = bVal; }
   bool          getNoFPelMmvdConstraintFlag() const { return m_noFPelMmvdConstraintFlag; }
   void          setNoFPelMmvdConstraintFlag(bool bVal) { m_noFPelMmvdConstraintFlag = bVal; }
-#if !JVET_Q0806
-  bool          getNoTriangleConstraintFlag() const { return m_noTriangleConstraintFlag; }
-  void          setNoTriangleConstraintFlag(bool bVal) { m_noTriangleConstraintFlag = bVal; }
-#else
   bool          getNoGeoConstraintFlag() const { return m_noGeoConstraintFlag; }
   void          setNoGeoConstraintFlag(bool bVal) { m_noGeoConstraintFlag = bVal; }
-#endif
   bool          getNoLadfConstraintFlag() const { return m_noLadfConstraintFlag; }
   void          setNoLadfConstraintFlag(bool bVal) { m_noLadfConstraintFlag = bVal; }
   bool          getNoTransformSkipConstraintFlag() const { return m_noTransformSkipConstraintFlag; }
@@ -1358,11 +1345,7 @@ private:
   bool              m_PROF;
   bool              m_bcw;                        //
   bool              m_ciip;
-#if !JVET_Q0806
-  bool              m_Triangle;
-#else
   bool              m_Geo;
-#endif
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
   bool              m_LadfEnabled;
   int               m_LadfNumIntervals;
@@ -1723,13 +1706,8 @@ void                    setCCALFEnabledFlag( bool b )                           
 
   void      setUseCiip         ( bool b )                                        { m_ciip = b; }
   bool      getUseCiip         ()                                      const     { return m_ciip; }
-#if !JVET_Q0806
-  void      setUseTriangle        ( bool b )                                        { m_Triangle = b; }
-  bool      getUseTriangle        ()                                      const     { return m_Triangle; }
-#else
   void      setUseGeo             ( bool b )                                        { m_Geo = b; }
   bool      getUseGeo             ()                                      const     { return m_Geo; }
-#endif
   void      setUseMRL             ( bool b )                                        { m_MRL = b; }
   bool      getUseMRL             ()                                      const     { return m_MRL; }
   void      setUseMIP             ( bool b )                                        { m_MIP = b; }

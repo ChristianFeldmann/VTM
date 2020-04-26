@@ -196,11 +196,7 @@ protected:
   bool      m_noIbcConstraintFlag;
   bool      m_bNoCiipConstraintFlag;
   bool      m_noFPelMmvdConstraintFlag;
-#if !JVET_Q0806
-  bool      m_bNoTriangleConstraintFlag;
-#else
   bool      m_noGeoConstraintFlag;
-#endif
   bool      m_bNoLadfConstraintFlag;
   bool      m_noTransformSkipConstraintFlag;
   bool      m_noBDPCMConstraintFlag;
@@ -322,11 +318,7 @@ protected:
 #endif
 
   bool      m_ciip;
-#if !JVET_Q0806
-  bool      m_Triangle;
-#else
   bool      m_Geo;
-#endif
   bool      m_allowDisFracMMVD;
   bool      m_AffineAmvr;
   bool      m_HashME;
@@ -635,11 +627,7 @@ protected:
   uint32_t      m_log2ParallelMergeLevelMinus2;       ///< Parallel merge estimation region
   uint32_t      m_maxNumMergeCand;                    ///< Maximum number of merge candidates
   uint32_t      m_maxNumAffineMergeCand;              ///< Maximum number of affine merge candidates
-#if !JVET_Q0806
   uint32_t      m_maxNumGeoCand;
-#else
-  uint32_t      m_maxNumGeoCand;
-#endif
   uint32_t      m_maxNumIBCMergeCand;                 ///< Max number of IBC merge candidates
   ScalingListMode m_useScalingListId;             ///< Using quantization matrix i.e. 0=off, 1=default, 2=file.
   std::string m_scalingListFileName;              ///< quantization matrix file name
@@ -658,11 +646,7 @@ protected:
   int       m_PPSMvdL1ZeroIdc;
   int       m_PPSCollocatedFromL0Idc;
   uint32_t  m_PPSSixMinusMaxNumMergeCandPlus1;
-#if !JVET_Q0806
-  uint32_t  m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1;
-#else
   uint32_t  m_PPSMaxNumMergeCandMinusMaxNumGeoCandPlus1;
-#endif
   bool      m_DepQuantEnabledFlag;
   bool      m_SignDataHidingEnabledFlag;
   bool      m_RCEnableRateControl;
@@ -808,13 +792,8 @@ public:
   void      setNoCiipConstraintFlag(bool bVal) { m_bNoCiipConstraintFlag = bVal; }
   bool      getNoFPelMmvdConstraintFlag() const { return m_noFPelMmvdConstraintFlag; }
   void      setNoFPelMmvdConstraintFlag(bool bVal) { m_noFPelMmvdConstraintFlag = bVal; }
-#if !JVET_Q0806
-  bool      getNoTriangleConstraintFlag() const { return m_bNoTriangleConstraintFlag; }
-  void      setNoTriangleConstraintFlag(bool bVal) { m_bNoTriangleConstraintFlag = bVal; }
-#else
   bool      getNoGeoConstraintFlag() const { return m_noGeoConstraintFlag; }
   void      setNoGeoConstraintFlag(bool bVal) { m_noGeoConstraintFlag = bVal; }
-#endif
   bool      getNoLadfConstraintFlag() const { return m_bNoLadfConstraintFlag; }
   void      setNoLadfConstraintFlag(bool bVal) { m_bNoLadfConstraintFlag = bVal; }
   bool      getNoTransformSkipConstraintFlag() const { return m_noTransformSkipConstraintFlag; }
@@ -1042,13 +1021,8 @@ public:
 
   void      setUseCiip                   ( bool b )       { m_ciip = b; }
   bool      getUseCiip                   ()         const { return m_ciip; }
-#if !JVET_Q0806
-  void      setUseTriangle                  ( bool b )       { m_Triangle = b; }
-  bool      getUseTriangle                  ()         const { return m_Triangle; }
-#else
   void      setUseGeo                       ( bool b )       { m_Geo = b; }
   bool      getUseGeo                       ()         const { return m_Geo; }
-#endif
   void      setAllowDisFracMMVD             ( bool b )       { m_allowDisFracMMVD = b;    }
   bool      getAllowDisFracMMVD             ()         const { return m_allowDisFracMMVD; }
   void      setUseHashME                    ( bool b )       { m_HashME = b; }
@@ -1683,13 +1657,8 @@ public:
   uint32_t         getMaxNumMergeCand                ()                  { return m_maxNumMergeCand;   }
   void         setMaxNumAffineMergeCand          ( uint32_t u )      { m_maxNumAffineMergeCand = u;    }
   uint32_t     getMaxNumAffineMergeCand          ()                  { return m_maxNumAffineMergeCand; }
-#if !JVET_Q0806
-  void         setMaxNumGeoCand(uint32_t u) { m_maxNumGeoCand = u; }
-  uint32_t     getMaxNumGeoCand() { return m_maxNumGeoCand; }
-#else
   void         setMaxNumGeoCand                  ( uint32_t u )      { m_maxNumGeoCand = u;    }
   uint32_t     getMaxNumGeoCand                  ()                  { return m_maxNumGeoCand; }
-#endif
   void         setMaxNumIBCMergeCand             ( uint32_t u )      { m_maxNumIBCMergeCand = u; }
   uint32_t     getMaxNumIBCMergeCand             ()                  { return m_maxNumIBCMergeCand; }
   void         setUseScalingListId    ( ScalingListMode u )          { m_useScalingListId       = u;   }

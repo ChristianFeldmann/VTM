@@ -1128,17 +1128,6 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
     WRITE_FLAG( pcSPS->getFpelMmvdEnabledFlag() ? 1 : 0,                            "sps_fpel_mmvd_enabled_flag" );
   }
 
-#if !JVET_Q0806
-  if (pcSPS->getMaxNumMergeCand() >= 2)
-  {
-    WRITE_FLAG(pcSPS->getUseTriangle() ? 1 : 0, "sps_triangle_enabled_flag");
-    if (pcSPS->getUseTriangle() && pcSPS->getMaxNumMergeCand() >= 3)
-    {
-      CHECK(pcSPS->getMaxNumMergeCand() < pcSPS->getMaxNumGeoCand(), "Incorrrect max number of Triangle candidates!");
-      WRITE_UVLC(pcSPS->getMaxNumMergeCand() - pcSPS->getMaxNumGeoCand(), "max_num_merge_cand_minus_max_num_gpm_cand");
-    }
-  }
-#else
   if (pcSPS->getMaxNumMergeCand() >= 2)
   {
     WRITE_FLAG(pcSPS->getUseGeo() ? 1 : 0, "sps_gpm_enabled_flag");
@@ -1148,7 +1137,6 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
       WRITE_UVLC(pcSPS->getMaxNumMergeCand() - pcSPS->getMaxNumGeoCand(), "max_num_merge_cand_minus_max_num_gpm_cand");
     }
   }
-#endif
   WRITE_FLAG(pcSPS->getUseLmcs() ? 1 : 0, "sps_lmcs_enable_flag");
   WRITE_FLAG( pcSPS->getUseLFNST() ? 1 : 0,                                                    "sps_lfnst_enabled_flag" );
 
@@ -2492,11 +2480,7 @@ void  HLSWriter::codeConstraintInfo  ( const ConstraintInfo* cinfo )
   WRITE_FLAG(cinfo->getNoIbcConstraintFlag() ? 1 : 0, "no_ibc_constraint_flag");
   WRITE_FLAG(cinfo->getNoCiipConstraintFlag() ? 1 : 0, "no_ciip_constraint_flag");
   WRITE_FLAG(cinfo->getNoFPelMmvdConstraintFlag() ? 1 : 0, "no_fpel_mmvd_constraint_flag");
-#if !JVET_Q0806
-  WRITE_FLAG(cinfo->getNoTriangleConstraintFlag() ? 1 : 0, "no_triangle_constraint_flag");
-#else
   WRITE_FLAG(cinfo->getNoGeoConstraintFlag() ? 1 : 0, "no_gpm_constraint_flag");
-#endif
   WRITE_FLAG(cinfo->getNoLadfConstraintFlag() ? 1 : 0, "no_ladf_constraint_flag");
   WRITE_FLAG(cinfo->getNoTransformSkipConstraintFlag() ? 1 : 0, "no_transform_skip_constraint_flag");
   WRITE_FLAG(cinfo->getNoBDPCMConstraintFlag() ? 1 : 0, "no_bdpcm_constraint_flag");

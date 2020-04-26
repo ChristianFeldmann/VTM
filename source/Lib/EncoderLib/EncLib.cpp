@@ -1107,11 +1107,7 @@ void EncLib::xInitSPS( SPS& sps )
   cinfo->setNoIbcConstraintFlag(m_noIbcConstraintFlag);
   cinfo->setNoCiipConstraintFlag(m_bNoCiipConstraintFlag);
   cinfo->setNoFPelMmvdConstraintFlag(m_noFPelMmvdConstraintFlag);
-#if !JVET_Q0806
-  cinfo->setNoTriangleConstraintFlag(m_bNoTriangleConstraintFlag);
-#else
   cinfo->setNoGeoConstraintFlag(m_noGeoConstraintFlag);
-#endif
   cinfo->setNoLadfConstraintFlag(m_bNoLadfConstraintFlag);
   cinfo->setNoTransformSkipConstraintFlag(m_noTransformSkipConstraintFlag);
   cinfo->setNoBDPCMConstraintFlag(m_noBDPCMConstraintFlag);
@@ -1210,11 +1206,7 @@ void EncLib::xInitSPS( SPS& sps )
 #endif
 
   sps.setUseCiip            ( m_ciip );
-#if !JVET_Q0806
-  sps.setUseTriangle           ( m_Triangle );
-#else
   sps.setUseGeo                ( m_Geo );
-#endif
   sps.setUseMMVD               ( m_MMVD );
   sps.setFpelMmvdEnabledFlag   (( m_MMVD ) ? m_allowDisFracMMVD : false);
   sps.setBdofControlPresentFlag(m_BIO);

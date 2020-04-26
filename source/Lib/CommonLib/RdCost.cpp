@@ -201,9 +201,7 @@ void RdCost::init()
 
   m_afpDistortFunc[DF_SAD_INTERMEDIATE_BITDEPTH] = RdCost::xGetSAD;
 
-#if JVET_Q0806
   m_afpDistortFunc[DF_SAD_WITH_MASK] = RdCost::xGetSADwMask;
-#endif
 
 #if ENABLE_SIMD_OPT_DIST
 #ifdef TARGET_SIMD_X86
@@ -318,7 +316,6 @@ void RdCost::setDistParam( DistParam &rcDP, const CPelBuf &org, const Pel* piRef
       rcDP.subShift = 1;
     }
   }
-#if JVET_Q0806
   else if( subShiftMode == 3 )
   {
     if (rcDP.org.height > 8 )
@@ -326,7 +323,6 @@ void RdCost::setDistParam( DistParam &rcDP, const CPelBuf &org, const Pel* piRef
       rcDP.subShift = 1;
     }
   }
-#endif
 }
 
 void RdCost::setDistParam( DistParam &rcDP, const CPelBuf &org, const CPelBuf &cur, int bitDepth, ComponentID compID, bool useHadamard )
@@ -3462,7 +3458,6 @@ Distortion RdCost::xGetMRHADs( const DistParam &rcDtParam )
   return m_afpDistortFunc[DF_HAD]( modDistParam );
 }
 
-#if JVET_Q0806
 void RdCost::setDistParam( DistParam &rcDP, const CPelBuf &org, const Pel* piRefY, int iRefStride, const Pel* mask, int iMaskStride, int stepX, int iMaskStride2, int bitDepth, ComponentID compID)
 {
   rcDP.bitDepth     = bitDepth;
@@ -3525,5 +3520,4 @@ Distortion RdCost::xGetSADwMask( const DistParam& rcDtParam )
   sum <<= subShift;
   return (sum >> distortionShift );
 }
-#endif
 //! \}

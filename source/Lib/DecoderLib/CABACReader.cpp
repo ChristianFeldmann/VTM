@@ -2197,7 +2197,6 @@ void CABACReader::merge_data( PredictionUnit& pu )
 
     RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET( STATS__CABAC_BITS__MERGE_FLAG );
 
-#if JVET_Q0806
     const bool ciipAvailable = pu.cs->sps->getUseCiip() && !pu.cu->skip && pu.cu->lwidth() < MAX_CU_SIZE && pu.cu->lheight() < MAX_CU_SIZE && pu.cu->lwidth() * pu.cu->lheight() >= 64;
     const bool geoAvailable = pu.cu->cs->slice->getSPS()->getUseGeo() && pu.cu->cs->slice->isInterB() && 
       pu.cs->sps->getMaxNumGeoCand() > 1
@@ -2205,13 +2204,6 @@ void CABACReader::merge_data( PredictionUnit& pu )
                                                                       && pu.cu->lwidth() <= GEO_MAX_CU_SIZE && pu.cu->lheight() <= GEO_MAX_CU_SIZE
                                                                       && pu.cu->lwidth() < 8 * pu.cu->lheight() && pu.cu->lheight() < 8 * pu.cu->lwidth();
     if (geoAvailable || ciipAvailable)
-#else
-    const bool triangleAvailable = pu.cu->cs->slice->getSPS()->getUseTriangle() && pu.cu->cs->slice->isInterB() &&
-      pu.cs->sps->getMaxNumGeoCand() > 1;
-    const bool ciipAvailable = pu.cs->sps->getUseCiip() && !pu.cu->skip && pu.cu->lwidth() < MAX_CU_SIZE && pu.cu->lheight() < MAX_CU_SIZE;
-    if (pu.cu->lwidth() * pu.cu->lheight() >= 64
-      && (triangleAvailable || ciipAvailable))
-#endif
     {
       cu.firstPU->regularMergeFlag = m_BinDecoder.decodeBin(Ctx::RegularMergeFlag(cu.skip ? 0 : 1));
     }
@@ -2238,29 +2230,6 @@ void CABACReader::merge_data( PredictionUnit& pu )
     {
       pu.mmvdMergeFlag = false;
       pu.cu->mmvdSkip = false;
-#if !JVET_Q0806
-      if (triangleAvailable && ciipAvailable)
-      {
-        Ciip_flag(pu);
-      }
-      else if (ciipAvailable)
-      {
-        pu.ciipFlag = true;
-      }
-      else
-      {
-        pu.ciipFlag = false;
-      }
-      if (pu.ciipFlag)
-      {
-        pu.intraDir[0] = PLANAR_IDX;
-        pu.intraDir[1] = DM_CHROMA_IDX;
-      }
-      else
-      {
-        pu.cu->triangle = true;
-      }
-#else
       if (geoAvailable && ciipAvailable)
       {
         Ciip_flag(pu);
@@ -2282,7 +2251,6 @@ void CABACReader::merge_data( PredictionUnit& pu )
       {
         pu.cu->geoFlag = true;
       }
-#endif
     }
   }
   if (pu.mmvdMergeFlag || pu.cu->mmvdSkip)
@@ -2325,45 +2293,6 @@ void CABACReader::merge_idx( PredictionUnit& pu )
     int numCandminus1 = int(pu.cs->sps->getMaxNumMergeCand()) - 1;
   pu.mergeIdx       = 0;
 
-#if !JVET_Q0806
-  if( pu.cu->triangle )
-  {
-    RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET( STATS__CABAC_BITS__TRIANGLE_INDEX );
-    bool    splitDir;
-    uint8_t candIdx0;
-    uint8_t candIdx1;
-    splitDir = m_BinDecoder.decodeBinEP();
-    auto decodeOneIdx = [this](int numCandminus1) -> uint8_t
-    {
-      uint8_t decIdx = 0;
-      if( numCandminus1 > 0 )
-      {
-        if( this->m_BinDecoder.decodeBin( Ctx::MergeIdx() ) )
-        {
-          decIdx++;
-          for( ; decIdx < numCandminus1; decIdx++ )
-          {
-            if( !this->m_BinDecoder.decodeBinEP() )
-              break;
-          }
-        }
-      }
-      return decIdx;
-    };
-    const int maxNumTriangleCand = pu.cs->sps->getMaxNumGeoCand();
-    CHECK(maxNumTriangleCand < 2, "Incorrect max number of triangle candidates");
-    candIdx0 = decodeOneIdx(maxNumTriangleCand - 1);
-    candIdx1 = decodeOneIdx(maxNumTriangleCand - 2);
-    candIdx1 += candIdx1 >= candIdx0 ? 1 : 0;
-    DTRACE( g_trace_ctx, D_SYNTAX, "merge_idx() triangle_split_dir=%d\n", splitDir );
-    DTRACE( g_trace_ctx, D_SYNTAX, "merge_idx() triangle_idx0=%d\n", candIdx0 );
-    DTRACE( g_trace_ctx, D_SYNTAX, "merge_idx() triangle_idx1=%d\n", candIdx1 );
-    pu.triangleSplitDir = splitDir;
-    pu.triangleMergeIdx0 = candIdx0;
-    pu.triangleMergeIdx1 = candIdx1;
-    return;
-  }
-#else
   if( pu.cu->geoFlag )
   {
     RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET( STATS__CABAC_BITS__GEO_INDEX );
@@ -2396,7 +2325,6 @@ void CABACReader::merge_idx( PredictionUnit& pu )
     DTRACE( g_trace_ctx, D_SYNTAX, "merge_idx() geo_idx1=%d\n", mergeCand1 );
     return;
   }
-#endif
 
   if (pu.cu->predMode == MODE_IBC)
   {

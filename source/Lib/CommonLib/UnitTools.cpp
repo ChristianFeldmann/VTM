@@ -263,11 +263,7 @@ void CU::saveMotionInHMVP( const CodingUnit& cu, const bool isToBeDone )
 {
   const PredictionUnit& pu = *cu.firstPU;
 
-#if !JVET_Q0806
-  if (!cu.triangle && !cu.affine && !isToBeDone )
-#else
   if (!cu.geoFlag && !cu.affine && !isToBeDone)
-#endif
   {
     MotionInfo mi = pu.getMotionInfo();
 
@@ -3210,163 +3206,6 @@ void PU::restrictBiPredMergeCandsOne(PredictionUnit &pu)
   }
 }
 
-#if !JVET_Q0806
-void PU::getTriangleMergeCandidates( const PredictionUnit &pu, MergeCtx& triangleMrgCtx )
-{
-  MergeCtx tmpMergeCtx;
-
-  const uint32_t maxNumMergeCand = pu.cs->sps->getMaxNumMergeCand();
-
-  triangleMrgCtx.numValidMergeCand = 0;
-
-  for (int32_t i = 0; i < TRIANGLE_MAX_NUM_UNI_CANDS; i++)
-  {
-    triangleMrgCtx.BcwIdx[i] = BCW_DEFAULT;
-    triangleMrgCtx.interDirNeighbours[i] = 0;
-    triangleMrgCtx.mrgTypeNeighbours[i] = MRG_TYPE_DEFAULT_N;
-    triangleMrgCtx.mvFieldNeighbours[(i << 1)].refIdx = NOT_VALID;
-    triangleMrgCtx.mvFieldNeighbours[(i << 1) + 1].refIdx = NOT_VALID;
-    triangleMrgCtx.mvFieldNeighbours[(i << 1)].mv = Mv();
-    triangleMrgCtx.mvFieldNeighbours[(i << 1) + 1].mv = Mv();
-    triangleMrgCtx.useAltHpelIf[i] = false;
-  }
-
-  PU::getInterMergeCandidates(pu, tmpMergeCtx, 0);
-
-  for (int32_t i = 0; i < maxNumMergeCand; i++)
-  {
-    int parity = i & 1;
-    if (tmpMergeCtx.interDirNeighbours[i] & (0x01 + parity))
-    {
-      triangleMrgCtx.interDirNeighbours[triangleMrgCtx.numValidMergeCand] = 1 + parity;
-      triangleMrgCtx.mrgTypeNeighbours[triangleMrgCtx.numValidMergeCand] = MRG_TYPE_DEFAULT_N;
-      triangleMrgCtx.mvFieldNeighbours[(triangleMrgCtx.numValidMergeCand << 1) + !parity].mv = Mv(0, 0);
-      triangleMrgCtx.mvFieldNeighbours[(triangleMrgCtx.numValidMergeCand << 1) + parity].mv = tmpMergeCtx.mvFieldNeighbours[(i << 1) + parity].mv;
-      triangleMrgCtx.mvFieldNeighbours[(triangleMrgCtx.numValidMergeCand << 1) + !parity].refIdx = -1;
-      triangleMrgCtx.mvFieldNeighbours[(triangleMrgCtx.numValidMergeCand << 1) + parity].refIdx = tmpMergeCtx.mvFieldNeighbours[(i << 1) + parity].refIdx;
-      triangleMrgCtx.numValidMergeCand++;
-      if (triangleMrgCtx.numValidMergeCand == TRIANGLE_MAX_NUM_UNI_CANDS)
-      {
-        return;
-      }
-      continue;
-    }
-
-    if (tmpMergeCtx.interDirNeighbours[i] & (0x02 - parity))
-    {
-      triangleMrgCtx.interDirNeighbours[triangleMrgCtx.numValidMergeCand] = 2 - parity;
-      triangleMrgCtx.mrgTypeNeighbours[triangleMrgCtx.numValidMergeCand] = MRG_TYPE_DEFAULT_N;
-      triangleMrgCtx.mvFieldNeighbours[(triangleMrgCtx.numValidMergeCand << 1) + !parity].mv = tmpMergeCtx.mvFieldNeighbours[(i << 1) + !parity].mv;
-      triangleMrgCtx.mvFieldNeighbours[(triangleMrgCtx.numValidMergeCand << 1) + parity].mv = Mv(0, 0);
-      triangleMrgCtx.mvFieldNeighbours[(triangleMrgCtx.numValidMergeCand << 1) + !parity].refIdx = tmpMergeCtx.mvFieldNeighbours[(i << 1) + !parity].refIdx;
-      triangleMrgCtx.mvFieldNeighbours[(triangleMrgCtx.numValidMergeCand << 1) + parity].refIdx = -1;
-      triangleMrgCtx.numValidMergeCand++;
-      if (triangleMrgCtx.numValidMergeCand == TRIANGLE_MAX_NUM_UNI_CANDS)
-      {
-        return;
-      }
-    }
-  }
-}
-
-void PU::spanTriangleMotionInfo( PredictionUnit &pu, MergeCtx &triangleMrgCtx, const bool splitDir, const uint8_t candIdx0, const uint8_t candIdx1 )
-{
-  pu.triangleSplitDir = splitDir;
-  pu.triangleMergeIdx0 = candIdx0;
-  pu.triangleMergeIdx1 = candIdx1;
-  MotionBuf mb = pu.getMotionBuf();
-
-  MotionInfo biMv;
-  biMv.isInter  = true;
-  biMv.sliceIdx = pu.cs->slice->getIndependentSliceIdx();
-
-  if( triangleMrgCtx.interDirNeighbours[candIdx0] == 1 && triangleMrgCtx.interDirNeighbours[candIdx1] == 2 )
-  {
-    biMv.interDir  = 3;
-    biMv.mv[0]     = triangleMrgCtx.mvFieldNeighbours[ candIdx0 << 1     ].mv;
-    biMv.mv[1]     = triangleMrgCtx.mvFieldNeighbours[(candIdx1 << 1) + 1].mv;
-    biMv.refIdx[0] = triangleMrgCtx.mvFieldNeighbours[ candIdx0 << 1     ].refIdx;
-    biMv.refIdx[1] = triangleMrgCtx.mvFieldNeighbours[(candIdx1 << 1) + 1].refIdx;
-  }
-  else if( triangleMrgCtx.interDirNeighbours[candIdx0] == 2 && triangleMrgCtx.interDirNeighbours[candIdx1] == 1 )
-  {
-    biMv.interDir  = 3;
-    biMv.mv[0]     = triangleMrgCtx.mvFieldNeighbours[ candIdx1 << 1     ].mv;
-    biMv.mv[1]     = triangleMrgCtx.mvFieldNeighbours[(candIdx0 << 1) + 1].mv;
-    biMv.refIdx[0] = triangleMrgCtx.mvFieldNeighbours[ candIdx1 << 1     ].refIdx;
-    biMv.refIdx[1] = triangleMrgCtx.mvFieldNeighbours[(candIdx0 << 1) + 1].refIdx;
-  }
-  else if( triangleMrgCtx.interDirNeighbours[candIdx0] == 1 && triangleMrgCtx.interDirNeighbours[candIdx1] == 1 )
-  {
-    biMv.interDir = 1;
-    biMv.mv[0] = triangleMrgCtx.mvFieldNeighbours[candIdx1 << 1].mv;
-    biMv.mv[1] = Mv(0, 0);
-    biMv.refIdx[0] = triangleMrgCtx.mvFieldNeighbours[candIdx1 << 1].refIdx;
-    biMv.refIdx[1] = -1;
-  }
-  else if( triangleMrgCtx.interDirNeighbours[candIdx0] == 2 && triangleMrgCtx.interDirNeighbours[candIdx1] == 2 )
-  {
-    biMv.interDir = 2;
-    biMv.mv[0] = Mv(0, 0);
-    biMv.mv[1] = triangleMrgCtx.mvFieldNeighbours[(candIdx1 << 1) + 1].mv;
-    biMv.refIdx[0] = -1;
-    biMv.refIdx[1] = triangleMrgCtx.mvFieldNeighbours[(candIdx1 << 1) + 1].refIdx;
-  }
-
-  int32_t idxW  = (int32_t)(floorLog2(pu.lwidth() ) - MIN_CU_LOG2);
-  int32_t idxH  = (int32_t)(floorLog2(pu.lheight()) - MIN_CU_LOG2);
-  for( int32_t y = 0; y < mb.height; y++ )
-  {
-    for( int32_t x = 0; x < mb.width; x++ )
-    {
-      if( g_triangleMvStorage[splitDir][idxH][idxW][y][x] == 2 )
-      {
-        mb.at( x, y ).isInter   = true;
-        mb.at( x, y ).interDir  = biMv.interDir;
-        mb.at( x, y ).refIdx[0] = biMv.refIdx[0];
-        mb.at( x, y ).refIdx[1] = biMv.refIdx[1];
-        mb.at( x, y ).mv    [0] = biMv.mv    [0];
-        mb.at( x, y ).mv    [1] = biMv.mv    [1];
-        mb.at( x, y ).sliceIdx  = biMv.sliceIdx;
-      }
-      else if( g_triangleMvStorage[splitDir][idxH][idxW][y][x] == 0 )
-      {
-        mb.at( x, y ).isInter   = true;
-        mb.at( x, y ).interDir  = triangleMrgCtx.interDirNeighbours[candIdx0];
-        mb.at( x, y ).refIdx[0] = triangleMrgCtx.mvFieldNeighbours[ candIdx0 << 1     ].refIdx;
-        mb.at( x, y ).refIdx[1] = triangleMrgCtx.mvFieldNeighbours[(candIdx0 << 1) + 1].refIdx;
-        mb.at( x, y ).mv    [0] = triangleMrgCtx.mvFieldNeighbours[ candIdx0 << 1     ].mv;
-        mb.at( x, y ).mv    [1] = triangleMrgCtx.mvFieldNeighbours[(candIdx0 << 1) + 1].mv;
-        mb.at( x, y ).sliceIdx  = biMv.sliceIdx;
-      }
-      else
-      {
-        mb.at( x, y ).isInter   = true;
-        mb.at( x, y ).interDir  = triangleMrgCtx.interDirNeighbours[candIdx1];
-        mb.at( x, y ).refIdx[0] = triangleMrgCtx.mvFieldNeighbours[ candIdx1 << 1     ].refIdx;
-        mb.at( x, y ).refIdx[1] = triangleMrgCtx.mvFieldNeighbours[(candIdx1 << 1) + 1].refIdx;
-        mb.at( x, y ).mv    [0] = triangleMrgCtx.mvFieldNeighbours[ candIdx1 << 1     ].mv;
-        mb.at( x, y ).mv    [1] = triangleMrgCtx.mvFieldNeighbours[(candIdx1 << 1) + 1].mv;
-        mb.at( x, y ).sliceIdx  = biMv.sliceIdx;
-      }
-    }
-  }
-}
-
-int32_t PU::mappingRefPic( const PredictionUnit &pu, int32_t refPicPoc, bool targetRefPicList )
-{
-  int32_t numRefIdx = pu.cs->slice->getNumRefIdx( (RefPicList)targetRefPicList );
-
-  for( int32_t i = 0; i < numRefIdx; i++ )
-  {
-    if( pu.cs->slice->getRefPOC( (RefPicList)targetRefPicList, i ) == refPicPoc )
-    {
-      return i;
-    }
-  }
-  return -1;
-}
-#else
 void PU::getGeoMergeCandidates( const PredictionUnit &pu, MergeCtx& geoMrgCtx )
 {
   MergeCtx tmpMergeCtx;
@@ -3525,7 +3364,6 @@ void PU::spanGeoMotionInfo( PredictionUnit &pu, MergeCtx &geoMrgCtx, const uint8
     }
   }
 }
-#endif
 
 bool CU::hasSubCUNonZeroMVd( const CodingUnit& cu )
 {

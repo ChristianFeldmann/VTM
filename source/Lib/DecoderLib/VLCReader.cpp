@@ -1794,26 +1794,6 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     READ_FLAG( uiCode,  "sps_fpel_mmvd_enabled_flag" );             pcSPS->setFpelMmvdEnabledFlag ( uiCode != 0 );
   }
 
-#if !JVET_Q0806
-  if (pcSPS->getMaxNumMergeCand() >= 2)
-  {
-    READ_FLAG(uiCode, "triangle_flag");
-    pcSPS->setUseTriangle(uiCode != 0);
-    if (pcSPS->getUseTriangle() && pcSPS->getMaxNumMergeCand() >= 3)
-    {
-      READ_UVLC(uiCode, "max_num_merge_cand_minus_max_num_gpm_cand");
-      CHECK(pcSPS->getMaxNumMergeCand() < uiCode, "Incorrrect max number of Triangle candidates!");
-      pcSPS->setMaxNumGeoCand((uint32_t)(pcSPS->getMaxNumMergeCand() - uiCode));
-    }
-    else if (pcSPS->getUseTriangle())
-      pcSPS->setMaxNumGeoCand(2);
-  }
-  else
-  {
-    pcSPS->setUseTriangle(0);
-    pcSPS->setMaxNumGeoCand(0);
-  }
-#else
   if (pcSPS->getMaxNumMergeCand() >= 2)
   {
     READ_FLAG(uiCode, "sps_gpm_enabled_flag");
@@ -1832,7 +1812,6 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     pcSPS->setUseGeo(0);
     pcSPS->setMaxNumGeoCand(0);
   }
-#endif
   READ_FLAG(uiCode, "sps_lmcs_enable_flag");                   pcSPS->setUseLmcs(uiCode == 1);
   READ_FLAG( uiCode, "sps_lfnst_enabled_flag" );                    pcSPS->setUseLFNST( uiCode != 0 );
 
@@ -4072,11 +4051,7 @@ void HLSyntaxReader::parseConstraintInfo(ConstraintInfo *cinfo)
   READ_FLAG(symbol, "no_ibc_constraint_flag");                     cinfo->setNoIbcConstraintFlag(symbol > 0 ? true : false);
   READ_FLAG(symbol, "no_ciip_constraint_flag");                    cinfo->setNoCiipConstraintFlag(symbol > 0 ? true : false);
   READ_FLAG(symbol, "no_fpel_mmvd_constraint_flag");               cinfo->setNoFPelMmvdConstraintFlag(symbol > 0 ? true : false);
-#if !JVET_Q0806
-  READ_FLAG(symbol, "no_triangle_constraint_flag");                cinfo->setNoTriangleConstraintFlag(symbol > 0 ? true : false);
-#else
   READ_FLAG(symbol, "no_gpm_constraint_flag");                     cinfo->setNoGeoConstraintFlag(symbol > 0 ? true : false);
-#endif
   READ_FLAG(symbol, "no_ladf_constraint_flag");                    cinfo->setNoLadfConstraintFlag(symbol > 0 ? true : false);
   READ_FLAG(symbol, "no_transform_skip_constraint_flag");          cinfo->setNoTransformSkipConstraintFlag(symbol > 0 ? true : false);
   READ_FLAG(symbol, "no_bdpcm_constraint_flag");                   cinfo->setNoBDPCMConstraintFlag(symbol > 0 ? true : false);

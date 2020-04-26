@@ -553,7 +553,6 @@ void AreaBuf<Pel>::copyClip( const AreaBuf<const Pel> &src, const ClpRng& clpRng
   }
 }
 
-#if JVET_Q0806
 template<>
 void AreaBuf<Pel>::roundToOutputBitdepth( const AreaBuf<const Pel> &src, const ClpRng& clpRng )
 {
@@ -583,7 +582,6 @@ void AreaBuf<Pel>::roundToOutputBitdepth( const AreaBuf<const Pel> &src, const C
 #undef RND_INC
   }
 }
-#endif
 
 
 template<>

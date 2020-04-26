@@ -156,11 +156,7 @@ protected:
   bool      m_noIbcConstraintFlag;
   bool      m_bNoCiipConstraintFlag;
   bool      m_noFPelMmvdConstraintFlag;
-#if !JVET_Q0806
-  bool      m_bNoTriangleConstraintFlag;
-#else
   bool      m_noGeoConstraintFlag;
-#endif
   bool      m_bNoLadfConstraintFlag;
   bool      m_noTransformSkipConstraintFlag;
   bool      m_noBDPCMConstraintFlag;
@@ -322,11 +318,7 @@ protected:
 #endif
 
   bool      m_ciip;
-#if !JVET_Q0806
-  bool      m_Triangle;
-#else
   bool      m_Geo;
-#endif
   bool      m_HashME;
   bool      m_allowDisFracMMVD;
   bool      m_AffineAmvr;
@@ -612,11 +604,7 @@ protected:
   uint32_t      m_log2ParallelMergeLevel;                         ///< Parallel merge estimation region
   uint32_t      m_maxNumMergeCand;                                ///< Max number of merge candidates
   uint32_t      m_maxNumAffineMergeCand;                          ///< Max number of affine merge candidates
-#if !JVET_Q0806
   uint32_t      m_maxNumGeoCand;
-#else
-  uint32_t      m_maxNumGeoCand;
-#endif
   uint32_t      m_maxNumIBCMergeCand;                             ///< Max number of IBC merge candidates
 
   bool      m_sliceLevelRpl;                                      ///< code reference picture lists in slice headers rather than picture header

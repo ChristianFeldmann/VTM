@@ -403,53 +403,7 @@ void initROM()
     }
   }
 
-#if !JVET_Q0806
-  for( int idxH = MAX_CU_DEPTH - MIN_CU_LOG2; idxH >= 0; --idxH )
-  {
-    for( int idxW = MAX_CU_DEPTH - MIN_CU_LOG2; idxW >= 0; --idxW )
-    {
-      int numW   = 1 << idxW;
-      int numH   = 1 << idxH;
-      int ratioW = std::max( 0, idxW - idxH );
-      int ratioH = std::max( 0, idxH - idxW );
-      int sum    = std::max( (numW >> ratioW), (numH >> ratioH) ) - 1;
-      for( int y = 0; y < numH; y++ )
-      {
-        int idxY = y >> ratioH;
-        for( int x = 0; x < numW; x++ )
-        {
-          int idxX = x >> ratioW;
-          g_triangleMvStorage[TRIANGLE_DIR_135][idxH][idxW][y][x] = (idxX == idxY) ? 2 : (idxX > idxY ? 0 : 1);
-          g_triangleMvStorage[TRIANGLE_DIR_45][idxH][idxW][y][x] = (idxX + idxY == sum) ? 2 : (idxX + idxY > sum ? 1 : 0);
-        }
-      }
-    }
-  }
-
-  for (int idxH = 0; idxH < MAX_CU_DEPTH - MIN_CU_LOG2 + 2; ++idxH)
-  {
-    for (int idxW = 0; idxW < MAX_CU_DEPTH - MIN_CU_LOG2 + 2; ++idxW)
-    {
-      const int nCbH = 1 << (idxH + 1);
-      const int nCbW = 1 << (idxW + 1);
-      const int nCbR = (nCbW > nCbH) ? nCbW / nCbH : nCbH / nCbW;
-
-      // let SIMD can read at least 64-bit when at last row
-      g_triangleWeights[0][idxH][idxW] = new int16_t[nCbH * nCbW + 4];
-      g_triangleWeights[1][idxH][idxW] = new int16_t[nCbH * nCbW + 4];
-      for (int y = 0; y < nCbH; y++)
-      {
-        for (int x = 0; x < nCbW; x++)
-        {
-          g_triangleWeights[0][idxH][idxW][y*nCbW + x] = (nCbW > nCbH) ? Clip3(0, 8, x / nCbR - y + 4) : Clip3(0, 8, x - y / nCbR + 4);
-          g_triangleWeights[1][idxH][idxW][y*nCbW + x] = (nCbW > nCbH) ? Clip3(0, 8, nCbH - 1 - x / nCbR - y + 4) : Clip3(0, 8, nCbW - 1 - x - y / nCbR + 4);
-        }
-      }
-    }
-  }
-#else
   initGeoTemplate();
-#endif
 
   ::memset(g_isReusedUniMVsFilled, 0, sizeof(g_isReusedUniMVsFilled));
 
@@ -487,18 +441,6 @@ void destroyROM()
   delete gp_sizeIdxInfo;
   gp_sizeIdxInfo = nullptr;
 
-#if !JVET_Q0806
-  for (int idxH = 0; idxH < MAX_CU_DEPTH - MIN_CU_LOG2 + 2; ++idxH)
-  {
-    for (int idxW = 0; idxW < MAX_CU_DEPTH - MIN_CU_LOG2 + 2; ++idxW)
-    {
-      delete[] g_triangleWeights[0][idxH][idxW];
-      delete[] g_triangleWeights[1][idxH][idxW];
-      g_triangleWeights[0][idxH][idxW] = nullptr;
-      g_triangleWeights[1][idxH][idxW] = nullptr;
-    }
-  }
-#else
   for( int modeIdx = 0; modeIdx < GEO_NUM_PARTITION_MODE; modeIdx++ )
   {
     delete[] g_GeoParams[modeIdx];
@@ -512,7 +454,6 @@ void destroyROM()
     g_globalGeoWeights   [i] = nullptr;
     g_globalGeoEncSADmask[i] = nullptr;
   }
-#endif
 }
 
 // ====================================================================================================================
@@ -738,10 +679,6 @@ const uint32_t g_scalingListSize [SCALING_LIST_SIZE_NUM] = { 1, 4, 16, 64, 256, 
 const uint32_t g_scalingListSizeX[SCALING_LIST_SIZE_NUM] = { 1, 2,  4,  8,  16,   32,   64,   128 };
 
 
-#if !JVET_Q0806
-uint8_t g_triangleMvStorage[TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_SIZE >> MIN_CU_LOG2][MAX_CU_SIZE >> MIN_CU_LOG2];
-int16_t *g_triangleWeights[TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG2 + 2][MAX_CU_DEPTH - MIN_CU_LOG2 + 2];
-#endif
 
 Mv   g_reusedUniMVs[32][32][8][8][2][33];
 bool g_isReusedUniMVsFilled[32][32][8][8];
@@ -750,7 +687,6 @@ uint16_t g_paletteQuant[57];
 uint8_t g_paletteRunTopLut [5] = { 0, 1, 1, 2, 2 };
 uint8_t g_paletteRunLeftLut[5] = { 0, 1, 2, 3, 4 };
 
-#if JVET_Q0806
 void initGeoTemplate()
 {
   g_GeoParams = new int16_t*[GEO_NUM_PARTITION_MODE];
@@ -831,5 +767,4 @@ int16_t   g_weightOffset       [GEO_NUM_PARTITION_MODE][GEO_NUM_CU_SIZE][GEO_NUM
 int8_t    g_angle2mask[GEO_NUM_ANGLES] = { 0, -1, 1, 2, 3, 4, -1, -1, 5, -1, -1, 4, 3, 2, 1, -1, 0, -1, 1, 2, 3, 4, -1, -1, 5, -1, -1, 4, 3, 2, 1, -1 };
 int8_t    g_Dis[GEO_NUM_ANGLES] = { 8, 8, 8, 8, 4, 4, 2, 1, 0, -1, -2, -4, -4, -8, -8, -8, -8, -8, -8, -8, -4, -4, -2, -1, 0, 1, 2, 4, 4, 8, 8, 8 };
 int8_t    g_angle2mirror[GEO_NUM_ANGLES] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 2 };
-#endif
 //! \}

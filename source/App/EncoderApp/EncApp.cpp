@@ -261,11 +261,7 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setNoIbcConstraintFlag                               ( m_IBCMode ? false : true );
   m_cEncLib.setNoCiipConstraintFlag                           ( !m_ciip );
   m_cEncLib.setNoFPelMmvdConstraintFlag                          ( !(m_MMVD && m_allowDisFracMMVD) );
-#if !JVET_Q0806
-  m_cEncLib.setNoTriangleConstraintFlag                          ( !m_Triangle );
-#else
   m_cEncLib.setNoGeoConstraintFlag                               ( !m_Geo );
-#endif
   m_cEncLib.setNoLadfConstraintFlag                              ( !m_LadfEnabed );
   m_cEncLib.setNoTransformSkipConstraintFlag                     ( !m_useTransformSkip );
   m_cEncLib.setNoBDPCMConstraintFlag                             ( !m_useBDPCM );
@@ -461,11 +457,7 @@ void EncApp::xInitLibCfg()
   }
 #endif
   m_cEncLib.setUseCiip                                        ( m_ciip );
-#if !JVET_Q0806
-  m_cEncLib.setUseTriangle                                       ( m_Triangle );
-#else
   m_cEncLib.setUseGeo                                            ( m_Geo );
-#endif
   m_cEncLib.setUseHashME                                         ( m_HashME );
 
   m_cEncLib.setAllowDisFracMMVD                                  ( m_allowDisFracMMVD );
@@ -561,11 +553,7 @@ void EncApp::xInitLibCfg()
 
   m_cEncLib.setMaxNumMergeCand                                   ( m_maxNumMergeCand );
   m_cEncLib.setMaxNumAffineMergeCand                             ( m_maxNumAffineMergeCand );
-#if !JVET_Q0806
-  m_cEncLib.setMaxNumGeoCand(m_maxNumGeoCand);
-#else
   m_cEncLib.setMaxNumGeoCand                                     ( m_maxNumGeoCand );
-#endif
   m_cEncLib.setMaxNumIBCMergeCand                                ( m_maxNumIBCMergeCand );
 
   //====== Weighted Prediction ========
@@ -753,9 +741,6 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setSliceLevelWp                                      ( m_sliceLevelWp );
   m_cEncLib.setSliceLevelDeltaQp                                 ( m_sliceLevelDeltaQp );
   m_cEncLib.setSliceLevelAlf                                     ( m_sliceLevelAlf  );
-#if !JVET_Q0806
-#else
-#endif
   m_cEncLib.setUseScalingListId                                  ( m_useScalingListId  );
   m_cEncLib.setScalingListFileName                               ( m_scalingListFileName );
   m_cEncLib.setDisableScalingMatrixForLfnstBlks                  ( m_disableScalingMatrixForLfnstBlks);

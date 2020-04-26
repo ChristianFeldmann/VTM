@@ -2463,9 +2463,7 @@ void IntraSearch::derivePLTLossy(CodingStructure& cs, Partitioner& partitioner, 
     pcmShiftRight_C = 0;
   }
 
-#if JVET_Q0291_REDUCE_DUALTREE_PLT_SIZE
   int maxPltSize = cu.isSepTree() ? MAXPLTSIZE_DUALTREE : MAXPLTSIZE;
-#endif
 
   uint32_t height = cu.block(compBegin).height;
   uint32_t width = cu.block(compBegin).width;
@@ -2505,11 +2503,7 @@ void IntraSearch::derivePLTLossy(CodingStructure& cs, Partitioner& partitioner, 
   SortingElement *pelList = new SortingElement[totalSize];
   SortingElement  element;
   SortingElement *pelListSort = new SortingElement[MAXPLTSIZE + 1];
-#if JVET_Q0291_REDUCE_DUALTREE_PLT_SIZE
   uint32_t dictMaxSize = maxPltSize;
-#else
-  uint32_t dictMaxSize = MAXPLTSIZE;
-#endif
   uint32_t idx = 0;
   int last = -1;
 
@@ -2709,11 +2703,7 @@ void IntraSearch::derivePLTLossy(CodingStructure& cs, Partitioner& partitioner, 
 #endif
         {
           pelListSort[j].copyAllFrom(pelListSort[j - 1], compBegin, numComp);
-#if JVET_Q0291_REDUCE_DUALTREE_PLT_SIZE
           dictMaxSize = std::min(dictMaxSize + 1, (uint32_t)maxPltSize);
-#else
-          dictMaxSize = std::min(dictMaxSize + 1, (uint32_t)MAXPLTSIZE);
-#endif
         }
         else
         {
@@ -2738,11 +2728,7 @@ void IntraSearch::derivePLTLossy(CodingStructure& cs, Partitioner& partitioner, 
   double reuseflagCost;
 #endif
 #if JVET_Q0504_PLT_NON444
-#if JVET_Q0291_REDUCE_DUALTREE_PLT_SIZE
   for (int i = 0; i < maxPltSize; i++)
-#else
-  for( int i = 0; i < MAXPLTSIZE; i++ )
-#endif
   {
     if( pelListSort[i].getCnt(MAX_NUM_COMPONENT) )
     {
@@ -2875,11 +2861,7 @@ void IntraSearch::derivePLTLossy(CodingStructure& cs, Partitioner& partitioner, 
     }
   }
 #else
-#if JVET_Q0291_REDUCE_DUALTREE_PLT_SIZE
 for (int i = 0; i < maxPltSize; i++)
-#else
-  for (int i = 0; i < MAXPLTSIZE; i++)
-#endif
   {
     if (pelListSort[i].getCnt())
     {

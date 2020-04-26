@@ -1833,18 +1833,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
       pcSPS->setProfControlPresentFlag( false );
     }
   }
-#if !JVET_Q0820_ACT
-  if (chromaArrayType == CHROMA_444)
-  {
-    READ_FLAG(uiCode, "sps_act_enabled_flag");                                  pcSPS->setUseColorTrans(uiCode != 0);
-  }
-  else
-  {
-    pcSPS->setUseColorTrans(false);
-  }
-#endif
   READ_FLAG( uiCode,  "sps_palette_enabled_flag");                                pcSPS->setPLTMode                ( uiCode != 0 );
-#if JVET_Q0820_ACT
   if (chromaArrayType == CHROMA_444 && pcSPS->getLog2MaxTbSize() != 6)
   {
     READ_FLAG(uiCode, "sps_act_enabled_flag");                                pcSPS->setUseColorTrans(uiCode != 0);
@@ -1853,7 +1842,6 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   {
     pcSPS->setUseColorTrans(false);
   }
-#endif
   if (pcSPS->getTransformSkipEnabledFlag() || pcSPS->getPLTMode())
   {
     READ_UVLC(uiCode, "min_qp_prime_ts_minus4");

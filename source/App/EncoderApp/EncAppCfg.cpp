@@ -3515,9 +3515,7 @@ bool EncAppCfg::xCheckParameter()
   check_failed |= m_ext360.verifyParameters();
 #endif
 
-#if JVET_Q0820_ACT
   xConfirmPara(m_useColorTrans && (m_log2MaxTbSize == 6), "Log2MaxTbSize must be less than 6 when ACT is enabled, otherwise ACT needs to be disabled");
-#endif
 
 #undef xConfirmPara
   return check_failed;
@@ -3763,11 +3761,7 @@ void EncAppCfg::xPrintParameter()
     msg(VERBOSE, "MmvdDisNum:%d ", m_MmvdDisNum);
     msg(VERBOSE, "JointCbCr:%d ", m_JointCbCrMode);
   }
-#if JVET_Q0820_ACT
   m_useColorTrans = (m_chromaFormatIDC == CHROMA_444) ? m_useColorTrans : 0u;
-#else
-  m_useColorTrans = (m_chromaFormatIDC == CHROMA_444 && m_costMode != COST_LOSSLESS_CODING) ? m_useColorTrans : 0u;
-#endif
   msg(VERBOSE, "ACT:%d ", m_useColorTrans);
     msg(VERBOSE, "PLT:%d ", m_PLTMode);
     msg(VERBOSE, "IBC:%d ", m_IBCMode);

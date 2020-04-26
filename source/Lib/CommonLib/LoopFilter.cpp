@@ -1312,13 +1312,8 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
         const TransformUnit& tuQ = *cuQ.cs->getTU(recalcPosition( cu.chromaFormat, CHANNEL_TYPE_LUMA, CHANNEL_TYPE_CHROMA, pos), CHANNEL_TYPE_CHROMA);
         const TransformUnit& tuP = *cuP.cs->getTU(recalcPosition( cu.chromaFormat, CHANNEL_TYPE_LUMA, CHANNEL_TYPE_CHROMA, (edgeDir == EDGE_VER) ? pos.offset(-1, 0) : pos.offset(0, -1)), CHANNEL_TYPE_CHROMA);
 
-#if JVET_Q0820_ACT
         const QpParam cQP(tuP, ComponentID(chromaIdx + 1), -MAX_INT, false);
         const QpParam cQQ(tuQ, ComponentID(chromaIdx + 1), -MAX_INT, false);
-#else
-        const QpParam cQP(tuP, ComponentID(chromaIdx + 1));
-        const QpParam cQQ(tuQ, ComponentID(chromaIdx + 1));
-#endif
         const int qpBdOffset = tuP.cs->sps->getQpBDOffset(toChannelType(ComponentID(chromaIdx + 1)));
         int baseQp_P = cQP.Qp(0) - qpBdOffset;
         int baseQp_Q = cQQ.Qp(0) - qpBdOffset;

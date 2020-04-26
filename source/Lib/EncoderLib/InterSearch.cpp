@@ -6563,19 +6563,15 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
       
       uint8_t nNumTransformCands = 1 + ( tsAllowed ? 1 : 0 ) + ( mtsAllowed ? 4 : 0 ); // DCT + TS + 4 MTS = 6 tests
       std::vector<TrMode> trModes;
-#if JVET_Q0820_ACT 
       if (m_pcEncCfg->getCostMode() == COST_LOSSLESS_CODING)
       {
         nNumTransformCands = 0;
       }
       else
       {
-#endif
       trModes.push_back( TrMode( 0, true ) ); //DCT2
       nNumTransformCands = 1;
-#if JVET_Q0820_ACT 
       }
-#endif
       //for a SBT-no-residual TU, the RDO process should be called once, in order to get the RD cost
       if( tsAllowed && !tu.noResidual )
       {
@@ -6605,11 +6601,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
         }
       }
 
-#if JVET_Q0820_ACT
       if (colorTransFlag && (m_pcEncCfg->getCostMode() != COST_LOSSLESS_CODING))
-#else
-      if (colorTransFlag)
-#endif
       {
         m_pcTrQuant->lambdaAdjustColorTrans(true);
         m_pcRdCost->lambdaAdjustColorTrans(true, compID);
@@ -6668,17 +6660,6 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
           tu.compAlpha[compID]      = bUseCrossCPrediction ? preCalcAlpha : 0;
 #endif
           QpParam cQP(tu, compID);  // note: uses tu.transformSkip[compID]
-#if !JVET_Q0820_ACT
-          if (colorTransFlag)
-          {
-            for (int qpIdx = 0; qpIdx < 2; qpIdx++)
-            {
-              cQP.Qps[qpIdx] = cQP.Qps[qpIdx] + (compID == COMPONENT_Cr ? DELTA_QP_FOR_Co : DELTA_QP_FOR_Y_Cg);
-              cQP.pers[qpIdx] = cQP.Qps[qpIdx] / 6;
-              cQP.rems[qpIdx] = cQP.Qps[qpIdx] % 6;
-            }
-          }
-#endif
 
 #if RDOQ_CHROMA_LAMBDA
           m_pcTrQuant->selectLambda(compID);
@@ -6958,11 +6939,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
       }
 #endif
 
-#if JVET_Q0820_ACT
       if (colorTransFlag && (m_pcEncCfg->getCostMode() != COST_LOSSLESS_CODING))
-#else
-      if (colorTransFlag)
-#endif
       {
         m_pcTrQuant->lambdaAdjustColorTrans(false);
         m_pcRdCost->lambdaAdjustColorTrans(false, compID);
@@ -6974,11 +6951,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
     {
       PelUnitBuf     orgResidual = orgResi->subBuf(relativeUnitArea);
       PelUnitBuf     invColorTransResidual = m_colorTransResiBuf[2].getBuf(relativeUnitArea);
-#if JVET_Q0820_ACT
       csFull->getResiBuf(currArea).colorSpaceConvert(invColorTransResidual, false, slice.clpRng(COMPONENT_Y));
-#else
-      csFull->getResiBuf(currArea).colorSpaceConvert(invColorTransResidual, false);
-#endif
 
       for (uint32_t c = 0; c < numTBlocks; c++)
       {
@@ -7092,11 +7065,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
         ComponentID otherCompId = (codeCompId == COMPONENT_Cr ? COMPONENT_Cb : COMPONENT_Cr);
 #endif
 
-#if JVET_Q0820_ACT
         if (colorTransFlag && (m_pcEncCfg->getCostMode() != COST_LOSSLESS_CODING))
-#else
-        if (colorTransFlag)
-#endif
         {
           m_pcTrQuant->lambdaAdjustColorTrans(true);
           m_pcTrQuant->selectLambda(codeCompId);
@@ -7130,17 +7099,6 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
 
         Distortion currCompDistY = MAX_UINT64;
         QpParam qpCbCr(tu, codeCompId);
-#if !JVET_Q0820_ACT
-        if (colorTransFlag)
-        {
-          for (int qpIdx = 0; qpIdx < 2; qpIdx++)
-          {
-            qpCbCr.Qps[qpIdx] = qpCbCr.Qps[qpIdx] + (codeCompId == COMPONENT_Cr ? DELTA_QP_FOR_Co : DELTA_QP_FOR_Y_Cg);
-            qpCbCr.pers[qpIdx] = qpCbCr.Qps[qpIdx] / 6;
-            qpCbCr.rems[qpIdx] = qpCbCr.Qps[qpIdx] % 6;
-          }
-        }
-#endif
 
         tu.getCoeffs(otherCompId).fill(0);   // do we need that?
         TU::setCbfAtDepth(tu, otherCompId, tu.depth, false);
@@ -7210,11 +7168,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
           {
             PelUnitBuf     orgResidual = orgResi->subBuf(relativeUnitArea);
             PelUnitBuf     invColorTransResidual = m_colorTransResiBuf[2].getBuf(relativeUnitArea);
-#if JVET_Q0820_ACT
             csFull->getResiBuf(currArea).colorSpaceConvert(invColorTransResidual, false, slice.clpRng(COMPONENT_Y));
-#else
-            csFull->getResiBuf(currArea).colorSpaceConvert(invColorTransResidual, false);
-#endif
 
             currCompDistY = m_pcRdCost->getDistPart(orgResidual.bufs[COMPONENT_Y], invColorTransResidual.bufs[COMPONENT_Y], sps.getBitDepth(toChannelType(COMPONENT_Y)), COMPONENT_Y, DF_SSE);
             currCompDistCb = m_pcRdCost->getDistPart(orgResidual.bufs[COMPONENT_Cb], invColorTransResidual.bufs[COMPONENT_Cb], sps.getBitDepth(toChannelType(COMPONENT_Cb)), COMPONENT_Cb, DF_SSE);
@@ -7272,11 +7226,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
         }
 #endif
 
-#if JVET_Q0820_ACT
         if (colorTransFlag && (m_pcEncCfg->getCostMode() != COST_LOSSLESS_CODING))
-#else
-        if (colorTransFlag)
-#endif
         {
           m_pcTrQuant->lambdaAdjustColorTrans(false);
         }
@@ -7606,11 +7556,7 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
   orgResidual.copyFrom(cs.getResiBuf());
   if (colorTransAllowed)
   {
-#if JVET_Q0820_ACT
     cs.getResiBuf().colorSpaceConvert(colorTransResidual, true, cu.cs->slice->clpRng(COMPONENT_Y));
-#else
-    cs.getResiBuf().colorSpaceConvert(colorTransResidual, true);
-#endif
   }
 
   const TempCtx ctxStart(m_CtxCache, m_CABACEstimator->getCtx());
@@ -7760,11 +7706,7 @@ void InterSearch::encodeResAndCalcRdInterCU(CodingStructure &cs, Partitioner &pa
     bestIter = iter;
     if (cu.rootCbf && cu.colorTransform)
     {
-#if JVET_Q0820_ACT
       cs.getResiBuf(curUnitArea).colorSpaceConvert(cs.getResiBuf(curUnitArea), false, cu.cs->slice->clpRng(COMPONENT_Y));
-#else
-      cs.getResiBuf(curUnitArea).colorSpaceConvert(cs.getResiBuf(curUnitArea), false);
-#endif
     }
 
     if (iter != (numAllowedColorSpace - 1))

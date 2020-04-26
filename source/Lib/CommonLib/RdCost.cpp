@@ -92,11 +92,7 @@ void RdCost::lambdaAdjustColorTrans(bool forward, ComponentID componentID)
     for (uint8_t component = 0; component < MAX_NUM_COMPONENT; component++)
     {
       ComponentID compID = (ComponentID)component;
-#if JVET_Q0820_ACT
       int       delta_QP = DELTA_QP_ACT[compID];
-#else
-      int       delta_QP = (compID == COMPONENT_Cr ? DELTA_QP_FOR_Co : DELTA_QP_FOR_Y_Cg);
-#endif
       double lamdbaAdjustRate = pow(2.0, delta_QP / 3.0);
 
       m_lambdaStore[0][component] = m_dLambda;

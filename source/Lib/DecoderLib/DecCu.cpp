@@ -398,14 +398,6 @@ void DecCu::xIntraRecACTBlk(TransformUnit& tu)
     PelBuf piResi = cs.getResiBuf(area);
 
     QpParam cQP(tu, compID);
-#if !JVET_Q0820_ACT
-    for (int qpIdx = 0; qpIdx < 2; qpIdx++)
-    {
-      cQP.Qps[qpIdx] = cQP.Qps[qpIdx] + (compID == COMPONENT_Cr ? DELTA_QP_FOR_Co : DELTA_QP_FOR_Y_Cg);
-      cQP.pers[qpIdx] = cQP.Qps[qpIdx] / 6;
-      cQP.rems[qpIdx] = cQP.Qps[qpIdx] % 6;
-    }
-#endif
 
     if (tu.jointCbCr && isChroma(compID))
     {
@@ -419,14 +411,6 @@ void DecCu::xIntraRecACTBlk(TransformUnit& tu)
         else
         {
           QpParam qpCr(tu, COMPONENT_Cr);
-#if !JVET_Q0820_ACT
-          for (int qpIdx = 0; qpIdx < 2; qpIdx++)
-          {
-            qpCr.Qps[qpIdx] = qpCr.Qps[qpIdx] + DELTA_QP_FOR_Co;
-            qpCr.pers[qpIdx] = qpCr.Qps[qpIdx] / 6;
-            qpCr.rems[qpIdx] = qpCr.Qps[qpIdx] % 6;
-          }
-#endif
 
           m_pcTrQuant->invTransformNxN(tu, COMPONENT_Cr, resiCr, qpCr);
         }
@@ -454,11 +438,7 @@ void DecCu::xIntraRecACTBlk(TransformUnit& tu)
     cs.setDecomp(area);
   }
 
-#if JVET_Q0820_ACT
   cs.getResiBuf(tu).colorSpaceConvert(cs.getResiBuf(tu), false, tu.cu->cs->slice->clpRng(COMPONENT_Y));
-#else
-  cs.getResiBuf(tu).colorSpaceConvert(cs.getResiBuf(tu), false);
-#endif
 
   for (int i = 0; i < getNumberValidComponents(tu.chromaFormat); i++)
   {
@@ -766,11 +746,7 @@ void DecCu::xReconInter(CodingUnit &cu)
   {
     if (cu.colorTransform)
     {
-#if JVET_Q0820_ACT
       cs.getResiBuf(cu).colorSpaceConvert(cs.getResiBuf(cu), false, cu.cs->slice->clpRng(COMPONENT_Y));
-#else
-      cs.getResiBuf(cu).colorSpaceConvert(cs.getResiBuf(cu), false);
-#endif
     }
 #if REUSE_CU_RESULTS
     const CompArea &area = cu.blocks[COMPONENT_Y];
@@ -844,17 +820,6 @@ void DecCu::xDecodeInterTU( TransformUnit & currTU, const ComponentID compID )
   PelBuf resiBuf  = cs.getResiBuf(area);
 
   QpParam cQP(currTU, compID);
-#if !JVET_Q0820_ACT
-  if (currTU.cu->colorTransform)
-  {
-    for (int qpIdx = 0; qpIdx < 2; qpIdx++)
-    {
-      cQP.Qps[qpIdx] = cQP.Qps[qpIdx] + (compID == COMPONENT_Cr ? DELTA_QP_FOR_Co : DELTA_QP_FOR_Y_Cg);
-      cQP.pers[qpIdx] = cQP.Qps[qpIdx] / 6;
-      cQP.rems[qpIdx] = cQP.Qps[qpIdx] % 6;
-    }
-  }
-#endif
 
   if( currTU.jointCbCr && isChroma(compID) )
   {
@@ -868,17 +833,6 @@ void DecCu::xDecodeInterTU( TransformUnit & currTU, const ComponentID compID )
       else
       {
         QpParam qpCr(currTU, COMPONENT_Cr);
-#if !JVET_Q0820_ACT
-        if (currTU.cu->colorTransform)
-        {
-          for (int qpIdx = 0; qpIdx < 2; qpIdx++)
-          {
-            qpCr.Qps[qpIdx] = qpCr.Qps[qpIdx] + DELTA_QP_FOR_Co;
-            qpCr.pers[qpIdx] = qpCr.Qps[qpIdx] / 6;
-            qpCr.rems[qpIdx] = qpCr.Qps[qpIdx] % 6;
-          }
-        }
-#endif
         m_pcTrQuant->invTransformNxN( currTU, COMPONENT_Cr, resiCr, qpCr );
       }
       m_pcTrQuant->invTransformICT( currTU, resiBuf, resiCr );

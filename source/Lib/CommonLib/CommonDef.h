@@ -498,12 +498,7 @@ static const int ENC_PPS_ID_RPR =                                 3;
 static const int SCALE_RATIO_BITS =                              14;
 static const int MAX_SCALING_RATIO =                              2;  // max downsampling ratio for RPR
 static const std::pair<int, int> SCALE_1X = std::pair<int, int>( 1 << SCALE_RATIO_BITS, 1 << SCALE_RATIO_BITS );  // scale ratio 1x
-#if JVET_Q0820_ACT
 static const int DELTA_QP_ACT[4] =                  { -5, 1, 3, 1 };
-#else
-static const int DELTA_QP_FOR_Y_Cg =                             -5;
-static const int DELTA_QP_FOR_Co =                               -3;
-#endif
 
 // ====================================================================================================================
 // Macro functions

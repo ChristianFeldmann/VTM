@@ -70,9 +70,7 @@ QpParam::QpParam(const int           qpy,
                  const ChromaFormat  chFmt,
                  const int           dqp
               ,  const SPS           *sps
-#if JVET_Q0820_ACT
               , const bool           applyACTQpoffset
-#endif
 )
 {
   int baseQp;
@@ -87,12 +85,10 @@ QpParam::QpParam(const int           qpy,
     baseQp = Clip3(-qpBdOffset, MAX_QP, baseQp + chromaQPOffset) + qpBdOffset;
   }
 
-#if JVET_Q0820_ACT
   if (applyACTQpoffset)
   {
     baseQp += DELTA_QP_ACT[compID];
   }
-#endif
   baseQp = Clip3( 0, MAX_QP+qpBdOffset, baseQp + dqp );
 
   Qps[0] =baseQp;
@@ -107,11 +103,7 @@ QpParam::QpParam(const int           qpy,
   rems[1] = baseQpTS % 6;
 }
 
-#if JVET_Q0820_ACT
 QpParam::QpParam(const TransformUnit& tu, const ComponentID &compIDX, const int QP /*= -MAX_INT*/, const bool allowACTQpoffset /*= true*/)
-#else
-QpParam::QpParam(const TransformUnit& tu, const ComponentID &compIDX, const int QP /*= -MAX_INT*/)
-#endif
 {
   int chromaQpOffset = 0;
   ComponentID compID = MAP_CHROMA(compIDX);
@@ -129,12 +121,8 @@ QpParam::QpParam(const TransformUnit& tu, const ComponentID &compIDX, const int 
   int dqp = 0;
 
   const bool useJQP = isChroma(compID) && (abs(TU::getICTMode(tu)) == 2);
-#if JVET_Q0820_ACT
   bool applyACTQpoffset = tu.cu->colorTransform && allowACTQpoffset;
   *this = QpParam(QP <= -MAX_INT ? tu.cu->qp : QP, useJQP ? JOINT_CbCr : compID, tu.cs->sps->getQpBDOffset(toChannelType(compID)), tu.cs->sps->getMinQpPrimeTsMinus4(toChannelType(compID)), chromaQpOffset, tu.chromaFormat, dqp, tu.cs->sps, applyACTQpoffset);
-#else
-  *this = QpParam(QP <= -MAX_INT ? tu.cu->qp : QP, useJQP ? JOINT_CbCr : compID, tu.cs->sps->getQpBDOffset(toChannelType(compID)), tu.cs->sps->getMinQpPrimeTsMinus4(toChannelType(compID)), chromaQpOffset, tu.chromaFormat, dqp, tu.cs->sps);
-#endif
 }
 
 
@@ -1298,11 +1286,7 @@ void Quant::lambdaAdjustColorTrans(bool forward)
     for (uint8_t component = 0; component < MAX_NUM_COMPONENT; component++)
     {
       ComponentID compID = (ComponentID)component;
-#if JVET_Q0820_ACT
       int       delta_QP = DELTA_QP_ACT[compID];
-#else
-      int       delta_QP = (compID == COMPONENT_Cr ? DELTA_QP_FOR_Co : DELTA_QP_FOR_Y_Cg);
-#endif
       double lamdbaAdjustRate = pow(2.0, delta_QP / 3.0);
 
       m_lambdasStore[0][component] = m_lambdas[component];

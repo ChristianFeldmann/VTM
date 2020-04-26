@@ -117,7 +117,6 @@
 
 
 
-#define JVET_Q0820_ACT                                    1 // JVET-Q0820: ACT bug fixes and reversible ACT transform 
 
 #define JVET_Q0814_DPB                                    1 // JVET-Q0814: DPB capacity is based on picture units regardless of the resoltuion
 #define ENABLING_MULTI_SPS                                1 // Bug fix to enable multiple SPS

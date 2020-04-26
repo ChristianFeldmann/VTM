@@ -2058,7 +2058,6 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
     //---------------
     pcSlice->setRefPOCList();
 
-#if JVET_P0124_MIXED_NALU
     NalUnitInfo naluInfo;
     naluInfo.m_nalUnitType = nalu.m_nalUnitType;
     naluInfo.m_nuhLayerId = nalu.m_nuhLayerId;
@@ -2066,7 +2065,6 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
     naluInfo.m_POC = pcSlice->getPOC();
     xCheckMixedNalUnit(pcSlice, sps, nalu);
     m_nalUnitInfo[naluInfo.m_nuhLayerId].push_back(naluInfo);
-#endif
     SEIMessages drapSEIs = getSeisByType(m_pcPic->SEIs, SEI::DEPENDENT_RAP_INDICATION );
     if (!drapSEIs.empty())
     {
@@ -2516,7 +2514,6 @@ void DecLib::xCheckNalUnitConstraintFlags( const ConstraintInfo *cInfo, uint32_t
       "Non-conforming bitstream. no_aps_constraint_flag is equal to 1 but bitstream contains NAL unit of type APS_SUFFIX_NUT.");
   }
 }
-#if JVET_P0124_MIXED_NALU
 void DecLib::xCheckMixedNalUnit(Slice* pcSlice, SPS *sps, InputNALUnit &nalu)
 {
   if (pcSlice->getPPS()->getMixedNaluTypesInPicFlag())
@@ -2704,5 +2701,4 @@ void DecLib::xCheckMixedNalUnit(Slice* pcSlice, SPS *sps, InputNALUnit &nalu)
     CHECK(!sameNalUnitType, "mixed_nalu_types_in_pic_flag is zero, but have different nal unit types");
   }
 }
-#endif
 //! \}

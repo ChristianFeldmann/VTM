@@ -143,7 +143,6 @@ private:
     int             m_POC;
   };
   std::vector<AccessUnitPicInfo> m_accessUnitPicInfo;
-#if JVET_P0124_MIXED_NALU
   struct NalUnitInfo
   {
     NalUnitType     m_nalUnitType; ///< nal_unit_type
@@ -152,7 +151,6 @@ private:
     int             m_POC;             /// the picture order 
   };
   std::vector<NalUnitInfo> m_nalUnitInfo[MAX_VPS_LAYERS];
-#endif 
   std::vector<int> m_accessUnitApsNals;
   std::vector<int> m_accessUnitSeiTids;
 
@@ -263,9 +261,7 @@ protected:
   void      xParsePrefixSEIsForUnknownVCLNal();
 
   void  xCheckNalUnitConstraintFlags( const ConstraintInfo *cInfo, uint32_t naluType );
-#if JVET_P0124_MIXED_NALU
   void     xCheckMixedNalUnit(Slice* pcSlice, SPS *sps, InputNALUnit &nalu);
-#endif
 };// END CLASS DEFINITION DecLib
 
 

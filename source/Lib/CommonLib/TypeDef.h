@@ -55,7 +55,6 @@
 
 
 
-#define JVET_Q0371_DEBLOCKING_CLEANUP                     1 //JVET_Q0371: cleanup on deblocking across subpicture boundaries
 
 #define JVET_Q0289_BUGFIX_RECT_SLICE_FLAG                 1 //JVET-Q0289: If NumTilesInPic is equal to 1, don't signal the rect_slice_flag and infer its value to be 1.
 

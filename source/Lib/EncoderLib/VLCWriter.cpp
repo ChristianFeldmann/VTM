@@ -1135,14 +1135,10 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   {
     WRITE_UVLC(AFFINE_MRG_MAX_NUM_CANDS - pcSPS->getMaxNumAffineMergeCand(), "five_minus_max_num_subblock_merge_cand");
     WRITE_FLAG( pcSPS->getUseAffineType() ? 1 : 0,                                             "sps_affine_type_flag" );
-#if JVET_Q0444_AMVR_SIGNALLING
     if (pcSPS->getAMVREnabledFlag())
     {
-#endif
       WRITE_FLAG( pcSPS->getAffineAmvrEnabledFlag() ? 1 : 0,                                     "sps_affine_amvr_enabled_flag" );
-#if JVET_Q0444_AMVR_SIGNALLING
     }
-#endif
     WRITE_FLAG( pcSPS->getUsePROF() ? 1 : 0,                                                   "sps_affine_prof_enabled_flag" );
     if (pcSPS->getUsePROF())
     {

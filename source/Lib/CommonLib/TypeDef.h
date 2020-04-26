@@ -97,7 +97,6 @@
 
 
 
-#define JVET_Q0413_SKIP_LAST_SUBPIC_SIG                   1  //JVET-Q0413 modification 2: skip the width and height signaling of last subpicture
 
 #define JVET_Q0169_SUBPIC_LEN_CONFORM                     1 // JVET-Q0169: add bitstream conformance check on subpic length
 

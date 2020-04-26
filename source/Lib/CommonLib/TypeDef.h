@@ -129,7 +129,6 @@
 
 
 
-#define JVET_Q0155_COLOUR_ID                              1 // JVET-Q0155: move colour_plane_id from PH to SH
 
 #define JVET_Q0444_AMVR_SIGNALLING                        1 // JVET-Q0444: Conditional signaling of sps_affine_amvr_enabled_flag based on sps_amvr_enabled_flag
 

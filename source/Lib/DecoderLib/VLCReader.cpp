@@ -2638,18 +2638,6 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
     }
   }
   
-#if !JVET_Q0155_COLOUR_ID
-  // 4:4:4 colour plane ID
-  if( sps->getSeparateColourPlaneFlag() )
-  {
-    READ_CODE( 2, uiCode, "colour_plane_id" ); picHeader->setColourPlaneId( uiCode );
-    CHECK(uiCode > 2, "colour_plane_id exceeds valid range");
-  }
-  else 
-  {
-    picHeader->setColourPlaneId( 0 );
-  }
-#endif
 
   // picture output flag
   if( pps->getOutputFlagPresentFlag() )
@@ -3465,7 +3453,6 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
 #endif
   }
 
-#if JVET_Q0155_COLOUR_ID
     // 4:4:4 colour plane ID
     if( sps->getSeparateColourPlaneFlag() )
     {
@@ -3476,7 +3463,6 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
     {
       pcSlice->setColourPlaneId( 0 );
     }
-#endif
 
 
     if( pps->getRplInfoInPhFlag() )

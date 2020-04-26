@@ -2242,9 +2242,6 @@ private:
   unsigned                    m_numHorVirtualBoundaries;                                //!< number of horizontal virtual boundaries
   unsigned                    m_virtualBoundariesPosX[3];                               //!< horizontal virtual boundary positions
   unsigned                    m_virtualBoundariesPosY[3];                               //!< vertical virtual boundary positions
-#if !JVET_Q0155_COLOUR_ID
-  unsigned                    m_colourPlaneId;                                          //!< 4:4:4 colour plane ID
-#endif
   bool                        m_picOutputFlag;                                          //!< picture output flag
   const ReferencePictureList
     *m_pRPL0;   //!< pointer to RPL for L0, either in the SPS or the local RPS in the picture header
@@ -2353,10 +2350,6 @@ public:
   unsigned                    getVirtualBoundariesPosX(unsigned idx) const              { CHECK( idx >= 3, "boundary index exceeds valid range" ); return m_virtualBoundariesPosX[idx];}
   void                        setVirtualBoundariesPosY(unsigned u, unsigned idx)        { CHECK( idx >= 3, "boundary index exceeds valid range" ); m_virtualBoundariesPosY[idx] = u;   }
   unsigned                    getVirtualBoundariesPosY(unsigned idx) const              { CHECK( idx >= 3, "boundary index exceeds valid range" ); return m_virtualBoundariesPosY[idx];}
-#if !JVET_Q0155_COLOUR_ID
-  void                        setColourPlaneId(unsigned u)                              { m_colourPlaneId = u;                                                                         }
-  unsigned                    getColourPlaneId() const                                  { return m_colourPlaneId;                                                                      }
-#endif
   void                        setPicOutputFlag( bool b )                                { m_picOutputFlag = b;                                                                         }
   bool                        getPicOutputFlag() const                                  { return m_picOutputFlag;                                                                      }
   void                        setRPL( bool b, const ReferencePictureList *pcRPL)        { if(b==1) { m_pRPL1 = pcRPL; } else { m_pRPL0 = pcRPL; }                                      }
@@ -2549,9 +2542,7 @@ private:
   ReferencePictureList        m_localRPL1;            //< RPL for L1 when present in slice header
   int                         m_rpl0Idx;              //< index of used RPL in the SPS or -1 for local RPL in the slice header
   int                         m_rpl1Idx;              //< index of used RPL in the SPS or -1 for local RPL in the slice header
-#if JVET_Q0155_COLOUR_ID
   int                        m_colourPlaneId;                         //!< 4:4:4 colour plane ID
-#endif
   NalUnitType                m_eNalUnitType;         ///< Nal unit type for the slice
 #if JVET_Q0775_PH_IN_SH
   bool                       m_pictureHeaderInSliceHeader;
@@ -2813,10 +2804,8 @@ public:
   bool                        isPocRestrictedByDRAP( int poc, bool precedingDRAPinDecodingOrder );
   bool                        isPOCInRefPicList( const ReferencePictureList *rpl, int poc );
   void                        checkConformanceForDRAP( uint32_t temporalId );
-#if JVET_Q0155_COLOUR_ID
   void                        setColourPlaneId( int id )                             { m_colourPlaneId = id;                                         }
   int                         getColourPlaneId() const                               { return m_colourPlaneId;                                       }
-#endif
 
   void                        setLambdas( const double lambdas[MAX_NUM_COMPONENT] )  { for (int component = 0; component < MAX_NUM_COMPONENT; component++) m_lambdas[component] = lambdas[component]; }
   const double*               getLambdas() const                                     { return m_lambdas;                                             }

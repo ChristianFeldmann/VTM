@@ -178,7 +178,6 @@ private:
   NalUnitType   m_pictureType;
 
 public:
-#if JVET_O1143_MV_ACROSS_SUBPIC_BOUNDARY  
   bool m_isSubPicBorderSaved;
 
   PelStorage m_bufSubPicAbove;
@@ -192,7 +191,6 @@ public:
 
   bool getSubPicSaved()          { return m_isSubPicBorderSaved; }
   void setSubPicSaved(bool bVal) { m_isSubPicBorderSaved = bVal; }
-#endif
   bool m_bIsBorderExtended;
   bool referenced;
   bool reconstructed;

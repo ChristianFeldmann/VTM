@@ -1465,7 +1465,6 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
       cs.motionLut.lutIbc.resize(0);
     }
 
-#if JVET_O1143_MV_ACROSS_SUBPIC_BOUNDARY
     const SubPic &curSubPic = pcSlice->getPPS()->getSubPicFromPos(pos);
     // padding/restore at slice level
     if (pcSlice->getPPS()->getNumSubPics() >= 2 && curSubPic.getTreatedAsPicFlag() && ctuIdx == 0)
@@ -1490,7 +1489,6 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
         }
       }
     }
-#endif
     if (cs.pps->ctuIsTileColBd( ctuXPosInCtus ) && cs.pps->ctuIsTileRowBd( ctuYPosInCtus ))
     {
       pCABACWriter->initCtxModels( *pcSlice );
@@ -1683,7 +1681,6 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
 
     m_uiPicTotalBits += actualBits;
     m_uiPicDist       = cs.dist;
-#if JVET_O1143_MV_ACROSS_SUBPIC_BOUNDARY
     // for last Ctu in the slice    
     if (pcSlice->getPPS()->getNumSubPics() >= 2 && curSubPic.getTreatedAsPicFlag() && ctuIdx == (pcSlice->getNumCtuInSlice() - 1))
     {
@@ -1707,7 +1704,6 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
         }
       }
     }
-#endif
   }
 
   // this is wpp exclusive section

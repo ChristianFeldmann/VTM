@@ -332,14 +332,10 @@ void HLSWriter::codePPS( const PPS* pcPPS )
     if (pcPPS->getRectSliceFlag() & !(pcPPS->getSingleSlicePerSubPicFlag()))
     {      
       WRITE_UVLC( pcPPS->getNumSlicesInPic( ) - 1, "num_slices_in_pic_minus1" );
-#if JVET_Q0218_PROPOSAL1
       if ((pcPPS->getNumSlicesInPic() - 1) > 0)
       {
         WRITE_FLAG(pcPPS->getTileIdxDeltaPresentFlag() ? 1 : 0, "tile_idx_delta_present_flag");
       }
-#else
-      WRITE_FLAG(pcPPS->getTileIdxDeltaPresentFlag() ? 1 : 0, "tile_idx_delta_present_flag");
-#endif
       
       // write rectangular slice parameters
       for( int i = 0; i < pcPPS->getNumSlicesInPic()-1; i++ )

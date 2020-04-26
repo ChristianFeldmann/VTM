@@ -169,7 +169,6 @@
 
 
 
-#define JVET_Q0218_PROPOSAL1                              1 // JVET-Q0218_PROPOSAL1: Conditionally signal tile_idx_delta_present_flag
 
 #define JVET_Q0219_SIGNAL_ALT_BUFFER_DELAY_PARMS 1   // JVET-Q0219: Signal alternative buffering delay parameters 
 

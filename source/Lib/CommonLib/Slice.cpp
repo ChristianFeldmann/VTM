@@ -2014,12 +2014,10 @@ VPS::VPS()
   , m_vpsGeneralHrdParamsPresentFlag(false)
   , m_vpsSublayerCpbParamsPresentFlag(false)
   , m_numOlsHrdParamsMinus1(0)
-#if JVET_Q0814_DPB
   , m_totalNumOLSs( 0 )
   , m_numDpbParams( 0 )
   , m_sublayerDpbParamsPresentFlag( false )
   , m_targetOlsIdx( -1 )
-#endif
 {
   for (int i = 0; i < MAX_VPS_LAYERS; i++)
   {
@@ -2053,7 +2051,6 @@ VPS::~VPS()
 {
 }
 
-#if JVET_Q0814_DPB
 void VPS::deriveOutputLayerSets()
 {
   if( m_uiMaxLayers == 1 )
@@ -2224,7 +2221,6 @@ void VPS::deriveTargetOutputLayerSet( int targetOlsIdx )
     m_targetLayerIdSet.push_back( m_layerIdInOls[m_targetOlsIdx][i] );
   }
 }
-#endif
 
 // ------------------------------------------------------------------------------------------------
 // Picture Header

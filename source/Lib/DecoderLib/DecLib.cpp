@@ -276,7 +276,6 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
             uint32_t maxNrSublayers = activeSPS->getMaxTLayers();
             uint32_t numReorderPicsHighestTid = activeSPS->getNumReorderPics(maxNrSublayers-1);
             uint32_t maxDecPicBufferingHighestTid =  activeSPS->getMaxDecPicBuffering(maxNrSublayers-1);
-#if JVET_Q0814_DPB
             const VPS* referredVPS = pcListPic->front()->cs->vps;
 
             if( referredVPS != nullptr && referredVPS->m_numLayersInOls[referredVPS->m_targetOlsIdx] > 1 )
@@ -284,7 +283,6 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
               numReorderPicsHighestTid = referredVPS->getNumReorderPics( maxNrSublayers - 1 );
               maxDecPicBufferingHighestTid = referredVPS->getMaxDecPicBuffering( maxNrSublayers - 1 );
             }
-#endif
 
             while (iterPic != pcListPic->end())
             {
@@ -540,11 +538,7 @@ void DecLib::deletePicBuffer ( )
 Picture* DecLib::xGetNewPicBuffer( const SPS &sps, const PPS &pps, const uint32_t temporalLayer, const int layerId )
 {
   Picture * pcPic = nullptr;
-#if JVET_Q0814_DPB
   m_iMaxRefPicNum = ( m_vps == nullptr || m_vps->m_numLayersInOls[m_vps->m_targetOlsIdx] == 1 ) ? sps.getMaxDecPicBuffering( temporalLayer ) : m_vps->getMaxDecPicBuffering( temporalLayer );     // m_uiMaxDecPicBuffering has the space for the picture currently being decoded
-#else
-  m_iMaxRefPicNum = sps.getMaxDecPicBuffering(temporalLayer);     // m_uiMaxDecPicBuffering has the space for the picture currently being decoded
-#endif
   if (m_cListPic.size() < (uint32_t)m_iMaxRefPicNum)
   {
     pcPic = new Picture();
@@ -1387,9 +1381,7 @@ void DecLib::xCheckParameterSetConstraints(const int layerId)
   Slice *slice = m_pcPic->slices[m_uiSliceSegmentIdx];
   const SPS *sps = slice->getSPS();
   const PPS *pps = slice->getPPS();
-#if JVET_Q0814_DPB
   const VPS *vps = slice->getVPS();
-#endif
   if (((vps!=nullptr)&&(vps->getVPSGeneralHrdParamsPresentFlag()))||(sps->getGeneralHrdParametersPresentFlag()))
   {
     if (((vps != nullptr) && (vps->getVPSGeneralHrdParamsPresentFlag())) && (sps->getGeneralHrdParametersPresentFlag()))
@@ -1448,13 +1440,11 @@ void DecLib::xCheckParameterSetConstraints(const int layerId)
     CHECK( sps->getWrapAroundEnabledFlag(), "Wraparound shall be disabled when the value of ( CtbSizeY / MinCbSizeY + 1) is less than or equal to ( pic_width_in_luma_samples / MinCbSizeY - 1 )" );
   }
 
-#if JVET_Q0814_DPB
   if( vps != nullptr && vps->m_numOutputLayersInOls[vps->m_targetOlsIdx] > 1 )
   {
     CHECK( sps->getMaxPicWidthInLumaSamples() > vps->getOlsDpbPicSize( vps->m_targetOlsIdx ).width, "pic_width_max_in_luma_samples shall be less than or equal to the value of ols_dpb_pic_width[ i ]" );
     CHECK( sps->getMaxPicHeightInLumaSamples() > vps->getOlsDpbPicSize( vps->m_targetOlsIdx ).height, "pic_height_max_in_luma_samples shall be less than or equal to the value of ols_dpb_pic_height[ i ]" );
   }
-#endif
 
   static std::unordered_map<int, int> m_layerChromaFormat;
   static std::unordered_map<int, int> m_layerBitDepth;

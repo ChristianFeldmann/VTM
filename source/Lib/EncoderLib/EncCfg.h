@@ -693,9 +693,6 @@ protected:
 #endif
   CostMode  m_costMode;                                       ///< The cost function to use, primarily when considering lossless coding.
 
-#if !JVET_Q0814_DPB
-  VPS       m_cVPS;
-#endif
 
 #if JVET_Q0117_PARAMETER_SETS_CLEANUP
   DCI       m_dci;
@@ -1779,10 +1776,6 @@ public:
   CostMode     getCostMode( ) const                                  { return m_costMode; }
   void         setCostMode(CostMode m )                              { m_costMode = m; }
 
-#if !JVET_Q0814_DPB
-  void         setVPS(VPS *p)                                        { m_cVPS = *p; }
-  VPS *        getVPS()                                              { return &m_cVPS; }
-#endif
 
 
 #if JVET_Q0117_PARAMETER_SETS_CLEANUP

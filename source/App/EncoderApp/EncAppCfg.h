@@ -716,9 +716,7 @@ protected:
   std::map<int, double> m_gopBasedTemporalFilterStrengths;             ///< Filter strength per frame for the GOP-based Temporal Filter
 
   int         m_maxLayers;
-#if JVET_Q0814_DPB
   int         m_targetOlsIdx;
-#endif
 
   int         m_layerId[MAX_VPS_LAYERS];
   int         m_layerIdx;

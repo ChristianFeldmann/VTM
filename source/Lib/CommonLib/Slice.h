@@ -71,14 +71,12 @@ typedef std::list<Picture*> PicList;
 // Class definition
 // ====================================================================================================================
 
-#if JVET_Q0814_DPB
 struct DpbParameters
 {
   int m_maxDecPicBuffering[MAX_TLAYER] = { 0 };
   int m_numReorderPics[MAX_TLAYER] = { 0 };
   int m_maxLatencyIncreasePlus1[MAX_TLAYER] = { 0 };
 };
-#endif
 
 class ReferencePictureList
 {
@@ -943,7 +941,6 @@ private:
   uint32_t              m_hrdMaxTid[MAX_NUM_OLSS];
   uint32_t              m_olsHrdIdx[MAX_NUM_OLSS];
   GeneralHrdParams      m_generalHrdParams;
-#if JVET_Q0814_DPB
   std::vector<Size>             m_olsDpbPicSize;
   std::vector<int>              m_olsDpbParamsIdx;
   std::vector<std::vector<int>> m_outputLayerIdInOls;
@@ -960,10 +957,6 @@ public:
   std::vector<int>              m_numOutputLayersInOls;
   std::vector<int>              m_numLayersInOls;
   std::vector<std::vector<int>> m_layerIdInOls;
-#elif JVET_P0288_PIC_OUTPUT
-public:
-  int                   m_targetOlsIdx;
-#endif
 
 public:
                     VPS();
@@ -1053,7 +1046,6 @@ public:
   void              setTargetOlsIdx(uint32_t t) { m_targetOlsIdx = t; }
 #endif
 
-#if JVET_Q0814_DPB
   int               getMaxDecPicBuffering( int temporalId ) const        { return m_dpbParameters[m_olsDpbParamsIdx[m_targetOlsIdx]].m_maxDecPicBuffering[temporalId]; }
   int               getNumReorderPics( int temporalId ) const            { return m_dpbParameters[m_olsDpbParamsIdx[m_targetOlsIdx]].m_numReorderPics[temporalId]; }
   int               getTotalNumOLSs() const                              { return m_totalNumOLSs; }
@@ -1067,7 +1059,6 @@ public:
   
   void              deriveOutputLayerSets();
   void              deriveTargetOutputLayerSet( int targetOlsIdx );
-#endif
 
   void              setNumLayersInOls(int olsIdx, int numLayers)         { m_numLayersInOls[olsIdx]  = numLayers; }
   int               getNumLayersInOls(int olsIdx)      const             { return m_numLayersInOls[olsIdx]; }

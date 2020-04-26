@@ -1470,7 +1470,6 @@ void HLSWriter::codeVPS(const VPS* pcVPS)
       WRITE_CODE(pcVPS->getOlsPtlIdx(i), 8, "ols_ptl_idx");
   }
 
-#if JVET_Q0814_DPB
   if( !pcVPS->getAllIndependentLayersFlag() )
   {
     WRITE_UVLC( pcVPS->m_numDpbParams, "vps_num_dpb_params" );
@@ -1519,7 +1518,6 @@ void HLSWriter::codeVPS(const VPS* pcVPS)
       }
     }
   }
-#endif
   if (!pcVPS->getEachLayerIsAnOlsFlag())
   {
     WRITE_FLAG(pcVPS->getVPSGeneralHrdParamsPresentFlag(), "vps_general_hrd_params_present_flag");

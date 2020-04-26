@@ -2267,7 +2267,6 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
       pcVPS->setOlsPtlIdx(i, 0);
   }
 
-#if JVET_Q0814_DPB
   if( !pcVPS->getAllIndependentLayersFlag() )
   {
     READ_UVLC( uiCode, "vps_num_dpb_params" ); pcVPS->m_numDpbParams = uiCode;
@@ -2333,7 +2332,6 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
       }
     }
   }
-#endif
   if (!pcVPS->getEachLayerIsAnOlsFlag())
   {
     READ_FLAG(uiCode, "vps_general_hrd_params_present_flag");  pcVPS->setVPSGeneralHrdParamsPresentFlag(uiCode);

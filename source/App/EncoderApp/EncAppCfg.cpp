@@ -1374,9 +1374,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ( "SwitchPocPeriod",                                m_switchPocPeriod,                            0, "Switch POC period for RPR" )
   ( "UpscaledOutput",                                 m_upscaledOutput,                             0, "Output upscaled (2), decoded but in full resolution buffer (1) or decoded cropped (0, default) picture for RPR" )
   ( "MaxLayers",                                      m_maxLayers,                                  1, "Max number of layers" )
-#if JVET_Q0814_DPB
   ( "TargetOutputLayerSet,p",                         m_targetOlsIdx,                              -1, "Target output layer set index" )
-#endif
   ;
   opts.addOptions()
   ( "MaxSublayers",                                   m_maxSublayers,                               1, "Max number of Sublayers")

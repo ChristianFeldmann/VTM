@@ -63,9 +63,7 @@ public:
     FRAME_PACKING                        = 45,
     DECODING_UNIT_INFO                   = 130,
     DECODED_PICTURE_HASH                 = 132,
-#if JVET_P0190_SCALABLE_NESTING_SEI
     SCALABLE_NESTING                     = 133,
-#endif
     MASTERING_DISPLAY_COLOUR_VOLUME      = 137,
     DEPENDENT_RAP_INDICATION             = 145,
     EQUIRECTANGULAR_PROJECTION           = 150,
@@ -467,7 +465,6 @@ SEIMessages extractSeisByType(SEIMessages &seiList, SEI::PayloadType seiType);
 /// delete list of SEI messages (freeing the referenced objects)
 void deleteSEIs (SEIMessages &seiList);
 
-#if JVET_P0190_SCALABLE_NESTING_SEI
 class SEIScalableNesting : public SEI
 {
 public:
@@ -490,7 +487,6 @@ public:
 
   SEIMessages m_nestedSEIs;
 };
-#endif
 
 
 #if ENABLE_TRACING

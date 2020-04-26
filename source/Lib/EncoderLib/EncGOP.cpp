@@ -518,7 +518,6 @@ void EncGOP::xWriteLeadingSEIOrdered (SEIMessages& seiMessages, SEIMessages& duI
     xClearSEIs(currentMessages, !testWrite);
   }
 
-#if JVET_P0190_SCALABLE_NESTING_SEI
   if (m_pcCfg->getScalableNestingSEIEnabled())
   {
     // Scalable nesting SEI must always be the following DU info
@@ -526,7 +525,6 @@ void EncGOP::xWriteLeadingSEIOrdered (SEIMessages& seiMessages, SEIMessages& duI
     xWriteSEISeparately(NAL_UNIT_PREFIX_SEI, currentMessages, accessUnit, itNalu, temporalId, sps);
     xClearSEIs(currentMessages, !testWrite);
   }
-#endif
 
 
   // And finally everything else one by one
@@ -725,14 +723,12 @@ void EncGOP::xCreatePerPictureSEIMessages (int picInGOP, SEIMessages& seiMessage
     seiMessages.push_back(bufferingPeriodSEI);
     m_bufferingPeriodSEIPresentInAU = true;
 
-#if JVET_P0190_SCALABLE_NESTING_SEI
     if (m_pcCfg->getScalableNestingSEIEnabled())
     {
       SEIBufferingPeriod *bufferingPeriodSEIcopy = new SEIBufferingPeriod();
       bufferingPeriodSEI->copyTo(*bufferingPeriodSEIcopy);
       nestedSeiMessages.push_back(bufferingPeriodSEIcopy);
     }
-#endif
 
   }
 
@@ -745,7 +741,6 @@ void EncGOP::xCreatePerPictureSEIMessages (int picInGOP, SEIMessages& seiMessage
 
 }
 
-#if JVET_P0190_SCALABLE_NESTING_SEI
 void EncGOP::xCreateScalableNestingSEI(SEIMessages& seiMessages, SEIMessages& nestedSeiMessages)
 {
   SEIMessages tmpMessages;
@@ -760,7 +755,6 @@ void EncGOP::xCreateScalableNestingSEI(SEIMessages& seiMessages, SEIMessages& ne
     tmpMessages.clear();
   }
 }
-#endif
 
 
 void EncGOP::xCreateFrameFieldInfoSEI  (SEIMessages& seiMessages, Slice *slice, bool isField)
@@ -1005,14 +999,12 @@ void EncGOP::xCreatePictureTimingSEI  (int IRAPGOPid, SEIMessages& seiMessages, 
     {
       seiMessages.push_back(pictureTimingSEI);
 
-#if JVET_P0190_SCALABLE_NESTING_SEI
       if (m_pcCfg->getScalableNestingSEIEnabled()) 
       {
         SEIPictureTiming *pictureTimingSEIcopy = new SEIPictureTiming();
         pictureTimingSEI->copyTo(*pictureTimingSEIcopy);
         nestedSeiMessages.push_back(pictureTimingSEIcopy);
       }
-#endif
     }
 
     if( m_pcCfg->getDecodingUnitInfoSEIEnabled() && hrd->getGeneralDecodingUnitHrdParamsPresentFlag() )
@@ -3266,12 +3258,10 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       xCreateFrameFieldInfoSEI( leadingSeiMessages, pcSlice, isField );
       xCreatePictureTimingSEI( m_pcCfg->getEfficientFieldIRAPEnabled() ? effFieldIRAPMap.GetIRAPGOPid() : 0, leadingSeiMessages, nestedSeiMessages, duInfoSeiMessages, pcSlice, isField, duData );
 
-#if JVET_P0190_SCALABLE_NESTING_SEI
       if (m_pcCfg->getScalableNestingSEIEnabled())
       {
         xCreateScalableNestingSEI(leadingSeiMessages, nestedSeiMessages);
       }
-#endif
 
       xWriteLeadingSEIMessages( leadingSeiMessages, duInfoSeiMessages, accessUnit, pcSlice->getTLayer(), pcSlice->getSPS(), duData );
       xWriteDuSEIMessages( duInfoSeiMessages, accessUnit, pcSlice->getTLayer(), pcSlice->getSPS(), duData );

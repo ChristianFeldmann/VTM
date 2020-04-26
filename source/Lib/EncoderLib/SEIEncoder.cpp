@@ -371,7 +371,6 @@ void SEIEncoder::initSEISampleAspectRatioInfo(SEISampleAspectRatioInfo* seiSampl
   }
 }
 
-#if JVET_P0190_SCALABLE_NESTING_SEI
 //! initialize scalable nesting SEI message.
 //! Note: The SEI message structures input into this function will become part of the scalable nesting SEI and will be
 //!       automatically freed, when the nesting SEI is disposed.
@@ -407,7 +406,6 @@ void SEIEncoder::initSEIScalableNesting(SEIScalableNesting *scalableNestingSEI, 
     scalableNestingSEI->m_nestedSEIs.push_back((*it));
   }
 }
-#endif
 
 
 //! calculate hashes for entire reconstructed picture

@@ -185,7 +185,6 @@ typedef std::pair<int, int>  TrCost;
 #endif
 // clang-format on
 
-#define JVET_P0190_SCALABLE_NESTING_SEI                   1 // JVET-P0190 scalable nesting sei message
 
 #define JVET_Q0222_SUBPICTURE_SIGNALLING                  1 // JVET-Q0222_Proposal1: Inference rule to signal horizontal and vertical position of the top left CTU of 0-th subpicture
 

@@ -54,11 +54,9 @@ void SEIWriter::xWriteSEIpayloadData(OutputBitstream &bs, const SEI& sei, const 
     CHECK (bp == nullptr, "Buffering Period need to be initialized in HRD to allow writing of Decoding Unit Information SEI");
     xWriteSEIDecodingUnitInfo(*static_cast<const SEIDecodingUnitInfo*>(& sei), *bp, temporalId);
     break;
-#if JVET_P0190_SCALABLE_NESTING_SEI
   case SEI::SCALABLE_NESTING:
     xWriteSEIScalableNesting(bs, *static_cast<const SEIScalableNesting*>(&sei), sps);
     break;
-#endif
   case SEI::DECODED_PICTURE_HASH:
     xWriteSEIDecodedPictureHash(*static_cast<const SEIDecodedPictureHash*>(&sei));
     break;
@@ -437,7 +435,6 @@ void SEIWriter::xWriteSEIDependentRAPIndication(const SEIDependentRAPIndication&
   // intentionally empty
 }
 
-#if JVET_P0190_SCALABLE_NESTING_SEI
 void SEIWriter::xWriteSEIScalableNesting(OutputBitstream& bs, const SEIScalableNesting& sei, const SPS *sps)
 {
   WRITE_FLAG(sei.m_nestingOlsFlag, "nesting_ols_flag");
@@ -472,7 +469,6 @@ void SEIWriter::xWriteSEIScalableNesting(OutputBitstream& bs, const SEIScalableN
   HRD hrd;
   writeSEImessages(bs, sei.m_nestedSEIs, sps, hrd, true, 0);
 }
-#endif
 
 void SEIWriter::xWriteSEIFramePacking(const SEIFramePacking& sei)
 {

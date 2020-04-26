@@ -600,9 +600,7 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setFrameFieldInfoSEIEnabled                          ( m_frameFieldInfoSEIEnabled );
    m_cEncLib.setBpDeltasGOPStructure                             ( m_bpDeltasGOPStructure );
   m_cEncLib.setDecodingUnitInfoSEIEnabled                        ( m_decodingUnitInfoSEIEnabled );
-#if JVET_P0190_SCALABLE_NESTING_SEI
   m_cEncLib.setScalableNestingSEIEnabled                         ( m_scalableNestingSEIEnabled );
-#endif
   m_cEncLib.setHrdParametersPresentFlag                          ( m_hrdParametersPresentFlag );
   m_cEncLib.setFramePackingArrangementSEIEnabled                 ( m_framePackingSEIEnabled );
   m_cEncLib.setFramePackingArrangementSEIType                    ( m_framePackingSEIType );

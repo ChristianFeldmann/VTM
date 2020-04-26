@@ -500,9 +500,7 @@ protected:
   bool      m_bpDeltasGOPStructure;
   bool      m_decodingUnitInfoSEIEnabled;
 
-#if JVET_P0190_SCALABLE_NESTING_SEI
   bool      m_scalableNestingSEIEnabled;
-#endif
 
   bool      m_erpSEIEnabled;
   bool      m_erpSEICancelFlag;
@@ -1414,10 +1412,8 @@ public:
   bool  getBpDeltasGOPStructure() const                              { return m_bpDeltasGOPStructure; }
   void  setDecodingUnitInfoSEIEnabled(bool b)                        { m_decodingUnitInfoSEIEnabled = b;    }
   bool  getDecodingUnitInfoSEIEnabled() const                        { return m_decodingUnitInfoSEIEnabled; }
-#if JVET_P0190_SCALABLE_NESTING_SEI
   void  setScalableNestingSEIEnabled(bool b)                         { m_scalableNestingSEIEnabled = b; }
   bool  getScalableNestingSEIEnabled() const                         { return m_scalableNestingSEIEnabled; }
-#endif
 
   void  setErpSEIEnabled(bool b)                                     { m_erpSEIEnabled = b; }
   bool  getErpSEIEnabled()                                           { return m_erpSEIEnabled; }

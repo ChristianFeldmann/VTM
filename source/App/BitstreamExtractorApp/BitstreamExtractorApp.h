@@ -49,9 +49,7 @@
 #include "VLCReader.h"
 #include "VLCWriter.h"
 
-#if JVET_P0118_OLS_EXTRACTION
 #include "SEIread.h"
-#endif
 
 class BitstreamExtractorApp : public BitstreamExtractorAppCfg
 {
@@ -84,10 +82,8 @@ protected:
   ParameterSetManager   m_parameterSetManager;
   HLSyntaxReader        m_hlSynaxReader;
   HLSWriter             m_hlSyntaxWriter;
-#if JVET_P0118_OLS_EXTRACTION
   SEIReader             m_seiReader;
   int                   m_vpsId;
-#endif
 
 #if JVET_Q0397_SUB_PIC_EXTRACT
   PicHeader             m_picHeader;

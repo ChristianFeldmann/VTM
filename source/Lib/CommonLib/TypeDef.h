@@ -167,7 +167,6 @@
 #define APPLY_SBT_SL_ON_MTS                               1 // apply save & load fast algorithm on inter MTS when SBT is on
 
 
-#define JVET_P0118_OLS_EXTRACTION                         1  // OLS based sub-bitstream extraction
 
 #define JVET_Q0397_SUB_PIC_EXTRACT                        1  // subpicture extraction
 

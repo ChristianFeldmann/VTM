@@ -2659,11 +2659,7 @@ bool InterPrediction::xPredInterBlkRPR( const std::pair<int, int>& scalingRatio,
       refBuf = refPic->getRecoBuf( CompArea( compID, chFmt, offset, Size( 1, refHeight ) ), wrapRef );
       Pel* tempBuf = buffer + col;
 
-#if JVET_Q0449_RPR_NO_SMOOTHING
       m_if.filterHor( compID, (Pel*)refBuf.buf - ( ( vFilterSize >> 1 ) - 1 ) * refBuf.stride, refBuf.stride, tempBuf, tmpStride, 1, refHeight + vFilterSize - 1 + extSize, xFrac, false, chFmt, clpRng, xFilter, false, useAltHpelIf && scalingRatio.first == 1 << SCALE_RATIO_BITS );
-#else
-      m_if.filterHor( compID, (Pel*)refBuf.buf - ( ( vFilterSize >> 1 ) - 1 ) * refBuf.stride, refBuf.stride, tempBuf, tmpStride, 1, refHeight + vFilterSize - 1 + extSize, xFrac, false, chFmt, clpRng, xFilter, false, useAltHpelIf );
-#endif
     }
 
     for( row = 0; row < height; row++ )
@@ -2678,11 +2674,7 @@ bool InterPrediction::xPredInterBlkRPR( const std::pair<int, int>& scalingRatio,
       Pel* tempBuf = buffer + ( yInt - yInt0 ) * tmpStride;
 
       JVET_J0090_SET_CACHE_ENABLE( false );
-#if JVET_Q0449_RPR_NO_SMOOTHING
       m_if.filterVer( compID, tempBuf + ( ( vFilterSize >> 1 ) - 1 ) * tmpStride, tmpStride, dst + row * dstStride, dstStride, width, 1, yFrac, false, rndRes, chFmt, clpRng, yFilter, false, useAltHpelIf && scalingRatio.second == 1 << SCALE_RATIO_BITS );
-#else
-      m_if.filterVer( compID, tempBuf + ( ( vFilterSize >> 1 ) - 1 ) * tmpStride, tmpStride, dst + row * dstStride, dstStride, width, 1, yFrac, false, rndRes, chFmt, clpRng, yFilter, false, useAltHpelIf );
-#endif
       JVET_J0090_SET_CACHE_ENABLE( true );
     }
   }

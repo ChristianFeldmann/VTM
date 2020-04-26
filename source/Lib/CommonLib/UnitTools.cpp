@@ -3966,11 +3966,7 @@ bool CU::bdpcmAllowed( const CodingUnit& cu, const ComponentID compID )
        if (isLuma(compID))
            bdpcmAllowed &= (cu.lwidth() <= transformSkipMaxSize && cu.lheight() <= transformSkipMaxSize);
        else
-#if JVET_Q0353_ACT_SW_FIX
            bdpcmAllowed &= (cu.chromaSize().width <= transformSkipMaxSize && cu.chromaSize().height <= transformSkipMaxSize) && !cu.colorTransform;
-#else
-           bdpcmAllowed &= (cu.chromaSize().width <= transformSkipMaxSize && cu.chromaSize().height <= transformSkipMaxSize);
-#endif
   return bdpcmAllowed;
 }
 

@@ -120,7 +120,6 @@
 
 
 
-#define JVET_Q0353_ACT_SW_FIX                             1 // JVET-Q0353: Bug fix of ACT 
 
 #define JVET_P0288_PIC_OUTPUT                             1 // JVET-P0288: Set the value of PictureOutputFlag
 

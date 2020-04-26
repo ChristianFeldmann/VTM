@@ -908,7 +908,6 @@ void HLSWriter::codeOlsHrdParameters(const GeneralHrdParams * generalHrd, const 
   }
 }
 
-#if JVET_P0117_PTL_SCALABILITY
 void HLSWriter::dpb_parameters(int maxSubLayersMinus1, bool subLayerInfoFlag, const SPS *pcSPS)
 {
   for (uint32_t i = (subLayerInfoFlag ? 0 : maxSubLayersMinus1); i <= maxSubLayersMinus1; i++)
@@ -918,7 +917,6 @@ void HLSWriter::dpb_parameters(int maxSubLayersMinus1, bool subLayerInfoFlag, co
     WRITE_UVLC(pcSPS->getMaxLatencyIncreasePlus1(i),  "max_latency_increase_plus1[i]");
   }
 }
-#endif
 
 void HLSWriter::codeSPS( const SPS* pcSPS )
 {
@@ -934,25 +932,17 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   CHECK(pcSPS->getMaxTLayers() == 0, "Maximum number of temporal sub-layers is '0'");
 
   WRITE_CODE(pcSPS->getMaxTLayers() - 1, 3, "sps_max_sub_layers_minus1");
-#if JVET_P0117_PTL_SCALABILITY
   WRITE_CODE(0,                          4, "sps_reserved_zero_4bits");
   WRITE_FLAG(pcSPS->getPtlDpbHrdParamsPresentFlag(), "sps_ptl_dpb_hrd_params_present_flag");
-#else
-  WRITE_CODE(0,                          5, "sps_reserved_zero_5bits");
-#endif
 
-#if JVET_P0117_PTL_SCALABILITY
   if (pcSPS->getPtlDpbHrdParamsPresentFlag())
   {
-#endif
 #if JVET_Q0786_PTL_only
     codeProfileTierLevel(pcSPS->getProfileTierLevel(), true, pcSPS->getMaxTLayers() - 1);
 #else
     codeProfileTierLevel(pcSPS->getProfileTierLevel(), pcSPS->getMaxTLayers() - 1);
 #endif
-#if JVET_P0117_PTL_SCALABILITY
   }
-#endif
   
   WRITE_FLAG(pcSPS->getGDREnabledFlag(), "gdr_enabled_flag");
 #if !JVET_Q0117_PARAMETER_SETS_CLEANUP
@@ -1148,31 +1138,12 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   // extra_sh_bits_struct( num_extra_sh_bits_bytes )
 #endif
 
-#if JVET_P0117_PTL_SCALABILITY
   if (pcSPS->getMaxTLayers() - 1 > 0)
     WRITE_FLAG(pcSPS->getSubLayerDpbParamsFlag(), "sps_sublayer_dpb_params_flag");
   if (pcSPS->getPtlDpbHrdParamsPresentFlag())
   {
     dpb_parameters(pcSPS->getMaxTLayers() - 1, pcSPS->getSubLayerDpbParamsFlag(), pcSPS);
   }
-#else
-  // KJS: Marakech decision: sub-layers added back
-  const bool subLayerOrderingInfoPresentFlag = 1;
-  if (pcSPS->getMaxTLayers() > 1)
-  {
-    WRITE_FLAG(subLayerOrderingInfoPresentFlag,       "sps_sub_layer_ordering_info_present_flag");
-  }
-  for(uint32_t i=0; i <= pcSPS->getMaxTLayers()-1; i++)
-  {
-    WRITE_UVLC( pcSPS->getMaxDecPicBuffering(i) - 1,       "sps_max_dec_pic_buffering_minus1[i]" );
-    WRITE_UVLC( pcSPS->getNumReorderPics(i),               "sps_max_num_reorder_pics[i]" );
-    WRITE_UVLC( pcSPS->getMaxLatencyIncreasePlus1(i),      "sps_max_latency_increase_plus1[i]" );
-    if (!subLayerOrderingInfoPresentFlag)
-    {
-      break;
-    }
-  }
-#endif
   CHECK( pcSPS->getMaxCUWidth() != pcSPS->getMaxCUHeight(),                          "Rectangular CTUs not supported" );
   WRITE_FLAG(pcSPS->getLongTermRefsPresent() ? 1 : 0, "long_term_ref_pics_flag");
   WRITE_FLAG( pcSPS->getInterLayerPresentFlag() ? 1 : 0, "inter_layer_ref_pics_present_flag" );
@@ -1498,10 +1469,8 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
       }
     }
   }
-#if JVET_P0117_PTL_SCALABILITY
   if (pcSPS->getPtlDpbHrdParamsPresentFlag())
   {
-#endif
   WRITE_FLAG(pcSPS->getGeneralHrdParametersPresentFlag(), "sps_general_hrd_parameters_present_flag");
   if (pcSPS->getGeneralHrdParametersPresentFlag())
   {
@@ -1513,9 +1482,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
     uint32_t firstSubLayer = pcSPS->getSubLayerParametersPresentFlag() ? 0 : (pcSPS->getMaxTLayers() - 1);
     codeOlsHrdParameters(pcSPS->getGeneralHrdParameters(), pcSPS->getOlsHrdParameters(), firstSubLayer, pcSPS->getMaxTLayers() - 1);
   }
-#if JVET_P0117_PTL_SCALABILITY
   }
-#endif
 
 #if JVET_Q0042_VUI
   WRITE_FLAG(pcSPS->getFieldSeqFlag(),                          "field_seq_flag");

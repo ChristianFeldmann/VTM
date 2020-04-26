@@ -1390,7 +1390,6 @@ void HLSyntaxReader::parseOlsHrdParameters(GeneralHrdParams * generalHrd, OlsHrd
   }
 }
 
-#if JVET_P0117_PTL_SCALABILITY
 void HLSyntaxReader::dpb_parameters(int maxSubLayersMinus1, bool subLayerInfoFlag, SPS *pcSPS)
 {
   uint32_t code;
@@ -1404,7 +1403,6 @@ void HLSyntaxReader::dpb_parameters(int maxSubLayersMinus1, bool subLayerInfoFla
     pcSPS->setMaxLatencyIncreasePlus1(code, i);
   }
 }
-#endif
 
 #if JVET_Q0400_EXTRA_BITS
 void HLSyntaxReader::parseExtraPHBitsStruct( SPS *sps, int numBytes )
@@ -1454,19 +1452,12 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_CODE( 4,  uiCode, "sps_video_parameter_set_id" );      pcSPS->setVPSId( uiCode );
   READ_CODE(3, uiCode, "sps_max_sub_layers_minus1");          pcSPS->setMaxTLayers   (uiCode + 1);
   CHECK(uiCode > 6, "Invalid maximum number of T-layer signalled");
-#if JVET_P0117_PTL_SCALABILITY
   READ_CODE(4, uiCode, "sps_reserved_zero_4bits");
   CHECK(uiCode != 0, "sps_reserved_zero_4bits not equal to zero");
   READ_FLAG(uiCode, "sps_ptl_dpb_hrd_params_present_flag"); pcSPS->setPtlDpbHrdParamsPresentFlag(uiCode);
-#else
-  READ_CODE(5, uiCode, "sps_reserved_zero_5bits");
-  CHECK(uiCode != 0, "sps_reserved_zero_5bits not equal to zero");
-#endif
   
-#if JVET_P0117_PTL_SCALABILITY
   if (pcSPS->getPtlDpbHrdParamsPresentFlag())
   {
-#endif
 
 #if JVET_Q0786_PTL_only
     parseProfileTierLevel(pcSPS->getProfileTierLevel(), true, pcSPS->getMaxTLayers() - 1);
@@ -1474,9 +1465,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     parseProfileTierLevel(pcSPS->getProfileTierLevel(), pcSPS->getMaxTLayers() - 1);
 #endif
 
-#if JVET_P0117_PTL_SCALABILITY
   }
-#endif
 
   READ_FLAG(uiCode, "gdr_enabled_flag");
   pcSPS->setGDREnabledFlag(uiCode);
@@ -1771,7 +1760,6 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   parseExtraSHBitsStruct( pcSPS, uiCode );
 #endif
 
-#if JVET_P0117_PTL_SCALABILITY
   if (pcSPS->getMaxTLayers() - 1 > 0)
   {
     READ_FLAG(uiCode, "sps_sublayer_dpb_params_flag");     pcSPS->setSubLayerDpbParamsFlag(uiCode ? true : false);
@@ -1780,39 +1768,6 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   {
     dpb_parameters(pcSPS->getMaxTLayers() - 1, pcSPS->getSubLayerDpbParamsFlag(), pcSPS);
   }
-#else
-  // KJS: Marakech decision: sub-layers added back
-  uint32_t subLayerOrderingInfoPresentFlag;
-  if (pcSPS->getMaxTLayers() > 1)
-  {
-    READ_FLAG(subLayerOrderingInfoPresentFlag, "sps_sub_layer_ordering_info_present_flag");
-  }
-  else
-  {
-    subLayerOrderingInfoPresentFlag = 0;
-  }
-
-  for(uint32_t i=0; i <= pcSPS->getMaxTLayers()-1; i++)
-  {
-    READ_UVLC ( uiCode, "sps_max_dec_pic_buffering_minus1[i]");
-    pcSPS->setMaxDecPicBuffering( uiCode + 1, i);
-    READ_UVLC ( uiCode, "sps_max_num_reorder_pics[i]" );
-    pcSPS->setNumReorderPics(uiCode, i);
-    READ_UVLC ( uiCode, "sps_max_latency_increase_plus1[i]");
-    pcSPS->setMaxLatencyIncreasePlus1( uiCode, i );
-
-    if (!subLayerOrderingInfoPresentFlag)
-    {
-      for (i++; i <= pcSPS->getMaxTLayers()-1; i++)
-      {
-        pcSPS->setMaxDecPicBuffering(pcSPS->getMaxDecPicBuffering(0), i);
-        pcSPS->setNumReorderPics(pcSPS->getNumReorderPics(0), i);
-        pcSPS->setMaxLatencyIncreasePlus1(pcSPS->getMaxLatencyIncreasePlus1(0), i);
-      }
-      break;
-    }
-  }
-#endif
 
   READ_FLAG(uiCode, "long_term_ref_pics_flag");          pcSPS->setLongTermRefsPresent(uiCode);
   READ_FLAG( uiCode, "inter_layer_ref_pics_present_flag" );  pcSPS->setInterLayerPresentFlag( uiCode );
@@ -2278,10 +2233,8 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   }
   }
 
-#if JVET_P0117_PTL_SCALABILITY
   if (pcSPS->getPtlDpbHrdParamsPresentFlag())
   {
-#endif
   READ_FLAG(uiCode, "sps_general_hrd_params_present_flag");        pcSPS->setGeneralHrdParametersPresentFlag(uiCode);
   if (pcSPS->getGeneralHrdParametersPresentFlag())
   {
@@ -2298,9 +2251,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     uint32_t firstSubLayer = pcSPS->getSubLayerParametersPresentFlag() ? 0 : (pcSPS->getMaxTLayers() - 1);
     parseOlsHrdParameters(pcSPS->getGeneralHrdParameters(),pcSPS->getOlsHrdParameters(), firstSubLayer, pcSPS->getMaxTLayers() - 1);
   }
-#if JVET_P0117_PTL_SCALABILITY
   }
-#endif
 
 #if JVET_Q0042_VUI
   READ_FLAG(     uiCode, "field_seq_flag");                       pcSPS->setFieldSeqFlag(uiCode);

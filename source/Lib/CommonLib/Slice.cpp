@@ -2576,10 +2576,8 @@ SPS::SPS()
 , m_chromaFormatIdc           (CHROMA_420)
 , m_separateColourPlaneFlag   ( 0 )
 , m_uiMaxTLayers              (  1)
-#if JVET_P0117_PTL_SCALABILITY
 , m_ptlDpbHrdParamsPresentFlag (1)
 , m_SubLayerDpbParamsFlag      (0)
-#endif
 // Structure
 , m_maxWidthInLumaSamples     (352)
 , m_maxHeightInLumaSamples    (288)

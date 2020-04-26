@@ -139,7 +139,6 @@
 
 
 
-#define JVET_Q0203_MULTI_SLICE_IN_TILE                    1 // JVET-Q0203: Signalling of multiple rectangular slices within a tile
 
 #define JVET_O1143_SUBPIC_BOUNDARY                        1 // treat subpicture boundary as picture boundary
 

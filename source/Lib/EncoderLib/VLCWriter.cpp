@@ -362,7 +362,6 @@ void HLSWriter::codePPS( const PPS* pcPPS )
 #endif
 
         // multiple slices within a single tile special case
-#if JVET_Q0203_MULTI_SLICE_IN_TILE
         if( pcPPS->getSliceWidthInTiles(i) == 1 && pcPPS->getSliceHeightInTiles(i) == 1 && pcPPS->getTileRowHeight(pcPPS->getSliceTileIdx(i) / pcPPS->getNumTileColumns()) > 1 )
         {
           uint32_t numExpSliceInTile = pcPPS->getNumSlicesInTile(i) - 1;
@@ -383,18 +382,6 @@ void HLSWriter::codePPS( const PPS* pcPPS )
           }
           i += (pcPPS->getNumSlicesInTile(i) - 1);
         }
-#else
-        if( pcPPS->getSliceWidthInTiles( i ) == 1 && pcPPS->getSliceHeightInTiles( i ) == 1 ) 
-        {
-          WRITE_UVLC( pcPPS->getNumSlicesInTile( i ) - 1,  "num_slices_in_tile_minus1[i]" );
-          uint32_t numSlicesInTile = pcPPS->getNumSlicesInTile( i );
-          for( int j = 0; j < numSlicesInTile-1; j++ )
-          {
-            WRITE_UVLC( pcPPS->getSliceHeightInCtu( i ) - 1,  "slice_height_in_ctu_minus1[i]" );
-            i++;
-          }
-        }
-#endif
 
         // tile index offset to start of next slice
         if( i < pcPPS->getNumSlicesInPic()-1 ) 

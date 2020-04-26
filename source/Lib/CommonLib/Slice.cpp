@@ -2571,9 +2571,7 @@ SPS::SPS()
 , m_bLongTermRefsPresent      (false)
 // Tool list
 , m_transformSkipEnabledFlag  (false)
-#if JVET_Q0183_SPS_TRANSFORM_SKIP_MODE_CONTROL
 , m_log2MaxTransformSkipBlockSize (2)
-#endif
 #if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
 , m_BDPCMEnabledFlag          (false)
 #else
@@ -2856,9 +2854,6 @@ PPS::PPS()
 , m_tileIdxDeltaPresentFlag          (0)
 , m_loopFilterAcrossTilesEnabledFlag (1)
 , m_loopFilterAcrossSlicesEnabledFlag(0)
-#if !JVET_Q0183_SPS_TRANSFORM_SKIP_MODE_CONTROL
-  , m_log2MaxTransformSkipBlockSize    (2)
-#endif
 #if !JVET_Q0151_Q0205_ENTRYPOINTS
 , m_entropyCodingSyncEnabledFlag     (false)
 #endif

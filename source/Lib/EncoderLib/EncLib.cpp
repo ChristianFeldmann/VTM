@@ -1315,9 +1315,7 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
   CHECK(m_uiMaxMTTHierarchyDepthIChroma > 2 * (floorLog2(sps.getCTUSize()) - sps.getLog2MinCodingBlockSize()), "sps_max_mtt_hierarchy_depth_intra_slice_chroma shall be in the range 0 to 2*(ctbLog2SizeY - log2MinCUSize)");
 
   sps.setTransformSkipEnabledFlag(m_useTransformSkip);
-#if JVET_Q0183_SPS_TRANSFORM_SKIP_MODE_CONTROL
   sps.setLog2MaxTransformSkipBlockSize(m_log2MaxTransformSkipBlockSize);
-#endif
 #if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
   sps.setBDPCMEnabledFlag(m_useBDPCM);
 #else
@@ -1856,9 +1854,6 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
   CHECK(!(bestPos <= 15), "Unspecified error");
     pps.setNumRefIdxL0DefaultActive(bestPos);
   pps.setNumRefIdxL1DefaultActive(bestPos);
-#if !JVET_Q0183_SPS_TRANSFORM_SKIP_MODE_CONTROL
-  pps.setLog2MaxTransformSkipBlockSize(m_log2MaxTransformSkipBlockSize);
-#endif
   pps.setPictureHeaderExtensionPresentFlag(false);
 
 #if JVET_Q0819_PH_CHANGES 

@@ -3959,11 +3959,7 @@ uint8_t CU::deriveBcwIdx( uint8_t bcwLO, uint8_t bcwL1 )
 
 bool CU::bdpcmAllowed( const CodingUnit& cu, const ComponentID compID )
 {
-#if JVET_Q0183_SPS_TRANSFORM_SKIP_MODE_CONTROL
   SizeType transformSkipMaxSize = 1 << cu.cs->sps->getLog2MaxTransformSkipBlockSize();
-#else
-  SizeType transformSkipMaxSize = 1 << cu.cs->pps->getLog2MaxTransformSkipBlockSize();
-#endif
 
 #if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
   bool bdpcmAllowed = cu.cs->sps->getBDPCMEnabledFlag();
@@ -3985,11 +3981,7 @@ bool CU::bdpcmAllowed( const CodingUnit& cu, const ComponentID compID )
 
 bool CU::isMTSAllowed(const CodingUnit &cu, const ComponentID compID)
 {
-#if JVET_Q0183_SPS_TRANSFORM_SKIP_MODE_CONTROL
   SizeType tsMaxSize = 1 << cu.cs->sps->getLog2MaxTransformSkipBlockSize();
-#else
-  SizeType tsMaxSize = 1 << cu.cs->pps->getLog2MaxTransformSkipBlockSize();
-#endif
   const int maxSize  = CU::isIntra( cu ) ? MTS_INTRA_MAX_CU_SIZE : MTS_INTER_MAX_CU_SIZE;
   const int cuWidth  = cu.blocks[0].lumaSize().width;
   const int cuHeight = cu.blocks[0].lumaSize().height;
@@ -4032,11 +4024,7 @@ void TU::setCbfAtDepth(TransformUnit &tu, const ComponentID &compID, const unsig
 
 bool TU::isTSAllowed(const TransformUnit &tu, const ComponentID compID)
 {
-#if JVET_Q0183_SPS_TRANSFORM_SKIP_MODE_CONTROL
   const int maxSize = tu.cs->sps->getLog2MaxTransformSkipBlockSize();
-#else
-  const int maxSize = tu.cs->pps->getLog2MaxTransformSkipBlockSize();
-#endif
 
   bool tsAllowed = tu.cs->sps->getTransformSkipEnabledFlag();
   tsAllowed &= ( !tu.cu->ispMode || !isLuma(compID) );

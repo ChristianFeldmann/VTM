@@ -100,7 +100,6 @@
 
 
 
-#define JVET_Q0183_SPS_TRANSFORM_SKIP_MODE_CONTROL        1 // JVET-Q0183: Signal the max block size in SPS and conditionally signal min_qp_prime_ts_minus4
 
 #define JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM     1 // JVET-Q0089: RRC slice-level switch for lossless coding and one SPS flag for luma and chroma BDPCM.
 

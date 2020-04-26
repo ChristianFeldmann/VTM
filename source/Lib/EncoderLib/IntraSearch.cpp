@@ -1588,25 +1588,14 @@ void IntraSearch::PLTSearch(CodingStructure &cs, Partitioner& partitioner, Compo
   derivePLTLossy(cs, partitioner, compBegin, numComp);
   reorderPLT(cs, partitioner, compBegin, numComp);
 
-#if JVET_Q0503_Q0712_PLT_ENCODER_IMPROV_BUGFIX
   bool idxExist[MAXPLTSIZE + 1] = { false };
-#endif
   preCalcPLTIndexRD(cs, partitioner, compBegin, numComp); // Pre-calculate distortions for each pixel 
   double rdCost = MAX_DOUBLE;
-#if JVET_Q0503_Q0712_PLT_ENCODER_IMPROV_BUGFIX
   deriveIndexMap(cs, partitioner, compBegin, numComp, PLT_SCAN_HORTRAV, rdCost, idxExist); // Optimize palette index map (horizontal scan)
-#else
-  deriveIndexMap(cs, partitioner, compBegin, numComp, PLT_SCAN_HORTRAV, rdCost); // Optimize palette index map (horizontal scan)
-#endif
   if ((cu.curPLTSize[compBegin] + cu.useEscape[compBegin]) > 1)
   {
-#if JVET_Q0503_Q0712_PLT_ENCODER_IMPROV_BUGFIX
     deriveIndexMap(cs, partitioner, compBegin, numComp, PLT_SCAN_VERTRAV, rdCost, idxExist); // Optimize palette index map (vertical scan)
-#else
-    deriveIndexMap(cs, partitioner, compBegin, numComp, PLT_SCAN_VERTRAV, rdCost); // Optimize palette index map (vertical scan)
-#endif
   }
-#if JVET_Q0503_Q0712_PLT_ENCODER_IMPROV_BUGFIX
   // Remove unused palette entries
   uint8_t newPLTSize = 0;
   int idxMapping[MAXPLTSIZE + 1];
@@ -1676,7 +1665,6 @@ void IntraSearch::PLTSearch(CodingStructure &cs, Partitioner& partitioner, Compo
     for (int comp = compBeginTmp; comp < (compBeginTmp + numCompTmp); comp++)
       memcpy( cu.curPLT[comp], curPLTtmp[comp], sizeof(Pel)*cu.curPLTSize[compBegin]);
   }
-#endif
   cu.useRotation[compBegin] = m_bestScanRotationMode;
   int indexMaxSize = cu.useEscape[compBegin] ? (cu.curPLTSize[compBegin] + 1) : cu.curPLTSize[compBegin];
   if (indexMaxSize <= 1)
@@ -1689,9 +1677,7 @@ void IntraSearch::PLTSearch(CodingStructure &cs, Partitioner& partitioner, Compo
   {
     for (uint32_t x = 0; x < width; x++)
     {
-#if JVET_Q0503_Q0712_PLT_ENCODER_IMPROV_BUGFIX
       curPLTIdx.at(x, y) = idxMapping[curPLTIdx.at(x, y)];
-#endif
       if (curPLTIdx.at(x, y) == cu.curPLTSize[compBegin])
       {
         calcPixelPred(cs, partitioner, y, x, compBegin, numComp);
@@ -1929,11 +1915,7 @@ void IntraSearch::preCalcPLTIndexRD(CodingStructure& cs, Partitioner& partitione
   }
 }
 
-#if JVET_Q0503_Q0712_PLT_ENCODER_IMPROV_BUGFIX
 void IntraSearch::deriveIndexMap(CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp, PLTScanMode pltScanMode, double& dMinCost, bool* idxExist)
-#else
-void IntraSearch::deriveIndexMap(CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp, PLTScanMode pltScanMode, double& dMinCost)
-#endif
 {
   CodingUnit    &cu = *cs.getCU(partitioner.chType);
   TransformUnit &tu = *cs.getTU(partitioner.chType);
@@ -2056,16 +2038,12 @@ void IntraSearch::deriveIndexMap(CodingStructure& cs, Partitioner& partitioner, 
   {
     cu.useEscape[compBegin] = m_bestEscape;
     m_bestScanRotationMode = pltScanMode;
-#if JVET_Q0503_Q0712_PLT_ENCODER_IMPROV_BUGFIX
     memset(idxExist, false, sizeof(bool) * (MAXPLTSIZE + 1));
-#endif
     for (int pos = 0; pos < (width*height); pos++)
     {
       runIndex[pos] = checkIndexTable[pos];
       runType[pos] = checkRunTable[pos];
-#if JVET_Q0503_Q0712_PLT_ENCODER_IMPROV_BUGFIX
       idxExist[checkIndexTable[pos]] = true;
-#endif
     }
     dMinCost = sumRdCost;
   }
@@ -2229,32 +2207,16 @@ double IntraSearch::rateDistOptPLT(
       rdCost = MAX_DOUBLE;
       return rdCost;
     }
-#if JVET_Q0503_Q0712_PLT_ENCODER_IMPROV_BUGFIX
     rdCost += m_pcRdCost->getLambda()*(m_truncBinBits[(runIndex > refIndex) ? runIndex - 1 : runIndex][(scanPos == 0) ? (indexMaxValue + 1) : indexMaxValue] << SCALE_BITS);
-#else
-    rdCost += m_pcRdCost->getLambda()*m_truncBinBits[(runIndex > refIndex) ? runIndex - 1 : runIndex][(scanPos == 0) ? (indexMaxValue + 1) : indexMaxValue];
-#endif
   }
-#if JVET_Q0503_Q0712_PLT_ENCODER_IMPROV_BUGFIX
   rdCost += m_indexError[runIndex][m_scanOrder[scanPos].idx] * (1 << SCALE_BITS);
-#else
-  rdCost += m_indexError[runIndex][m_scanOrder[scanPos].idx];
-#endif
   if (scanPos > 0)
   {
-#if JVET_Q0503_Q0712_PLT_ENCODER_IMPROV_BUGFIX
     rdCost += m_pcRdCost->getLambda()*( identityFlag ? (IndexfracBits[(dist < RUN_IDX_THRE) ? dist : RUN_IDX_THRE].intBits[1]) : (IndexfracBits[(dist < RUN_IDX_THRE) ? dist : RUN_IDX_THRE].intBits[0] ) );
-#else
-    rdCost += m_pcRdCost->getLambda()*( identityFlag ? (IndexfracBits[(dist < RUN_IDX_THRE) ? dist : RUN_IDX_THRE].intBits[1] >> SCALE_BITS) : (IndexfracBits[(dist < RUN_IDX_THRE) ? dist : RUN_IDX_THRE].intBits[0] >> SCALE_BITS));
-#endif
   }
   if ( !identityFlag && scanPos >= width && prevRunType != PLT_RUN_COPY )
   {
-#if JVET_Q0503_Q0712_PLT_ENCODER_IMPROV_BUGFIX
     rdCost += m_pcRdCost->getLambda()*TypefracBits.intBits[runType];
-#else
-    rdCost += m_pcRdCost->getLambda()*(TypefracBits.intBits[runType] >> SCALE_BITS);
-#endif
   }
   if (!identityFlag || scanPos == 0)
   {
@@ -2460,15 +2422,11 @@ void IntraSearch::derivePLTLossy(CodingStructure& cs, Partitioner& partitioner, 
     }
   }
 
-#if JVET_Q0503_Q0712_PLT_ENCODER_IMPROV_BUGFIX
   TransformUnit &tu = *cs.getTU(partitioner.chType);
   QpParam cQP(tu, compBegin);
   int qp = cQP.Qp(true) - 12;
   qp = (qp < 0) ? 0 : ((qp > 56) ? 56 : qp);
   int errorLimit = g_paletteQuant[qp];
-#else
-  int errorLimit = g_paletteQuant[cu.qp];
-#endif
   if (lossless)
   {
     errorLimit = 0;
@@ -2622,11 +2580,9 @@ void IntraSearch::derivePLTLossy(CodingStructure& cs, Partitioner& partitioner, 
   }
   const int plt_lambda_shift = (compBegin > 0) ? pcmShiftRight_C : pcmShiftRight_L;
   double    bitCost          = m_pcRdCost->getLambda() / (double) (1 << (2 * plt_lambda_shift)) * numColorBits;
-#if JVET_Q0503_Q0712_PLT_ENCODER_IMPROV_BUGFIX
   bool   reuseflag[MAXPLTPREDSIZE] = { false };
   int    run;
   double reuseflagCost;
-#endif
   for (int i = 0; i < maxPltSize; i++)
   {
     if( pelListSort[i].getCnt(MAX_NUM_COMPONENT) )
@@ -2680,7 +2636,6 @@ void IntraSearch::derivePLTLossy(CodingStructure& cs, Partitioner& partitioner, 
               cost += (err * err) / (1 << (2 * pcmShiftRight_L)) * pelListSort[i].getCnt(comp);
             }
           }
-#if JVET_Q0503_Q0712_PLT_ENCODER_IMPROV_BUGFIX
           run = 0;
           for (int t2 = t; t2 >= 0; t2--)
           {
@@ -2695,7 +2650,6 @@ void IntraSearch::derivePLTLossy(CodingStructure& cs, Partitioner& partitioner, 
           }
           reuseflagCost = m_pcRdCost->getLambda() / (double)(1 << (2 * plt_lambda_shift)) * getEpExGolombNumBins(run ? run + 1 : run, 0);
           cost += reuseflagCost;
-#endif
 
           if( cost < bestCost )
           {
@@ -2709,9 +2663,7 @@ void IntraSearch::derivePLTLossy(CodingStructure& cs, Partitioner& partitioner, 
           {
             cu.curPLT[comp][paletteSize] = cs.prevPLT.curPLT[comp][best];
           }
-#if JVET_Q0503_Q0712_PLT_ENCODER_IMPROV_BUGFIX
           reuseflag[best] = true;
-#endif
         }
       }
 

@@ -126,7 +126,6 @@
 
 
 
-#define JVET_Q0503_Q0712_PLT_ENCODER_IMPROV_BUGFIX        1 // JVET-Q0503/Q0712: Platte encoder improvement/bugfix
 
 #define JVET_Q0819_PH_CHANGES                             1 // JVET-Q0819: Combination of PH related syntax changes
 

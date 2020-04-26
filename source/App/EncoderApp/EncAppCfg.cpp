@@ -1647,9 +1647,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     }
 
     CHECK( m_subPicIdLen > 16, "SubPicIdLen must not exceed 16 bits" );
-#if JVET_Q0043_RPR_and_Subpics
     CHECK( m_rprEnabled, "RPR and subpictures cannot be enabled together" );
-#endif
   }
 
 #if JVET_SUBPIC_LEVEL_CFG

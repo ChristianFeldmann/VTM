@@ -934,7 +934,6 @@ void DecLib::xCreateUnavailablePicture(int iUnavailablePoc, bool longTermFlag, c
   }
 
 }
-#if JVET_P0125_ASPECT_TID_LAYER_ID_NUH
 void DecLib::checkTidLayerIdInAccessUnit()
 {
   int firstPicTid = m_accessUnitPicInfo.begin()->m_temporalId;
@@ -975,7 +974,6 @@ void DecLib::checkTidLayerIdInAccessUnit()
   CHECK(!isFdNaluLayerIdSameAsVclNaluLayerId, "The nuh_layer_id of a filler data NAL unit shall be equal to the nuh_layer_id of associated VCL NAL unit");
 
 }
-#endif
 #if JVET_P0125_SEI_CONSTRAINTS
 void DecLib::checkSEIInAccessUnit()
 {
@@ -1680,9 +1678,7 @@ void DecLib::xParsePrefixSEImessages()
   while (!m_prefixSEINALUs.empty())
   {
     InputNALUnit &nalu=*m_prefixSEINALUs.front();
-#if JVET_P0125_ASPECT_TID_LAYER_ID_NUH
     m_accessUnitSeiTids.push_back(nalu.m_temporalId);
-#endif
 #if JVET_P0125_SEI_CONSTRAINTS
     const SPS *sps = m_parameterSetManager.getActiveSPS();
     const VPS *vps = m_parameterSetManager.getVPS(sps->getVPSId());
@@ -2574,9 +2570,7 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
     case NAL_UNIT_SUFFIX_SEI:
       if (m_pcPic)
       {
-#if JVET_P0125_ASPECT_TID_LAYER_ID_NUH
         m_accessUnitSeiTids.push_back(nalu.m_temporalId);
-#endif
 #if JVET_P0125_SEI_CONSTRAINTS
         const SPS *sps = m_parameterSetManager.getActiveSPS();
         const VPS *vps = m_parameterSetManager.getVPS(sps->getVPSId());

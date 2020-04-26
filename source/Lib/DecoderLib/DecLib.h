@@ -162,9 +162,7 @@ private:
   std::vector<NalUnitInfo> m_nalUnitInfo[MAX_VPS_LAYERS];
 #endif 
   std::vector<int> m_accessUnitApsNals;
-#if JVET_P0125_ASPECT_TID_LAYER_ID_NUH
   std::vector<int> m_accessUnitSeiTids;
-#endif
 
 #if JVET_P0125_SEI_CONSTRAINTS
   // NAL unit type, layer ID, and SEI payloadType
@@ -240,10 +238,8 @@ public:
   void resetAccessUnitPicInfo()              { m_accessUnitPicInfo.clear();    }
 #endif
   void resetAccessUnitApsNals()           { m_accessUnitApsNals.clear(); }
-#if JVET_P0125_ASPECT_TID_LAYER_ID_NUH
   void resetAccessUnitSeiTids()           { m_accessUnitSeiTids.clear(); }
   void checkTidLayerIdInAccessUnit();
-#endif
 #if JVET_P0125_SEI_CONSTRAINTS
   void resetAccessUnitSeiPayLoadTypes()   { m_accessUnitSeiPayLoadTypes.clear(); }
   void checkSEIInAccessUnit();

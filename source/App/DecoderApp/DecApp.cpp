@@ -325,10 +325,8 @@ uint32_t DecApp::decode()
     }
     if(bNewAccessUnit) 
     {
-#if JVET_P0125_ASPECT_TID_LAYER_ID_NUH
       m_cDecLib.checkTidLayerIdInAccessUnit();
       m_cDecLib.resetAccessUnitSeiTids();
-#endif
 #if JVET_P0125_SEI_CONSTRAINTS
       m_cDecLib.checkSEIInAccessUnit();
       m_cDecLib.resetAccessUnitSeiPayLoadTypes();

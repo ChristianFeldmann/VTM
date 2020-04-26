@@ -83,13 +83,8 @@ bool AdaptiveLoopFilter::isCrossedByVirtualBoundaries( const CodingStructure& cs
   const PPS*   pps = cs.pps;
   const PicHeader* picHeader = cs.picHeader;
 
-#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
   if( picHeader->getVirtualBoundariesPresentFlag() )
   {
-#else
-  if( picHeader->getLoopFilterAcrossVirtualBoundariesDisabledFlag() )
-  {
-#endif
     for( int i = 0; i < picHeader->getNumHorVirtualBoundaries(); i++ )
     {
       if( picHeader->getVirtualBoundariesPosY(i) == yPos )

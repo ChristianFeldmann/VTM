@@ -2295,12 +2295,8 @@ PicHeader::PicHeader()
 , m_subPicIdSignallingPresentFlag                 ( 0 )
 , m_subPicIdLen                                   ( 0 )
 #endif
-#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
 , m_virtualBoundariesEnabledFlag                  ( 0 )
 , m_virtualBoundariesPresentFlag                  ( 0 )
-#else
-, m_loopFilterAcrossVirtualBoundariesDisabledFlag ( 0 )
-#endif
 , m_numVerVirtualBoundaries                       ( 0 )
 , m_numHorVirtualBoundaries                       ( 0 )
 #if !JVET_Q0155_COLOUR_ID
@@ -2426,12 +2422,8 @@ void PicHeader::initPicHeader()
   m_subPicIdSignallingPresentFlag                 = 0;
   m_subPicIdLen                                   = 0;
 #endif
-#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
   m_virtualBoundariesEnabledFlag                  = 0;
   m_virtualBoundariesPresentFlag                  = 0;
-#else
-  m_loopFilterAcrossVirtualBoundariesDisabledFlag = 0;
-#endif
   m_numVerVirtualBoundaries                       = 0;
   m_numHorVirtualBoundaries                       = 0;
 #if !JVET_Q0155_COLOUR_ID
@@ -2671,12 +2663,8 @@ SPS::SPS()
 , m_saoEnabledFlag            (false)
 , m_bTemporalIdNestingFlag    (false)
 , m_scalingListEnabledFlag    (false)
-#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
 , m_virtualBoundariesEnabledFlag( 0 )
 , m_virtualBoundariesPresentFlag( 0 )
-#else
-, m_loopFilterAcrossVirtualBoundariesDisabledFlag(0)
-#endif
 , m_numVerVirtualBoundaries(0)
 , m_numHorVirtualBoundaries(0)
 , m_generalHrdParametersPresentFlag(false)

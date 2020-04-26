@@ -946,11 +946,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("WrapAroundOffset",                                m_wrapAroundOffset,                                  0u, "Offset in luma samples used for computing the horizontal wrap-around position")
 
   // ADD_NEW_TOOL : (encoder app) add parsing parameters here
-#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
   ( "VirtualBoundariesPresentInSPSFlag",              m_virtualBoundariesPresentFlag,                    true, "Virtual Boundary position information is signalled in SPS or PH (1:SPS, 0:PH)  [default: on]" )
-#else
-  ("LoopFilterAcrossVirtualBoundariesDisabledFlag",   m_loopFilterAcrossVirtualBoundariesDisabledFlag,  false, "Disable in-loop filtering operations across the virtual boundaries (0:off, 1:on)  [default: off]")
-#endif
   ("NumVerVirtualBoundaries",                         m_numVerVirtualBoundaries,                           0u, "Number of vertical virtual boundaries (0-3, inclusive)")
   ("NumHorVirtualBoundaries",                         m_numHorVirtualBoundaries,                           0u, "Number of horizontal virtual boundaries (0-3, inclusive)")
   ("VirtualBoundariesPosX",                           cfg_virtualBoundariesPosX,    cfg_virtualBoundariesPosX, "Locations of the vertical virtual boundaries in units of luma samples")
@@ -2106,7 +2102,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   }
 #endif
 
-#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
   m_virtualBoundariesEnabledFlag = 0;
   if( m_numVerVirtualBoundaries > 0 || m_numHorVirtualBoundaries > 0 )
     m_virtualBoundariesEnabledFlag = 1;
@@ -2117,10 +2112,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 
     if( m_virtualBoundariesPresentFlag )
     {
-#else
-    if ( m_loopFilterAcrossVirtualBoundariesDisabledFlag )
-    {
-#endif
       CHECK( m_numVerVirtualBoundaries > 3, "Number of vertical virtual boundaries must be comprised between 0 and 3 included" );
       CHECK( m_numHorVirtualBoundaries > 3, "Number of horizontal virtual boundaries must be comprised between 0 and 3 included" );
       CHECK( m_numVerVirtualBoundaries != cfg_virtualBoundariesPosX.values.size(), "Size of VirtualBoundariesPosX must be equal to NumVerVirtualBoundaries");
@@ -2154,9 +2145,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
         }
       }
     }
-#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
   }
-#endif
 
   if ( m_alf )
   {
@@ -4024,16 +4013,10 @@ void EncAppCfg::xPrintParameter()
     msg( VERBOSE, "WrapAroundOffset:%d ", m_wrapAroundOffset );
   }
   // ADD_NEW_TOOL (add some output indicating the usage of tools)
-#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
   msg( VERBOSE, "VirtualBoundariesEnabledFlag:%d ", m_virtualBoundariesEnabledFlag );
   msg( VERBOSE, "VirtualBoundariesPresentInSPSFlag:%d ", m_virtualBoundariesPresentFlag );
   if( m_virtualBoundariesPresentFlag )
   {
-#else
-  msg(VERBOSE, "LoopFilterAcrossVirtualBoundaries:%d ", m_loopFilterAcrossVirtualBoundariesDisabledFlag);
-  if ( m_loopFilterAcrossVirtualBoundariesDisabledFlag )
-  {
-#endif
     msg(VERBOSE, "vertical virtual boundaries:[");
     for (unsigned i = 0; i < m_numVerVirtualBoundaries; i++)
     {

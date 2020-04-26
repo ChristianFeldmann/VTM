@@ -373,12 +373,8 @@ protected:
   unsigned  m_wrapAroundOffset;
 
   // ADD_NEW_TOOL : (encoder app) add tool enabling flags and associated parameters here
-#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
   bool      m_virtualBoundariesEnabledFlag;
   bool      m_virtualBoundariesPresentFlag;
-#else
-  bool      m_loopFilterAcrossVirtualBoundariesDisabledFlag;
-#endif
   unsigned  m_numVerVirtualBoundaries;
   unsigned  m_numHorVirtualBoundaries;
   std::vector<unsigned> m_virtualBoundariesPosX;

@@ -57,7 +57,6 @@
 
 
 
-#define CABAC_RETRAIN                                     1 // CABAC retraining based on VTM8rc1
 
 #define JVET_Q0210_SUBPIC_VIRTUAL_BOUNDARY_CONSTRAINT     1 // JVET-Q0210 (aspect 7): when subpicture signalling is present, virtual boundaries if present shall be in the SPS.
 

@@ -1,0 +1,46 @@
+name: C/C++ CI
+
+on: [push]
+
+jobs:
+  build-ubuntu:
+    runs-on: ubuntu-18.04
+    steps:
+    # Checkout the current branch
+    - uses: actions/checkout@v2
+    - name: make build dir
+      run: mkdir build
+    - name: build
+      run: |
+        cmake ..
+        make -j 2
+      working-directory: ./build
+  build-windows:
+    runs-on: windows-2019
+    steps:
+    # Checkout the current branch
+    - uses: actions/checkout@v2
+    - name: install jom
+      run: choco install jom
+    - name: make build dir
+      run: mkdir build
+    - name: build
+      run: |
+        call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+        cmake -G "NMake Makefiles" ..
+        jom
+      working-directory: ./build
+      shell: cmd
+  build-macos:
+    runs-on: macos-10.15
+    steps:
+    # Checkout the current branch
+    - uses: actions/checkout@v2
+    - name: make build dir
+      run: mkdir build
+    - name: cmake
+      run: |
+        cmake ..
+        make -j 2
+      working-directory: ./build
+    

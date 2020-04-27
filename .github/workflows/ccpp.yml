@@ -6,6 +6,8 @@ jobs:
   build-ubuntu1804:
     runs-on: ubuntu-18.04
     steps:
+    # Checkout the current branch
+    - uses: actions/checkout@v2
     - name: make build dir
       run: mkdir build
     - name: cmake

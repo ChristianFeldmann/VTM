@@ -53,7 +53,7 @@
 //########### place macros to be removed in next cycle below this line ###############
 
 #define JVET_Q0471_CHROMA_QT_SPLIT                        1 // JVET-Q0471: Chroma QT split
-
+#define JVET_R0156_ASPECT4_SPS_CLEANUP                    1 // JVET-R0071, R0156 aspect 4, R0284: Condition sps_independent_subpics_flag on "sps_num_subpics_minus1 > 0"
 
 //########### place macros to be be kept below this line ###############
 

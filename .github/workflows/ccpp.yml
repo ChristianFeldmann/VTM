@@ -21,13 +21,15 @@ jobs:
     steps:
     # Checkout the current branch
     - uses: actions/checkout@v2
+    - name: install jom
+      run: choco install jom
     - name: make build dir
       run: mkdir build
     - name: cmake
       run: cmake ..
       working-directory: ./build
-    - name: nmake
-      run: nmake -j 2
+    - name: jom
+      run: jom
       working-directory: ./build
   build-macos:
     runs-on: macos-10.15

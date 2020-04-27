@@ -53,6 +53,7 @@
 //########### place macros to be removed in next cycle below this line ###############
 
 #define JVET_Q0471_CHROMA_QT_SPLIT                        1 // JVET-Q0471: Chroma QT split
+#define JVET_R0208_ALF_VB_ROUNDING_FIX                    1 // JVET-R0208: Rounding offset fix for ALF virtual boundary processing
 
 
 //########### place macros to be be kept below this line ###############

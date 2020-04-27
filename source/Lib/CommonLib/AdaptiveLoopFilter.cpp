@@ -1341,6 +1341,12 @@ void AdaptiveLoopFilter::filterBlkCcAlf(const PelBuf &dstBuf, const CPelUnitBuf 
         const Pel *srcCross = lumaPtr + col + row * lumaStride;
 
         int pos = ((startHeight + i + ii) << scaleY) & (vbCTUHeight - 1);
+#if JVET_R0233_CCALF_LINE_BUFFER_REDUCTION
+        if (scaleY == 0 && (pos == vbPos || pos == vbPos + 1))
+        {
+          continue;
+        }
+#endif
         if (pos == (vbPos - 2) || pos == (vbPos + 1))
         {
           offset3 = offset1;

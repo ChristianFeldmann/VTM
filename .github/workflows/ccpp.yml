@@ -3,8 +3,8 @@ name: C/C++ CI
 on: [push]
 
 jobs:
-  build-ubuntu18.04:
-    runs-on: ubuntu-1804
+  build-ubuntu1804:
+    runs-on: ubuntu-18.04
     steps:
     - name: make build dir
       run: mkdir build

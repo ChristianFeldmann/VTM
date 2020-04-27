@@ -26,7 +26,7 @@ jobs:
     - name: make build dir
       run: mkdir build
     - name: cmake
-      run: cmake ..
+      run: cmake -G "NMake Makefiles" ..
       working-directory: ./build
     - name: jom
       run: jom

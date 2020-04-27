@@ -3,12 +3,9 @@ name: C/C++ CI
 on: [push]
 
 jobs:
-  build:
-
-    runs-on: ubuntu-latest
-    
+  build-ubuntu18.04:
+    runs-on: ubuntu-18.04
     steps:
-    - uses: actions/checkout@v1
     - name: make build dir
       run: mkdir build
     - name: cmake

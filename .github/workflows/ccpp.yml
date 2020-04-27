@@ -24,7 +24,9 @@ jobs:
     - name: make build dir
       run: mkdir build
     - name: cmake
-      run: cmake ..
+      run: |
+        call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvars64.bat"
+        cmake -G "NMake Makefiles" ..
       working-directory: ./build
     - name: nmake
       run: nmake

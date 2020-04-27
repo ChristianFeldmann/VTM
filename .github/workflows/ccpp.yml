@@ -28,6 +28,7 @@ jobs:
         cmake -G "NMake Makefiles" ..
         nmake
       working-directory: ./build
+      shell: cmd
   build-macos:
     runs-on: macos-10.15
     steps:

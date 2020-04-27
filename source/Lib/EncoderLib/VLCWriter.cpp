@@ -793,7 +793,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
     if( pcSPS->getNumSubPics() > 1 )
     {
 #if JVET_R0156_ASPECT4_SPS_CLEANUP
-      WRITE_FLAG(pcSPS->getSubPicIndependentFlag(), "sps_independent_subpics_flag");
+    WRITE_FLAG(pcSPS->getSubPicIndependentFlag(), "sps_independent_subpics_flag");
 #endif
     for (int picIdx = 0; picIdx < pcSPS->getNumSubPics(); picIdx++)
     {
@@ -817,8 +817,8 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
       if (!pcSPS->getSubPicIndependentFlag())
       {
 #endif
-      WRITE_FLAG( pcSPS->getSubPicTreatedAsPicFlag(picIdx),  "subpic_treated_as_pic_flag[ i ]" );
-      WRITE_FLAG( pcSPS->getLoopFilterAcrossSubpicEnabledFlag(picIdx),  "loop_filter_across_subpic_enabled_flag[ i ]" );
+        WRITE_FLAG( pcSPS->getSubPicTreatedAsPicFlag(picIdx),  "subpic_treated_as_pic_flag[ i ]" );
+        WRITE_FLAG( pcSPS->getLoopFilterAcrossSubpicEnabledFlag(picIdx),  "loop_filter_across_subpic_enabled_flag[ i ]" );
 #if JVET_R0156_ASPECT4_SPS_CLEANUP
       }
 #endif

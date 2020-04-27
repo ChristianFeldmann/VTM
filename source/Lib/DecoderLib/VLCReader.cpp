@@ -1294,7 +1294,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     else
     {
 #if JVET_R0156_ASPECT4_SPS_CLEANUP
-      READ_FLAG(uiCode, "sps_independent_subpics_flag"); pcSPS->setSubPicIndependentFlag(uiCode != 0);
+    READ_FLAG(uiCode, "sps_independent_subpics_flag"); pcSPS->setSubPicIndependentFlag(uiCode != 0);
 #endif
     for (int picIdx = 0; picIdx < pcSPS->getNumSubPics(); picIdx++)
     {
@@ -1338,10 +1338,10 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
       if (!pcSPS->getSubPicIndependentFlag())
       {
 #endif
-      READ_FLAG(uiCode, "subpic_treated_as_pic_flag[ i ]");
-      pcSPS->setSubPicTreatedAsPicFlag(picIdx, uiCode);
-      READ_FLAG(uiCode, "loop_filter_across_subpic_enabled_flag[ i ]");
-      pcSPS->setLoopFilterAcrossSubpicEnabledFlag(picIdx, uiCode);
+        READ_FLAG(uiCode, "subpic_treated_as_pic_flag[ i ]");
+        pcSPS->setSubPicTreatedAsPicFlag(picIdx, uiCode);
+        READ_FLAG(uiCode, "loop_filter_across_subpic_enabled_flag[ i ]");
+        pcSPS->setLoopFilterAcrossSubpicEnabledFlag(picIdx, uiCode);
 #if JVET_R0156_ASPECT4_SPS_CLEANUP
       }
 #endif

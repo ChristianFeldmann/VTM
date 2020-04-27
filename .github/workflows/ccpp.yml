@@ -4,7 +4,7 @@ on: [push]
 
 jobs:
   build-ubuntu18.04:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-1804
     steps:
     - name: make build dir
       run: mkdir build

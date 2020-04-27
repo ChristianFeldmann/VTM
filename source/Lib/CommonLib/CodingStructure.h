@@ -3,7 +3,7 @@
 * and contributor rights, including patent rights, and no such rights are
 * granted under this license.
 *
-* Copyright (c) 2010-2019, ITU/ISO/IEC
+* Copyright (c) 2010-2020, ITU/ISO/IEC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -58,21 +58,10 @@ enum PictureType
   PIC_RESIDUAL,
   PIC_ORG_RESI,
   PIC_RECON_WRAP,
-#if RPR_CTC_PRINT
   PIC_ORIGINAL_INPUT,
   PIC_TRUE_ORIGINAL_INPUT,
-#endif
   NUM_PIC_TYPES
 };
-#if !JVET_O0258_REMOVE_CHROMA_IBC_FOR_DUALTREE
-enum IbcLumaCoverage
-{
-  IBC_LUMA_COVERAGE_FULL = 0,
-  IBC_LUMA_COVERAGE_PARTIAL,
-  IBC_LUMA_COVERAGE_NONE,
-  NUM_IBC_LUMA_COVERAGE,
-};
-#endif
 extern XUCache g_globalUnitCache;
 
 // ---------------------------------------------------------------------------
@@ -96,31 +85,26 @@ public:
   int         prevQP[MAX_NUM_CHANNEL_TYPE];
   int         currQP[MAX_NUM_CHANNEL_TYPE];
   int         chromaQpAdj;
-  Position    sharedBndPos;
-  Size        sharedBndSize;
-  bool        isLossless;
   const SPS *sps;
   const PPS *pps;
-#if JVET_O_MAX_NUM_ALF_APS_8
+  PicHeader *picHeader;
   APS*       alfApss[ALF_CTB_MAX_NUM_APS];
-#else
-  APS*       alfApss[MAX_NUM_APS];
-#endif
   APS *      lmcsAps;
-#if JVET_O0299_APS_SCALINGLIST
   APS *      scalinglistAps;
-#endif
   const VPS *vps;
   const PreCalcValues* pcv;
 
   CodingStructure(CUCache&, PUCache&, TUCache&);
-  void create( const UnitArea &_unit, const bool isTopLayer );
-  void create( const ChromaFormat &_chromaFormat, const Area& _area, const bool isTopLayer );
+
+  void create(const UnitArea &_unit, const bool isTopLayer, const bool isPLTused);
+  void create(const ChromaFormat &_chromaFormat, const Area& _area, const bool isTopLayer, const bool isPLTused);
+
   void destroy();
   void releaseIntermediateData();
 
   void rebindPicBufs();
-  void createCoeffs();
+
+  void createCoeffs(const bool isPLTused);
   void destroyCoeffs();
 
   void allocateVectorsAtPicLevel();
@@ -139,9 +123,7 @@ public:
   const TransformUnit  *getTU(const Position &pos, const ChannelType _chType, const int subTuIdx = -1) const;
 
   CodingUnit     *getCU(const Position &pos, const ChannelType _chType);
-#if JVET_O0050_LOCAL_DUAL_TREE
   CodingUnit     *getLumaCU( const Position &pos );
-#endif
   PredictionUnit *getPU(const Position &pos, const ChannelType _chType);
   TransformUnit  *getTU(const Position &pos, const ChannelType _chType, const int subTuIdx = -1);
 
@@ -161,6 +143,7 @@ public:
   CodingUnit&     addCU(const UnitArea &unit, const ChannelType _chType);
   PredictionUnit& addPU(const UnitArea &unit, const ChannelType _chType);
   TransformUnit&  addTU(const UnitArea &unit, const ChannelType _chType);
+  void            addEmptyTUs(Partitioner &partitioner);
 
   CUTraverser     traverseCUs(const UnitArea& _unit, const ChannelType _chType);
   PUTraverser     traversePUs(const UnitArea& _unit, const ChannelType _chType);
@@ -169,9 +152,6 @@ public:
   cCUTraverser    traverseCUs(const UnitArea& _unit, const ChannelType _chType) const;
   cPUTraverser    traversePUs(const UnitArea& _unit, const ChannelType _chType) const;
   cTUTraverser    traverseTUs(const UnitArea& _unit, const ChannelType _chType) const;
-#if !JVET_O0258_REMOVE_CHROMA_IBC_FOR_DUALTREE
-  IbcLumaCoverage getIbcLumaCoverage(const CompArea& chromaArea) const;
-#endif
   // ---------------------------------------------------------------------------
   // encoding search utilities
   // ---------------------------------------------------------------------------
@@ -185,12 +165,10 @@ public:
   uint64_t      fracBits;
   Distortion  dist;
   Distortion  interHad;
-#if JVET_O0050_LOCAL_DUAL_TREE
   TreeType    treeType; //because partitioner can not go deep to tu and cu coding (e.g., addCU()), need another variable for indicating treeType
   ModeType    modeType;
-#endif
 
-  void initStructData  (const int &QP = MAX_INT, const bool &_isLosses = false, const bool &skipMotBuf = false);
+  void initStructData  (const int &QP = MAX_INT, const bool &skipMotBuf = false);
   void initSubStructure(      CodingStructure& cs, const ChannelType chType, const UnitArea &subArea, const bool &isTuEnc);
 
   void copyStructure   (const CodingStructure& cs, const ChannelType chType, const bool copyTUs = false, const bool copyRecoBuffer = false);
@@ -200,7 +178,6 @@ public:
   void clearTUs();
   void clearPUs();
   void clearCUs();
-#if JVET_O0050_LOCAL_DUAL_TREE
   const int signalModeCons( const PartSplit split, Partitioner &partitioner, const ModeType modeTypeParent ) const;
   void clearCuPuTuIdxMap  ( const UnitArea &_area, uint32_t numCu, uint32_t numPu, uint32_t numTu, uint32_t* pOffset );
   void getNumCuPuTuOffset ( uint32_t* pArray )
@@ -208,11 +185,10 @@ public:
     pArray[0] = m_numCUs;     pArray[1] = m_numPUs;     pArray[2] = m_numTUs;
     pArray[3] = m_offsets[0]; pArray[4] = m_offsets[1]; pArray[5] = m_offsets[2];
   }
-#endif
 
 
 private:
-  void createInternals(const UnitArea& _unit, const bool isTopLayer);
+  void createInternals(const UnitArea& _unit, const bool isTopLayer, const bool isPLTused);
 
 public:
 
@@ -224,10 +200,12 @@ public:
 
   void addMiToLut(static_vector<MotionInfo, MAX_NUM_HMVP_CANDS>& lut, const MotionInfo &mi);
 
-#if JVET_O0119_BASE_PALETTE_444
   PLTBuf prevPLT;
   void resetPrevPLT(PLTBuf& prevPLT);
-  void reorderPrevPLT(PLTBuf& prevPLT, uint32_t curPLTSize[MAX_NUM_COMPONENT], Pel curPLT[MAX_NUM_COMPONENT][MAXPLTSIZE], bool reuseflag[MAX_NUM_COMPONENT][MAXPLTPREDSIZE], uint32_t compBegin, uint32_t numComp, bool jointPLT);
+  void reorderPrevPLT(PLTBuf& prevPLT, uint8_t curPLTSize[MAX_NUM_CHANNEL_TYPE], Pel curPLT[MAX_NUM_COMPONENT][MAXPLTSIZE], bool reuseflag[MAX_NUM_CHANNEL_TYPE][MAXPLTPREDSIZE], uint32_t compBegin, uint32_t numComp, bool jointPLT);
+#if JVET_Q0501_PALETTE_WPP_INIT_ABOVECTU
+  void setPrevPLT(PLTBuf predictor);
+  void storePrevPLT(PLTBuf& predictor);
 #endif
 private:
 
@@ -256,21 +234,18 @@ private:
 
   TCoeff *m_coeffs [ MAX_NUM_COMPONENT ];
   Pel    *m_pcmbuf [ MAX_NUM_COMPONENT ];
-#if JVET_O0119_BASE_PALETTE_444
-  bool   *m_runType  [MAX_NUM_COMPONENT];
-  Pel    *m_runLength[MAX_NUM_COMPONENT];
-#endif
+  bool   *m_runType[ MAX_NUM_CHANNEL_TYPE ];
   int     m_offsets[ MAX_NUM_COMPONENT ];
 
   MotionInfo *m_motionBuf;
 
 public:
-#if JVET_O0070_PROF
   CodingStructure *bestParent;
-#endif
-#if JVET_O1170_CHECK_BV_AT_DECODER
+  double        tmpColorSpaceCost;
+  bool          firstColorSpaceSelected;
+  double        tmpColorSpaceIntraCost[2];
+  bool          firstColorSpaceTestOnly;
   bool resetIBCBuffer;
-#endif
 
   MotionBuf getMotionBuf( const     Area& _area );
   MotionBuf getMotionBuf( const UnitArea& _area ) { return getMotionBuf( _area.Y() ); }

@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -62,29 +62,33 @@ const char* nalUnitTypeToString(NalUnitType type)
 {
   switch (type)
   {
-  case NAL_UNIT_PPS:                    return "PPS";
-  case NAL_UNIT_ACCESS_UNIT_DELIMITER:  return "AUD";
-  case NAL_UNIT_PREFIX_SEI:             return "Prefix SEI";
-  case NAL_UNIT_SUFFIX_SEI:             return "Suffix SEI";
-  case NAL_UNIT_APS:                    return "APS";
   case NAL_UNIT_CODED_SLICE_TRAIL:      return "TRAIL";
   case NAL_UNIT_CODED_SLICE_STSA:       return "STSA";
   case NAL_UNIT_CODED_SLICE_RADL:       return "RADL";
   case NAL_UNIT_CODED_SLICE_RASL:       return "RASL";
-  case NAL_UNIT_DPS:                    return "DPS";
-  case NAL_UNIT_SPS:                    return "SPS";
-  case NAL_UNIT_EOS:                    return "EOS";
-  case NAL_UNIT_EOB:                    return "EOB";
-  case NAL_UNIT_VPS:                    return "VPS";
   case NAL_UNIT_CODED_SLICE_IDR_W_RADL: return "IDR_W_RADL";
   case NAL_UNIT_CODED_SLICE_IDR_N_LP:   return "IDR_N_LP";
   case NAL_UNIT_CODED_SLICE_CRA:        return "CRA";
-#if JVET_N0865_GRA2GDR
   case NAL_UNIT_CODED_SLICE_GDR:        return "GDR";
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+  case NAL_UNIT_DCI:                    return "DCI";
 #else
-  case NAL_UNIT_CODED_SLICE_GRA:        return "GRA";
+  case NAL_UNIT_DPS:                    return "DPS";
 #endif
+  case NAL_UNIT_VPS:                    return "VPS";
+  case NAL_UNIT_SPS:                    return "SPS";
+  case NAL_UNIT_PPS:                    return "PPS";
+  case NAL_UNIT_PREFIX_APS:             return "Prefix APS";
+  case NAL_UNIT_SUFFIX_APS:             return "Suffix APS";
+  case NAL_UNIT_PH:                     return "PH";
+  case NAL_UNIT_ACCESS_UNIT_DELIMITER:  return "AUD";
+  case NAL_UNIT_EOS:                    return "EOS";
+  case NAL_UNIT_EOB:                    return "EOB";
+  case NAL_UNIT_PREFIX_SEI:             return "Prefix SEI";
+  case NAL_UNIT_SUFFIX_SEI:             return "Suffix SEI";
+  case NAL_UNIT_FD:                     return "FD";
   default:                              return "UNK";
+
   }
 }
 
@@ -133,7 +137,6 @@ public:
         }
         break;
 
-#if JVET_O0119_BASE_PALETTE_444
       case SCAN_TRAV_HOR:
         if (m_line % 2 == 0)
         {
@@ -175,7 +178,6 @@ public:
           else m_line--;
         }
         break;
-#endif
       //------------------------------------------------
 
       default:
@@ -187,50 +189,50 @@ public:
     return rtn;
   }
 };
-const int8_t g_GbiLog2WeightBase = 3;
-const int8_t g_GbiWeightBase = (1 << g_GbiLog2WeightBase);
-const int8_t g_GbiWeights[GBI_NUM] = { -2, 3, 4, 5, 10 };
-const int8_t g_GbiSearchOrder[GBI_NUM] = { GBI_DEFAULT, GBI_DEFAULT - 2, GBI_DEFAULT + 2, GBI_DEFAULT - 1, GBI_DEFAULT + 1 };
-int8_t g_GbiCodingOrder[GBI_NUM];
-int8_t g_GbiParsingOrder[GBI_NUM];
+const int8_t g_BcwLog2WeightBase = 3;
+const int8_t g_BcwWeightBase = (1 << g_BcwLog2WeightBase);
+const int8_t g_BcwWeights[BCW_NUM] = { -2, 3, 4, 5, 10 };
+const int8_t g_BcwSearchOrder[BCW_NUM] = { BCW_DEFAULT, BCW_DEFAULT - 2, BCW_DEFAULT + 2, BCW_DEFAULT - 1, BCW_DEFAULT + 1 };
+int8_t g_BcwCodingOrder[BCW_NUM];
+int8_t g_BcwParsingOrder[BCW_NUM];
 
-int8_t getGbiWeight(uint8_t gbiIdx, uint8_t uhRefFrmList)
+int8_t getBcwWeight(uint8_t bcwIdx, uint8_t uhRefFrmList)
 {
   // Weghts for the model: P0 + w * (P1 - P0) = (1-w) * P0 + w * P1
   // Retuning  1-w for P0 or w for P1
-  return (uhRefFrmList == REF_PIC_LIST_0 ? g_GbiWeightBase - g_GbiWeights[gbiIdx] : g_GbiWeights[gbiIdx]);
+  return (uhRefFrmList == REF_PIC_LIST_0 ? g_BcwWeightBase - g_BcwWeights[bcwIdx] : g_BcwWeights[bcwIdx]);
 }
 
-void resetGbiCodingOrder(bool bRunDecoding, const CodingStructure &cs)
+void resetBcwCodingOrder(bool bRunDecoding, const CodingStructure &cs)
 {
-  // Form parsing order: { GBI_DEFAULT, GBI_DEFAULT+1, GBI_DEFAULT-1, GBI_DEFAULT+2, GBI_DEFAULT-2, ... }
-  g_GbiParsingOrder[0] = GBI_DEFAULT;
-  for (int i = 1; i <= (GBI_NUM >> 1); ++i)
+  // Form parsing order: { BCW_DEFAULT, BCW_DEFAULT+1, BCW_DEFAULT-1, BCW_DEFAULT+2, BCW_DEFAULT-2, ... }
+  g_BcwParsingOrder[0] = BCW_DEFAULT;
+  for (int i = 1; i <= (BCW_NUM >> 1); ++i)
   {
-    g_GbiParsingOrder[2 * i - 1] = GBI_DEFAULT + (int8_t)i;
-    g_GbiParsingOrder[2 * i] = GBI_DEFAULT - (int8_t)i;
+    g_BcwParsingOrder[2 * i - 1] = BCW_DEFAULT + (int8_t)i;
+    g_BcwParsingOrder[2 * i] = BCW_DEFAULT - (int8_t)i;
   }
 
   // Form encoding order
   if (!bRunDecoding)
   {
-    for (int i = 0; i < GBI_NUM; ++i)
+    for (int i = 0; i < BCW_NUM; ++i)
     {
-      g_GbiCodingOrder[(uint32_t)g_GbiParsingOrder[i]] = i;
+      g_BcwCodingOrder[(uint32_t)g_BcwParsingOrder[i]] = i;
     }
   }
 }
 
-uint32_t deriveWeightIdxBits(uint8_t gbiIdx) // Note: align this with TEncSbac::codeGbiIdx and TDecSbac::parseGbiIdx
+uint32_t deriveWeightIdxBits(uint8_t bcwIdx) // Note: align this with TEncSbac::codeBcwIdx and TDecSbac::parseBcwIdx
 {
   uint32_t numBits = 1;
-  uint8_t  gbiCodingIdx = (uint8_t)g_GbiCodingOrder[gbiIdx];
+  uint8_t  bcwCodingIdx = (uint8_t)g_BcwCodingOrder[bcwIdx];
 
-  if (GBI_NUM > 2 && gbiCodingIdx != 0)
+  if (BCW_NUM > 2 && bcwCodingIdx != 0)
   {
-    uint32_t prefixNumBits = GBI_NUM - 2;
+    uint32_t prefixNumBits = BCW_NUM - 2;
     uint32_t step = 1;
-    uint8_t  prefixSymbol = gbiCodingIdx;
+    uint8_t  prefixSymbol = bcwCodingIdx;
 
     // Truncated unary code
     uint8_t idx = 1;
@@ -405,6 +407,7 @@ void initROM()
     }
   }
 
+#if !JVET_Q0806
   for( int idxH = MAX_CU_DEPTH - MIN_CU_LOG2; idxH >= 0; --idxH )
   {
     for( int idxW = MAX_CU_DEPTH - MIN_CU_LOG2; idxW >= 0; --idxW )
@@ -427,7 +430,6 @@ void initROM()
     }
   }
 
-#if JVET_O0280_SIMD_TRIANGLE_WEIGHTING
   for (int idxH = 0; idxH < MAX_CU_DEPTH - MIN_CU_LOG2 + 2; ++idxH)
   {
     for (int idxW = 0; idxW < MAX_CU_DEPTH - MIN_CU_LOG2 + 2; ++idxW)
@@ -437,27 +439,34 @@ void initROM()
       const int nCbR = (nCbW > nCbH) ? nCbW / nCbH : nCbH / nCbW;
 
       // let SIMD can read at least 64-bit when at last row
-      g_triangleWeights[0][0][idxH][idxW] = new int16_t[nCbH * nCbW + 4];
-      g_triangleWeights[0][1][idxH][idxW] = new int16_t[nCbH * nCbW + 4];
-      g_triangleWeights[1][0][idxH][idxW] = new int16_t[nCbH * nCbW + 4];
-      g_triangleWeights[1][1][idxH][idxW] = new int16_t[nCbH * nCbW + 4];
-
+      g_triangleWeights[0][idxH][idxW] = new int16_t[nCbH * nCbW + 4];
+      g_triangleWeights[1][idxH][idxW] = new int16_t[nCbH * nCbW + 4];
       for (int y = 0; y < nCbH; y++)
       {
         for (int x = 0; x < nCbW; x++)
         {
-          g_triangleWeights[0][0][idxH][idxW][y*nCbW + x] = (nCbW > nCbH) ? Clip3(0, 8, x / nCbR - y + 4) : Clip3(0, 8, x - y / nCbR + 4);
-          g_triangleWeights[0][1][idxH][idxW][y*nCbW + x] = (nCbW > nCbH) ? Clip3(0, 8, nCbH - 1 - x / nCbR - y + 4) : Clip3(0, 8, nCbW - 1 - x - y / nCbR + 4);
-          g_triangleWeights[1][0][idxH][idxW][y*nCbW + x] = (nCbW > nCbH) ? Clip3(0, 4, x / nCbR - y + 2) * 2 : Clip3(0, 4, x - y / nCbR + 2) * 2;
-          g_triangleWeights[1][1][idxH][idxW][y*nCbW + x] = (nCbW > nCbH) ? Clip3(0, 4, nCbH - 1 - x / nCbR - y + 2) * 2 : Clip3(0, 4, nCbW - 1 - x - y / nCbR + 2) * 2;
+          g_triangleWeights[0][idxH][idxW][y*nCbW + x] = (nCbW > nCbH) ? Clip3(0, 8, x / nCbR - y + 4) : Clip3(0, 8, x - y / nCbR + 4);
+          g_triangleWeights[1][idxH][idxW][y*nCbW + x] = (nCbW > nCbH) ? Clip3(0, 8, nCbH - 1 - x / nCbR - y + 4) : Clip3(0, 8, nCbW - 1 - x - y / nCbR + 4);
         }
       }
     }
   }
+#else
+  initGeoTemplate();
 #endif
 
-#if JVET_O0592_ENC_ME_IMP
   ::memset(g_isReusedUniMVsFilled, 0, sizeof(g_isReusedUniMVsFilled));
+
+#if JVET_Q0503_Q0712_PLT_ENCODER_IMPROV_BUGFIX
+  for (int qp = 0; qp < 57; qp++)
+  {
+    int qpRem = (qp + 12) % 6;
+    int qpPer = (qp + 12) / 6;
+    int quantiserScale = g_quantScales[0][qpRem];
+    int quantiserRightShift = QUANT_SHIFT + qpPer;
+    double threshQP = ((double)(1 << quantiserRightShift)) / quantiserScale;
+    g_paletteQuant[qp] = (int)(threshQP*0.16 + 0.5);
+  }
 #endif
 }
 
@@ -484,20 +493,30 @@ void destroyROM()
   delete gp_sizeIdxInfo;
   gp_sizeIdxInfo = nullptr;
 
-#if JVET_O0280_SIMD_TRIANGLE_WEIGHTING
+#if !JVET_Q0806
   for (int idxH = 0; idxH < MAX_CU_DEPTH - MIN_CU_LOG2 + 2; ++idxH)
   {
     for (int idxW = 0; idxW < MAX_CU_DEPTH - MIN_CU_LOG2 + 2; ++idxW)
     {
-      delete[] g_triangleWeights[0][0][idxH][idxW];
-      delete[] g_triangleWeights[0][1][idxH][idxW];
-      delete[] g_triangleWeights[1][0][idxH][idxW];
-      delete[] g_triangleWeights[1][1][idxH][idxW];
-      g_triangleWeights[0][0][idxH][idxW] = nullptr;
-      g_triangleWeights[0][1][idxH][idxW] = nullptr;
-      g_triangleWeights[1][0][idxH][idxW] = nullptr;
-      g_triangleWeights[1][1][idxH][idxW] = nullptr;
+      delete[] g_triangleWeights[0][idxH][idxW];
+      delete[] g_triangleWeights[1][idxH][idxW];
+      g_triangleWeights[0][idxH][idxW] = nullptr;
+      g_triangleWeights[1][idxH][idxW] = nullptr;
     }
+  }
+#else
+  for( int modeIdx = 0; modeIdx < GEO_NUM_PARTITION_MODE; modeIdx++ )
+  {
+    delete[] g_GeoParams[modeIdx];
+    g_GeoParams[modeIdx] = nullptr;
+  }
+  delete[] g_GeoParams;
+  for( int i = 0; i < GEO_NUM_PRESTORED_MASK; i++ )
+  {
+    delete[] g_globalGeoWeights   [i];
+    delete[] g_globalGeoEncSADmask[i];
+    g_globalGeoWeights   [i] = nullptr;
+    g_globalGeoEncSADmask[i] = nullptr;
   }
 #endif
 }
@@ -523,16 +542,6 @@ const int g_invQuantScales[2][SCALING_LIST_REM_NUM] = // can be represented as a
 //--------------------------------------------------------------------------------------------------
 //coefficients
 //--------------------------------------------------------------------------------------------------
-#if !JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
-const uint8_t g_aucChromaScale[NUM_CHROMA_FORMAT][chromaQPMappingTableSize] =
-{
-  //0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69
-  { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-  { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,29,30,31,32,33,33,34,34,35,35,36,36,37,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63 },
-  { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,63,63,63,63,63,63 },
-  { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,63,63,63,63,63,63 }
-};
-#endif
 // ====================================================================================================================
 // Intra prediction
 // ====================================================================================================================
@@ -569,42 +578,9 @@ const uint8_t g_aucIntraModeNumFast_NotUseMPM[MAX_CU_DEPTH] =
 };
 
 const uint8_t g_chroma422IntraAngleMappingTable[NUM_INTRA_MODE] =
-#if JVET_O0655_422_CHROMA_DM_MAPPING_FIX
-//                                                                     H                                                               D                                                               V
+//                                    *                                H                              *                                D      *   *   *   *       *   *   *                   *        V       *                   *   *   *      *   *   *   *
 //0, 1,  2,  3,  4,  5,  6,  7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, DM
-{ 0, 1, 61, 62, 63, 64, 65, 66, 2, 3,  4,  6,  8, 10, 12, 13, 14, 16, 18, 20, 22, 23, 24, 26, 28, 30, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 44, 44, 45, 46, 46, 46, 47, 48, 48, 48, 49, 50, 51, 52, 52, 52, 53, 54, 54, 54, 55, 56, 56, 56, 57, 58, 59, 60, DM_CHROMA_IDX };
-#else
-//                                                               H                                                               D                                                               V
-//0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, DM
-{ 0, 1, 2, 2, 2, 2, 2, 2, 2, 3,  4,  6,  8, 10, 12, 13, 14, 16, 18, 20, 22, 23, 24, 26, 28, 30, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 44, 44, 45, 46, 46, 46, 47, 48, 48, 48, 49, 50, 51, 52, 52, 52, 53, 54, 54, 54, 55, 56, 56, 56, 57, 58, 59, 60, DM_CHROMA_IDX };
-#endif
-
-#if !JVET_O0925_MIP_SIMPLIFICATIONS
-extern const uint8_t  g_intraMode65to33AngMapping[NUM_INTRA_MODE] =
-//                                                               H                                                               D                                                               V
-//0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, DM
-{ 0, 1, 2, 2, 3, 3, 4, 4, 5, 5,  6,  6,  7,  7,  8,  8,  9,  9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 23, 24, 24, 25, 25, 26, 26, 27, 27, 28, 28, 29, 29, 30, 30, 31, 31, 32, 32, 33, 33, 34, DM_CHROMA_IDX };
-
-const uint8_t g_mapMipToAngular65[3][MAX_NUM_MIP_MODE] =
-{
-  {  0, 18, 18,  0, 18,  0, 12,  0, 18,  2, 18, 12, 18, 18,  1, 18, 18,  0,  0, 50,  0, 50,  0, 56,  0, 50, 66, 50, 56, 50, 50,  1, 50, 50, 50 },
-  {  0,  1,  0,  1,  0, 22, 18, 18,  1,  0,  1,  0,  1,  0, 44,  0, 50,  1,  0 },
-  {  1,  1,  1,  1, 18,  0,  1,  0,  1, 50,  0 },
-};
-const uint8_t g_mapAngular33ToMip[3][35] =
-{
-  { 17, 17, 17,  9,  9,  9,  9, 17, 17, 17, 17, 17, 17, 17,  5,  5,  5,  5, 34, 22, 22, 22, 22, 34, 34, 34, 34, 34, 34, 34, 26, 26, 26, 26, 26 },
-  {  0,  0, 10, 10, 10, 10, 10,  4,  6,  7,  7,  7,  5,  5,  0,  0,  3,  3, 12, 12, 12, 12, 14, 14, 14, 16, 16, 16, 15, 13,  1,  1,  1,  1,  1 },
-  {  5,  1,  3,  3,  3,  3,  0,  0,  0,  4,  4,  4,  5,  1,  1,  1,  1,  1,  6,  6,  6,  6,  6, 10, 10,  9,  9,  9,  9,  9,  8,  8,  8,  8,  8 },
-};
-
-const int g_sortedMipMpms[3][NUM_MPM_MIP] =
-{
-  { 17, 34,  5 },
-  {  0,  7, 16 },
-  {  1,  4,  6 },
-};
-#endif
+{ 0, 1, 61, 62, 63, 64, 65, 66, 2, 3,  5,  6,  8, 10, 12, 13, 14, 16, 18, 20, 22, 23, 24, 26, 28, 30, 31, 33, 34, 35, 36, 37, 38, 39, 40, 41, 41, 42, 43, 43, 44, 44, 45, 45, 46, 47, 48, 48, 49, 49, 50, 51, 51, 52, 52, 53, 54, 55, 55, 56, 56, 57, 57, 58, 59, 59, 60, DM_CHROMA_IDX };
 
 
 
@@ -613,9 +589,7 @@ const int g_sortedMipMpms[3][NUM_MPM_MIP] =
 // ====================================================================================================================
 SizeIndexInfo*           gp_sizeIdxInfo = NULL;
 
-#if JVET_O0105_ICT
 const int                 g_ictModes[2][4] = { { 0, 3, 1, 2 }, { 0, -3, -1, -2 } };
-#endif
 
 UnitScale g_miScaling( MIN_CU_LOG2, MIN_CU_LOG2 );
 
@@ -634,13 +608,6 @@ const uint32_t g_auiGoRiceParsCoeff[32] =
 {
   0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3
 };
-const uint32_t g_auiGoRicePosCoeff0[3][32] =
-{
-  {0, 0, 0, 0, 0, 1, 2,    2, 2, 2, 2, 2, 4, 4,    4, 4, 4, 4,  4,  4,  4,  4,  4,  8,  8,  8,  8,  8,     8,  8,  8,  8},
-  {1, 1, 1, 1, 2, 3, 4,    4, 4, 6, 6, 6, 8, 8,    8, 8, 8, 8, 12, 12, 12, 12, 12, 12, 12, 12, 16, 16,    16, 16, 16, 16},
-  {1, 1, 2, 2, 2, 3, 4,    4, 4, 6, 6, 6, 8, 8,    8, 8, 8, 8, 12, 12, 12, 12, 12, 12, 12, 16, 16, 16,    16, 16, 16, 16}
-};
-
 const char *MatrixType[SCALING_LIST_SIZE_NUM][SCALING_LIST_NUM] =
 {
   {
@@ -693,11 +660,11 @@ const char *MatrixType[SCALING_LIST_SIZE_NUM][SCALING_LIST_NUM] =
   },
   {
     "INTRA64X64_LUMA",
-    "INTRA64X64_CHROMAU_FROM16x16_CHROMAU",
-    "INTRA64X64_CHROMAV_FROM16x16_CHROMAV",
+    "INTRA64X64_CHROMAU",
+    "INTRA64X64_CHROMAV",
     "INTER64X64_LUMA",
-    "INTER64X64_CHROMAU_FROM16x16_CHROMAU",
-    "INTER64X64_CHROMAV_FROM16x16_CHROMAV"
+    "INTER64X64_CHROMAU",
+    "INTER64X64_CHROMAV"
   },
   {
   },
@@ -731,11 +698,11 @@ const char *MatrixType_DC[SCALING_LIST_SIZE_NUM][SCALING_LIST_NUM] =
   },
   {
     "INTRA64X64_LUMA_DC",
-    "INTRA64X64_CHROMAU_DC_FROM16x16_CHROMAU",
-    "INTRA64X64_CHROMAV_DC_FROM16x16_CHROMAV",
+    "INTRA64X64_CHROMAU_DC",
+    "INTRA64X64_CHROMAV_DC",
     "INTER64X64_LUMA_DC",
-    "INTER64X64_CHROMAU_DC_FROM16x16_CHROMAU",
-    "INTER64X64_CHROMAV_DC_FROM16x16_CHROMAV"
+    "INTER64X64_CHROMAU_DC",
+    "INTER64X64_CHROMAV_DC"
   },
   {
   },
@@ -777,18 +744,102 @@ const uint32_t g_scalingListSize [SCALING_LIST_SIZE_NUM] = { 1, 4, 16, 64, 256, 
 const uint32_t g_scalingListSizeX[SCALING_LIST_SIZE_NUM] = { 1, 2,  4,  8,  16,   32,   64,   128 };
 
 
+#if !JVET_Q0806
 uint8_t g_triangleMvStorage[TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_SIZE >> MIN_CU_LOG2][MAX_CU_SIZE >> MIN_CU_LOG2];
-#if JVET_O0280_SIMD_TRIANGLE_WEIGHTING
-int16_t *g_triangleWeights[2][TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG2 + 2][MAX_CU_DEPTH - MIN_CU_LOG2 + 2];
-#endif
-#if JVET_O0592_ENC_ME_IMP
-Mv   g_reusedUniMVs[32][32][8][8][2][33];
-bool g_isReusedUniMVsFilled[32][32][8][8];
+int16_t *g_triangleWeights[TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG2 + 2][MAX_CU_DEPTH - MIN_CU_LOG2 + 2];
 #endif
 
-#if JVET_O0119_BASE_PALETTE_444
+Mv   g_reusedUniMVs[32][32][8][8][2][33];
+bool g_isReusedUniMVsFilled[32][32][8][8];
+
+#if JVET_Q0503_Q0712_PLT_ENCODER_IMPROV_BUGFIX
+uint16_t g_paletteQuant[57];
+#else
 const uint8_t g_paletteQuant[52] = { 0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 7, 7, 8, 9, 9, 10, 11, 12, 13, 14, 15, 16, 17, 19, 21, 22, 24, 23, 25, 26, 28, 29, 31, 32, 34, 36, 37, 39, 41, 42, 45 };
+#endif
 uint8_t g_paletteRunTopLut [5] = { 0, 1, 1, 2, 2 };
-uint8_t g_paletteRunLeftLut[5] = { 0, 3, 3, 4, 4 };
+uint8_t g_paletteRunLeftLut[5] = { 0, 1, 2, 3, 4 };
+
+#if JVET_Q0806
+void initGeoTemplate()
+{
+  g_GeoParams = new int16_t*[GEO_NUM_PARTITION_MODE];
+  int modeIdx = 0;
+  for( int angleIdx = 0; angleIdx < GEO_NUM_ANGLES; angleIdx++ )
+  {
+    for( int distanceIdx = 0; distanceIdx < GEO_NUM_DISTANCES; distanceIdx++ )
+    {
+      if( (distanceIdx == 0 && angleIdx >= 16)
+        || ((distanceIdx == 2 || distanceIdx == 0) && (g_angle2mask[angleIdx] == 0 || g_angle2mask[angleIdx] == 5))
+        || g_angle2mask[angleIdx] == -1 )
+        continue;
+      g_GeoParams[modeIdx]    = new int16_t[2];
+      g_GeoParams[modeIdx][0] = (int16_t)angleIdx;
+      g_GeoParams[modeIdx][1] = (int16_t)distanceIdx;
+      modeIdx++;
+    }
+  }
+  for (int angleIdx = 0; angleIdx < (GEO_NUM_ANGLES >> 2) + 1; angleIdx++)
+  {
+    if (g_angle2mask[angleIdx] == -1)
+      continue;
+    g_globalGeoWeights[g_angle2mask[angleIdx]] = new int16_t[GEO_WEIGHT_MASK_SIZE * GEO_WEIGHT_MASK_SIZE];
+    g_globalGeoEncSADmask[g_angle2mask[angleIdx]] = new int16_t[GEO_WEIGHT_MASK_SIZE * GEO_WEIGHT_MASK_SIZE];
+  
+    int distanceX = angleIdx;
+    int distanceY = (distanceX + (GEO_NUM_ANGLES >> 2)) % GEO_NUM_ANGLES;
+    int16_t rho = (g_Dis[distanceX] << (GEO_MAX_CU_LOG2+1)) + (g_Dis[distanceY] << (GEO_MAX_CU_LOG2 + 1));
+    static const int16_t maskOffset = (2*GEO_MAX_CU_SIZE - GEO_WEIGHT_MASK_SIZE) >> 1;
+    int index = 0;
+    for( int y = 0; y < GEO_WEIGHT_MASK_SIZE; y++ )
+    {
+      int16_t lookUpY = (((y + maskOffset) << 1) + 1) * g_Dis[distanceY];
+      for( int x = 0; x < GEO_WEIGHT_MASK_SIZE; x++, index++ )
+      {
+        int16_t sx_i = ((x + maskOffset) << 1) + 1;
+        int16_t weightIdx = sx_i * g_Dis[distanceX] + lookUpY - rho;
+        int weightLinearIdx = 32 + weightIdx;
+        g_globalGeoWeights[g_angle2mask[angleIdx]][index] = Clip3(0, 8, (weightLinearIdx + 4) >> 3);
+        g_globalGeoEncSADmask[g_angle2mask[angleIdx]][index] = weightIdx > 0 ? 1 : 0;
+      }
+    }
+  }
+
+  for( int hIdx = 0; hIdx < GEO_NUM_CU_SIZE; hIdx++ )
+  {
+    int16_t height = 1 << ( hIdx + GEO_MIN_CU_LOG2);
+    for( int wIdx = 0; wIdx < GEO_NUM_CU_SIZE; wIdx++ )
+    {
+      int16_t width = 1 << (wIdx + GEO_MIN_CU_LOG2);
+      for( int splitDir = 0; splitDir < GEO_NUM_PARTITION_MODE; splitDir++ )
+      {
+        int16_t angle         = g_GeoParams[splitDir][0];
+        int16_t distance      = g_GeoParams[splitDir][1];
+        int16_t offsetX       = (GEO_WEIGHT_MASK_SIZE - width) >> 1;
+        int16_t offsetY       = (GEO_WEIGHT_MASK_SIZE - height) >> 1;
+        if( distance > 0 )
+        {
+          if( angle % 16 == 8 || (angle % 16 != 0 && height >= width) )
+          {
+            offsetY += angle < 16 ? ((distance * (int32_t)height) >> 3) : -((distance * (int32_t)height) >> 3);
+          }
+          else
+          {
+            offsetX += angle < 16 ? ((distance * (int32_t)width) >> 3) : -((distance * (int32_t)width) >> 3);
+          }
+        }
+        g_weightOffset[splitDir][hIdx][wIdx][0] = offsetX;
+        g_weightOffset[splitDir][hIdx][wIdx][1] = offsetY;
+      }
+    }
+  }
+}
+int16_t** g_GeoParams;
+int16_t*  g_globalGeoWeights   [GEO_NUM_PRESTORED_MASK];
+int16_t*  g_globalGeoEncSADmask[GEO_NUM_PRESTORED_MASK];
+int16_t   g_weightOffset       [GEO_NUM_PARTITION_MODE][GEO_NUM_CU_SIZE][GEO_NUM_CU_SIZE][2];
+int8_t    g_angle2mask[GEO_NUM_ANGLES] = { 0, -1, 1, 2, 3, 4, -1, -1, 5, -1, -1, 4, 3, 2, 1, -1, 0, -1, 1, 2, 3, 4, -1, -1, 5, -1, -1, 4, 3, 2, 1, -1 };
+int8_t    g_Dis[GEO_NUM_ANGLES] = { 8, 8, 8, 8, 4, 4, 2, 1, 0, -1, -2, -4, -4, -8, -8, -8, -8, -8, -8, -8, -4, -4, -2, -1, 0, 1, 2, 4, 4, 8, 8, 8 };
+int8_t    g_angle2mirror[GEO_NUM_ANGLES] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 2 };
 #endif
 //! \}

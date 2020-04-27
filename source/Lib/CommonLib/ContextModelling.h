@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -94,11 +94,14 @@ public:
   unsigned        maxLastPosY     ()                        const { return m_maxLastPosY; }
   unsigned        lastXCtxId      ( unsigned  posLastX  )   const { return m_CtxSetLastX( m_lastOffsetX + ( posLastX >> m_lastShiftX ) ); }
   unsigned        lastYCtxId      ( unsigned  posLastY  )   const { return m_CtxSetLastY( m_lastOffsetY + ( posLastY >> m_lastShiftY ) ); }
-  bool            isContextCoded  ()                              { return --m_remainingContextBins >= 0; }
   int             numCtxBins      ()                        const { return   m_remainingContextBins;      }
   void            setNumCtxBins   ( int n )                       {          m_remainingContextBins  = n; }
   unsigned        sigGroupCtxId   ( bool ts = false     )   const { return ts ? m_sigGroupCtxIdTS : m_sigGroupCtxId; }
   bool            bdpcm           ()                        const { return m_bdpcm; }
+
+  void            decimateNumCtxBins(int n) { m_remainingContextBins -= n; }
+  void            increaseNumCtxBins(int n) { m_remainingContextBins += n; }
+
   unsigned sigCtxIdAbs( int scanPos, const TCoeff* coeff, const int state )
   {
     const uint32_t posY      = m_scan[scanPos].y;
@@ -131,19 +134,11 @@ public:
 #undef UPDATE
 
 
-#if JVET_O0617_SIG_FLAG_CONTEXT_REDUCTION
     int ctxOfs = std::min((sumAbs+1)>>1, 3) + ( diag < 2 ? 4 : 0 );
-#else
-    int ctxOfs = std::min( sumAbs, 5 ) + ( diag < 2 ? 6 : 0 );
-#endif
 
     if( m_chType == CHANNEL_TYPE_LUMA )
     {
-#if JVET_O0617_SIG_FLAG_CONTEXT_REDUCTION
       ctxOfs += diag < 5 ? 4 : 0;
-#else
-      ctxOfs += diag < 5 ? 6 : 0;
-#endif
     }
 
     m_tmplCpDiag = diag;
@@ -217,7 +212,6 @@ public:
   unsigned parityCtxIdAbsTS   ()                  const { return m_tsParFlagCtxSet(      0 ); }
   unsigned greaterXCtxIdAbsTS ( uint8_t offset )  const { return m_tsGtxFlagCtxSet( offset ); }
 
-#if JVET_O0122_TS_SIGN_LEVEL
   unsigned lrg1CtxIdAbsTS(int scanPos, const TCoeff* coeff, int bdpcm)
   {
     const uint32_t  posY = m_scan[scanPos].y;
@@ -246,9 +240,7 @@ public:
 #undef UPDATE
     return m_tsLrg1FlagCtxSet(numPos);
   }
-#endif
 
-#if JVET_O0122_TS_SIGN_LEVEL
   unsigned signCtxIdAbsTS(int scanPos, const TCoeff* coeff, int bdpcm)
   {
     const uint32_t  posY = m_scan[scanPos].y;
@@ -285,9 +277,7 @@ public:
     }
     return m_tsSignFlagCtxSet(signCtx);
   }
-#endif
 
-#if JVET_O0122_TS_SIGN_LEVEL
   void neighTS(int &rightPixel, int &belowPixel, int scanPos, const TCoeff* coeff)
   {
     const uint32_t  posY = m_scan[scanPos].y;
@@ -308,6 +298,9 @@ public:
 
   int deriveModCoeff(int rightPixel, int belowPixel, int absCoeff, int bdpcm = 0)
   {
+    
+    if (absCoeff == 0)
+      return 0;
     int pred1, absBelow = abs(belowPixel), absRight = abs(rightPixel);
 
     int absCoeffMod = absCoeff;
@@ -331,6 +324,10 @@ public:
 
   int decDeriveModCoeff(int rightPixel, int belowPixel, int absCoeff)
   {
+    
+    if (absCoeff == 0)
+      return 0;
+
     int pred1, absBelow = abs(belowPixel), absRight = abs(rightPixel);
     pred1 = std::max(absBelow, absRight);
 
@@ -346,37 +343,13 @@ public:
     }
     return(absCoeffMod);
   }
-#endif
 
   unsigned templateAbsSumTS( int scanPos, const TCoeff* coeff )
   {
-    const uint32_t  posY  = m_scan[scanPos].y;
-    const uint32_t  posX  = m_scan[scanPos].x;
-    const TCoeff*   posC  = coeff + posX + posY * m_width;
-    int             sum   = 0;
-    if (posX > 0)
-    {
-      sum += abs(posC[-1]);
-    }
-    if (posY > 0)
-    {
-      sum += abs(posC[-(int)m_width]);
-    }
-
-    const uint32_t auiGoRicePars[32] =
-    {
-      0, 0, 0, 0,
-      0, 0, 0, 0, 0, 0,
-      0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-      1, 1, 1, 2, 2, 2, 2, 2, 2, 2
-    };
-
-    return auiGoRicePars[ std::min(sum, 31) ];
+    return 1;
   }
 
-#if JVET_O0052_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT
   int                       regBinLimit;
-#endif
 
 private:
   // constant
@@ -425,10 +398,8 @@ private:
   CtxSet                    m_tsSigFlagCtxSet;
   CtxSet                    m_tsParFlagCtxSet;
   CtxSet                    m_tsGtxFlagCtxSet;
-#if JVET_O0122_TS_SIGN_LEVEL
   CtxSet                    m_tsLrg1FlagCtxSet;
   CtxSet                    m_tsSignFlagCtxSet;
-#endif
   int                       m_remainingContextBins;
   std::bitset<MLS_GRP_NUM>  m_sigCoeffGroupFlag;
   const bool                m_bdpcm;
@@ -439,62 +410,39 @@ class CUCtx
 {
 public:
   CUCtx()              : isDQPCoded(false), isChromaQpAdjCoded(false),
-#if JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
                          qgStart(false)
                          {
-#if JVET_O0094_LFNST_ZERO_PRIM_COEFFS
                            violatesLfnstConstrained[CHANNEL_TYPE_LUMA  ] = false;
                            violatesLfnstConstrained[CHANNEL_TYPE_CHROMA] = false;
+                           lfnstLastScanPos                              = false;
+                           violatesMtsCoeffConstraint                    = false;
+#if JVET_Q0516_MTS_SIGNALLING_DC_ONLY_COND
+                           mtsLastScanPos                                = false;
 #endif
-                           lfnstLastScanPos = false;
                          }
-#else
-                         qgStart(false),
-#if JVET_O0094_LFNST_ZERO_PRIM_COEFFS
-                         numNonZeroCoeffNonTs(0)
-                         {
-                           violatesLfnstConstrained[CHANNEL_TYPE_LUMA  ] = false;
-                           violatesLfnstConstrained[CHANNEL_TYPE_CHROMA] = false;
-                         }
-#else
-                         numNonZeroCoeffNonTs(0) {}
-#endif
-#endif
   CUCtx(int _qp)       : isDQPCoded(false), isChromaQpAdjCoded(false),
                          qgStart(false),
-#if JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
                          qp(_qp)
                          {
-#if JVET_O0094_LFNST_ZERO_PRIM_COEFFS
                            violatesLfnstConstrained[CHANNEL_TYPE_LUMA  ] = false;
                            violatesLfnstConstrained[CHANNEL_TYPE_CHROMA] = false;
+                           lfnstLastScanPos                              = false;
+                           violatesMtsCoeffConstraint                    = false;
+#if JVET_Q0516_MTS_SIGNALLING_DC_ONLY_COND
+                           mtsLastScanPos                                = false;
 #endif
-                           lfnstLastScanPos = false;
                          }
-#else
-#if JVET_O0094_LFNST_ZERO_PRIM_COEFFS
-                         numNonZeroCoeffNonTs(0), qp(_qp)
-                         {
-                           violatesLfnstConstrained[CHANNEL_TYPE_LUMA  ] = false;
-                           violatesLfnstConstrained[CHANNEL_TYPE_CHROMA] = false;
-                         }
-#else
-                         numNonZeroCoeffNonTs(0), qp(_qp) {}
-#endif
-#endif
   ~CUCtx() {}
 public:
   bool      isDQPCoded;
   bool      isChromaQpAdjCoded;
   bool      qgStart;
-#if JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
   bool      lfnstLastScanPos;
-#else
-  uint32_t  numNonZeroCoeffNonTs;
-#endif
   int8_t    qp;                   // used as a previous(last) QP and for QP prediction
-#if JVET_O0094_LFNST_ZERO_PRIM_COEFFS
   bool      violatesLfnstConstrained[MAX_NUM_CHANNEL_TYPE];
+  bool      violatesMtsCoeffConstraint;
+#if JVET_Q0516_MTS_SIGNALLING_DC_ONLY_COND 
+  bool      mtsLastScanPos;
 #endif
 };
 
@@ -505,7 +453,7 @@ public:
   ~MergeCtx() {}
 public:
   MvField       mvFieldNeighbours [ MRG_MAX_NUM_CANDS << 1 ]; // double length for mv of both lists
-  uint8_t       GBiIdx            [ MRG_MAX_NUM_CANDS      ];
+  uint8_t       BcwIdx            [ MRG_MAX_NUM_CANDS      ];
   unsigned char interDirNeighbours[ MRG_MAX_NUM_CANDS      ];
   MergeType     mrgTypeNeighbours [ MRG_MAX_NUM_CANDS      ];
   int           numValidMergeCand;
@@ -515,10 +463,8 @@ public:
   MotionBuf     subPuMvpExtMiBuf;
   MvField mmvdBaseMv[MMVD_BASE_MV_NUM][2];
   void setMmvdMergeCandiInfo(PredictionUnit& pu, int candIdx);
-#if JVET_O0057_ALTHPELIF
   bool          mmvdUseAltHpelIf  [ MMVD_BASE_MV_NUM ];
   bool          useAltHpelIf      [ MRG_MAX_NUM_CANDS ];
-#endif
   void setMergeInfo( PredictionUnit& pu, int candIdx );
 };
 
@@ -531,7 +477,7 @@ public:
   MvField       mvFieldNeighbours[AFFINE_MRG_MAX_NUM_CANDS << 1][3]; // double length for mv of both lists
   unsigned char interDirNeighbours[AFFINE_MRG_MAX_NUM_CANDS];
   EAffineModel  affineType[AFFINE_MRG_MAX_NUM_CANDS];
-  uint8_t       GBiIdx[AFFINE_MRG_MAX_NUM_CANDS];
+  uint8_t       BcwIdx[AFFINE_MRG_MAX_NUM_CANDS];
   int           numValidMergeCand;
   int           maxNumMergeCand;
 
@@ -543,20 +489,15 @@ public:
 namespace DeriveCtx
 {
 void     CtxSplit     ( const CodingStructure& cs, Partitioner& partitioner, unsigned& ctxSpl, unsigned& ctxQt, unsigned& ctxHv, unsigned& ctxHorBt, unsigned& ctxVerBt, bool* canSplit = nullptr );
-#if JVET_O0050_LOCAL_DUAL_TREE
 unsigned CtxModeConsFlag( const CodingStructure& cs, Partitioner& partitioner );
-#endif
-#if JVET_O0193_REMOVE_TR_DEPTH_IN_CBF_CTX
 unsigned CtxQtCbf     ( const ComponentID compID, const bool prevCbf = false, const int ispIdx = 0 );
-#else
-unsigned CtxQtCbf     ( const ComponentID compID, const unsigned trDepth, const bool prevCbf = false, const int ispIdx = 0 );
-#endif
 unsigned CtxInterDir  ( const PredictionUnit& pu );
 unsigned CtxSkipFlag  ( const CodingUnit& cu );
 unsigned CtxAffineFlag( const CodingUnit& cu );
 unsigned CtxPredModeFlag( const CodingUnit& cu );
 unsigned CtxIBCFlag(const CodingUnit& cu);
 unsigned CtxMipFlag   ( const CodingUnit& cu );
+unsigned CtxPltCopyFlag( const unsigned prevRunType, const unsigned dist );
 }
 
 #endif // __CONTEXTMODELLING__

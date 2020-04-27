@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -43,9 +43,7 @@
 
 #include "CommonLib/CommonDef.h"
 #include "CommonLib/CodingStructure.h"
-#if JVET_O0592_ENC_ME_IMP
 #include "InterSearch.h"
-#endif
 
 #include <typeinfo>
 #include <vector>
@@ -61,14 +59,13 @@ enum EncTestModeType
   ETM_MERGE_SKIP,
   ETM_INTER_ME,
   ETM_AFFINE,
+#if !JVET_Q0806
   ETM_MERGE_TRIANGLE,
+#else
+  ETM_MERGE_GEO,
+#endif
   ETM_INTRA,
-#if !JVET_O0525_REMOVE_PCM
-  ETM_IPCM,
-#endif
-#if JVET_O0119_BASE_PALETTE_444
   ETM_PALETTE,
-#endif
   ETM_SPLIT_QT,
   ETM_SPLIT_BT_H,
   ETM_SPLIT_BT_V,
@@ -105,21 +102,18 @@ static void getAreaIdx(const Area& area, const PreCalcValues &pcv, unsigned &idx
 struct EncTestMode
 {
   EncTestMode()
-    : type( ETM_INVALID ), opts( ETO_INVALID  ), qp( -1  ), lossless( false ) {}
+    : type( ETM_INVALID ), opts( ETO_INVALID  ), qp( -1  ) {}
   EncTestMode( EncTestModeType _type )
-    : type( _type       ), opts( ETO_STANDARD ), qp( -1  ), lossless( false ) {}
-  EncTestMode( EncTestModeType _type, int _qp, bool _lossless )
-    : type( _type       ), opts( ETO_STANDARD ), qp( _qp ), lossless( _lossless ) {}
-  EncTestMode( EncTestModeType _type, EncTestModeOpts _opts, int _qp, bool _lossless )
-    : type( _type       ), opts( _opts        ), qp( _qp ), lossless( _lossless ) {}
+    : type( _type       ), opts( ETO_STANDARD ), qp( -1  ) {}
+  EncTestMode( EncTestModeType _type, int _qp )
+    : type( _type       ), opts( ETO_STANDARD ), qp( _qp ) {}
+  EncTestMode( EncTestModeType _type, EncTestModeOpts _opts, int _qp )
+    : type( _type       ), opts( _opts        ), qp( _qp ) {}
 
   EncTestModeType type;
   EncTestModeOpts opts;
   int             qp;
-  bool            lossless;
-#if JVET_O0502_ISP_CLEANUP
   double          maxCostAllowed;
-#endif
 };
 
 
@@ -148,7 +142,11 @@ inline bool isModeInter( const EncTestMode& encTestmode ) // perhaps remove
   return (   encTestmode.type == ETM_INTER_ME
           || encTestmode.type == ETM_MERGE_SKIP
           || encTestmode.type == ETM_AFFINE
+#if !JVET_Q0806
           || encTestmode.type == ETM_MERGE_TRIANGLE
+#else
+          || encTestmode.type == ETM_MERGE_GEO
+#endif
           || encTestmode.type == ETM_HASH_INTER
          );
 }
@@ -210,6 +208,24 @@ struct ComprCUCtx
 #endif
     , bestCostWithoutSplitFlags( MAX_DOUBLE )
     , bestCostMtsFirstPassNoIsp( MAX_DOUBLE )
+    , bestCostIsp   ( MAX_DOUBLE )
+    , ispWasTested  ( false )
+    , bestPredModeDCT2
+                    ( UINT8_MAX )
+    , relatedCuIsValid
+                    ( false )
+    , ispPredModeVal( 0 )
+    , bestDCT2NonISPCost
+                    ( MAX_DOUBLE )
+    , bestNonDCT2Cost
+                    ( MAX_DOUBLE )
+    , bestISPIntraMode
+                    ( UINT8_MAX )
+    , mipFlag       ( false )
+    , ispMode       ( NOT_INTRA_SUBPARTITIONS )
+    , ispLfnstIdx   ( 0 )
+    , stopNonDCT2Transforms
+                    ( false )
   {
     getAreaIdx( cs.area.Y(), *cs.pcv, cuX, cuY, cuW, cuH );
     partIdx = ( ( cuX << 8 ) | cuY );
@@ -242,6 +258,18 @@ struct ComprCUCtx
 #endif
   double                            bestCostWithoutSplitFlags;
   double                            bestCostMtsFirstPassNoIsp;
+  double                            bestCostIsp;
+  bool                              ispWasTested;
+  uint16_t                          bestPredModeDCT2;
+  bool                              relatedCuIsValid;
+  uint16_t                          ispPredModeVal;
+  double                            bestDCT2NonISPCost;
+  double                            bestNonDCT2Cost;
+  uint8_t                           bestISPIntraMode;
+  bool                              mipFlag;
+  uint8_t                           ispMode;
+  uint8_t                           ispLfnstIdx;
+  bool                              stopNonDCT2Transforms;
 
   template<typename T> T    get( int ft )       const { return typeid(T) == typeid(double) ? (T&)extraFeaturesd[ft] : T(extraFeatures[ft]); }
   template<typename T> void set( int ft, T val )      { extraFeatures [ft] = int64_t( val ); }
@@ -269,13 +297,9 @@ protected:
 #if ENABLE_SPLIT_PARALLELISM
   int                   m_runNextInParallel;
 #endif
-#if JVET_O0592_ENC_ME_IMP
   InterSearch*          m_pcInterSearch;
-#endif
 
-#if JVET_O0119_BASE_PALETTE_444
   bool                  m_doPlt;
-#endif
 
 public:
 
@@ -333,13 +357,30 @@ public:
   void   setBestCostWithoutSplitFlags ( double cost )           { m_ComprCUCtxList.back().bestCostWithoutSplitFlags = cost;         }
   double getMtsFirstPassNoIspCost     ()                  const { return m_ComprCUCtxList.back().bestCostMtsFirstPassNoIsp;         }
   void   setMtsFirstPassNoIspCost     ( double cost )           { m_ComprCUCtxList.back().bestCostMtsFirstPassNoIsp = cost;         }
-#if JVET_O0592_ENC_ME_IMP
+  double getIspCost                   ()                  const { return m_ComprCUCtxList.back().bestCostIsp; }
+  void   setIspCost                   ( double val )            { m_ComprCUCtxList.back().bestCostIsp = val; }
+  bool   getISPWasTested              ()                  const { return m_ComprCUCtxList.back().ispWasTested; }
+  void   setISPWasTested              ( bool val )              { m_ComprCUCtxList.back().ispWasTested = val; }
+  void   setBestPredModeDCT2          ( uint16_t val )          { m_ComprCUCtxList.back().bestPredModeDCT2 = val; }
+  uint16_t getBestPredModeDCT2        ()                  const { return m_ComprCUCtxList.back().bestPredModeDCT2; }
+  bool   getRelatedCuIsValid          ()                  const { return m_ComprCUCtxList.back().relatedCuIsValid; }
+  void   setRelatedCuIsValid          ( bool val )              { m_ComprCUCtxList.back().relatedCuIsValid = val; }
+  uint16_t getIspPredModeValRelCU     ()                  const { return m_ComprCUCtxList.back().ispPredModeVal; }
+  void   setIspPredModeValRelCU       ( uint16_t val )          { m_ComprCUCtxList.back().ispPredModeVal = val; }
+  double getBestDCT2NonISPCostRelCU   ()                  const { return m_ComprCUCtxList.back().bestDCT2NonISPCost; }
+  void   setBestDCT2NonISPCostRelCU   ( double val )            { m_ComprCUCtxList.back().bestDCT2NonISPCost = val; }
+  double getBestNonDCT2Cost           ()                  const { return m_ComprCUCtxList.back().bestNonDCT2Cost; }
+  void   setBestNonDCT2Cost           ( double val )            { m_ComprCUCtxList.back().bestNonDCT2Cost = val; }
+  uint8_t getBestISPIntraModeRelCU    ()                  const { return m_ComprCUCtxList.back().bestISPIntraMode; }
+  void   setBestISPIntraModeRelCU     ( uint8_t val )           { m_ComprCUCtxList.back().bestISPIntraMode = val; }
+  void   setMIPFlagISPPass            ( bool val )              { m_ComprCUCtxList.back().mipFlag = val; }
+  void   setISPMode                   ( uint8_t val )           { m_ComprCUCtxList.back().ispMode = val; }
+  void   setISPLfnstIdx               ( uint8_t val )           { m_ComprCUCtxList.back().ispLfnstIdx = val; }
+  bool   getStopNonDCT2Transforms     ()                  const { return m_ComprCUCtxList.back().stopNonDCT2Transforms; }
+  void   setStopNonDCT2Transforms     ( bool val )              { m_ComprCUCtxList.back().stopNonDCT2Transforms = val; }
   void setInterSearch                 (InterSearch* pcInterSearch)   { m_pcInterSearch = pcInterSearch; }
-#endif
-#if JVET_O0119_BASE_PALETTE_444
   void   setPltEnc                    ( bool b )                { m_doPlt = b; }
   bool   getPltEnc()                                      const { return m_doPlt; }
-#endif
 
 protected:
   void xExtractFeatures ( const EncTestMode encTestmode, CodingStructure& cs );
@@ -398,7 +439,14 @@ struct CodedCUInfo
   bool validMv[NUM_REF_PIC_LIST_01][MAX_STORED_CU_INFO_REFS];
   Mv   saveMv [NUM_REF_PIC_LIST_01][MAX_STORED_CU_INFO_REFS];
 
-  uint8_t GBiIdx;
+  uint8_t BcwIdx;
+  char    selectColorSpaceOption;  // 0 - test both two color spaces; 1 - only test the first color spaces; 2 - only test the second color spaces
+  uint16_t ispPredModeVal;
+  double   bestDCT2NonISPCost;
+  double   bestCost;
+  double   bestNonDCT2Cost;
+  bool     relatedCuIsValid;
+  uint8_t  bestISPIntraMode;
 
 #if ENABLE_SPLIT_PARALLELISM
 
@@ -448,8 +496,10 @@ public:
   void setMv  ( const UnitArea& area, const RefPicList refPicList, const int iRefIdx, const Mv& rMv );
 
   bool  getInter( const UnitArea& area );
-  void  setGbiIdx( const UnitArea& area, uint8_t gBiIdx );
-  uint8_t getGbiIdx( const UnitArea& area );
+  void  setBcwIdx( const UnitArea& area, uint8_t gBiIdx );
+  uint8_t getBcwIdx( const UnitArea& area );
+
+  char  getSelectColorSpaceOption(const UnitArea& area);
 };
 
 #if REUSE_CU_RESULTS
@@ -481,10 +531,7 @@ private:
   BestEncodingInfo ***m_bestEncInfo[MAX_CU_SIZE >> MIN_CU_LOG2][MAX_CU_SIZE >> MIN_CU_LOG2];
   TCoeff             *m_pCoeff;
   Pel                *m_pPcmBuf;
-#if JVET_O0119_BASE_PALETTE_444
   bool               *m_runType;
-  Pel                *m_runLength;
-#endif
   CodingStructure     m_dummyCS;
   XUCache             m_dummyCache;
 #if ENABLE_SPLIT_PARALLELISM

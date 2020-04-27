@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -41,6 +41,8 @@
 #include "CommonDef.h"
 #include "CodingStructure.h"
 #include "Slice.h"
+
+#if !REMOVE_PPS_REXT
 
 //! \ingroup CommonLib
 //! \{
@@ -129,3 +131,4 @@ void CrossComponentPrediction::crossComponentPrediction(        TransformUnit &t
     }
   }
 }
+#endif

@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -50,303 +50,278 @@
 #include <assert.h>
 #include <cassert>
 
-#define JVET_O0245_VPS_DPS_APS                            1 // JVET-O0245: constraints for VPS, DPS, and APS
+#define DQ_SDH_SIGNALLING                                 1 // Merge request !1506: add DQ and SDH signalling in SPS to align with spec.
 
-#define JVET_O0044_MULTI_SUB_PROFILE                      1 // JVET-O0044: Zero or more sub profile fields
+#define JVET_Q0237_STSA_TID_ZERO_DEPLAYER                 1 // JVET-Q0237: STSA picture with TemporalId equal to 0 in a dependent layer
 
-#define JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA           1 // JVET-O0143: Remove signaling of top_right_brick_idx
+#define JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE             1 // JVET-Q0798: signal the number of merge candidates in SPS
 
-#define JVET_O0236_PPS_PARSING_DEPENDENCY                 1 // JVET-O0236: Resolves a PPS parsing dependency
+#define JVET_Q0157_SUBPICTURE_REORDERING_CONSTRAINT       1 //JVET-Q0157: subpicture reordering constraint
 
-#define JVET_O0148_NUM_ACTIVE_REF_PIC_CHECK               1 // JVET-O0148: Constraint that num active entries in RPL 0 and RPL 1 for P and B pictures
+#define JVET_P0118_HRD_ASPECTS                            1 //JVET-P0118: HRD aspects
 
-#define JVET_O0145_ENTRYPOINT_SIGNALLING                  0 // JVET-O0145: Not signalling num_entry_point_offsets but derive it at decoder
+#define JVET_Q0371_DEBLOCKING_CLEANUP                     1 //JVET_Q0371: cleanup on deblocking across subpicture boundaries
 
-#define JVET_N0494_DRAP                                   1 // JVET-N0494: Dependent random access point indication SEI
+#define JVET_Q0289_BUGFIX_RECT_SLICE_FLAG                 1 //JVET-Q0289: If NumTilesInPic is equal to 1, don't signal the rect_slice_flag and infer its value to be 1.
 
-#define JVET_O0173_O0176_O0338_NUMBRICK_M2                1 // JVET-O0173, O0176, O0338 : Replacing num_brick_rows_minus1 with num_brick_rows_minus2
+#define CABAC_RETRAIN                                     1 // CABAC retraining based on VTM8rc1
 
-#define JVET_OO152_BP_SEI_GDR                             1 // JVET-O0152: Allowing association of a buffering period SEI with GDR picture
+#define JVET_Q0210_SUBPIC_VIRTUAL_BOUNDARY_CONSTRAINT     1 // JVET-Q0210 (aspect 7): when subpicture signalling is present, virtual boundaries if present shall be in the SPS.
 
-#define JVET_OO147_LEADING_PIC_CHECKING                   1 // JVET-O0147: Constraints on leading pictures
+#define JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG           1 // JVET-Q0246: virtual boundary enable flag in the SPS.
 
-#define JVET_O0299_APS_SCALINGLIST                        1 // JVET-O0299: Scaling List Matrices Support in APS
+#define JVET_Q0244                                        1 // JVET-Q0244 Aspect 3: Signal the slice width(height) in tiles when the number of tile columns(rows) is greater than 1.
 
-#define JVET_O1164_RPR                                    1  // JVET-O1164: Reference picture resampling
-#if JVET_O1164_RPR
-#define JVET_O1164_PS                                     1
-#define RPR_BUFFER                                        1  // lossless
-#define RPR_CTC_PRINT                                     1
-#define RPR_CONF_WINDOW                                   1
+#define JVET_Q0355_DCI_LEVEL_IDC_CONSTRAINT               1 // JVET-Q0355: max level signaled in the DCI shall not be less than the level signaled in the SPS
+
+#define JVET_P0115_LAYER_TID_CONSTRAINT                   1 // JVET-P0115: bitstream shall not contain any other layers than included in the OLS with OlsIdx and shall not include any NAL unit with TemporalId greater than HighestTid
+
+#define JVET_Q0359_TILE_SIZE_CONSTRAINT                   1 // JVET-Q0359: sum of the explicit signaled tile size shall less than or equal to pic size
+
+#define JVET_Q0044_SLICE_IDX_WITH_SUBPICS                 1 // JVET-Q0044: slice index with subpictures
+
+#define JVET_P0125_ASPECT_TID_LAYER_ID_NUH                1 // JVET-P0125: Aspects of constraints on TemporalId and nuh_layer_id
+#define JVET_P0125_SEI_CONSTRAINTS                        1 // JVET-P0125: 4th aspect: SEI constraints 
+
+#define JVET_Q0471_CHROMA_QT_SPLIT                        1 // JVET-Q0471: Chroma QT split
+
+#define JVET_P0117_PTL_SCALABILITY                        1 // JVET-P0117: sps_ptl_dpb_hrd_params_present_flag related syntax change, others in JVET-Q0786
+
+#define JVET_Q0358_ALF_NALU_TID_CONSTRAINT                1 // JVET-Q0358: TemporalId constraint between ALF_APS NALU and the pic associated with PH
+
+#define JVET_Q0118_CLEANUPS                               1 // JVET-Q0118: AHG8/AHG9: Scalability HLS cleanups
+
+#define JVET_Q0416_WRAPAROUND_OFFSET                      1  //JVET-Q0416: subtract CtbSizeY / MinCbSizeY + 2 from wraparound offset before signaling
+
+#define JVET_P0125_EOS_LAYER_SPECIFIC                     1 // JVET-P0125: Specify EOS NAL units to be layer specific
+
+#define JVET_Q0482_REMOVE_CONSTANT_PARAMS                 1 // JVET-Q0482: Remove constant slice header parameter settings in PPS
+
+#if JVET_Q0482_REMOVE_CONSTANT_PARAMS
+#define JVET_Q0259_COLLOCATED_PIC_IN_PH                   1 // JVET-Q0259 aspect 5: Include collocated pic in PH when TMVP enabled and rpl_info_in_ph_flag is 1
 #endif
 
-#define JVET_O0625_ALF_PADDING                            1 // JVET-O0625/O0654/O0662: Unified padding method in ALF
+#define JVET_Q0505_CHROAM_QM_SIGNALING_400                1  //JVET-Q0505: Cleanup of chroma quantization matrix signaling for 400 color format
 
-#define JVET_O0238_PPS_OR_SLICE                           1 // JVET-O0238: Signal certain parameters either in PPS or per slice
-#define SUPPORT_FOR_RECT_SLICES_WITH_VARYING_NUMBER_OF_TILES 1
+#define JVET_Q0786_PTL_only                               1 // JVET-Q0786: modifications to VPS syntax - PTL part only (signal PTL for single layer OLSs)
 
-#define JVET_O0452_PPS_BRICK_SIGNALING_CONDITION          1  // JVET-O0452: brick_split_flag signaled as RowHeight > 1 and uniform_brick_spacing_flag signaled as RowHeight > 2
+#define JVET_P0116_POC_MSB                                1 // JVET-P0116: use POC MSB cycle signalling for independent layers,to support of mixed IRAP and non-IRAP pictures within an AU
 
-#define FLATTEN_BUFFERS                                                                                                \
-  (1 && JVET_O0502_ISP_CLEANUP && JVET_O0364_PADDING && JVET_O0426_MRL_REF_SAMPLES_DC_MODE                             \
-   && JVET_O0925_MIP_SIMPLIFICATIONS && JVET_O0364_PDPC_DC)
+#define JVET_P0978_RPL_RESTRICTIONS                       1 // JVET-P0978: A set of RPL-related bitstream conformance restrictions
 
-#define JVET_O0119_BASE_PALETTE_444                       1 // JVET-O0119: Palette mode in HEVC and palette mode signaling in JVET-N0258. Only enabled for YUV444.
+#define JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX       1 // JVET-Q0468: add support of min Luma coding block size; JVET-Q0469: fix for signaling of Intra Chroma Min QT size
 
-#define JVET_O0304_SIMPLIFIED_BDOF                        1 // JVET-O0304: Reduction of number of multiplications in BDOF
+#define JVET_Q0260_CONFORMANCE_WINDOW_IN_SPS              1 // JVET-Q0260: Conformance cropping window in the SPS that applies to the max picture size
 
-#define JVET_O0455_IBC_MAX_MERGE_NUM                      1 // JVET-O0455: Control the max number of IBC merge candidates independently from regular merge candidates
+#define JVET_Q0210_UEK_REMOVAL                            1 // JVET-Q0210 Aspect 8: Replace uek signalling in alf_data with ue(v).
 
-#define JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE          1 // JVET-O0650: Signal chroma QP mapping tables and move chroma PPS/slice offsets after mapping table
+#define JVET_Q0449_RPR_NO_SMOOTHING                       1 // JVET-Q0449: Disable smoothing half-sample interpolation filter in conjunction with RPR
 
-#define JVET_O0502_ISP_CLEANUP                            1 // JVET-O0502: Enable PDPC and all 67 intra modes and apply the cubic filter always (also included in JVET-O0341) for ISP
+#define JVET_Q0493_PLT_ENCODER_LOSSLESS                   1 // JVET-Q0493: Palette encoder improvements for lossless coding
 
-#define JVET_O0640_PICTURE_SIZE_CONSTRAINT                1 // JVET-O0640: Picture width and height shall be a multiple of Max(8, minCU size)
+#define JVET_Q0629_REMOVAL_PLT_4X4                        1 // JVET-Q0629: Removal of 4x4 blocks in palette mode
 
-#define JVET_O_MAX_NUM_ALF_APS_8                          1 // JVET-O: number of ALF APSs is reduced to 8
+#define JVET_Q0291_REDUCE_DUALTREE_PLT_SIZE               1 // JVET-Q0291: reduce palette size of dual tree from 31 to 15 and palette predictor size of dual tree from 63 to 31
 
-#define JVET_O0925_MIP_SIMPLIFICATIONS                    1 // JVET-O0925: Simplifications of MIP
+#define JVET_Q0330_BLOCK_PARTITION                        1 // JVET-Q0330: fix the block partitioning at picture boundary
 
-#define JVET_O0070_PROF                                   1 // JVET-O0070 method 4-2.1a: Prediction refinement with optical flow for affine mode
+#define JVET_Q0417_CONSTRAINT_SPS_VB_PRESENT_FLAG         1 // JVET_Q0417: a constraint on the value of sps_virtual_boundaries_present_flag based on res_change_in_clvs_allowed_flag
 
-#define JVET_O0570_GRAD_SIMP                              1 // JVET-O0570/JVET-O0211, SMID friendly spatial gradient calculation
+#define JVET_Q0179_SCALING_WINDOW_SIZE_CONSTRAINT         1 // JVET-Q0179: Scaling window size constraint for constraining worst case memory bandwidth
 
-#define JVET_O1170_IBC_VIRTUAL_BUFFER                     1 // JVET-O1170/O1171: IBC virtual buffer
-#if JVET_O1170_IBC_VIRTUAL_BUFFER
-#define JVET_O1170_CHECK_BV_AT_DECODER                    1 // For decoder to check if a BV is valid or not
+#define JVET_Q0257_SCALING_WINDOW_CONSTRAINT              1 // JVET-Q0257: Constraint expression to limit actual scaling ratios rather than the picture sizes
+
+#define JVET_P2008_OUTPUT_LOG                             1 // Output log file for conformance tests
+
+#define JVET_P0097_REMOVE_VPS_DEP_NONSCALABLE_LAYER       1 // Removing dependencies on VPS from the decoding process of a non-scalable bitstream
+
+#define JVET_Q0420_PPS_CHROMA_TOOL_FLAG                   1 // JVET-Q0420: add pps_chroma_tool_offsets_present_flag in PPS
+
+#define JVET_Q0172_CHROMA_FORMAT_BITDEPTH_CONSTRAINT      1 // JVET-Q0172: Disallow differing chroma format and different bit depths for cross-layer prediction. 
+
+#define JVET_Q0491_PLT_ESCAPE                             1 // JVET-Q0491: Palette escape binarization
+
+#define JVET_Q414_CONSTRAINT_ON_GDR_PIC_FLAG              1  //JVET-Q0414: when gdr_enabled_flag is equal to 0, gdr_pic_flag shall be 0
+
+#define JVET_Q0817                                        1 // JVET_Q0817: Remove the constraint on single_slice_per_subpic_flag
+
+#define JVET_Q0413_SKIP_LAST_SUBPIC_SIG                   1  //JVET-Q0413 modification 2: skip the width and height signaling of last subpicture
+
+#define JVET_Q0169_SUBPIC_LEN_CONFORM                     1 // JVET-Q0169: add bitstream conformance check on subpic length
+
+#define JVET_Q0504_PLT_NON444                             1 // JVET-Q0504: enable palette mode for non 444 color format
+
+#define JVET_Q0183_SPS_TRANSFORM_SKIP_MODE_CONTROL        1 // JVET-Q0183: Signal the max block size in SPS and conditionally signal min_qp_prime_ts_minus4
+
+#define JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM     1 // JVET-Q0089: RRC slice-level switch for lossless coding and one SPS flag for luma and chroma BDPCM.
+
+#define JVET_Q0816                                        1 // JVET_Q0816: Omit the signalling of subpic layout when there is only one subpicture
+
+#define JVET_Q0438_MONOCHROME_BUGFIXES                    1 // JVET-Q0438: Monochrome bug fixes
+
+#define JVET_Q0441_SAO_MOD_12_BIT                         1 // JVET-Q0441: SAO modification for 12 bit. Also removes old HEVC RExt SAO modification, which was broken.
+
+#define JVET_Q0043_RPR_and_Subpics                        1 // JVET-Q0043: Disallow for both RPR and subpics to be used together
+
+#define JVET_Q0818_PT_SEI                                 1 // JVET-Q0818: add display_elemental_periods_minus1 to picture timing SEI message
+
+#define JVET_Q0343_GCMP_GUARD_BAND_TYPE                   1 // JVET-Q0343: Add gcmp_guard_band_type to generalized cubemap projection SEI message and rename boundary guard band
+
+#define JVET_Q0110_Q0785_CHROMA_BDPCM_420                 1 // JVET-Q0110/Q0785: Enable chroma BDPCM for 420, separate contexts for chroma BDPCM and bug-fixes.
+
+#define JVET_Q0042_VUI                                    1 // Modifications to VUI syntax
+
+#define JVET_Q0512_ENC_CHROMA_TS_ACT                      1 // JVET-Q0512: encoder-side improvement on enabling chroma transform-skip for ACT
+
+#define JVET_P0101_POC_MULTILAYER                         1 // POC derivation for pictures in dependent layers
+
+#define JVET_Q0446_MIP_CONST_SHIFT_OFFSET                 1 // JVET-Q0446: MIP with constant shift and offset
+
+#define JVET_Q0265                                        1 // JVET-Q0265: Cleanup for monochrome and independently coded color planes
+
+#define JVET_Q0447_WP_PARAM_ESTIM                         1 // JVET-Q0447: Add search iterations for method 2,3 and 4
+
+#define JVET_Q0119_CLEANUPS                               1 // JVET-Q0119: AHG12: Cleanups on signalling of subpictures, tiles, and rectangular slices
+
+#define JVET_Q0114_CONSTRAINT_FLAGS                       1 // JVET-Q0114: AHG9: A few more general constraints flags
+
+#define JVET_Q0820_ACT                                    1 // JVET-Q0820: ACT bug fixes and reversible ACT transform 
+
+#define JVET_Q0814_DPB                                    1 // JVET-Q0814: DPB capacity is based on picture units regardless of the resoltuion
+#define ENABLING_MULTI_SPS                                1 // Bug fix to enable multiple SPS
+#define SPS_ID_CHECK                                      1 // add SPS id check to be the same within CLVS, related to mixed_nalu_types_in_pic_flag
+#define JVET_P0124_MIXED_NALU                             1 // JVET-P0124/P0095/P0222: MIxed IRAP/non-IRAP VCL NAL units within a picture
+#define JVET_Q0117_PARAMETER_SETS_CLEANUP                 1 // JVET-Q0117: cleanups on parameter sets
+
+#define JVET_Q0751_MIXED_NAL_UNIT_TYPES                   1 // JVET-Q0751: Constraints and properties of mixed nal unit types
+
+#define JVET_Q0353_ACT_SW_FIX                             1 // JVET-Q0353: Bug fix of ACT 
+
+#define JVET_P0288_PIC_OUTPUT                             1 // JVET-P0288: Set the value of PictureOutputFlag
+
+#define JVET_Q0695_CHROMA_TS_JCCR                         1 // JVET-Q0695: Enabling the RD checking of chroma transform-skip mode for JCCR at encoder
+#define JVET_Q0500_CCLM_REF_PADDING                       1 // JVET-Q0500: Reference samples padding for CCLM
+
+#define JVET_Q0128_DMVR_BDOF_ENABLING_CONDITION           1 // JVET-Q0128: Cleanup of enabling condition for DMVR and BDOF 
+
+#define JVET_Q0784_LFNST_COMBINATION                      1 // lfnst signaling, latency reduction and a bugfix for scaling from Q0106, Q0686, Q0133
+
+#define JVET_Q0501_PALETTE_WPP_INIT_ABOVECTU              1 // JVET-Q0501: Initialize palette predictor from above CTU row in WPP 
+
+#define JVET_Q0503_Q0712_PLT_ENCODER_IMPROV_BUGFIX        1 // JVET-Q0503/Q0712: Platte encoder improvement/bugfix
+
+#define JVET_Q0819_PH_CHANGES                             1 // JVET-Q0819: Combination of PH related syntax changes
+
+#define JVET_Q0481_PARTITION_CONSTRAINTS_ORDER            1 // JVET-Q0481: Ordering of partition constraints syntax elements in the SPS
+
+#define JVET_Q0155_COLOUR_ID                              1 // JVET-Q0155: move colour_plane_id from PH to SH
+
+#define JVET_Q0444_AMVR_SIGNALLING                        1 // JVET-Q0444: Conditional signaling of sps_affine_amvr_enabled_flag based on sps_amvr_enabled_flag
+
+#define JVET_Q0147_JCCR_SIGNALLING                        1 // JVET-Q0147: Conditional signaling of sps_joint_cbcr_enabled_flag based on ChromaArrayType
+
+#define JVET_Q0346_LMCS_ENABLE_IN_SH                      1 // JVET-Q0346 aspect 1: LMCS enabled flag in SH
+
+#if JVET_Q0819_PH_CHANGES
+#define JVET_Q0346_SCALING_LIST_USED_IN_SH               1 // JVET-Q0346 aspect 2: Scaling list used flag in SH
 #endif
 
-#define JVET_O0538_SPS_CONTROL_ISP_SBT                    1 // JVET-O0538: SPS control for ISP and SBT transform
+#define JVET_Q0267_RESET_CHROMA_QP_OFFSET                 1 // JVET-Q0267: Reset chroma QP offsets at the start of each chroma QP offset group
 
-#define JVET_O0634_BDOF_SIZE_CONSTRAINT                   1 // JVET-O0634: BDOF applied CU size align with DMVR
+#define JVET_Q0293_REMOVAL_PDPC_CHROMA_NX2                1 // JVET-Q0293: Removal of chroma Nx2 blocks in PDPC 
 
-#define JVET_O0213_RESTRICT_LFNST_TO_MAX_TB_SIZE          1 // JVET-O0213: Block size restriction of LFNST to maximum transform size
+#define JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS          1 // JVET-Q0121: Add deblocking control parameters for Cb and Cr and extend the parameter ranges
 
-#define JVET_O0617_SIG_FLAG_CONTEXT_REDUCTION             1 // JVET-O0617: Significant flag context reduction
+#define JVET_Q0517_RPR_AFFINE_DS                          1 // JVET-Q0517: affine down-sampling filters for RPR
 
-#define JVET_O0244_DELTA_POC                              1 // JVET-O0244: weighted prediction in SPS and delta POC
+#define JVET_Q0151_Q0205_ENTRYPOINTS                      1 // JVET-Q0151 & JVET-Q0205: Make mandatory the tile offsets signalling and move the entropy_coding_sync_enabled_flag entry_point_offsets_present_flag syntax elements to the SPS from the PPS
 
-#define JVET_O1153_INTRA_CHROMAMODE_CODING                1  //JVET-O1153: simplified intra chromamode coding
+#define JVET_Q0203_MULTI_SLICE_IN_TILE                    1 // JVET-Q0203: Signalling of multiple rectangular slices within a tile
 
-#define JVET_O0159_10BITTCTABLE_DEBLOCKING                1 // tc table for 10-bit video
+#define JVET_O1143_SUBPIC_BOUNDARY                        1 // treat subpicture boundary as picture boundary
 
-#define JVET_O0061_MV_THR_DEBLOCKING                      1 // a deblocking mv threshold of half pel
-
-#define JVET_O0220_METHOD1_SUBBLK_FLAG_PARSING            1 // JVET-O0220 method-1: Parse merge_subblock_flag conditioned on MaxNumSubblockMergeCand
-
-#define JVET_O0263_O0220_SUBBLOCK_SYNTAX_CLEANUP          1 // JVET-O0263/ JVET-O0220: Syntax cleanup on subblock merge
-
-#define JVET_O0060_4x4_deblocking                         1 // deblock on 4x4 grid
-
-#define JVET_O0046_DQ_SIGNALLING                          1 // JVET-O0046: Move delta-QP earlier for 64x64 VPDU processing, applied to CUs >64x64 only
-
-#define JVET_O0616_400_CHROMA_SUPPORT                     1 // JVET-O0616: Various chroma format support in VVC
-
-#define JVET_O0265_TPM_SIMPLIFICATION                     1 // JVET-O0265/JVET-O0629/JVET-O0418/JVET-O0329/JVET-O0378/JVET-O0411/JVET-O0279:Simplified motion field storage for TPM
-
-#define JVET_O0409_EXCLUDE_CODED_SUB_BLK_FLAG_FROM_COUNT  1 // JVET-O0409: exclude coded_subblock_flag from counting context-coded bins in transform skip
-
-#define JVET_O0057_ALTHPELIF                              1  //AMVR_HPEL
-
-#define JVET_O1136_TS_BDPCM_SIGNALLING                    1 // JVET-O1136: Unified syntax for JVET-O0165/O0200/O0783 on TS and BDPCM signalling
-
-#define JVET_O0219_LFNST_TRANSFORM_SET_FOR_LMCMODE        1
-
-#define JVET_O0426_MRL_REF_SAMPLES_DC_MODE                1 // JVET-O0426: align MRL reference samples used for DC intra mode prediction
-
-#define JVET_O0366_AFFINE_BCW                             1 // JVET-O0366: Simplifications on BCW index derivation process
-
-#define JVET_O0919_TS_MIN_QP                              1 // JVET-O0919: Minimum QP for Transform Skip Mode
-
-#define JVET_O1168_CU_CHROMA_QP_OFFSET                    1 // JVET-O1168: cu chroma QP offset
-
-#define JVET_O0368_LFNST_WITH_DCT2_ONLY                   1 // JVET-O0368/O0292/O0521/O0466: disable LFNST for non-DCT2 MTS candidates normatively
-
-#define JVET_O0106_ISP_4xN_PREDREG_FOR_1xN_2xN            1 // JVET-O0106: use 4xN prediction regions for 1xN and 2xN subblocks
-
-#define JVET_O0500_SEP_CTX_AFFINE_SUBBLOCK_MRG            1 // JVET-O0500: Different ctx models for inter affine flag and subblock merge flag
-
-#define JVET_O0414_SMVD_LTRP                              1 // JVET-O0414: long-term reference picture restriction for SMVD
-
-#define JVET_O0258_REMOVE_CHROMA_IBC_FOR_DUALTREE         1 // JVET-O0258 Remove chroma IBC when dualtree is used
-
-#define JVET_O1161_IBC_MAX_SIZE                           1 // Limit largest IBC luma CU size to 64x64 per discussion of JVET-O1161
-
-#define JVET_O0315_RDPCM_INTRAMODE_ALIGN                  1 // JVET-O0200/O0205/O0296/O0342/O0463/O0542: Intra prediction mode alignment for BDPCM
-
-#define JVET_O0284_CONDITION_SMVD_MVDL1ZEROFLAG           1 // JVET-O0284: condition sym_mvd_flag on mvd_l1_zero_flag
-
-#define JVET_O0122_TS_SIGN_LEVEL                          1 // JVET-O0122: Sign context and level mapping of TS residual coding.
-
-#define JVET_O0438_SPS_AFFINE_AMVR_FLAG                   1 // JVET-O0438: affine AMVR control flag conditioned on affine control flag in SPS
-
-#define JVET_O0065_CABAC_INIT                             1 // JVET-O0065: CABAC initialization
-
-#define JVET_O0052_TU_LEVEL_CTX_CODED_BIN_CONSTRAINT      1 // JVET-O0052 Method-1: TU-level context coded bin constraint
-
-#define JVET_O0105_ICT                                    1 // JVET-O0105: inter-chroma transform (ICT) as extension of joint chroma coding (JCC)
-#define JVET_O0543_ICT_ICU_ONLY                           1 // JVET-O0543: ICT only in Intra CUs (was Intra slices, modified during adoption)
-#define JVET_N0288_PROPOSAL1                              1   // JVET-N0288 Proposal 1
-
-#define JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB     1 // JVET-O0090 test 2: CTB selection of ALF alternative chroma filters
-#define JVET_O0050_LOCAL_DUAL_TREE                        1 // JVET-O0050: avoid small intra chroma block by a "local dual-tree" technique
-
-#define JVET_O0216_ALF_COEFF_EG3                          1 // JVET-O0216/O0302/O0648: using EG3 for ALF coefficients coding
-
-#define JVET_O0256_ADJUST_THD_DEPQUANT                    1 // JVET-O0256: Fast encoder with adjusted threshold in dependent quantization
-
-#define JVET_O0619_GTX_SINGLE_PASS_TS_RESIDUAL_CODING     1 // JVET-O0619/O0623 : Single pass coding of abs_level_gtx_flag[x] for TS residual coding
-
-#define JVET_O0272_LMCS_SIMP_INVERSE_MAPPING              1 // JVET-O0272: LMCS simplified inverse mapping
-
-#define JVET_O0247_ALF_CTB_CODING_REDUNDANCY_REMOVAL      1 // JVET-O0247: not signal APS index when number APS is 2
-
-#define JVET_O0297_DMVR_PADDING                           1 // JVET-O0297 DMVR Padding
-
-#define JVET_O0637_CHROMA_GRADIENT_LINE_SELECTION         1 // Choose line0 and line3 for gradient computation when chroma is same size as luma
-
-#define JVET_O0288_UNIFY_ALF_SLICE_TYPE_REMOVAL           1 // JVET-O0288: remove slice type dependency in ALF
-
-#define JVET_O0064_SIMP_ALF_CLIP_CODING                   1 // JVET-O0047/O0058/O0064/O0067/O0290/O0301/O0430: use FLC for alf clipping indices, always signal alf clipping indices
-
-#define JVET_O0529_IMPLICIT_MTS_HARMONIZE                 1 // JVET-O0529/O0540: Harmonization of LFNST, MIP and implicit MTS
-
-#define JVET_O0669_REMOVE_ALF_COEFF_PRED                  1 // JVET-O0425/O0427/O0669: remove prediction in ALF coefficients coding
-
-#define  JVET_O0526_MIN_CTU_SIZE                          1 // JVET-O0526: Minimum CTU size 32x32
-
-#define JVET_O0545_MAX_TB_SIGNALLING                      1 // JVET-O0545: Configurable maximum transform size
-
-#define JVET_O0525_REMOVE_PCM                             1 // JVET-O0525: Removal of PCM mode
-
-#define JVET_O0541_IMPLICIT_MTS_CONDITION                 1 // JVET_O0541: Decouple the intra implicit transform selection from an inter MTS related SPS flag
-#define JVET_O0163_REMOVE_SWITCHING_TMV                   1 // JVET-O0163/JVET-O0588: Remove switching between L0 and L1 for temporal MV
-#define JVET_O0655_422_CHROMA_DM_MAPPING_FIX              1 // JVET-O0655: modify chroma DM derivation table for 4:2:2 chroma format
-
-#define JVET_O1109_UNFIY_CRS                              1 // JVET-O1109: Unified CRS derivation
-
-#define JVET_O0590_REDUCE_DMVR_ORIG_MV_COST               1 // Reduce the DMVR cost of the original MV
-
-#define JVET_O0432_LMCS_ENCODER                           1 // JVET-O0432: LMCS encoder improvement
-
-#define JVET_O0429_CRS_LAMBDA_FIX                         1 // JVET-O0429: fix encoder lambda rounding used in CRS
-
-#define JVET_O0428_LMCS_CLEANUP                           1 // JVET-O0428: LMCS cleanups
-
-#define JVET_O0164_REMOVE_AMVP_SPATIAL_SCALING            1 // JVET-O0164/JVET-O0587: remove spatial AMVP candidate scaling
-
-#define JVET_O0162_IBC_MVP_FLAG                           1 // JVET-O0162/O0331/O0480/O0574: IBC mvp flag conditioned on MaxNumMergeCand>1
-
-#define JVET_O0055_INT_DMVR_DIS_BDOF                      1 // integer-distance DMVR cost to disable BDOF and disable BDOF early termination
-
-#define JVET_O0277_INTRA_SMALL_BLOCK_DCTIF                1 // JVET-O0277: DCT-IF interpolation filter is always used for 4x4, 4x8, and 8x4 luma CB
-
-#define JVET_O0267_IBC_SCALING_LIST                       1
-
-#define JVET_O0280_SIMD_TRIANGLE_WEIGHTING                1 // JVET-O0280: SIMD implementation for weighted sample prediction process of triangle prediction mode
-
-#define JVET_O0379_SPEEDUP_TPM_ENCODER                    1 // JVET_O0379: Speedup mode decision process for triangle prediction mode
-
-#define JVET_O0364_PADDING                                1 // JVET-O0364 Part 2: clean up padding process in intra prediction
-#define JVET_O0364_PDPC_DC                                1 // JVET-O0364 Part 4: align PDPC process for DC with the one for Planar
-#define JVET_O0364_PDPC_ANGULAR                           1 // JVET-O0364 Part 5: simplify PDPC process for angular modes
-
-#define JVET_O0094_LFNST_ZERO_PRIM_COEFFS                 1 // JVET-O0094: CE6-2.1a, LFNST involves zeroing of primary only coefficient positions
-
-#define JVET_O0294_TRANSFORM_CLEANUP                      1 // JVET-O0294: Context modelling for MTS index
-
-#define JVET_O1124_ALLOW_CCLM_COND                        1 // JVET-O1124/JVET-O0196: CCLM restriction to reduce luma-chroma latency for chroma separate tree
-
-#define JVET_O0078_SINGLE_HMVPLUT                         1 // JVET-O0078Single HMVP table for all CUs inside the shared merge list region for IBC
-
-#define JVET_O0126_BPWA_INDEX_CODING_FIX                  1 // JVET-O0126 align BPWA index coding with specification
-
-#define JVET_O0592_ENC_ME_IMP                             1 // JVET-O0592 encoder ME improvement
-
-#define JVET_O0108_DIS_DMVR_BDOF_CIIP                     1 // JVET_O0108 CE9-2.2: disable DMVR and BDOF for CIIP
-
-#define JVET_O1140_SLICE_DISABLE_BDOF_DMVR_FLAG           1 // JVET-O1140 slice level disable flag for BDOF and DMVR
-
-#define JVET_O0567_MVDRange_Constraint                    1 // JVET-O0567: constrain the signalled MVD value to the range of [-2^17, 2^17-1]
-
-#define JVET_O0596_CBF_SIG_ALIGN_TO_SPEC                  1 // JVET-O0596 align cbf signaling with specification
-#define JVET_O0193_REMOVE_TR_DEPTH_IN_CBF_CTX             1 // JVET-O0193/JVET-O0375: remove transform depth in cbf context modeling
-#define JVET_O0681_DIS_BPWA_CIIP                          1 // JVET-O0681 disable BCW for CIIP, method 2 inherit BCW index
-#define JVET_O0249_MERGE_SYNTAX                           1 // JVET-O0249: merge syntax change
-#define JVET_O0594_BDOF_REF_SAMPLE_PADDING                1 // JVET-O0594/O0252/O0506/O0615/O0624: BDOF reference sample padding using the nearest integer sample position
-
-#define JVET_O0610_CFG                                    1 // config default change for "Adopt to mandate the presence of AU delimiter for each AU", config parameter should be removed later
-#define JVET_O0610_DETECT_AUD                             1 // JVET-O0610: detect presence of mandatory access unit delimiters
-
-#define JVET_O0491_HLS_CLEANUP                            1
-#define JVET_O0041_FRAME_FIELD_SEI                        1
-
-#define JVET_O0376_SPS_JOINTCBCR_FLAG                          1 // JVET-O0376: add the JointCbCr control flag in SPS
-#define JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS         1 // JVET-O0472: LFNST index signalling depends on the position of last significant coefficient
-
-#define JVET_O0189_DU                                     1
-#if JVET_O0189_DU
-#define FIX_SEI_O0189                                     1
-#define FIX_HRD_O0189                                     1
+#if JVET_O1143_SUBPIC_BOUNDARY
+#define JVET_O1143_LPF_ACROSS_SUBPIC_BOUNDARY             1 
+#define JVET_O1143_MV_ACROSS_SUBPIC_BOUNDARY              1
 #endif
-#define JVET_N0353_INDEP_BUFF_TIME_SEI                    1 // JVET-N0353 independent parsing of buffering and timing info SEIs
-#define JVET_N0867_TEMP_SCAL_HRD                          1 // JVET-N0867 temporal scalability support for HRD in buffering period and picture timing SEIs
 
-#define FIX_DB_MAX_TRANSFORM_SIZE                         1
+#define JVET_Q0495_NLALF_CLIP_CLEANUP                     1 // JVET-Q0495: Cleanup of clipping table for NL-ALF
 
-#define MRG_SHARELIST_SHARSIZE                            32
+#define JVET_Q0156_STSA                                   1 // JVET-Q0156: Enable inter-layer prediction for STSA pictures
+
+#define JVET_Q0249_ALF_CHROMA_CLIPFLAG                    1 // JVET-Q0249: Cleanup of chroma clipping flags for ALF
+#define JVET_Q0150                                        1 // fix for ALF virtual horizontal CTU boundary processing
+#define JVET_Q0054                                        1 // fix for long luma deblocking decision
+#define JVET_Q0795_CCALF                                  1 // Cross-component ALF
+
+#define JVET_Q0297_MER                                    1 // JVET_Q0297: Merge estimation region
+
+#define JVET_Q0483_CLIP_TMVP                              1 // JVET-Q0483: Clip TMVP when no scaling is applied
+
+#define JVET_Q0516_MTS_SIGNALLING_DC_ONLY_COND            1 // JVET-Q0516/Q0685: disable MTS when there is only DC coefficient 
+
+#define JVET_Q0806                                        1 // Geo related adoptions (JVET-Q0059, JVET-Q0077, JVET-Q0123, JVET-Q0188, JVET-Q0242_GEO, JVET-Q0309, JVET-Q0365 and JVET-Q0370)
+
+#define JVET_Q0055_MTS_SIGNALLING                         1 // JVET-Q0055: Check for transform coefficients outside the 16x16 area
+#define JVET_Q0480_RASTER_RECT_SLICES                     1 // JVET-Q0480: Eliminate redundant slice height syntax when in raster rectangular slice mode (tile_idx_delta_present_flag == 0)
+
+#define JVET_Q0775_PH_IN_SH                               1 // JVET-Q0755: Allow picture header in slice header
+
+#define JVET_Q0433_MODIFIED_CHROMA_DIST_WEIGHT            1 // modification of chroma distortion weight (as agreed during presentation of JVET-Q0433)
+
+#define JVET_P0188_MINCR                                  1 // JVET-P0188: Add MinCR checking in encoder.
+#define JVET_Q0436_CABAC_ZERO_WORD                        1 // JVET-Q0436: Add modified CABAC zero word insertion in encoder.
+
+#define JVET_Q0487_SCALING_WINDOW_ISSUES                  1 // JVET-Q0487: Fix scaling window issues when scaling ratio is 1:1
+
+#define JVET_Q0787_SUBPIC                                 1 // JVET-Q0787: fix subpicture location signalling
+
+#define JVET_Q0400_EXTRA_BITS                             1 // JVET-Q0400: reserved bits for future extensions
+
+#define JVET_AHG14_LOSSLESS                               1
+#define JVET_AHG14_LOSSLESS_ENC_QP_FIX                    1 && JVET_AHG14_LOSSLESS
 
 #define JVET_M0497_MATRIX_MULT                            0 // 0: Fast method; 1: Matrix multiplication
 
+#define JVET_Q0221                                        1 // JVET-Q0221: Decoding unit parameter signalling
+
+#define JVET_Q0216                                        1 // JVET-Q0216: modification to picture timing SEI message
+
+#define JVET_Q0218_PROPOSAL3                              1 // JVET-Q0218_PROPOSAL3: fix missing inference rule for single_slice_per_subpic_flag
+
 #define APPLY_SBT_SL_ON_MTS                               1 // apply save & load fast algorithm on inter MTS when SBT is on
-#if !JVET_O0525_REMOVE_PCM
-#define FIX_PCM                                           1 // Fix PCM bugs in VTM3
-#endif
 
-#if JVET_O0545_MAX_TB_SIGNALLING
-#define MAX_TB_SIZE_SIGNALLING                            1
-#else
-#define MAX_TB_SIZE_SIGNALLING                            0
-#endif
+#define REMOVE_PPS_REXT                                   1  // remove RExt PPS extension
 
-#define JVET_N0100_PROPOSAL1                              1 // JVET-N0100: ltrp picture signalling
+#define JVET_P0118_OLS_EXTRACTION                         1  // OLS based sub-bitstream extraction
 
-#define JVET_N0865_SYNTAX                                 1 // JVET_N0865 syntax elements
-#define JVET_N0865_NONSYNTAX                              1 // JVET_N0865 other than syntax parts
-#define JVET_N0865_GRA2GDR                                1 // Changing the name of GRA to GDR
+#define JVET_Q0397_SUB_PIC_EXTRACT                        1  // subpicture extraction
 
-#define JVET_O0178                                        1 // JVET_O0178 - conditionally signal sps_sub_layer_ordering_info_present_flag
+#define JVET_Q0218_PROPOSAL1                              1 // JVET-Q0218_PROPOSAL1: Conditionally signal tile_idx_delta_present_flag
 
-#define RPL_IN_IDR_FIX                                    1 // JVET_N0865 syntax elements
+#define JVET_Q0219_SIGNAL_ALT_BUFFER_DELAY_PARMS 1   // JVET-Q0219: Signal alternative buffering delay parameters 
 
-#define JVET_O0179                                        1 // JVET_O0179: Implement NAL unit header syntax proposal B
+#define JVET_Q0399_SCALING_INFERENCE                      1  // JVET-Q0399 infer scaling window to conformance window, if not present
 
-#define JVET_O0176_PROPOSAL3                              1 // JVET_O0176 check for rect_slice_flag 
+#define JVET_Q0630_SUBPIC_LEVEL                           1  // JVET-Q0630 parsing dependency fix for subpicture level info SEI
 
-#define JVET_O0181                                        1 // JVET_O0181: non_reference_picture_flag
+#define JVET_SUBPIC_LEVEL_CFG                             1  // improved configuration of subpicture level info SEI
 
-#define JVET_O0177_PROPOSAL1                              1 // JVET_O0177 proposal 1: Allow signaling of HRD parameters for temporal sub-layers optionally controlled by a flag
-
-#define JVET_O0241                                        1 // JVET_O0241 : decoding process for generating unavailable reference pictures
-
-
-#define HEVC_SEI                                          0 // SEI messages that are defined in HEVC, but not in VVC
+#define JVET_Q0217_PROPOSAL5                              1  // JVET-Q0217 Proposal 5: modifications to reference picture information signalling
 
 typedef std::pair<int, bool> TrMode;
 typedef std::pair<int, int>  TrCost;
 
 // clang-format off
-#define ENABLE_JVET_L0283_MRL                             1 // 1: Enable MRL, 0: Disable MRL
-#define JVET_L0090_PAIR_AVG                               1 // Add pairwise average candidates, replace HEVC combined candidates
-#define REUSE_CU_RESULTS                                  1
+#define REUSE_CU_RESULTS                                  1 
 #if REUSE_CU_RESULTS
 #define REUSE_CU_RESULTS_WITH_MULTIPLE_TUS                1
-#if !JVET_O0545_MAX_TB_SIGNALLING
-#define MAX_NUM_TUS                                       4
-#endif
 #endif
 // clang-format on
 
+#define JVET_P0190_SCALABLE_NESTING_SEI                   1 // JVET-P0190 scalable nesting sei message
+
+#define JVET_Q0222_SUBPICTURE_SIGNALLING                  1 // JVET-Q0222_Proposal1: Inference rule to signal horizontal and vertical position of the top left CTU of 0-th subpicture
 
 #ifndef JVET_J0090_MEMORY_BANDWITH_MEASURE
 #define JVET_J0090_MEMORY_BANDWITH_MEASURE                0
@@ -365,16 +340,6 @@ typedef std::pair<int, int>  TrCost;
 #define JVET_O0756_CALCULATE_HDRMETRICS                   1
 #endif
 
-#ifndef ENABLE_WPP_PARALLELISM
-#define ENABLE_WPP_PARALLELISM                            0
-#endif
-#if ENABLE_WPP_PARALLELISM
-#ifndef ENABLE_WPP_STATIC_LINK
-#define ENABLE_WPP_STATIC_LINK                            0 // bug fix static link
-#endif
-#define PARL_WPP_MAX_NUM_THREADS                         16
-
-#endif
 #ifndef ENABLE_SPLIT_PARALLELISM
 #define ENABLE_SPLIT_PARALLELISM                          0
 #endif
@@ -468,7 +433,7 @@ typedef std::pair<int, int>  TrCost;
 #define ENABLE_SIMD_OPT_AFFINE_ME                       ( 1 && ENABLE_SIMD_OPT )                            ///< SIMD optimization for affine ME, no impact on RD performance
 #define ENABLE_SIMD_OPT_ALF                             ( 1 && ENABLE_SIMD_OPT )                            ///< SIMD optimization for ALF
 #if ENABLE_SIMD_OPT_BUFFER
-#define ENABLE_SIMD_OPT_GBI                               1                                                 ///< SIMD optimization for GBi
+#define ENABLE_SIMD_OPT_BCW                               1                                                 ///< SIMD optimization for Bcw
 #endif
 
 // End of SIMD optimizations
@@ -544,26 +509,28 @@ typedef       uint32_t            Intermediate_UInt; ///< used as intermediate v
 #endif
 
 typedef       uint64_t          SplitSeries;       ///< used to encoded the splits that caused a particular CU size
-#if JVET_O0050_LOCAL_DUAL_TREE
 typedef       uint64_t          ModeTypeSeries;    ///< used to encoded the ModeType at different split depth
-#endif
 
 typedef       uint64_t        Distortion;        ///< distortion measurement
 
 // ====================================================================================================================
 // Enumeration
 // ====================================================================================================================
-#if JVET_O0245_VPS_DPS_APS
-enum ApsType
-#else
-enum ApsTypeValues
+
+#if !JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
+enum BDPCMControl
+{
+  BDPCM_INACTIVE = 0,
+  BDPCM_LUMAONLY = 1,
+  BDPCM_LUMACHROMA = 2,
+};
 #endif
+
+enum ApsType
 {
   ALF_APS = 0,
   LMCS_APS = 1,
-#if JVET_O0299_APS_SCALINGLIST
   SCALING_LIST_APS = 2,
-#endif
 };
 
 enum QuantFlags
@@ -599,12 +566,8 @@ enum ISPType
   NOT_INTRA_SUBPARTITIONS       = 0,
   HOR_INTRA_SUBPARTITIONS       = 1,
   VER_INTRA_SUBPARTITIONS       = 2,
-#if JVET_O0502_ISP_CLEANUP
   NUM_INTRA_SUBPARTITIONS_MODES = 3,
   INTRA_SUBPARTITIONS_RESERVED  = 4
-#else
-  NUM_INTRA_SUBPARTITIONS_MODES = 3
-#endif
 };
 
 enum SbtIdx
@@ -662,7 +625,11 @@ enum SliceType
   NUMBER_OF_SLICE_TYPES = 3
 };
 
+#if JVET_Q0265
+/// chroma formats (according to how the monochrome or the color planes are intended to be coded)
+#else
 /// chroma formats (according to semantics of chroma_format_idc)
+#endif
 enum ChromaFormat
 {
   CHROMA_400        = 0,
@@ -679,7 +646,6 @@ enum ChannelType
   MAX_NUM_CHANNEL_TYPE = 2
 };
 
-#if JVET_O0050_LOCAL_DUAL_TREE
 enum TreeType
 {
   TREE_D = 0, //default tree status (for single-tree slice, TREE_D means joint tree; for dual-tree I slice, TREE_D means TREE_L for luma and TREE_C for chroma)
@@ -693,7 +659,6 @@ enum ModeType
   MODE_TYPE_INTER = 1, //can try inter
   MODE_TYPE_INTRA = 2, //can try intra, ibc, palette
 };
-#endif
 
 #define CH_L CHANNEL_TYPE_LUMA
 #define CH_C CHANNEL_TYPE_CHROMA
@@ -747,12 +712,8 @@ enum PredMode
   MODE_INTER                 = 0,     ///< inter-prediction mode
   MODE_INTRA                 = 1,     ///< intra-prediction mode
   MODE_IBC                   = 2,     ///< ibc-prediction mode
-#if JVET_O0119_BASE_PALETTE_444
   MODE_PLT                   = 3,     ///< plt-prediction mode
   NUMBER_OF_PREDICTION_MODES = 4,
-#else
-  NUMBER_OF_PREDICTION_MODES = 3,
-#endif
 };
 
 /// reference list index
@@ -844,7 +805,12 @@ enum DFunc
 
   DF_SAD_INTERMEDIATE_BITDEPTH = 63,
 
+#if JVET_Q0806
+  DF_SAD_WITH_MASK   = 64,
+  DF_TOTAL_FUNCTIONS = 65
+#else
   DF_TOTAL_FUNCTIONS = 64
+#endif
 };
 
 /// motion vector predictor direction used in AMVP
@@ -878,10 +844,8 @@ enum MESearchMethod
 enum CoeffScanType
 {
   SCAN_DIAG = 0,        ///< up-right diagonal scan
-#if JVET_O0119_BASE_PALETTE_444
   SCAN_TRAV_HOR = 1,
   SCAN_TRAV_VER = 2,
-#endif
   SCAN_NUMBER_OF_TYPES
 };
 
@@ -915,15 +879,14 @@ enum ScalingListSize
   SCALING_LIST_LAST_CODED = SCALING_LIST_64x64
 };
 
-// Slice / Slice segment encoding modes
-enum SliceConstraint
+enum ScalingList1dStartIdx
 {
-  NO_SLICES              = 0,          ///< don't use slices / slice segments
-  FIXED_NUMBER_OF_CTU    = 1,          ///< Limit maximum number of largest coding tree units in a slice / slice segments
-  FIXED_NUMBER_OF_BYTES  = 2,          ///< Limit maximum number of bytes in a slice / slice segment
-  FIXED_NUMBER_OF_TILES  = 3,          ///< slices / slice segments span an integer number of tiles
-  SINGLE_BRICK_PER_SLICE = 4,          ///< each brick is coded as separate NAL unit (slice)
-  NUMBER_OF_SLICE_CONSTRAINT_MODES = 5
+  SCALING_LIST_1D_START_2x2    = 0,
+  SCALING_LIST_1D_START_4x4    = 2,
+  SCALING_LIST_1D_START_8x8    = 8,
+  SCALING_LIST_1D_START_16x16  = 14,
+  SCALING_LIST_1D_START_32x32  = 20,
+  SCALING_LIST_1D_START_64x64  = 26,
 };
 
 // For use with decoded picture hash SEI messages, generated by encoder.
@@ -984,13 +947,9 @@ namespace Profile
 {
   enum Name
   {
-    NONE = 0,
-    MAIN = 1,
-    MAIN10 = 2,
-    MAINSTILLPICTURE = 3,
-    MAINREXT = 4,
-    HIGHTHROUGHPUTREXT = 5,
-    NEXT = 6
+    NONE        = 0,
+    MAIN_10     = 1,
+    MAIN_444_10 = 2
   };
 }
 
@@ -1000,6 +959,7 @@ namespace Level
   {
     MAIN = 0,
     HIGH = 1,
+    NUMBER_OF_TIERS=2
   };
 
   enum Name
@@ -1070,42 +1030,39 @@ enum PPSExtensionFlagIndex
 //       effort can be done without use of macros to alter the names used to indicate the different NAL unit types.
 enum NalUnitType
 {
-#if JVET_O0179
   NAL_UNIT_CODED_SLICE_TRAIL = 0,   // 0
   NAL_UNIT_CODED_SLICE_STSA,        // 1
-  NAL_UNIT_CODED_SLICE_RASL,        // 2
-  NAL_UNIT_CODED_SLICE_RADL,        // 3
+  NAL_UNIT_CODED_SLICE_RADL,        // 2
+  NAL_UNIT_CODED_SLICE_RASL,        // 3
 
-  NAL_UNIT_RESERVED_VCL_4, 
+  NAL_UNIT_RESERVED_VCL_4,
   NAL_UNIT_RESERVED_VCL_5,
   NAL_UNIT_RESERVED_VCL_6,
-  NAL_UNIT_RESERVED_VCL_7,
 
-  NAL_UNIT_CODED_SLICE_IDR_W_RADL,  // 8
-  NAL_UNIT_CODED_SLICE_IDR_N_LP,    // 9
-  NAL_UNIT_CODED_SLICE_CRA,         // 10
-#if JVET_N0865_GRA2GDR
-  NAL_UNIT_CODED_SLICE_GDR,         // 11
-#else
-  NAL_UNIT_CODED_SLICE_GRA,         // 11
-#endif
+  NAL_UNIT_CODED_SLICE_IDR_W_RADL,  // 7
+  NAL_UNIT_CODED_SLICE_IDR_N_LP,    // 8
+  NAL_UNIT_CODED_SLICE_CRA,         // 9
+  NAL_UNIT_CODED_SLICE_GDR,         // 10
 
+  NAL_UNIT_RESERVED_IRAP_VCL_11,
   NAL_UNIT_RESERVED_IRAP_VCL_12,
-  NAL_UNIT_RESERVED_IRAP_VCL_13,
-
-  NAL_UNIT_RESERVED_VCL_14,
-  NAL_UNIT_RESERVED_VCL_15,
-
-  NAL_UNIT_SPS,                     // 16
-  NAL_UNIT_PPS,                     // 17
-  NAL_UNIT_APS,                     // 18
-  NAL_UNIT_ACCESS_UNIT_DELIMITER,   // 19
-  NAL_UNIT_EOS,                     // 20
-  NAL_UNIT_EOB,                     // 21
-  NAL_UNIT_PREFIX_SEI,              // 22
-  NAL_UNIT_SUFFIX_SEI,              // 23
-  NAL_UNIT_DPS,                     // 24
-  NAL_UNIT_VPS,                     // 25
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+  NAL_UNIT_DCI,                     // 13
+#else
+  NAL_UNIT_DPS,                     // 13
+#endif
+  NAL_UNIT_VPS,                     // 14
+  NAL_UNIT_SPS,                     // 15
+  NAL_UNIT_PPS,                     // 16
+  NAL_UNIT_PREFIX_APS,              // 17
+  NAL_UNIT_SUFFIX_APS,              // 18
+  NAL_UNIT_PH,                      // 19
+  NAL_UNIT_ACCESS_UNIT_DELIMITER,   // 20
+  NAL_UNIT_EOS,                     // 21
+  NAL_UNIT_EOB,                     // 22
+  NAL_UNIT_PREFIX_SEI,              // 23
+  NAL_UNIT_SUFFIX_SEI,              // 24
+  NAL_UNIT_FD,                      // 25
 
   NAL_UNIT_RESERVED_NVCL_26,
   NAL_UNIT_RESERVED_NVCL_27,
@@ -1115,45 +1072,6 @@ enum NalUnitType
   NAL_UNIT_UNSPECIFIED_30,
   NAL_UNIT_UNSPECIFIED_31,
   NAL_UNIT_INVALID
-#else
-  NAL_UNIT_PPS = 0,                     // 0
-  NAL_UNIT_ACCESS_UNIT_DELIMITER,       // 1
-  NAL_UNIT_PREFIX_SEI,                  // 2
-  NAL_UNIT_SUFFIX_SEI,                  // 3
-  NAL_UNIT_APS,                         // 4
-  NAL_UNIT_RESERVED_NVCL_5,             // 5
-  NAL_UNIT_RESERVED_NVCL_6,             // 6
-  NAL_UNIT_RESERVED_NVCL_7,             // 7
-  NAL_UNIT_CODED_SLICE_TRAIL,           // 8
-  NAL_UNIT_CODED_SLICE_STSA,            // 9
-  NAL_UNIT_CODED_SLICE_RADL,            // 10
-  NAL_UNIT_CODED_SLICE_RASL,            // 11
-  NAL_UNIT_RESERVED_VCL_12,             // 12
-  NAL_UNIT_RESERVED_VCL_13,             // 13
-  NAL_UNIT_RESERVED_VCL_14,             // 14
-  NAL_UNIT_RESERVED_VCL_15,             // 15
-  NAL_UNIT_DPS,                         // 16
-  NAL_UNIT_SPS,                         // 17
-  NAL_UNIT_EOS,                         // 18
-  NAL_UNIT_EOB,                         // 19
-  NAL_UNIT_VPS,                         // 20
-  NAL_UNIT_RESERVED_NVCL_21,            // 21
-  NAL_UNIT_RESERVED_NVCL_22,            // 22
-  NAL_UNIT_RESERVED_NVCL_23,            // 23
-  NAL_UNIT_CODED_SLICE_IDR_W_RADL,      // 24
-  NAL_UNIT_CODED_SLICE_IDR_N_LP,        // 25
-  NAL_UNIT_CODED_SLICE_CRA,             // 26
-#if JVET_N0865_GRA2GDR
-  NAL_UNIT_CODED_SLICE_GDR,             // 27
-#else
-  NAL_UNIT_CODED_SLICE_GRA,             // 27
-#endif
-  NAL_UNIT_UNSPECIFIED_28,              // 29
-  NAL_UNIT_UNSPECIFIED_29,              // 30
-  NAL_UNIT_UNSPECIFIED_30,              // 31
-  NAL_UNIT_UNSPECIFIED_31,              // 32
-  NAL_UNIT_INVALID
-#endif
 };
 
 #if SHARP_LUMA_DELTA_QP
@@ -1173,19 +1091,15 @@ enum MergeType
   NUM_MRG_TYPE                   // 5
 };
 
+#if !JVET_Q0806
 enum TriangleSplit
 {
   TRIANGLE_DIR_135 = 0,
   TRIANGLE_DIR_45,
   TRIANGLE_DIR_NUM
 };
+#endif
 
-enum SharedMrgState
-{
-  NO_SHARE            = 0,
-  GEN_ON_SHARED_BOUND = 1,
-  SHARING             = 2
-};
 //////////////////////////////////////////////////////////////////////////
 // Encoder modes to try out
 //////////////////////////////////////////////////////////////////////////
@@ -1204,14 +1118,9 @@ enum EncModeFeature
 enum ImvMode
 {
   IMV_OFF = 0,
-#if JVET_O0057_ALTHPELIF
   IMV_FPEL,
   IMV_4PEL,
   IMV_HPEL,
-#else
-  IMV_DEFAULT,
-  IMV_4PEL,
-#endif
   NUM_IMV_MODES
 };
 
@@ -1260,14 +1169,12 @@ struct BitDepths
   int recon[MAX_NUM_CHANNEL_TYPE]; ///< the bit depth as indicated in the SPS
 };
 
-#if JVET_O0119_BASE_PALETTE_444
 enum PLTRunMode
 {
   PLT_RUN_INDEX = 0,
   PLT_RUN_COPY  = 1,
   NUM_PLT_RUN   = 2
 };
-#endif
 /// parameters for deblocking filter
 struct LFCUParam
 {
@@ -1584,13 +1491,13 @@ template<typename T>
 class dynamic_cache
 {
   std::vector<T*> m_cache;
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
   int64_t         m_cacheId;
 #endif
 
 public:
 
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
   dynamic_cache()
   {
     static int cacheId = 0;
@@ -1622,7 +1529,7 @@ public:
     {
       ret = m_cache.back();
       m_cache.pop_back();
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
       CHECK( ret->cacheId != m_cacheId, "Putting item into wrong cache!" );
       CHECK( !ret->cacheUsed,           "Fetched an element that should've been in cache!!" );
 #endif
@@ -1632,7 +1539,7 @@ public:
       ret = new T;
     }
 
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
     ret->cacheId   = m_cacheId;
     ret->cacheUsed = false;
 
@@ -1642,7 +1549,7 @@ public:
 
   void cache( T* el )
   {
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
     CHECK( el->cacheId != m_cacheId, "Putting item into wrong cache!" );
     CHECK( el->cacheUsed,            "Putting cached item back into cache!" );
 
@@ -1654,7 +1561,7 @@ public:
 
   void cache( std::vector<T*>& vel )
   {
-#if ENABLE_SPLIT_PARALLELISM || ENABLE_WPP_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
     for( auto el : vel )
     {
       CHECK( el->cacheId != m_cacheId, "Putting item into wrong cache!" );

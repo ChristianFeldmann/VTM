@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -39,6 +39,7 @@
 #define __ENCADAPTIVELOOPFILTER__
 
 #include "CommonLib/AdaptiveLoopFilter.h"
+#include "CommonLib/ParameterSetManager.h"
 
 #include "CABACWriter.h"
 #include "EncCfg.h"
@@ -202,15 +203,24 @@ struct AlfCovariance
   double calculateError( const int *clip, const double *coeff ) const { return calculateError(clip, coeff, numCoeff); }
   double calculateError( const int *clip, const double *coeff, const int numCoeff ) const;
   double calcErrorForCoeffs( const int *clip, const int *coeff, const int numCoeff, const int bitDepth ) const;
+#if JVET_Q0795_CCALF
+  double calcErrorForCcAlfCoeffs(const int* coeff, const int numCoeff, const int bitDepth) const;
+#endif
 
   void getClipMax(const AlfFilterShape& alfShape, int *clip_max) const;
   void reduceClipCost(const AlfFilterShape& alfShape, int *clip) const;
+
+#if JVET_Q0795_CCALF
+  int  gnsSolveByChol( TE LHS, double* rhs, double *x, int numEq ) const;
+#endif
 
 private:
   // Cholesky decomposition
 
   int  gnsSolveByChol( const int *clip, double *x, int numEq ) const;
+#if !JVET_Q0795_CCALF
   int  gnsSolveByChol( TE LHS, double* rhs, double *x, int numEq ) const;
+#endif
   void gnsBacksubstitution( TE R, double* z, int size, double* A ) const;
   void gnsTransposeBacksubstitution( TE U, double* rhs, double* x, int order ) const;
   int  gnsCholeskyDec( TE inpMatr, TE outMatr, int numEq ) const;
@@ -219,10 +229,6 @@ private:
 class EncAdaptiveLoopFilter : public AdaptiveLoopFilter
 {
 public:
-#if !JVET_O0216_ALF_COEFF_EG3 || !JVET_O0064_SIMP_ALF_CLIP_CODING
-  static constexpr int   m_MAX_SCAN_VAL = 11;
-  static constexpr int   m_MAX_EXP_GOLOMB = 16;
-#endif
   inline void           setAlfWSSD(int alfWSSD) { m_alfWSSD = alfWSSD; }
   static std::vector<double>  m_lumaLevelToWeightPLUT;
   inline std::vector<double>& getLumaLevelWeightTable() { return m_lumaLevelToWeightPLUT; }
@@ -231,14 +237,13 @@ private:
   int                    m_alfWSSD;
   const EncCfg*          m_encCfg;
   AlfCovariance***       m_alfCovariance[MAX_NUM_COMPONENT];          // [compIdx][shapeIdx][ctbAddr][classIdx]
-#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
   AlfCovariance**        m_alfCovarianceFrame[MAX_NUM_CHANNEL_TYPE];   // [CHANNEL][shapeIdx][lumaClassIdx/chromaAltIdx]
   uint8_t*               m_ctuEnableFlagTmp[MAX_NUM_COMPONENT];
   uint8_t*               m_ctuEnableFlagTmp2[MAX_NUM_COMPONENT];
   uint8_t*               m_ctuAlternativeTmp[MAX_NUM_COMPONENT];
-#else
-  AlfCovariance**        m_alfCovarianceFrame[MAX_NUM_CHANNEL_TYPE];   // [CHANNEL][shapeIdx][classIdx]
-  uint8_t*                 m_ctuEnableFlagTmp[MAX_NUM_COMPONENT];
+#if JVET_Q0795_CCALF
+  AlfCovariance***       m_alfCovarianceCcAlf[2];           // [compIdx-1][shapeIdx][ctbAddr][filterIdx]
+  AlfCovariance**        m_alfCovarianceFrameCcAlf[2];      // [compIdx-1][shapeIdx][filterIdx]
 #endif
 
   //for RDO
@@ -250,21 +255,12 @@ private:
   CtxCache*              m_CtxCache;
   double                 m_lambda[MAX_NUM_COMPONENT];
 
-#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
   int**                  m_filterCoeffSet; // [lumaClassIdx/chromaAltIdx][coeffIdx]
   int**                  m_filterClippSet; // [lumaClassIdx/chromaAltIdx][coeffIdx]
-#else
-  int**                  m_filterCoeffSet;
-  int**                  m_filterClippSet;
-#endif
   int**                  m_diffFilterCoeff;
-#if !JVET_O0216_ALF_COEFF_EG3 || !JVET_O0064_SIMP_ALF_CLIP_CODING
-  int                    m_kMinTab[MAX_NUM_ALF_LUMA_COEFF];
-  int                    m_bitsCoeffScan[m_MAX_SCAN_VAL][m_MAX_EXP_GOLOMB];
-#endif
   short                  m_filterIndices[MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_CLASSES];
   unsigned               m_bitsNewFilter[MAX_NUM_CHANNEL_TYPE];
-  int                    m_apsIdStart;
+  int&                   m_apsIdStart;
   double                 *m_ctbDistortionFixedFilter;
   double                 *m_ctbDistortionUnfilter[MAX_NUM_COMPONENT];
   std::vector<short>     m_alfCtbFilterSetIndexTmp;
@@ -273,8 +269,27 @@ private:
   int                    m_filterTmp[MAX_NUM_ALF_LUMA_COEFF];
   int                    m_clipTmp[MAX_NUM_ALF_LUMA_COEFF];
 
+#if JVET_Q0795_CCALF
+  int m_apsIdCcAlfStart[2];
+
+  short                  m_bestFilterCoeffSet[MAX_NUM_CC_ALF_FILTERS][MAX_NUM_CC_ALF_CHROMA_COEFF];
+  bool                   m_bestFilterIdxEnabled[MAX_NUM_CC_ALF_FILTERS];
+  uint8_t                m_bestFilterCount;
+  uint8_t*               m_trainingCovControl;
+  Pel*                   m_bufOrigin;
+  PelBuf*                m_buf;
+  uint64_t**             m_unfilteredDistortion;  // for different block size
+  uint64_t*              m_trainingDistortion[MAX_NUM_CC_ALF_FILTERS];    // for current block size
+  uint64_t*              m_lumaSwingGreaterThanThresholdCount;
+  uint64_t*              m_chromaSampleCountNearMidPoint;
+  uint8_t*               m_filterControl;         // current iterations filter control
+  uint8_t*               m_bestFilterControl;     // best saved filter control
+  int                    m_reuseApsId[2];
+  bool                   m_limitCcAlf;
+#endif
+
 public:
-  EncAdaptiveLoopFilter();
+  EncAdaptiveLoopFilter( int& apsIdStart );
   virtual ~EncAdaptiveLoopFilter() {}
   void  initDistortion();
   std::vector<int> getAvaiApsIdsLuma(CodingStructure& cs, int &newApsId);
@@ -289,12 +304,14 @@ public:
     , const double lambdaChromaWeight
 #endif
   );
+#if JVET_Q0795_CCALF
+  int getNewCcAlfApsId(CodingStructure &cs, int cIdx);
+#endif
   void initCABACEstimator( CABACEncoder* cabacEncoder, CtxCache* ctxCache, Slice* pcSlice, ParameterSetMap<APS>* apsMap );
   void create( const EncCfg* encCfg, const int picWidth, const int picHeight, const ChromaFormat chromaFormatIDC, const int maxCUWidth, const int maxCUHeight, const int maxCUDepth, const int inputBitDepth[MAX_NUM_CHANNEL_TYPE], const int internalBitDepth[MAX_NUM_CHANNEL_TYPE] );
   void destroy();
-  static int lengthGolomb( int coeffVal, int k, bool signed_coeff=true );
-#if !JVET_O0216_ALF_COEFF_EG3 || !JVET_O0064_SIMP_ALF_CLIP_CODING
-  static int getGolombKMin( AlfFilterShape& alfShape, const int numFilters, int kMinTab[MAX_NUM_ALF_LUMA_COEFF], int bitsCoeffScan[m_MAX_SCAN_VAL][m_MAX_EXP_GOLOMB] );
+#if !JVET_Q0210_UEK_REMOVAL 
+  static int lengthGolomb( int coeffVal, int k, bool signed_coeff = true );
 #endif
   void setApsIdStart( int i) { m_apsIdStart = i; }
 
@@ -309,31 +326,24 @@ private:
   double mergeFiltersAndCost( AlfParam& alfParam, AlfFilterShape& alfShape, AlfCovariance* covFrame, AlfCovariance* covMerged, int clipMerged[MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_LUMA_COEFF], int& uiCoeffBits );
 
   void   getFrameStats( ChannelType channel, int iShapeIdx );
-#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
   void   getFrameStat( AlfCovariance* frameCov, AlfCovariance** ctbCov, uint8_t* ctbEnableFlags, uint8_t* ctbAltIdx, const int numClasses, int altIdx );
-#else
-  void   getFrameStat( AlfCovariance* frameCov, AlfCovariance** ctbCov, uint8_t* ctbEnableFlags, const int numClasses );
-#endif
   void   deriveStatsForFiltering( PelUnitBuf& orgYuv, PelUnitBuf& recYuv, CodingStructure& cs );
-#if JVET_O0625_ALF_PADDING
-  void   getBlkStats( AlfCovariance* alfCovariace, const AlfFilterShape& shape, AlfClassifier** classifier, Pel* org, const int orgStride, Pel* rec, 
-    const int recStride, const CompArea& areaDst, const CompArea& area, const ChannelType channel, int vbCTUHeight, int vbPos, const int alfBryList[4] );
-  void   calcCovariance( int ELocal[MAX_NUM_ALF_LUMA_COEFF][MaxAlfNumClippingValues], const Pel *rec, const int stride, 
-    const AlfFilterShape& shape, const int transposeIdx, const ChannelType channel, int vbDistance, const int alfBryList[4] );
-#else
   void   getBlkStats(AlfCovariance* alfCovariace, const AlfFilterShape& shape, AlfClassifier** classifier, Pel* org, const int orgStride, Pel* rec, const int recStride, const CompArea& areaDst, const CompArea& area, const ChannelType channel, int vbCTUHeight, int vbPos);
   void   calcCovariance(int ELocal[MAX_NUM_ALF_LUMA_COEFF][MaxAlfNumClippingValues], const Pel *rec, const int stride, const AlfFilterShape& shape, const int transposeIdx, const ChannelType channel, int vbDistance);
+#if JVET_Q0795_CCALF
+  void   deriveStatsForCcAlfFiltering(const PelUnitBuf &orgYuv, const PelUnitBuf &recYuv, const int compIdx,
+                                      const int maskStride, const uint8_t filterIdc, CodingStructure &cs);
+  void   getBlkStatsCcAlf(AlfCovariance &alfCovariance, const AlfFilterShape &shape, const PelUnitBuf &orgYuv,
+                          const PelUnitBuf &recYuv, const UnitArea &areaDst, const UnitArea &area,
+                          const ComponentID compID, const int yPos);
+  void   calcCovarianceCcAlf(int ELocal[MAX_NUM_CC_ALF_CHROMA_COEFF][1], const Pel* rec, const int stride, const AlfFilterShape& shape, int vbDistance);
 #endif
   void   mergeClasses(const AlfFilterShape& alfShape, AlfCovariance* cov, AlfCovariance* covMerged, int clipMerged[MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_LUMA_COEFF], const int numClasses, short filterIndices[MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_CLASSES]);
 
 
   double getFilterCoeffAndCost( CodingStructure& cs, double distUnfilter, ChannelType channel, bool bReCollectStat, int iShapeIdx, int& uiCoeffBits, bool onlyFilterCost = false );
   double deriveFilterCoeffs(AlfCovariance* cov, AlfCovariance* covMerged, int clipMerged[MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_LUMA_COEFF], AlfFilterShape& alfShape, short* filterIndices, int numFilters, double errorTabForce0Coeff[MAX_NUM_ALF_CLASSES][2], AlfParam& alfParam);
-#if JVET_O0669_REMOVE_ALF_COEFF_PRED
   int    deriveFilterCoefficientsPredictionMode( AlfFilterShape& alfShape, int **filterSet, int** filterCoeffDiff, const int numFilters );
-#else
-  int    deriveFilterCoefficientsPredictionMode( AlfFilterShape& alfShape, int **filterSet, int** filterCoeffDiff, const int numFilters, int& predMode );
-#endif
   double deriveCoeffQuant( int *filterClipp, int *filterCoeffQuant, const AlfCovariance& cov, const AlfFilterShape& shape, const int bitDepth, const bool optimizeClip );
   double deriveCtbAlfEnableFlags( CodingStructure& cs, const int iShapeIdx, ChannelType channel,
 #if ENABLE_QPA
@@ -341,34 +351,20 @@ private:
 #endif
                                   const int numClasses, const int numCoeff, double& distUnfilter );
   void   roundFiltCoeff( int *filterCoeffQuant, double *filterCoeff, const int numCoeff, const int factor );
-
-  double getDistCoeffForce0( bool* codedVarBins, double errorForce0CoeffTab[MAX_NUM_ALF_CLASSES][2], int* bitsVarBin, const int numFilters );
-#if !JVET_O0491_HLS_CLEANUP
-  int    lengthTruncatedUnary( int symbol, int maxSymbol );
+#if JVET_Q0795_CCALF
+  void   roundFiltCoeffCCALF( int *filterCoeffQuant, double *filterCoeff, const int numCoeff, const int factor );
 #endif
+
+  double getDistCoeffForce0( bool* codedVarBins, double errorForce0CoeffTab[MAX_NUM_ALF_CLASSES][2], int* bitsVarBin, int zeroBitsVarBin, const int numFilters);
   int    lengthUvlc( int uiCode );
   int    getNonFilterCoeffRate( AlfParam& alfParam );
-#if !JVET_O0491_HLS_CLEANUP
-  int    getTBlength( int uiSymbol, const int uiMaxSymbol );
-#endif
 
   int    getCostFilterCoeffForce0( AlfFilterShape& alfShape, int **pDiffQFilterCoeffIntPP, const int numFilters, bool* codedVarBins );
   int    getCostFilterCoeff( AlfFilterShape& alfShape, int **pDiffQFilterCoeffIntPP, const int numFilters );
   int    getCostFilterClipp( AlfFilterShape& alfShape, int **pDiffQFilterCoeffIntPP, const int numFilters );
-#if JVET_O0216_ALF_COEFF_EG3
   int    lengthFilterCoeffs( AlfFilterShape& alfShape, const int numFilters, int **FilterCoeff );
-#else
-  int    lengthFilterCoeffs( AlfFilterShape& alfShape, const int numFilters, int **FilterCoeff, int* kMinTab );
-#endif
-#if !JVET_O0064_SIMP_ALF_CLIP_CODING
-  int    lengthFilterClipps( AlfFilterShape& alfShape, const int numFilters, int **FilterCoeff, int* kMinTab );
-#endif
   double getDistForce0( AlfFilterShape& alfShape, const int numFilters, double errorTabForce0Coeff[MAX_NUM_ALF_CLASSES][2], bool* codedVarBins );
-#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
   int    getChromaCoeffRate( AlfParam& alfParam, int altIdx );
-#else
-  int    getCoeffRate( AlfParam& alfParam, bool isChroma );
-#endif
 
   double getUnfilteredDistortion( AlfCovariance* cov, ChannelType channel );
   double getUnfilteredDistortion( AlfCovariance* cov, const int numClasses );
@@ -378,11 +374,31 @@ private:
   void setEnableFlag( AlfParam& alfSlicePara, ChannelType channel, uint8_t** ctuFlags );
   void setCtuEnableFlag( uint8_t** ctuFlags, ChannelType channel, uint8_t val );
   void copyCtuEnableFlag( uint8_t** ctuFlagsDst, uint8_t** ctuFlagsSrc, ChannelType channel );
-#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
   void initCtuAlternativeChroma( uint8_t* ctuAlts[MAX_NUM_COMPONENT] );
   void setCtuAlternativeChroma( uint8_t* ctuAlts[MAX_NUM_COMPONENT], uint8_t val );
   void copyCtuAlternativeChroma( uint8_t* ctuAltsDst[MAX_NUM_COMPONENT], uint8_t* ctuAltsSrc[MAX_NUM_COMPONENT] );
   int getMaxNumAlternativesChroma( );
+#if JVET_Q0795_CCALF
+  int  getCoeffRateCcAlf(short chromaCoeff[MAX_NUM_CC_ALF_FILTERS][MAX_NUM_CC_ALF_CHROMA_COEFF], bool filterEnabled[MAX_NUM_CC_ALF_FILTERS], uint8_t filterCount, ComponentID compID);
+  void deriveCcAlfFilterCoeff( ComponentID compID, const PelUnitBuf& recYuv, const PelUnitBuf& recYuvExt, short filterCoeff[MAX_NUM_CC_ALF_FILTERS][MAX_NUM_CC_ALF_CHROMA_COEFF], const uint8_t filterIdx );
+  void computeLog2BlockSizeDistortion(const Pel *org, int orgStride, const Pel *dec, int decStride, int height,
+                                      int width, uint64_t *distortionBuf, int distortionBufStride, int log2BlockWidth,
+                                      int log2BlockHeight, uint64_t &totalDistortion);
+  void determineControlIdcValues(CodingStructure &cs, const ComponentID compID, const PelBuf *buf, const int ctuWidthC,
+                                 const int ctuHeightC, const int picWidthC, const int picHeightC,
+                                 uint64_t **unfilteredDistortion, uint64_t *trainingDistortion[MAX_NUM_CC_ALF_FILTERS],
+                                 uint64_t *lumaSwingGreaterThanThresholdCount,
+                                 uint64_t *chromaSampleCountNearMidPoint,
+                                 bool reuseFilterCoeff, uint8_t *trainingCovControl, uint8_t *filterControl,
+                                 uint64_t &curTotalDistortion, double &curTotalRate,
+                                 bool     filterEnabled[MAX_NUM_CC_ALF_FILTERS],
+                                 uint8_t  mapFilterIdxToFilterIdc[MAX_NUM_CC_ALF_FILTERS + 1],
+                                 uint8_t &ccAlfFilterCount);
+  void deriveCcAlfFilter( CodingStructure& cs, ComponentID compID, const PelUnitBuf& orgYuv, const PelUnitBuf& tempDecYuvBuf, const PelUnitBuf& dstYuv );
+  std::vector<int> getAvailableCcAlfApsIds(CodingStructure& cs, ComponentID compID);
+  void xSetupCcAlfAPS( CodingStructure& cs );
+  void countLumaSwingGreaterThanThreshold(const Pel* luma, int lumaStride, int height, int width, int log2BlockWidth, int log2BlockHeight, uint64_t* lumaSwingGreaterThanThresholdCount, int lumaCountStride);
+  void countChromaSampleValueNearMidPoint(const Pel* chroma, int chromaStride, int height, int width, int log2BlockWidth, int log2BlockHeight, uint64_t* chromaSampleCountNearMidPoint, int chromaSampleCountNearMidPointStride);
 #endif
 };
 

@@ -3,7 +3,7 @@
 * and contributor rights, including patent rights, and no such rights are
 * granted under this license.
 *
-* Copyright (c) 2010-2019, ITU/ISO/IEC
+* Copyright (c) 2010-2020, ITU/ISO/IEC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -31,4 +31,30 @@
 * THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#include "HRD.h"
+
+#if JVET_P0118_HRD_ASPECTS
+OlsHrdParams::OlsHrdParams()
+  : m_fixedPicRateGeneralFlag(false)
+  , m_fixedPicRateWithinCvsFlag(false)
+  , m_elementDurationInTcMinus1(0)
+  , m_lowDelayHrdFlag(false)
+{
+  for (int i=0;i<MAX_CPB_CNT;i++)
+  {
+    for (int j=0;j<2;j++)
+    {
+      m_bitRateValueMinus1[i][j] = 0;
+      m_cpbSizeValueMinus1[i][j] = 0;
+      m_ducpbSizeValueMinus1[i][j] = 0;
+      m_duBitRateValueMinus1[i][j] = 0;
+      m_cbrFlag[i][j] = 0;
+    }
+  }
+}
+
+OlsHrdParams::~OlsHrdParams()
+{
+}
+#endif
 

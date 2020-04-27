@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -63,6 +63,9 @@ private:
   DecCu*          m_pcCuDecoder;
 
   Ctx             m_entropyCodingSyncContextState;      ///< context storage for state of contexts at the wavefront/WPP/entropy-coding-sync second CTU of tile-row
+#if JVET_Q0501_PALETTE_WPP_INIT_ABOVECTU
+  PLTBuf          m_palettePredictorSyncState;      /// palette predictor storage at wavefront/WPP
+#endif
 
 public:
   DecSlice();

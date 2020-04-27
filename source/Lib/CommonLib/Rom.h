@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -79,20 +79,6 @@ extern const int g_invQuantScales[2/*0=4^n blocks, 1=2*4^n blocks*/][SCALING_LIS
 static const int g_numTransformMatrixSizes = 6;
 static const int g_transformMatrixShift[TRANSFORM_NUMBER_OF_DIRECTIONS] = {  6, 6 };
 
-#if !JVET_O0925_MIP_SIMPLIFICATIONS
-extern const uint8_t g_intraMode65to33AngMapping[NUM_INTRA_MODE];
-extern const uint8_t g_mapMipToAngular65[3][MAX_NUM_MIP_MODE];
-extern const uint8_t g_mapAngular33ToMip[3][35];
-extern const int     g_sortedMipMpms    [3][NUM_MPM_MIP];
-#endif
-#if !JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
-// ====================================================================================================================
-// Luma QP to Chroma QP mapping
-// ====================================================================================================================
-static const int chromaQPMappingTableSize = (MAX_QP + 7);
-
-extern const uint8_t  g_aucChromaScale[NUM_CHROMA_FORMAT][chromaQPMappingTableSize];
-#endif
 
 // ====================================================================================================================
 // Scanning order & context mapping table
@@ -101,7 +87,10 @@ extern const uint8_t  g_aucChromaScale[NUM_CHROMA_FORMAT][chromaQPMappingTableSi
 extern const uint32_t   g_uiGroupIdx[ MAX_TB_SIZEY ];
 extern const uint32_t   g_uiMinInGroup[ LAST_SIGNIFICANT_GROUPS ];
 extern const uint32_t   g_auiGoRiceParsCoeff     [ 32 ];
-extern const uint32_t   g_auiGoRicePosCoeff0[ 3 ][ 32 ];
+inline uint32_t g_auiGoRicePosCoeff0(int st, uint32_t ricePar)
+{
+  return (st < 2 ? 1 : 2) << ricePar;
+}
 
 // ====================================================================================================================
 // Intra prediction table
@@ -146,9 +135,7 @@ extern const     uint8_t  g_lfnstLut[ NUM_INTRA_MODE + NUM_EXT_LUMA_MODE - 1 ];
 // ====================================================================================================================
 extern SizeIndexInfo* gp_sizeIdxInfo;
 
-#if JVET_O0105_ICT
 extern const int       g_ictModes[2][4];
-#endif
 
 inline bool is34( const SizeType& size )
 {
@@ -193,17 +180,17 @@ extern const uint32_t g_scalingListSizeX[SCALING_LIST_SIZE_NUM];
 extern MsgLevel g_verbosity;
 
 
-extern const int8_t g_GbiLog2WeightBase;
-extern const int8_t g_GbiWeightBase;
-extern const int8_t g_GbiWeights[GBI_NUM];
-extern const int8_t g_GbiSearchOrder[GBI_NUM];
-extern       int8_t g_GbiCodingOrder[GBI_NUM];
-extern       int8_t g_GbiParsingOrder[GBI_NUM];
+extern const int8_t g_BcwLog2WeightBase;
+extern const int8_t g_BcwWeightBase;
+extern const int8_t g_BcwWeights[BCW_NUM];
+extern const int8_t g_BcwSearchOrder[BCW_NUM];
+extern       int8_t g_BcwCodingOrder[BCW_NUM];
+extern       int8_t g_BcwParsingOrder[BCW_NUM];
 
 class CodingStructure;
-int8_t getGbiWeight(uint8_t gbiIdx, uint8_t uhRefFrmList);
-void resetGbiCodingOrder(bool bRunDecoding, const CodingStructure &cs);
-uint32_t deriveWeightIdxBits(uint8_t gbiIdx);
+int8_t getBcwWeight(uint8_t bcwIdx, uint8_t uhRefFrmList);
+void resetBcwCodingOrder(bool bRunDecoding, const CodingStructure &cs);
+uint32_t deriveWeightIdxBits(uint8_t bcwIdx);
 
 constexpr uint8_t g_tbMax[257] = { 0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
@@ -218,25 +205,37 @@ constexpr uint8_t g_tbMax[257] = { 0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 
 
 //! \}
 
+#if !JVET_Q0806
 extern       uint8_t g_triangleMvStorage[TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_SIZE >> MIN_CU_LOG2][MAX_CU_SIZE >> MIN_CU_LOG2];
-#if JVET_O0280_SIMD_TRIANGLE_WEIGHTING
 // 7-tap/3-tap, direction, 2/4/8/16/32/64/128
-extern int16_t *g_triangleWeights[2][TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG2 + 2][MAX_CU_DEPTH - MIN_CU_LOG2 + 2];
+extern int16_t *g_triangleWeights[TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG2 + 2][MAX_CU_DEPTH - MIN_CU_LOG2 + 2];
 #endif
 
 extern bool g_mctsDecCheckEnabled;
 
-#if JVET_O0592_ENC_ME_IMP
 class  Mv;
 extern Mv   g_reusedUniMVs[32][32][8][8][2][33];
 extern bool g_isReusedUniMVsFilled[32][32][8][8];
-#endif
 
-#if JVET_O0119_BASE_PALETTE_444
+#if JVET_Q0503_Q0712_PLT_ENCODER_IMPROV_BUGFIX
+extern uint16_t g_paletteQuant[57];
+#else
 extern const uint8_t g_paletteQuant[52];
+#endif
 extern uint8_t g_paletteRunTopLut[5];
 extern uint8_t g_paletteRunLeftLut[5];
-#endif
 
+const int g_IBCBufferSize = 256 * 128;
+
+#if JVET_Q0806
+void initGeoTemplate();
+extern int16_t** g_GeoParams;
+extern int16_t*  g_globalGeoWeights   [GEO_NUM_PRESTORED_MASK];
+extern int16_t*  g_globalGeoEncSADmask[GEO_NUM_PRESTORED_MASK];
+extern int16_t   g_weightOffset       [GEO_NUM_PARTITION_MODE][GEO_NUM_CU_SIZE][GEO_NUM_CU_SIZE][2];
+extern int8_t    g_angle2mask         [GEO_NUM_ANGLES];
+extern int8_t    g_Dis[GEO_NUM_ANGLES];
+extern int8_t    g_angle2mirror[GEO_NUM_ANGLES];
+#endif
 #endif  //__TCOMROM__
 

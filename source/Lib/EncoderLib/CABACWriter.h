@@ -3,7 +3,7 @@
 * and contributor rights, including patent rights, and no such rights are
 * granted under this license.
 *
-* Copyright (c) 2010-2019, ITU/ISO/IEC
+* Copyright (c) 2010-2020, ITU/ISO/IEC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -83,23 +83,16 @@ public:
   // coding (quad)tree (clause 7.3.8.4)
   void        coding_tree               ( const CodingStructure&        cs,       Partitioner&      pm,         CUCtx& cuCtx, Partitioner* pPartitionerChroma = nullptr, CUCtx* pCuCtxChroma = nullptr);
   void        split_cu_mode             ( const PartSplit               split,    const CodingStructure& cs,    Partitioner& pm );
-#if JVET_O0050_LOCAL_DUAL_TREE
   void        mode_constraint           ( const PartSplit               split,    const CodingStructure& cs,    Partitioner& pm,    const ModeType modeType );
-#endif
 
   // coding unit (clause 7.3.8.5)
   void        coding_unit               ( const CodingUnit&             cu,       Partitioner&      pm,         CUCtx& cuCtx );
-  void        cu_transquant_bypass_flag ( const CodingUnit&             cu );
   void        cu_skip_flag              ( const CodingUnit&             cu );
   void        pred_mode                 ( const CodingUnit&             cu );
   void        bdpcm_mode                ( const CodingUnit&             cu,       const ComponentID compID );
 
-#if !JVET_O0525_REMOVE_PCM
-  void        pcm_data                  ( const CodingUnit&             cu,       Partitioner&      pm );
-  void        pcm_flag                  ( const CodingUnit&             cu,       Partitioner&      pm );
-#endif
   void        cu_pred_data              ( const CodingUnit&             cu );
-  void        cu_gbi_flag               ( const CodingUnit&             cu );
+  void        cu_bcw_flag               ( const CodingUnit&             cu );
   void        extend_ref_line           (const PredictionUnit&          pu );
   void        extend_ref_line           (const CodingUnit&              cu );
   void        intra_luma_pred_modes     ( const CodingUnit&             cu );
@@ -109,23 +102,19 @@ public:
   void        intra_chroma_pred_mode    ( const PredictionUnit&         pu );
   void        cu_residual               ( const CodingUnit&             cu,       Partitioner&      pm,         CUCtx& cuCtx );
   void        rqt_root_cbf              ( const CodingUnit&             cu );
+  void        adaptive_color_transform(const CodingUnit&             cu);
   void        sbt_mode                  ( const CodingUnit&             cu );
   void        end_of_ctu                ( const CodingUnit&             cu,       CUCtx&            cuCtx );
   void        mip_flag                  ( const CodingUnit&             cu );
   void        mip_pred_modes            ( const CodingUnit&             cu );
   void        mip_pred_mode             ( const PredictionUnit&         pu );
-#if JVET_O0119_BASE_PALETTE_444
   void        cu_palette_info           ( const CodingUnit&             cu,       ComponentID       compBegin,     uint32_t numComp,          CUCtx&       cuCtx);
-  void        cu_run_val                (       uint32_t                run,      PLTRunMode        runtype, const uint32_t paletteIdx, const uint32_t     maxRun);
-  void        encodeRunType             ( const CodingUnit&             cu,       PLTtypeBuf&       runType,       uint32_t idx,              ScanElement *refScanOrder,   ComponentID compBegin);
+  void        cuPaletteSubblockInfo     ( const CodingUnit&             cu,       ComponentID       compBegin,     uint32_t numComp,          int subSetId,               uint32_t& prevRunPos,        unsigned& prevRunType );
   Pel         writePLTIndex             ( const CodingUnit&             cu,       uint32_t          idx,           PelBuf&  paletteIdx,       PLTtypeBuf&  paletteRunType, int         maxSymbol,   ComponentID compBegin );
-#endif
   // prediction unit (clause 7.3.8.6)
   void        prediction_unit           ( const PredictionUnit&         pu );
   void        merge_flag                ( const PredictionUnit&         pu );
-#if JVET_O0249_MERGE_SYNTAX
   void        merge_data                ( const PredictionUnit&         pu );
-#endif
   void        affine_flag               ( const CodingUnit&             cu );
   void        subblock_merge_flag       ( const CodingUnit&             cu );
   void        merge_idx                 ( const PredictionUnit&         pu );
@@ -136,40 +125,25 @@ public:
   void        ref_idx                   ( const PredictionUnit&         pu,       RefPicList        eRefList );
   void        mvp_flag                  ( const PredictionUnit&         pu,       RefPicList        eRefList );
 
-  void        MHIntra_flag              ( const PredictionUnit&         pu );
+  void        Ciip_flag              ( const PredictionUnit&         pu );
   void        smvd_mode              ( const PredictionUnit&         pu );
 
-#if !JVET_O0525_REMOVE_PCM
-  // pcm samples (clause 7.3.8.7)
-  void        pcm_samples               ( const TransformUnit&          tu );
-#endif
 
   // transform tree (clause 7.3.8.8)
-#if JVET_O0596_CBF_SIG_ALIGN_TO_SPEC
   void        transform_tree            ( const CodingStructure&        cs,       Partitioner&      pm,     CUCtx& cuCtx,                         const PartSplit ispType = TU_NO_ISP, const int subTuIdx = -1 );
-#else
-  void        transform_tree            ( const CodingStructure&        cs,       Partitioner&      pm,     CUCtx& cuCtx, ChromaCbfs& chromaCbfs, const PartSplit ispType = TU_NO_ISP, const int subTuIdx = -1 );
-#endif
   void        cbf_comp                  ( const CodingStructure&        cs,       bool              cbf,    const CompArea& area, unsigned depth, const bool prevCbf = false, const bool useISP = false );
 
   // mvd coding (clause 7.3.8.9)
   void        mvd_coding                ( const Mv &rMvd, int8_t imv );
   // transform unit (clause 7.3.8.10)
-#if JVET_O0596_CBF_SIG_ALIGN_TO_SPEC
   void        transform_unit            ( const TransformUnit&          tu,       CUCtx&            cuCtx,  Partitioner& pm,       const int subTuCounter = -1 );
-#else
-  void        transform_unit            ( const TransformUnit&          tu,       CUCtx&            cuCtx,  ChromaCbfs& chromaCbfs );
-#endif
   void        cu_qp_delta               ( const CodingUnit&             cu,       int               predQP, const int8_t qp );
   void        cu_chroma_qp_offset       ( const CodingUnit&             cu );
 
   // residual coding (clause 7.3.8.11)
-#if JVET_O0094_LFNST_ZERO_PRIM_COEFFS || JVET_O0472_LFNST_SIGNALLING_LAST_SCAN_POS
   void        residual_coding           ( const TransformUnit&          tu,       ComponentID       compID, CUCtx* cuCtx = nullptr );
-#else
-  void        residual_coding           ( const TransformUnit&          tu,       ComponentID       compID );
-#endif
-  void        mts_coding                ( const TransformUnit&          tu,       ComponentID       compID );
+  void        ts_flag                   ( const TransformUnit&          tu,       ComponentID       compID );
+  void        mts_idx                   ( const CodingUnit&             cu,       CUCtx*            cuCtx  );
   void        residual_lfnst_mode       ( const CodingUnit&             cu,       CUCtx&            cuCtx );
   void        isp_mode                  ( const CodingUnit&             cu );
   void        explicit_rdpcm_mode       ( const TransformUnit&          tu,       ComponentID       compID );
@@ -177,24 +151,24 @@ public:
   void        residual_coding_subblock  ( CoeffCodingContext&           cctx,     const TCoeff*     coeff, const int stateTransTable, int& state );
   void        residual_codingTS         ( const TransformUnit&          tu,       ComponentID       compID );
   void        residual_coding_subblockTS( CoeffCodingContext&           cctx,     const TCoeff*     coeff  );
-#if JVET_O0105_ICT
   void        joint_cb_cr               ( const TransformUnit&          tu,       const int cbfMask );
-#else
-  void        joint_cb_cr               ( const TransformUnit&          tu );
-#endif
 
+#if !REMOVE_PPS_REXT
   // cross component prediction (clause 7.3.8.12)
   void        cross_comp_pred           ( const TransformUnit&          tu,       ComponentID       compID );
-
+#endif
+  
   void        codeAlfCtuEnableFlags     ( CodingStructure& cs, ChannelType channel, AlfParam* alfParam);
   void        codeAlfCtuEnableFlags     ( CodingStructure& cs, ComponentID compID, AlfParam* alfParam);
   void        codeAlfCtuEnableFlag      ( CodingStructure& cs, uint32_t ctuRsAddr, const int compIdx, AlfParam* alfParam );
   void        codeAlfCtuFilterIndex(CodingStructure& cs, uint32_t ctuRsAddr, bool alfEnableLuma);
-#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
 
   void        codeAlfCtuAlternatives     ( CodingStructure& cs, ChannelType channel, AlfParam* alfParam);
   void        codeAlfCtuAlternatives     ( CodingStructure& cs, ComponentID compID, AlfParam* alfParam);
   void        codeAlfCtuAlternative      ( CodingStructure& cs, uint32_t ctuRsAddr, const int compIdx, const AlfParam* alfParam = NULL );
+#if JVET_Q0795_CCALF
+  void codeCcAlfFilterControlIdc(uint8_t idcVal, CodingStructure &cs, const ComponentID compID, const int curIdx,
+                                 const uint8_t *filterControlIdc, Position lumaPos, const int filterCount);
 #endif
 
 private:
@@ -207,20 +181,14 @@ private:
   unsigned    get_num_written_bits()    { return m_BinEncoder.getNumWrittenBits(); }
 
   void  xWriteTruncBinCode(uint32_t uiSymbol, uint32_t uiMaxSymbol);
-#if JVET_O0119_BASE_PALETTE_444
   void        codeScanRotationModeFlag   ( const CodingUnit& cu,     ComponentID compBegin);
   void        xEncodePLTPredIndicator    ( const CodingUnit& cu,     uint32_t    maxPltSize, ComponentID compBegin);
-  uint32_t    xWriteTruncMsbP1           (       uint32_t    symbol, PLTRunMode  runtype,    uint32_t    maxVal,   uint32_t ctxT);
-  void        xWriteTruncMsbP1RefinementBits(    uint32_t    symbol, PLTRunMode  runtype,    uint32_t    maxVal,   uint32_t ctxT);
-#endif
 private:
   BinEncIf&         m_BinEncoder;
   OutputBitstream*  m_Bitstream;
   Ctx               m_TestCtx;
   EncCu*            m_EncCu;
-#if JVET_O0119_BASE_PALETTE_444
   ScanElement*      m_scanOrder;
-#endif
 };
 
 

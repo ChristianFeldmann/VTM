@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -306,6 +306,8 @@ EncRCGOP::EncRCGOP()
   m_targetBits = 0;
   m_picLeft    = 0;
   m_bitsLeft   = 0;
+  m_minEstLambda = 0.0;
+  m_maxEstLambda = 0.0;
 }
 
 EncRCGOP::~EncRCGOP()
@@ -476,6 +478,11 @@ void EncRCGOP::create( EncRCSeq* encRCSeq, int numPic )
   m_targetBits   = targetBits;
   m_picLeft      = m_numPic;
   m_bitsLeft     = m_targetBits;
+  int bitdepth_luma_scale =
+    2 * (encRCSeq->getbitDepth() - 8
+      - DISTORTION_PRECISION_ADJUSTMENT(encRCSeq->getbitDepth()));
+  m_minEstLambda = 0.1;
+  m_maxEstLambda = 10000.0 * pow(2.0, bitdepth_luma_scale);
 }
 
 void EncRCGOP::xCalEquaCoeff( EncRCSeq* encRCSeq, double* lambdaRatio, double* equaCoeffA, double* equaCoeffB, int GOPSize )
@@ -493,8 +500,8 @@ void EncRCGOP::xCalEquaCoeff( EncRCSeq* encRCSeq, double* lambdaRatio, double* e
 double EncRCGOP::xSolveEqua(EncRCSeq* encRCSeq, double targetBpp, double* equaCoeffA, double* equaCoeffB, int GOPSize)
 {
   double solution = 100.0;
-  double minNumber = 0.1;
-  double maxNumber = 10000.0;
+  double minNumber = m_minEstLambda;
+  double maxNumber = m_maxEstLambda;
   for ( int i=0; i<g_RCIterationNum; i++ )
   {
     double fx = 0.0;
@@ -522,7 +529,7 @@ double EncRCGOP::xSolveEqua(EncRCSeq* encRCSeq, double targetBpp, double* equaCo
     }
   }
 
-  solution = Clip3( 0.1, 10000.0, solution );
+  solution = Clip3(m_minEstLambda, m_maxEstLambda, solution);
   return solution;
 }
 
@@ -776,6 +783,10 @@ double EncRCPic::estimatePicLambda( list<EncRCPic*>& listPreviousPictures, bool 
   double beta          = m_encRCSeq->getPicPara( m_frameLevel ).m_beta;
   double bpp       = (double)m_targetBits/(double)m_numberOfPixel;
 
+  int bitdepth_luma_scale =
+    2 * (m_encRCSeq->getbitDepth() - 8
+      - DISTORTION_PRECISION_ADJUSTMENT(m_encRCSeq->getbitDepth()));
+
   int lastPicValPix = 0;
   if (listPreviousPictures.size() > 0)
   {
@@ -816,28 +827,28 @@ double EncRCPic::estimatePicLambda( list<EncRCPic*>& listPreviousPictures, bool 
 
   if ( lastLevelLambda > 0.0 )
   {
-    lastLevelLambda = Clip3( 0.1, 10000.0, lastLevelLambda );
+    lastLevelLambda = Clip3(m_encRCGOP->getMinEstLambda(), m_encRCGOP->getMaxEstLambda(), lastLevelLambda);
     estLambda = Clip3( lastLevelLambda * pow( 2.0, -3.0/3.0 ), lastLevelLambda * pow( 2.0, 3.0/3.0 ), estLambda );
   }
 
   if ( lastPicLambda > 0.0 )
   {
-    lastPicLambda = Clip3( 0.1, 2000.0, lastPicLambda );
+    lastPicLambda = Clip3(m_encRCGOP->getMinEstLambda(), 2000.0 * pow(2.0, bitdepth_luma_scale), lastPicLambda);
     estLambda = Clip3( lastPicLambda * pow( 2.0, -10.0/3.0 ), lastPicLambda * pow( 2.0, 10.0/3.0 ), estLambda );
   }
   else if ( lastValidLambda > 0.0 )
   {
-    lastValidLambda = Clip3( 0.1, 2000.0, lastValidLambda );
+    lastValidLambda = Clip3(m_encRCGOP->getMinEstLambda(), 2000.0 * pow(2.0, bitdepth_luma_scale), lastValidLambda);
     estLambda = Clip3( lastValidLambda * pow(2.0, -10.0/3.0), lastValidLambda * pow(2.0, 10.0/3.0), estLambda );
   }
   else
   {
-    estLambda = Clip3( 0.1, 10000.0, estLambda );
+    estLambda = Clip3(m_encRCGOP->getMinEstLambda(), m_encRCGOP->getMaxEstLambda(), estLambda);
   }
 
-  if ( estLambda < 0.1 )
+  if ( estLambda < m_encRCGOP->getMinEstLambda())
   {
-    estLambda = 0.1;
+    estLambda = m_encRCGOP->getMinEstLambda();
   }
 
   //Avoid different results in different platforms. The problem is caused by the different results of pow() in different platforms.
@@ -1007,7 +1018,11 @@ double EncRCPic::getLCUEstLambda( double bpp )
   }
   else
   {
-    estLambda = Clip3( 10.0, 1000.0, estLambda );
+    int bitdepth_luma_scale =
+      2
+      * (m_encRCSeq->getbitDepth() - 8
+        - DISTORTION_PRECISION_ADJUSTMENT(m_encRCSeq->getbitDepth()));
+    estLambda = Clip3(10.0 * pow(2.0, bitdepth_luma_scale), 1000.0 * pow(2.0, bitdepth_luma_scale), estLambda);
   }
 
   if ( estLambda < 0.1 )
@@ -1086,8 +1101,8 @@ void EncRCPic::updateAfterCTU(int LCUIdx, int bits, int QP, double lambda, doubl
     alpha *= ( 1.0 - m_encRCSeq->getAlphaUpdate() / 2.0 );
     beta  *= ( 1.0 - m_encRCSeq->getBetaUpdate() / 2.0 );
 
-    alpha = Clip3( g_RCAlphaMinValue, g_RCAlphaMaxValue, alpha );
-    beta  = Clip3( g_RCBetaMinValue,  g_RCBetaMaxValue,  beta  );
+    alpha = clipRcAlpha( m_encRCSeq->getbitDepth(), alpha );
+    beta = clipRcBeta( beta );
 
     TRCParameter rcPara;
     rcPara.m_alpha = alpha;
@@ -1103,21 +1118,16 @@ void EncRCPic::updateAfterCTU(int LCUIdx, int bits, int QP, double lambda, doubl
     }
 
     double MSE = m_LCUs[LCUIdx].m_actualMSE;
-    double updatedK = bpp * inputLambda / MSE;
+    double updatedK = MSE > 0 ? bpp * inputLambda / MSE : 0.0;
     double updatedC = MSE / pow(bpp, -updatedK);
     rcPara.m_alpha = updatedC * updatedK;
     rcPara.m_beta = -updatedK - 1.0;
-
-    if (bpp > 0 && updatedK > 0.0001)
+    if (MSE > 0)
     {
+      rcPara.m_alpha = clipRcAlpha( m_encRCSeq->getbitDepth(), rcPara.m_alpha );
+      rcPara.m_beta = clipRcBeta( rcPara.m_beta );
       m_encRCSeq->setLCUPara(m_frameLevel, LCUIdx, rcPara);
     }
-    else
-    {
-      rcPara.m_alpha = Clip3(0.0001, g_RCAlphaMaxValue, rcPara.m_alpha);
-      m_encRCSeq->setLCUPara(m_frameLevel, LCUIdx, rcPara);
-    }
-
     return;
   }
 
@@ -1127,8 +1137,8 @@ void EncRCPic::updateAfterCTU(int LCUIdx, int bits, int QP, double lambda, doubl
   lnbpp = Clip3( -5.0, -0.1, lnbpp );
   beta  += m_encRCSeq->getBetaUpdate() * ( log( inputLambda ) - log( calLambda ) ) * lnbpp;
 
-  alpha = Clip3( g_RCAlphaMinValue, g_RCAlphaMaxValue, alpha );
-  beta  = Clip3( g_RCBetaMinValue,  g_RCBetaMaxValue,  beta  );
+  alpha = clipRcAlpha( m_encRCSeq->getbitDepth(), alpha );
+  beta = clipRcBeta( beta );
 
   TRCParameter rcPara;
   rcPara.m_alpha = alpha;
@@ -1144,21 +1154,17 @@ void EncRCPic::updateAfterCTU(int LCUIdx, int bits, int QP, double lambda, doubl
   }
 
   double MSE = m_LCUs[LCUIdx].m_actualMSE;
-  double updatedK = bpp * inputLambda / MSE;
+  double updatedK = MSE > 0 ? bpp * inputLambda / MSE : 0.0;
   double updatedC = MSE / pow(bpp, -updatedK);
   rcPara.m_alpha = updatedC * updatedK;
   rcPara.m_beta = -updatedK - 1.0;
 
-  if (bpp > 0 && updatedK > 0.0001)
+  if (MSE > 0)
   {
+    rcPara.m_alpha = clipRcAlpha( m_encRCSeq->getbitDepth(), rcPara.m_alpha );
+    rcPara.m_beta = clipRcBeta( rcPara.m_beta );
     m_encRCSeq->setLCUPara(m_frameLevel, LCUIdx, rcPara);
   }
-  else
-  {
-    rcPara.m_alpha = Clip3(0.0001, g_RCAlphaMaxValue, rcPara.m_alpha);
-    m_encRCSeq->setLCUPara(m_frameLevel, LCUIdx, rcPara);
-  }
-
 }
 
 double EncRCPic::calAverageQP()
@@ -1243,7 +1249,6 @@ void EncRCPic::updateAfterPicture( int actualHeaderBits, int actualTotalBits, do
     m_picQP             = g_RCInvalidQPValue;
   }
   m_picLambda           = averageLambda;
-
   double alpha = m_encRCSeq->getPicPara( m_frameLevel ).m_alpha;
   double beta  = m_encRCSeq->getPicPara( m_frameLevel ).m_beta;
   double skipRatio = 0;
@@ -1262,7 +1267,7 @@ void EncRCPic::updateAfterPicture( int actualHeaderBits, int actualTotalBits, do
   {
     // update parameters
     double picActualBits = ( double )m_picActualBits;
-    double picActualBpp = picActualBits / (double)m_validPixelsInPic;
+    double picActualBpp = m_validPixelsInPic > 0 ? picActualBits / (double)m_validPixelsInPic : 0.001;
     double calLambda     = alpha * pow( picActualBpp, beta );
     double inputLambda   = m_picLambda;
 
@@ -1271,8 +1276,8 @@ void EncRCPic::updateAfterPicture( int actualHeaderBits, int actualTotalBits, do
       alpha *= ( 1.0 - m_encRCSeq->getAlphaUpdate() / 2.0 );
       beta  *= ( 1.0 - m_encRCSeq->getBetaUpdate() / 2.0 );
 
-      alpha = Clip3( g_RCAlphaMinValue, g_RCAlphaMaxValue, alpha );
-      beta  = Clip3( g_RCBetaMinValue,  g_RCBetaMaxValue,  beta  );
+      alpha = clipRcAlpha( m_encRCSeq->getbitDepth(), alpha );
+      beta = clipRcBeta( beta );
 
       TRCParameter rcPara;
       rcPara.m_alpha = alpha;
@@ -1292,6 +1297,8 @@ void EncRCPic::updateAfterPicture( int actualHeaderBits, int actualTotalBits, do
 
       if (m_validPixelsInPic > 0)
       {
+        rcPara.m_alpha = clipRcAlpha( m_encRCSeq->getbitDepth(), rcPara.m_alpha );
+        rcPara.m_beta = clipRcBeta( rcPara.m_beta );
         m_encRCSeq->setPicPara(m_frameLevel, rcPara);
       }
 
@@ -1302,19 +1309,17 @@ void EncRCPic::updateAfterPicture( int actualHeaderBits, int actualTotalBits, do
     alpha += m_encRCSeq->getAlphaUpdate() * ( log( inputLambda ) - log( calLambda ) ) * alpha;
     double lnbpp = log( picActualBpp );
     lnbpp = Clip3( -5.0, -0.1, lnbpp );
-
     beta  += m_encRCSeq->getBetaUpdate() * ( log( inputLambda ) - log( calLambda ) ) * lnbpp;
 
-    alpha = Clip3( g_RCAlphaMinValue, g_RCAlphaMaxValue, alpha );
-    beta  = Clip3( g_RCBetaMinValue,  g_RCBetaMaxValue,  beta  );
+    alpha = clipRcAlpha( m_encRCSeq->getbitDepth(), alpha );
+    beta = clipRcBeta( beta );
   }
 
   TRCParameter rcPara;
   rcPara.m_alpha = alpha;
   rcPara.m_beta  = beta;
   rcPara.m_skipRatio = skipRatio;
-  double picActualBpp = (double)m_picActualBits / (double)m_validPixelsInPic;
-
+  double picActualBpp = m_validPixelsInPic > 0 ? m_picActualBits / (double)m_validPixelsInPic : 0.001;
   double avgMSE = getPicMSE();
   double updatedK = picActualBpp * averageLambda / avgMSE;
   double updatedC = avgMSE / pow(picActualBpp, -updatedK);
@@ -1328,15 +1333,31 @@ void EncRCPic::updateAfterPicture( int actualHeaderBits, int actualTotalBits, do
 
   if (m_validPixelsInPic > 0)
   {
+    rcPara.m_alpha = clipRcAlpha(m_encRCSeq->getbitDepth(), rcPara.m_alpha);
+    rcPara.m_beta = clipRcBeta( rcPara.m_beta );
     m_encRCSeq->setPicPara(m_frameLevel, rcPara);
   }
 
   if ( m_frameLevel == 1 )
   {
-    double currLambda = Clip3( 0.1, 10000.0, m_picLambda );
+    double currLambda = Clip3(m_encRCGOP->getMinEstLambda(), m_encRCGOP->getMaxEstLambda(), m_picLambda);
     double updateLastLambda = g_RCWeightHistoryLambda * m_encRCSeq->getLastLambda() + g_RCWeightCurrentLambda * currLambda;
     m_encRCSeq->setLastLambda( updateLastLambda );
   }
+}
+
+double EncRCPic::clipRcAlpha(const int bitdepth, const double alpha)
+{
+  int bitdepth_luma_scale =
+    2
+    * (bitdepth - 8
+      - DISTORTION_PRECISION_ADJUSTMENT(m_encRCSeq->getbitDepth()));
+  return Clip3(g_RCAlphaMinValue, g_RCAlphaMaxValue * pow(2.0, bitdepth_luma_scale), alpha);
+}
+
+double EncRCPic::clipRcBeta(const double beta)
+{
+  return Clip3(g_RCBetaMinValue, g_RCBetaMaxValue, beta);
 }
 
 int EncRCPic::getRefineBitsForIntra( int orgBits )
@@ -1822,6 +1843,16 @@ int  RateCtrl::updateCpbState(int actualBits)
   return cpbState;
 }
 
+#if JVET_P0118_HRD_ASPECTS
+void RateCtrl::initHrdParam(const GeneralHrdParams* generalHrd, const OlsHrdParams* olsHrd, int iFrameRate, double fInitialCpbFullness)
+{
+  m_CpbSaturationEnabled = true;
+  m_cpbSize = (olsHrd->getCpbSizeValueMinus1(0, 0) + 1) << (4 + generalHrd->getCpbSizeScale());
+  m_cpbState = (uint32_t)(m_cpbSize*fInitialCpbFullness);
+  m_bufferingRate = (uint32_t)(((olsHrd->getBitRateValueMinus1(0, 0) + 1) << (6 + generalHrd->getBitRateScale())) / iFrameRate);
+  msg(NOTICE, "\nHRD - [Initial CPB state %6d] [CPB Size %6d] [Buffering Rate %6d]\n", m_cpbState, m_cpbSize, m_bufferingRate);
+}
+#else
 void RateCtrl::initHrdParam(const HRDParameters* pcHrd, int iFrameRate, double fInitialCpbFullness)
 {
   m_CpbSaturationEnabled = true;
@@ -1830,6 +1861,7 @@ void RateCtrl::initHrdParam(const HRDParameters* pcHrd, int iFrameRate, double f
   m_bufferingRate = (uint32_t)(((pcHrd->getBitRateValueMinus1(0, 0, 0) + 1) << (6 + pcHrd->getBitRateScale())) / iFrameRate);
   msg( NOTICE, "\nHRD - [Initial CPB state %6d] [CPB Size %6d] [Buffering Rate %6d]\n", m_cpbState, m_cpbSize, m_bufferingRate);
 }
+#endif
 #endif
 
 void RateCtrl::destroyRCGOP()

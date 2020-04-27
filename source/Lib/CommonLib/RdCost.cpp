@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -65,7 +65,12 @@ double RdCost::calcRdCost( uint64_t fracBits, Distortion distortion, bool useUna
 double RdCost::calcRdCost( uint64_t fracBits, Distortion distortion )
 #endif
 {
-
+#if JVET_AHG14_LOSSLESS
+  if( m_costMode == COST_LOSSLESS_CODING && 0 != distortion )
+  {
+    return MAX_DOUBLE;
+  }
+#endif
 #if WCG_EXT
   return ( useUnadjustedLambda ? m_DistScaleUnadjusted : m_DistScale ) * double( distortion ) + double( fracBits );
 #else
@@ -77,16 +82,50 @@ void RdCost::setLambda( double dLambda, const BitDepths &bitDepths )
 {
   m_dLambda             = dLambda;
   m_DistScale           = double(1<<SCALE_BITS) / m_dLambda;
-  m_dLambdaMotionSAD[0] = sqrt(m_dLambda);
-  dLambda = 0.57
-            * pow(2.0, ((LOSSLESS_AND_MIXED_LOSSLESS_RD_COST_TEST_QP_PRIME - 12
-                         + 6
-                             * ((bitDepths.recon[CHANNEL_TYPE_LUMA] - 8)
-                                - DISTORTION_PRECISION_ADJUSTMENT(bitDepths.recon[CHANNEL_TYPE_LUMA])))
-                        / 3.0));
-  m_dLambdaMotionSAD[1] = sqrt(dLambda);
+  m_dLambdaMotionSAD    = sqrt(m_dLambda);
 }
 
+void RdCost::lambdaAdjustColorTrans(bool forward, ComponentID componentID)
+{
+  if (m_resetStore)
+  {
+    for (uint8_t component = 0; component < MAX_NUM_COMPONENT; component++)
+    {
+      ComponentID compID = (ComponentID)component;
+#if JVET_Q0820_ACT
+      int       delta_QP = DELTA_QP_ACT[compID];
+#else
+      int       delta_QP = (compID == COMPONENT_Cr ? DELTA_QP_FOR_Co : DELTA_QP_FOR_Y_Cg);
+#endif
+      double lamdbaAdjustRate = pow(2.0, delta_QP / 3.0);
+
+      m_lambdaStore[0][component] = m_dLambda;
+      m_DistScaleStore[0][component] = m_DistScale;
+
+      m_lambdaStore[1][component] = m_dLambda * lamdbaAdjustRate;
+      m_DistScaleStore[1][component] = double(1 << SCALE_BITS) / m_lambdaStore[1][component];
+    }
+    m_resetStore = false;
+  }
+  
+  if (forward)
+  {
+    CHECK(m_pairCheck == 1, "lambda has been already adjusted");
+    m_pairCheck = 1;
+  }
+  else
+  {
+    CHECK(m_pairCheck == 0, "lambda has not been adjusted");
+    m_pairCheck = 0;
+  }
+
+  m_dLambda = m_lambdaStore[m_pairCheck][componentID];
+  m_DistScale = m_DistScaleStore[m_pairCheck][componentID];
+  if (m_pairCheck == 0)
+  {
+    CHECK(m_DistScale != m_DistScaleUnadjusted, "lambda should be adjusted to the original value");
+  }
+}
 
 // Initialize Function Pointer by [eDFunc]
 void RdCost::init()
@@ -166,6 +205,10 @@ void RdCost::init()
 
   m_afpDistortFunc[DF_SAD_INTERMEDIATE_BITDEPTH] = RdCost::xGetSAD;
 
+#if JVET_Q0806
+  m_afpDistortFunc[DF_SAD_WITH_MASK] = RdCost::xGetSADwMask;
+#endif
+
 #if ENABLE_SIMD_OPT_DIST
 #ifdef TARGET_SIMD_X86
   initRdCostX86();
@@ -176,6 +219,8 @@ void RdCost::init()
 
   m_motionLambda               = 0;
   m_iCostScale                 = 0;
+  m_resetStore = true;
+  m_pairCheck    = 0;
 }
 
 
@@ -190,7 +235,7 @@ void RdCost::copyState( const RdCost& other )
   m_mvPredictor   = other.m_mvPredictor;
   m_motionLambda  = other.m_motionLambda;
   m_iCostScale    = other.m_iCostScale;
-  memcpy( m_dLambdaMotionSAD, other.m_dLambdaMotionSAD, sizeof( m_dLambdaMotionSAD ) );
+  m_dLambdaMotionSAD = other.m_dLambdaMotionSAD;
 #if WCG_EXT
   m_dLambda_unadjusted  = other.m_dLambda_unadjusted ;
   m_DistScaleUnadjusted = other.m_DistScaleUnadjusted;
@@ -277,6 +322,15 @@ void RdCost::setDistParam( DistParam &rcDP, const CPelBuf &org, const Pel* piRef
       rcDP.subShift = 1;
     }
   }
+#if JVET_Q0806
+  else if( subShiftMode == 3 )
+  {
+    if (rcDP.org.height > 8 )
+    {
+      rcDP.subShift = 1;
+    }
+  }
+#endif
 }
 
 void RdCost::setDistParam( DistParam &rcDP, const CPelBuf &org, const CPelBuf &cur, int bitDepth, ComponentID compID, bool useHadamard )
@@ -2938,11 +2992,7 @@ void RdCost::restoreReshapeLumaLevelToWeightTable()
 
 void RdCost::updateReshapeLumaLevelToWeightTable(SliceReshapeInfo &sliceReshape, Pel *wtTable, double cwt)
 {
-#if JVET_O0432_LMCS_ENCODER
   if (m_signalType == RESHAPE_SIGNAL_SDR || m_signalType == RESHAPE_SIGNAL_HLG)
-#else
-  if (m_signalType == RESHAPE_SIGNAL_SDR)
-#endif
   {
     if (sliceReshape.getSliceReshapeModelPresentFlag())
     {
@@ -2995,11 +3045,7 @@ Distortion RdCost::getWeightedMSE(int compIdx, const Pel org, const Pel cur, con
   }
   // use luma to get weight
   double weight = 1.0;
-#if JVET_O0432_LMCS_ENCODER
   if (m_signalType == RESHAPE_SIGNAL_SDR || m_signalType == RESHAPE_SIGNAL_HLG)
-#else
-  if (m_signalType == RESHAPE_SIGNAL_SDR)
-#endif
   {
     if (compIdx == COMPONENT_Y)
     {
@@ -3419,4 +3465,69 @@ Distortion RdCost::xGetMRHADs( const DistParam &rcDtParam )
 
   return m_afpDistortFunc[DF_HAD]( modDistParam );
 }
+
+#if JVET_Q0806
+void RdCost::setDistParam( DistParam &rcDP, const CPelBuf &org, const Pel* piRefY, int iRefStride, const Pel* mask, int iMaskStride, int stepX, int iMaskStride2, int bitDepth, ComponentID compID)
+{
+  rcDP.bitDepth     = bitDepth;
+  rcDP.compID       = compID;
+
+  // set Original & Curr Pointer / Stride
+  rcDP.org          = org;
+  rcDP.cur.buf      = piRefY;
+  rcDP.cur.stride   = iRefStride;
+
+  // set Mask
+  rcDP.mask         = mask;
+  rcDP.maskStride   = iMaskStride;
+  rcDP.stepX = stepX;
+  rcDP.maskStride2 = iMaskStride2;
+
+  // set Block Width / Height
+  rcDP.cur.width    = org.width;
+  rcDP.cur.height   = org.height;
+  rcDP.maximumDistortionForEarlyExit = std::numeric_limits<Distortion>::max();
+
+  // set Cost function for motion estimation with Mask
+  rcDP.distFunc = m_afpDistortFunc[ DF_SAD_WITH_MASK ];
+}
+
+Distortion RdCost::xGetSADwMask( const DistParam& rcDtParam )
+{
+  if ( rcDtParam.applyWeight )
+  {
+    return RdCostWeightPrediction::xGetSADw( rcDtParam );
+  }
+
+  const Pel* org           = rcDtParam.org.buf;
+  const Pel* cur           = rcDtParam.cur.buf;
+  const Pel* mask          = rcDtParam.mask;
+  const int  cols           = rcDtParam.org.width;
+  int        rows           = rcDtParam.org.height;
+  const int  subShift       = rcDtParam.subShift;
+  const int  subStep        = ( 1 << subShift);
+  const int  strideCur      = rcDtParam.cur.stride * subStep;
+  const int  strideOrg      = rcDtParam.org.stride * subStep;
+  const int  strideMask     = rcDtParam.maskStride * subStep;
+  const int  stepX = rcDtParam.stepX;
+  const int  strideMask2 = rcDtParam.maskStride2;
+  const uint32_t distortionShift = DISTORTION_PRECISION_ADJUSTMENT(rcDtParam.bitDepth);
+
+  Distortion sum = 0;
+  for (; rows != 0; rows -= subStep)
+  {
+    for (int n = 0; n < cols; n++)
+    {
+      sum += abs(org[n] - cur[n]) * *mask;
+      mask += stepX;
+    }
+    org += strideOrg;
+    cur += strideCur;
+    mask += strideMask;
+    mask += strideMask2;
+  }
+  sum <<= subShift;
+  return (sum >> distortionShift );
+}
+#endif
 //! \}

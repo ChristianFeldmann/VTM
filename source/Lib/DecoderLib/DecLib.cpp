@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -44,6 +44,9 @@
 #include "CommonLib/UnitTools.h"
 
 #include <fstream>
+#if JVET_Q0751_MIXED_NAL_UNIT_TYPES
+#include <set>
+#endif
 #include <stdio.h>
 #include <fcntl.h>
 #include "AnnexBread.h"
@@ -62,7 +65,11 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
   PicList* pcListPic = NULL;
 
   static bool bFirstCall      = true;             /* TODO: MT */
+#if JVET_P0125_EOS_LAYER_SPECIFIC
+  static bool loopFiltered[MAX_VPS_LAYERS] = { false };            /* TODO: MT */
+#else
   static bool loopFiltered    = false;            /* TODO: MT */
+#endif
   static int  iPOCLastDisplay = -MAX_INT;         /* TODO: MT */
 
   static std::ifstream* bitstreamFile = nullptr;  /* TODO: MT */
@@ -129,7 +136,12 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
       {
         read( nalu );
         int iSkipFrame = 0;
-        bNewPicture = pcDecLib->decode( nalu, iSkipFrame, iPOCLastDisplay );
+
+#if JVET_P0288_PIC_OUTPUT
+        bNewPicture = pcDecLib->decode(nalu, iSkipFrame, iPOCLastDisplay, 0);
+#else
+        bNewPicture = pcDecLib->decode(nalu, iSkipFrame, iPOCLastDisplay);
+#endif
         if( bNewPicture )
         {
           bitstreamFile->clear();
@@ -142,9 +154,17 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
         }
       }
 
+#if JVET_P0125_EOS_LAYER_SPECIFIC
+      if ((bNewPicture || !*bitstreamFile || nalu.m_nalUnitType == NAL_UNIT_EOS) && !pcDecLib->getFirstSliceInSequence(nalu.m_nuhLayerId))
+#else
       if( ( bNewPicture || !*bitstreamFile || nalu.m_nalUnitType == NAL_UNIT_EOS ) && !pcDecLib->getFirstSliceInSequence() )
+#endif
       {
+#if JVET_P0125_EOS_LAYER_SPECIFIC
+        if (!loopFiltered[nalu.m_nuhLayerId] || *bitstreamFile)
+#else
         if( !loopFiltered || *bitstreamFile )
+#endif
         {
           pcDecLib->finishPictureLight( poc, pcListPic );
 
@@ -168,6 +188,7 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
                     pcEncPic->slices.back()->initSlice();
                     pcEncPic->slices.back()->setPPS( pcEncPic->slices[0]->getPPS() );
                     pcEncPic->slices.back()->setSPS( pcEncPic->slices[0]->getSPS() );
+                    pcEncPic->slices.back()->setVPS( pcEncPic->slices[0]->getVPS() );
                     pcEncPic->slices.back()->setPic( pcEncPic->slices[0]->getPic() );
                   }
                   pcEncPic->slices[i]->copySliceInfo( pic->slices[i], false );
@@ -209,11 +230,9 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
                   pcEncPic->resizeAlfCtbFilterIndex(pic->cs->pcv->sizeInCtus);
                   memcpy( pcEncPic->getAlfCtbFilterIndex(), pic->getAlfCtbFilterIndex(), sizeof(short)*pic->cs->pcv->sizeInCtus );
 
-#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
                   std::copy( pic->getAlfCtuAlternative(COMPONENT_Cb).begin(), pic->getAlfCtuAlternative(COMPONENT_Cb).end(), pcEncPic->getAlfCtuAlternative(COMPONENT_Cb).begin() );
                   std::copy( pic->getAlfCtuAlternative(COMPONENT_Cr).begin(), pic->getAlfCtuAlternative(COMPONENT_Cr).end(), pcEncPic->getAlfCtuAlternative(COMPONENT_Cr).begin() );
 
-#endif
                   for( int i = 0; i < pic->slices.size(); i++ )
                   {
                     pcEncPic->slices[i]->setTileGroupNumAps(pic->slices[i]->getTileGroupNumAps());
@@ -223,6 +242,12 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
                     pcEncPic->slices[i]->setTileGroupAlfEnabledFlag(COMPONENT_Y,  pic->slices[i]->getTileGroupAlfEnabledFlag(COMPONENT_Y));
                     pcEncPic->slices[i]->setTileGroupAlfEnabledFlag(COMPONENT_Cb, pic->slices[i]->getTileGroupAlfEnabledFlag(COMPONENT_Cb));
                     pcEncPic->slices[i]->setTileGroupAlfEnabledFlag(COMPONENT_Cr, pic->slices[i]->getTileGroupAlfEnabledFlag(COMPONENT_Cr));
+#if JVET_Q0795_CCALF
+                    pcEncPic->slices[i]->setTileGroupCcAlfCbApsId(pic->slices[i]->getTileGroupCcAlfCbApsId());
+                    pcEncPic->slices[i]->setTileGroupCcAlfCbEnabledFlag(pic->slices[i]->getTileGroupCcAlfCbEnabledFlag());
+                    pcEncPic->slices[i]->setTileGroupCcAlfCrApsId(pic->slices[i]->getTileGroupCcAlfCrApsId());
+                    pcEncPic->slices[i]->setTileGroupCcAlfCrEnabledFlag(pic->slices[i]->getTileGroupCcAlfCrEnabledFlag());
+#endif
                   }
                 }
 
@@ -263,6 +288,15 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
             uint32_t maxNrSublayers = activeSPS->getMaxTLayers();
             uint32_t numReorderPicsHighestTid = activeSPS->getNumReorderPics(maxNrSublayers-1);
             uint32_t maxDecPicBufferingHighestTid =  activeSPS->getMaxDecPicBuffering(maxNrSublayers-1);
+#if JVET_Q0814_DPB
+            const VPS* referredVPS = pcListPic->front()->cs->vps;
+
+            if( referredVPS != nullptr && referredVPS->m_numLayersInOls[referredVPS->m_targetOlsIdx] > 1 )
+            {
+              numReorderPicsHighestTid = referredVPS->getNumReorderPics( maxNrSublayers - 1 );
+              maxDecPicBufferingHighestTid = referredVPS->getMaxDecPicBuffering( maxNrSublayers - 1 );
+            }
+#endif
 
             while (iterPic != pcListPic->end())
             {
@@ -325,14 +359,26 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
 
 
         }
+#if JVET_P0125_EOS_LAYER_SPECIFIC
+        loopFiltered[nalu.m_nuhLayerId] = (nalu.m_nalUnitType == NAL_UNIT_EOS);
+#else
         loopFiltered = ( nalu.m_nalUnitType == NAL_UNIT_EOS );
+#endif
         if( nalu.m_nalUnitType == NAL_UNIT_EOS )
         {
+#if JVET_P0125_EOS_LAYER_SPECIFIC
+          pcDecLib->setFirstSliceInSequence(true, nalu.m_nuhLayerId);
+#else
           pcDecLib->setFirstSliceInSequence( true );
+#endif
         }
 
       }
+#if JVET_P0125_EOS_LAYER_SPECIFIC
+      else if ((bNewPicture || !*bitstreamFile || nalu.m_nalUnitType == NAL_UNIT_EOS) && pcDecLib->getFirstSliceInSequence(nalu.m_nuhLayerId))
+#else
       else if( ( bNewPicture || !*bitstreamFile || nalu.m_nalUnitType == NAL_UNIT_EOS ) && pcDecLib->getFirstSliceInSequence() )
+#endif
       {
         pcDecLib->setFirstSliceInPicture( true );
       }
@@ -350,7 +396,14 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
       pcDecLib = nullptr;
     }
     bFirstCall   = true;
+#if JVET_P0125_EOS_LAYER_SPECIFIC
+    for (int i = 0; i < MAX_VPS_LAYERS; i++)
+    {
+      loopFiltered[i] = false;
+    }
+#else
     loopFiltered = false;
+#endif
     iPOCLastDisplay = -MAX_INT;
 
     if( bytestream )
@@ -375,7 +428,13 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
 
 DecLib::DecLib()
   : m_iMaxRefPicNum(0)
+  , m_isFirstGeneralHrd(true)
+  , m_prevGeneralHrdParams()
   , m_associatedIRAPType(NAL_UNIT_INVALID)
+#if JVET_P0978_RPL_RESTRICTIONS
+  , m_associatedIRAPDecodingOrderNumber(0)
+  , m_decodingOrderCounter(0)
+#endif
   , m_pocCRA(0)
   , m_pocRandomAccess(MAX_INT)
   , m_lastRasPoc(MAX_INT)
@@ -387,6 +446,7 @@ DecLib::DecLib()
   , m_cInterPred()
   , m_cTrQuant()
   , m_cSliceDecoder()
+  , m_cTrQuantScalingList()
   , m_cCuDecoder()
   , m_HLSReader()
   , m_seiReader()
@@ -397,23 +457,26 @@ DecLib::DecLib()
   , m_cacheModel()
 #endif
   , m_pcPic(NULL)
+  , m_prevLayerID(MAX_INT)
   , m_prevPOC(MAX_INT)
   , m_prevTid0POC(0)
   , m_bFirstSliceInPicture(true)
+#if JVET_P0125_EOS_LAYER_SPECIFIC
+  , m_firstSliceInSequence{ true }
+#else
   , m_bFirstSliceInSequence(true)
+#endif
+  , m_firstSliceInBitstream(true)
   , m_prevSliceSkipped(false)
   , m_skippedPOC(0)
-  , m_bFirstSliceInBitstream(true)
   , m_lastPOCNoOutputPriorPics(-1)
   , m_isNoOutputPriorPics(false)
-#if JVET_N0865_NONSYNTAX
-  , m_lastNoIncorrectPicOutputFlag(false)
+#if SPS_ID_CHECK
+  , m_lastNoOutputBeforeRecoveryFlag( false )
 #else
-  , m_craNoRaslOutputFlag(false)
+  , m_lastNoIncorrectPicOutputFlag(false)
 #endif
-#if JVET_O0428_LMCS_CLEANUP
   , m_sliceLmcsApsId(-1)
-#endif
   , m_pDecodedSEIOutputStream(NULL)
   , m_decodedPictureHashSEIEnabled(false)
   , m_numberOfChecksumErrorsDetected(0)
@@ -421,6 +484,18 @@ DecLib::DecLib()
   , m_prefixSEINALUs()
   , m_debugPOC( -1 )
   , m_debugCTU( -1 )
+  , m_vps( nullptr )
+#if !JVET_Q0346_SCALING_LIST_USED_IN_SH
+  , m_scalingListUpdateFlag(true)
+  , m_PreScalingListAPSId(-1)
+#endif
+#if JVET_Q0044_SLICE_IDX_WITH_SUBPICS
+  , m_maxDecSubPicIdx(0)
+  , m_maxDecSliceAddrInSubPic(-1)
+#endif
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+  , m_dci(NULL)
+#endif
 {
 #if ENABLE_SIMD_OPT_BUFFER
   g_pelBufOP.initPelBufOpsX86();
@@ -434,6 +509,7 @@ DecLib::~DecLib()
     delete m_prefixSEINALUs.front();
     m_prefixSEINALUs.pop_front();
   }
+
 }
 
 void DecLib::create()
@@ -446,6 +522,14 @@ void DecLib::destroy()
 {
   delete m_apcSlicePilot;
   m_apcSlicePilot = NULL;
+
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+  if( m_dci )
+  {
+    delete m_dci;
+    m_dci = NULL;
+  }
+#endif
 
   m_cSliceDecoder.destroy();
 }
@@ -489,19 +573,19 @@ void DecLib::deletePicBuffer ( )
   m_cReshaper.destroy();
 }
 
-Picture* DecLib::xGetNewPicBuffer ( const SPS &sps, const PPS &pps, const uint32_t temporalLayer )
+Picture* DecLib::xGetNewPicBuffer( const SPS &sps, const PPS &pps, const uint32_t temporalLayer, const int layerId )
 {
   Picture * pcPic = nullptr;
+#if JVET_Q0814_DPB
+  m_iMaxRefPicNum = ( m_vps == nullptr || m_vps->m_numLayersInOls[m_vps->m_targetOlsIdx] == 1 ) ? sps.getMaxDecPicBuffering( temporalLayer ) : m_vps->getMaxDecPicBuffering( temporalLayer );     // m_uiMaxDecPicBuffering has the space for the picture currently being decoded
+#else
   m_iMaxRefPicNum = sps.getMaxDecPicBuffering(temporalLayer);     // m_uiMaxDecPicBuffering has the space for the picture currently being decoded
+#endif
   if (m_cListPic.size() < (uint32_t)m_iMaxRefPicNum)
   {
     pcPic = new Picture();
 
-#if JVET_O1164_PS
-    pcPic->create( sps.getChromaFormatIdc(), Size( pps.getPicWidthInLumaSamples(), pps.getPicHeightInLumaSamples() ), sps.getMaxCUWidth(), sps.getMaxCUWidth() + 16, true );
-#else
-    pcPic->create( sps.getChromaFormatIdc(), Size( sps.getPicWidthInLumaSamples(), sps.getPicHeightInLumaSamples() ), sps.getMaxCUWidth(), sps.getMaxCUWidth() + 16, true );
-#endif
+    pcPic->create( sps.getChromaFormatIdc(), Size( pps.getPicWidthInLumaSamples(), pps.getPicHeightInLumaSamples() ), sps.getMaxCUWidth(), sps.getMaxCUWidth() + 16, true, layerId );
 
     m_cListPic.push_back( pcPic );
 
@@ -537,27 +621,15 @@ Picture* DecLib::xGetNewPicBuffer ( const SPS &sps, const PPS &pps, const uint32
 
     m_cListPic.push_back( pcPic );
 
-#if JVET_O1164_PS
-    pcPic->create( sps.getChromaFormatIdc(), Size( pps.getPicWidthInLumaSamples(), pps.getPicHeightInLumaSamples() ), sps.getMaxCUWidth(), sps.getMaxCUWidth() + 16, true );
-#else
-    pcPic->create( sps.getChromaFormatIdc(), Size( sps.getPicWidthInLumaSamples(), sps.getPicHeightInLumaSamples() ), sps.getMaxCUWidth(), sps.getMaxCUWidth() + 16, true );
-#endif
+    pcPic->create( sps.getChromaFormatIdc(), Size( pps.getPicWidthInLumaSamples(), pps.getPicHeightInLumaSamples() ), sps.getMaxCUWidth(), sps.getMaxCUWidth() + 16, true, layerId );
   }
   else
   {
-#if JVET_O1164_PS
-    if( !pcPic->Y().Size::operator==( Size( pps.getPicWidthInLumaSamples(), pps.getPicHeightInLumaSamples() ) ) || pcPic->cs->pcv->maxCUWidth != sps.getMaxCUWidth() || pcPic->cs->pcv->maxCUHeight != sps.getMaxCUHeight() )
+    if( !pcPic->Y().Size::operator==( Size( pps.getPicWidthInLumaSamples(), pps.getPicHeightInLumaSamples() ) ) || pps.pcv->maxCUWidth != sps.getMaxCUWidth() || pps.pcv->maxCUHeight != sps.getMaxCUHeight() )
     {
       pcPic->destroy();
-      pcPic->create( sps.getChromaFormatIdc(), Size( pps.getPicWidthInLumaSamples(), pps.getPicHeightInLumaSamples() ), sps.getMaxCUWidth(), sps.getMaxCUWidth() + 16, true );
+      pcPic->create( sps.getChromaFormatIdc(), Size( pps.getPicWidthInLumaSamples(), pps.getPicHeightInLumaSamples() ), sps.getMaxCUWidth(), sps.getMaxCUWidth() + 16, true, layerId );
     }
-#else
-    if( !pcPic->Y().Size::operator==( Size( sps.getPicWidthInLumaSamples(), sps.getPicHeightInLumaSamples() ) ) || pcPic->cs->pcv->maxCUWidth != sps.getMaxCUWidth() || pcPic->cs->pcv->maxCUHeight != sps.getMaxCUHeight() )
-    {
-      pcPic->destroy();
-      pcPic->create( sps.getChromaFormatIdc(), Size( sps.getPicWidthInLumaSamples(), sps.getPicHeightInLumaSamples() ), sps.getMaxCUWidth(), sps.getMaxCUWidth() + 16, true );
-    }
-#endif
   }
 
   pcPic->setBorderExtension( false );
@@ -579,10 +651,23 @@ void DecLib::executeLoopFilters()
 
   CodingStructure& cs = *m_pcPic->cs;
 
-  if (cs.sps->getUseReshaper() && m_cReshaper.getSliceReshaperInfo().getUseSliceReshaper())
+  if (cs.sps->getUseLmcs() && cs.picHeader->getLmcsEnabledFlag())
   {
-      CHECK((m_cReshaper.getRecReshaped() == false), "Rec picture is not reshaped!");
-      m_pcPic->getRecoBuf(COMPONENT_Y).rspSignal(m_cReshaper.getInvLUT());
+      const PreCalcValues& pcv = *cs.pcv;
+      for (uint32_t yPos = 0; yPos < pcv.lumaHeight; yPos += pcv.maxCUHeight)
+      {
+        for (uint32_t xPos = 0; xPos < pcv.lumaWidth; xPos += pcv.maxCUWidth)
+        {
+          const CodingUnit* cu = cs.getCU(Position(xPos, yPos), CHANNEL_TYPE_LUMA);
+          if (cu->slice->getLmcsEnabledFlag())
+          {
+            const uint32_t width = (xPos + pcv.maxCUWidth > pcv.lumaWidth) ? (pcv.lumaWidth - xPos) : pcv.maxCUWidth;
+            const uint32_t height = (yPos + pcv.maxCUHeight > pcv.lumaHeight) ? (pcv.lumaHeight - yPos) : pcv.maxCUHeight;
+            const UnitArea area(cs.area.chromaFormat, Area(xPos, yPos, width, height));
+            cs.getRecoBuf(area).get(COMPONENT_Y).rspSignal(m_cReshaper.getInvLUT());
+          }
+        }
+      }
       m_cReshaper.setRecReshaped(false);
       m_cSAO.setReshaper(&m_cReshaper);
   }
@@ -596,15 +681,40 @@ void DecLib::executeLoopFilters()
 
   if( cs.sps->getALFEnabledFlag() )
   {
-    if (cs.slice->getTileGroupAlfEnabledFlag(COMPONENT_Y))
-    {
-      // ALF decodes the differentially coded coefficients and stores them in the parameters structure.
-      // Code could be restructured to do directly after parsing. So far we just pass a fresh non-const
-      // copy in case the APS gets used more than once.
-      m_cALF.ALFProcess(cs);
-    }
-
+#if JVET_Q0795_CCALF
+    m_cALF.getCcAlfFilterParam() = cs.slice->m_ccAlfFilterParam;
+#endif
+    // ALF decodes the differentially coded coefficients and stores them in the parameters structure.
+    // Code could be restructured to do directly after parsing. So far we just pass a fresh non-const
+    // copy in case the APS gets used more than once.
+    m_cALF.ALFProcess(cs);
   }
+
+#if JVET_O1143_SUBPIC_BOUNDARY
+  for (int i = 0; i < cs.pps->getNumSubPics() && m_targetSubPicIdx; i++)
+  {
+    // keep target subpic samples untouched, for other subpics mask their output sample value to 0
+    int targetSubPicIdx = m_targetSubPicIdx - 1;
+    if (i != targetSubPicIdx)
+    {
+      SubPic SubPicNoUse = cs.pps->getSubPics()[i];
+      uint32_t left  = SubPicNoUse.getSubPicLeft();
+      uint32_t right = SubPicNoUse.getSubPicRight();
+      uint32_t top   = SubPicNoUse.getSubPicTop();
+      uint32_t bottom= SubPicNoUse.getSubPicBottom();
+      for (uint32_t row = top; row <= bottom; row++)
+      {
+        for (uint32_t col = left; col <= right; col++)
+        {
+          cs.getRecoBuf().Y().at(col, row) = 0;
+          // for test only, hard coding using 4:2:0 chroma format
+          cs.getRecoBuf().Cb().at(col>>1, row>>1) = 0;
+          cs.getRecoBuf().Cr().at(col>>1, row>>1) = 0;
+        }
+      }
+    } 
+  }
+#endif
 
   m_pcPic->cs->slice->stopProcessingTimer();
 }
@@ -613,7 +723,7 @@ void DecLib::finishPictureLight(int& poc, PicList*& rpcListPic )
 {
   Slice*  pcSlice = m_pcPic->cs->slice;
 
-  m_pcPic->neededForOutput = (pcSlice->getPicOutputFlag() ? true : false);
+  m_pcPic->neededForOutput = (pcSlice->getPicHeader()->getPicOutputFlag() ? true : false);
   m_pcPic->reconstructed = true;
 
   Slice::sortPicList( m_cListPic ); // sorting for application output
@@ -637,36 +747,50 @@ void DecLib::finishPicture(int& poc, PicList*& rpcListPic, MsgLevel msgl )
     c += 32;  // tolower
   }
 
-#if JVET_N0494_DRAP
   if (pcSlice->isDRAP()) c = 'D';
-#endif
 
   //-- For time output for each slice
-  msg( msgl, "POC %4d TId: %1d ( %c-SLICE, QP%3d ) ", pcSlice->getPOC(),
+  msg( msgl, "POC %4d LId: %2d TId: %1d ( %s, %c-SLICE, QP%3d ) ", pcSlice->getPOC(), pcSlice->getPic()->layerId,
          pcSlice->getTLayer(),
+         nalUnitTypeToString(pcSlice->getNalUnitType()),
          c,
          pcSlice->getSliceQp() );
   msg( msgl, "[DT %6.3f] ", pcSlice->getProcessingTime() );
 
   for (int iRefList = 0; iRefList < 2; iRefList++)
   {
-    msg( msgl, "[L%d ", iRefList);
+    msg( msgl, "[L%d", iRefList);
     for (int iRefIndex = 0; iRefIndex < pcSlice->getNumRefIdx(RefPicList(iRefList)); iRefIndex++)
     {
-#if RPR_CTC_PRINT
       const std::pair<int, int>& scaleRatio = pcSlice->getScalingRatio( RefPicList( iRefList ), iRefIndex );
 
-      if( pcSlice->getEnableTMVPFlag() && pcSlice->getColFromL0Flag() == bool(1 - iRefList) && pcSlice->getColRefIdx() == iRefIndex )
+      if( pcSlice->getPicHeader()->getEnableTMVPFlag() && pcSlice->getColFromL0Flag() == bool(1 - iRefList) && pcSlice->getColRefIdx() == iRefIndex )
       {
-        msg( msgl, "%dc(%1.2lfx, %1.2lfx) ", pcSlice->getRefPOC( RefPicList( iRefList ), iRefIndex ), double( scaleRatio.first ) / ( 1 << SCALE_RATIO_BITS ), double( scaleRatio.second ) / ( 1 << SCALE_RATIO_BITS ) );
+        if( scaleRatio.first != 1 << SCALE_RATIO_BITS || scaleRatio.second != 1 << SCALE_RATIO_BITS )
+        {
+          msg( msgl, " %dc(%1.2lfx, %1.2lfx)", pcSlice->getRefPOC( RefPicList( iRefList ), iRefIndex ), double( scaleRatio.first ) / ( 1 << SCALE_RATIO_BITS ), double( scaleRatio.second ) / ( 1 << SCALE_RATIO_BITS ) );
+        }
+        else
+        {
+          msg( msgl, " %dc", pcSlice->getRefPOC( RefPicList( iRefList ), iRefIndex ) );
+        }
       }
       else
       {
-        msg( msgl, "%d(%1.2lfx, %1.2lfx) ", pcSlice->getRefPOC( RefPicList( iRefList ), iRefIndex ), double( scaleRatio.first ) / ( 1 << SCALE_RATIO_BITS ), double( scaleRatio.second ) / ( 1 << SCALE_RATIO_BITS ) );
+        if( scaleRatio.first != 1 << SCALE_RATIO_BITS || scaleRatio.second != 1 << SCALE_RATIO_BITS )
+        {
+          msg( msgl, " %d(%1.2lfx, %1.2lfx)", pcSlice->getRefPOC( RefPicList( iRefList ), iRefIndex ), double( scaleRatio.first ) / ( 1 << SCALE_RATIO_BITS ), double( scaleRatio.second ) / ( 1 << SCALE_RATIO_BITS ) );
+        }
+        else
+        {
+          msg( msgl, " %d", pcSlice->getRefPOC( RefPicList( iRefList ), iRefIndex ) );
+        }
       }
-#else
-      msg( msgl, "%d ", pcSlice->getRefPOC(RefPicList(iRefList), iRefIndex));
-#endif
+
+      if( pcSlice->getRefPOC( RefPicList( iRefList ), iRefIndex ) == pcSlice->getPOC() )
+      {
+        msg( msgl, ".%d", pcSlice->getRefPic( RefPicList( iRefList ), iRefIndex )->layerId );
+      }   
     }
     msg( msgl, "] ");
   }
@@ -683,7 +807,13 @@ void DecLib::finishPicture(int& poc, PicList*& rpcListPic, MsgLevel msgl )
 
   msg( msgl, "\n");
 
-  m_pcPic->neededForOutput = (pcSlice->getPicOutputFlag() ? true : false);
+#if JVET_J0090_MEMORY_BANDWITH_MEASURE
+    m_cacheModel.reportFrame();
+    m_cacheModel.accumulateFrame();
+    m_cacheModel.clear();
+#endif
+
+  m_pcPic->neededForOutput = (pcSlice->getPicHeader()->getPicOutputFlag() ? true : false);
   m_pcPic->reconstructed = true;
 
 
@@ -691,10 +821,15 @@ void DecLib::finishPicture(int& poc, PicList*& rpcListPic, MsgLevel msgl )
   poc                 = pcSlice->getPOC();
   rpcListPic          = &m_cListPic;
   m_bFirstSliceInPicture  = true; // TODO: immer true? hier ist irgendwas faul
+#if JVET_Q0044_SLICE_IDX_WITH_SUBPICS
+  m_maxDecSubPicIdx = 0;
+  m_maxDecSliceAddrInSubPic = -1;
+#endif
 
   m_pcPic->destroyTempBuffers();
   m_pcPic->cs->destroyCoeffs();
   m_pcPic->cs->releaseIntermediateData();
+  m_pcPic->cs->picHeader->initPicHeader();
 }
 
 void DecLib::checkNoOutputPriorPics (PicList* pcListPic)
@@ -730,10 +865,10 @@ void DecLib::xUpdateRasInit(Slice* slice)
   }
 }
 
-void DecLib::xCreateLostPicture(int iLostPoc)
+void DecLib::xCreateLostPicture( int iLostPoc, const int layerId )
 {
   msg( INFO, "\ninserting lost poc : %d\n",iLostPoc);
-  Picture *cFillPic = xGetNewPicBuffer(*(m_parameterSetManager.getFirstSPS()), *(m_parameterSetManager.getFirstPPS()), 0);
+  Picture *cFillPic = xGetNewPicBuffer( *( m_parameterSetManager.getFirstSPS() ), *( m_parameterSetManager.getFirstPPS() ), 0, layerId );
 
   CHECK( !cFillPic->slices.size(), "No slices in picture" );
 
@@ -774,11 +909,10 @@ void DecLib::xCreateLostPicture(int iLostPoc)
 
 }
 
-#if JVET_O0241
-void DecLib::xCreateUnavailablePicture(int iUnavailablePoc, bool longTermFlag)
+void DecLib::xCreateUnavailablePicture(int iUnavailablePoc, bool longTermFlag, const int layerId, const bool interLayerRefPicFlag)
 {
   msg(INFO, "\ninserting unavailable poc : %d\n", iUnavailablePoc);
-  Picture* cFillPic = xGetNewPicBuffer(*(m_parameterSetManager.getFirstSPS()), *(m_parameterSetManager.getFirstPPS()), 0);
+  Picture* cFillPic = xGetNewPicBuffer( *( m_parameterSetManager.getFirstSPS() ), *( m_parameterSetManager.getFirstPPS() ), 0, layerId );
 
   CHECK(!cFillPic->slices.size(), "No slices in picture");
 
@@ -789,28 +923,145 @@ void DecLib::xCreateUnavailablePicture(int iUnavailablePoc, bool longTermFlag)
   cFillPic->getRecoBuf().Y().fill(yFill);
   cFillPic->getRecoBuf().Cb().fill(cFill);
   cFillPic->getRecoBuf().Cr().fill(cFill);
-   
+
   //  for(int ctuRsAddr=0; ctuRsAddr<cFillPic->getNumberOfCtusInFrame(); ctuRsAddr++)  { cFillPic->getCtu(ctuRsAddr)->initCtu(cFillPic, ctuRsAddr); }
   cFillPic->referenced = true;
+  cFillPic->interLayerRefPicFlag = interLayerRefPicFlag;
   cFillPic->longTerm = longTermFlag;
   cFillPic->slices[0]->setPOC(iUnavailablePoc);
-  cFillPic->slices[0]->setPicOutputFlag(false);
   xUpdatePreviousTid0POC(cFillPic->slices[0]);
   cFillPic->reconstructed = true;
-  cFillPic->neededForOutput = true;
+  cFillPic->neededForOutput = false;
   if (m_pocRandomAccess == MAX_INT)
   {
     m_pocRandomAccess = iUnavailablePoc;
   }
 
 }
+#if JVET_P0125_ASPECT_TID_LAYER_ID_NUH
+void DecLib::checkTidLayerIdInAccessUnit()
+{
+  int firstPicTid = m_accessUnitPicInfo.begin()->m_temporalId;
+  int firstPicLayerId = m_accessUnitPicInfo.begin()->m_nuhLayerId;
+
+  bool isPicTidInAuSame = true;
+  bool isSeiTidInAuSameAsAuTid = true;
+  bool isFdNaluLayerIdSameAsVclNaluLayerId = true;
+
+  for (auto pic = m_accessUnitPicInfo.begin(); pic != m_accessUnitPicInfo.end(); pic++)
+  {
+    if (pic->m_temporalId != firstPicTid)
+    {
+      isPicTidInAuSame = false;
+      break;
+    }
+  }
+  CHECK(!isPicTidInAuSame, "All pictures in an AU shall have the same value of TemporalId");
+
+  for (auto tid = m_accessUnitSeiTids.begin(); tid != m_accessUnitSeiTids.end(); tid++)
+  {
+    if ((*tid) != firstPicTid)
+    {
+      isSeiTidInAuSameAsAuTid = false;
+      break;
+    }
+  }
+  CHECK(!isSeiTidInAuSameAsAuTid, "The TemporalId of an SEI NAL unit shall be equal to the TemporalId of the AU containing the NAL unit");
+
+  for (auto tempNalu = m_accessUnitNals.begin(); tempNalu != m_accessUnitNals.end(); tempNalu++)
+  {
+    if ((tempNalu->first == NAL_UNIT_FD) && (tempNalu->second != firstPicLayerId))
+    {
+      isFdNaluLayerIdSameAsVclNaluLayerId = false;
+      break;
+    }
+  }
+  CHECK(!isFdNaluLayerIdSameAsVclNaluLayerId, "The nuh_layer_id of a filler data NAL unit shall be equal to the nuh_layer_id of associated VCL NAL unit");
+
+}
+#endif
+#if JVET_P0125_SEI_CONSTRAINTS
+void DecLib::checkSEIInAccessUnit()
+{
+  for (auto &sei : m_accessUnitSeiPayLoadTypes)
+  {
+    enum NalUnitType         naluType = std::get<0>(sei);
+    int                    nuhLayerId = std::get<1>(sei);
+    enum SEI::PayloadType payloadType = std::get<2>(sei);
+    if (m_vps != nullptr && naluType == NAL_UNIT_PREFIX_SEI && ((payloadType == SEI::BUFFERING_PERIOD || payloadType == SEI::PICTURE_TIMING || payloadType == SEI::DECODING_UNIT_INFO)))
+    {
+      int numlayersInZeroOls = m_vps->getNumLayersInOls(0);
+      bool inZeroOls = true;
+      for (int i = 0; i < numlayersInZeroOls; i++)
+      {
+        uint32_t layerIdInZeroOls = m_vps->getLayerIdInOls(0, i);
+        if (layerIdInZeroOls != nuhLayerId)
+        {
+          inZeroOls = false;
+        }
+      }
+      CHECK(!inZeroOls, "non-scalable-nested timing related SEI shall apply only to the 0-th OLS");
+      
+      int layerId = m_vps->getLayerId(0);
+      CHECK(nuhLayerId != layerId, "the nuh_layer_id of non-scalable-nested timing related SEI shall be equal to vps_layer_id[0]");
+    }
+  }
+}
 #endif
 
-#if JVET_O0299_APS_SCALINGLIST
-void activateAPS(Slice* pSlice, ParameterSetManager& parameterSetManager, APS** apss, APS* lmcsAPS, APS* scalingListAPS)
-#else
-void activateAPS(Slice* pSlice, ParameterSetManager& parameterSetManager, APS** apss, APS* lmcsAPS)
+/**
+ - Determine if the first VCL NAL unit of a picture is also the first VCL NAL of an Access Unit
+ */
+bool DecLib::isSliceNaluFirstInAU( bool newPicture, InputNALUnit &nalu )
+{
+  // can only be the start of an AU if this is the start of a new picture
+  if( newPicture == false )
+  {
+    return false;
+  }
+
+  // should only be called for slice NALU types
+  if( nalu.m_nalUnitType != NAL_UNIT_CODED_SLICE_TRAIL &&
+      nalu.m_nalUnitType != NAL_UNIT_CODED_SLICE_STSA &&
+      nalu.m_nalUnitType != NAL_UNIT_CODED_SLICE_RASL &&
+      nalu.m_nalUnitType != NAL_UNIT_CODED_SLICE_RADL &&
+      nalu.m_nalUnitType != NAL_UNIT_CODED_SLICE_IDR_W_RADL &&
+      nalu.m_nalUnitType != NAL_UNIT_CODED_SLICE_IDR_N_LP &&
+      nalu.m_nalUnitType != NAL_UNIT_CODED_SLICE_CRA &&
+      nalu.m_nalUnitType != NAL_UNIT_CODED_SLICE_GDR )
+  {
+    return false;
+  }
+
+#if !JVET_Q0819_PH_CHANGES
+  // check for valid picture header
+  if(m_picHeader.isValid() == false)
+  {
+    return false;
+  }
 #endif
+  
+  // check for layer ID less than or equal to previous picture's layer ID
+  if( nalu.m_nuhLayerId <= m_prevLayerID )
+  {
+    return true;
+  }
+
+  // get slice POC
+  m_apcSlicePilot->setPicHeader( &m_picHeader );
+  m_apcSlicePilot->initSlice(); 
+  m_HLSReader.setBitstream( &nalu.getBitstream() );
+#if JVET_Q0819_PH_CHANGES
+  m_HLSReader.getSlicePoc( m_apcSlicePilot, &m_picHeader, &m_parameterSetManager, m_prevTid0POC );
+#else
+  m_HLSReader.parseSliceHeaderToPoc( m_apcSlicePilot, &m_picHeader, &m_parameterSetManager, m_prevTid0POC );
+#endif
+
+  // check for different POC
+  return (m_apcSlicePilot->getPOC() != m_prevPOC);
+}
+
+void activateAPS(PicHeader* picHeader, Slice* pSlice, ParameterSetManager& parameterSetManager, APS** apss, APS* lmcsAPS, APS* scalingListAPS)
 {
   //luma APSs
   if (pSlice->getTileGroupAlfEnabledFlag(COMPONENT_Y))
@@ -828,10 +1079,8 @@ void activateAPS(Slice* pSlice, ParameterSetManager& parameterSetManager, APS** 
           THROW("APS activation failed!");
         }
 
-#if JVET_O0245_VPS_DPS_APS
         CHECK( aps->getTemporalId() > pSlice->getTLayer(), "TemporalId shall be less than or equal to the TemporalId of the coded slice NAL unit" );
         //ToDO: APS NAL unit containing the APS RBSP shall have nuh_layer_id either equal to the nuh_layer_id of a coded slice NAL unit that referrs it, or equal to the nuh_layer_id of a direct dependent layer of the layer containing a coded slice NAL unit that referrs it.
-#endif
       }
     }
   }
@@ -848,89 +1097,146 @@ void activateAPS(Slice* pSlice, ParameterSetManager& parameterSetManager, APS** 
         THROW("APS activation failed!");
       }
 
-#if JVET_O0245_VPS_DPS_APS
       CHECK( aps->getTemporalId() > pSlice->getTLayer(), "TemporalId shall be less than or equal to the TemporalId of the coded slice NAL unit" );
       //ToDO: APS NAL unit containing the APS RBSP shall have nuh_layer_id either equal to the nuh_layer_id of a coded slice NAL unit that referrs it, or equal to the nuh_layer_id of a direct dependent layer of the layer containing a coded slice NAL unit that referrs it.
-#endif
     }
   }
 
-  if (pSlice->getLmcsEnabledFlag() && lmcsAPS == nullptr)
+#if JVET_Q0795_CCALF
+  CcAlfFilterParam &filterParam = pSlice->m_ccAlfFilterParam;
+  // cleanup before copying
+  for ( int filterIdx = 0; filterIdx < MAX_NUM_CC_ALF_FILTERS; filterIdx++ )
   {
-    lmcsAPS = parameterSetManager.getAPS(pSlice->getLmcsAPSId(), LMCS_APS);
+    memset( filterParam.ccAlfCoeff[COMPONENT_Cb - 1][filterIdx], 0, sizeof(filterParam.ccAlfCoeff[COMPONENT_Cb - 1][filterIdx]) );
+    memset( filterParam.ccAlfCoeff[COMPONENT_Cr - 1][filterIdx], 0, sizeof(filterParam.ccAlfCoeff[COMPONENT_Cr - 1][filterIdx]) );
+  }
+  memset( filterParam.ccAlfFilterIdxEnabled[COMPONENT_Cb - 1], false, sizeof(filterParam.ccAlfFilterIdxEnabled[COMPONENT_Cb - 1]) );
+  memset( filterParam.ccAlfFilterIdxEnabled[COMPONENT_Cr - 1], false, sizeof(filterParam.ccAlfFilterIdxEnabled[COMPONENT_Cr - 1]) );
+
+  if(pSlice->getTileGroupCcAlfCbEnabledFlag())
+  {
+    int apsId = pSlice->getTileGroupCcAlfCbApsId();
+    APS *aps = parameterSetManager.getAPS(apsId, ALF_APS);
+    if(aps)
+    {
+      apss[apsId] = aps;
+      if (false == parameterSetManager.activateAPS(apsId, ALF_APS))
+      {
+        THROW("APS activation failed!");
+      }
+
+      CHECK( aps->getTemporalId() > pSlice->getTLayer(), "TemporalId shall be less than or equal to the TemporalId of the coded slice NAL unit" );
+      //ToDO: APS NAL unit containing the APS RBSP shall have nuh_layer_id either equal to the nuh_layer_id of a coded slice NAL unit that referrs it, or equal to the nuh_layer_id of a direct dependent layer of the layer containing a coded slice NAL unit that referrs it.
+
+      filterParam.ccAlfFilterCount[COMPONENT_Cb - 1] = aps->getCcAlfAPSParam().ccAlfFilterCount[COMPONENT_Cb - 1];
+      for (int filterIdx=0; filterIdx < filterParam.ccAlfFilterCount[COMPONENT_Cb - 1]; filterIdx++ )
+      {
+        filterParam.ccAlfFilterIdxEnabled[COMPONENT_Cb - 1][filterIdx] = aps->getCcAlfAPSParam().ccAlfFilterIdxEnabled[COMPONENT_Cb - 1][filterIdx];
+        memcpy(filterParam.ccAlfCoeff[COMPONENT_Cb - 1][filterIdx], aps->getCcAlfAPSParam().ccAlfCoeff[COMPONENT_Cb - 1][filterIdx], sizeof(aps->getCcAlfAPSParam().ccAlfCoeff[COMPONENT_Cb - 1][filterIdx]));
+      }
+    }
+  }
+
+  if(pSlice->getTileGroupCcAlfCrEnabledFlag())
+  {
+    int apsId = pSlice->getTileGroupCcAlfCrApsId();
+    APS *aps = parameterSetManager.getAPS(apsId, ALF_APS);
+    if(aps)
+    {
+      apss[apsId] = aps;
+      if (false == parameterSetManager.activateAPS(apsId, ALF_APS))
+      {
+        THROW("APS activation failed!");
+      }
+
+      CHECK( aps->getTemporalId() > pSlice->getTLayer(), "TemporalId shall be less than or equal to the TemporalId of the coded slice NAL unit" );
+      //ToDO: APS NAL unit containing the APS RBSP shall have nuh_layer_id either equal to the nuh_layer_id of a coded slice NAL unit that referrs it, or equal to the nuh_layer_id of a direct dependent layer of the layer containing a coded slice NAL unit that referrs it.
+
+      filterParam.ccAlfFilterCount[COMPONENT_Cr - 1] = aps->getCcAlfAPSParam().ccAlfFilterCount[COMPONENT_Cr - 1];
+      for (int filterIdx=0; filterIdx < filterParam.ccAlfFilterCount[COMPONENT_Cr - 1]; filterIdx++ )
+      {
+        filterParam.ccAlfFilterIdxEnabled[COMPONENT_Cr - 1][filterIdx] = aps->getCcAlfAPSParam().ccAlfFilterIdxEnabled[COMPONENT_Cr - 1][filterIdx];
+        memcpy(filterParam.ccAlfCoeff[COMPONENT_Cr - 1][filterIdx], aps->getCcAlfAPSParam().ccAlfCoeff[COMPONENT_Cr - 1][filterIdx], sizeof(aps->getCcAlfAPSParam().ccAlfCoeff[COMPONENT_Cr - 1][filterIdx]));
+      }
+    }
+  }
+#endif
+
+  if (picHeader->getLmcsEnabledFlag() && lmcsAPS == nullptr)
+  {
+    lmcsAPS = parameterSetManager.getAPS(picHeader->getLmcsAPSId(), LMCS_APS);
     CHECK(lmcsAPS == nullptr, "No LMCS APS present");
     if (lmcsAPS)
     {
-      parameterSetManager.clearAPSChangedFlag(pSlice->getLmcsAPSId(), LMCS_APS);
-      if (false == parameterSetManager.activateAPS(pSlice->getLmcsAPSId(), LMCS_APS))
+      parameterSetManager.clearAPSChangedFlag(picHeader->getLmcsAPSId(), LMCS_APS);
+      if (false == parameterSetManager.activateAPS(picHeader->getLmcsAPSId(), LMCS_APS))
       {
         THROW("LMCS APS activation failed!");
       }
 
-#if JVET_O0245_VPS_DPS_APS
       CHECK( lmcsAPS->getTemporalId() > pSlice->getTLayer(), "TemporalId shall be less than or equal to the TemporalId of the coded slice NAL unit" );
       //ToDO: APS NAL unit containing the APS RBSP shall have nuh_layer_id either equal to the nuh_layer_id of a coded slice NAL unit that referrs it, or equal to the nuh_layer_id of a direct dependent layer of the layer containing a coded slice NAL unit that referrs it.
-#endif
     }
   }
-  pSlice->setLmcsAPS(lmcsAPS);
+  picHeader->setLmcsAPS(lmcsAPS);
 
-#if JVET_O0299_APS_SCALINGLIST
-  if( pSlice->getscalingListPresentFlag() && scalingListAPS == nullptr)
+#if JVET_Q0346_SCALING_LIST_USED_IN_SH
+  if( picHeader->getExplicitScalingListEnabledFlag() && scalingListAPS == nullptr)
+#else
+  if( picHeader->getScalingListPresentFlag() && scalingListAPS == nullptr)
+#endif
   {
-    scalingListAPS = parameterSetManager.getAPS( pSlice->getscalingListAPSId(), SCALING_LIST_APS );
+    scalingListAPS = parameterSetManager.getAPS( picHeader->getScalingListAPSId(), SCALING_LIST_APS );
     CHECK( scalingListAPS == nullptr, "No SCALING LIST APS present" );
     if( scalingListAPS )
     {
-      parameterSetManager.clearAPSChangedFlag( pSlice->getscalingListAPSId(), SCALING_LIST_APS );
-      if( false == parameterSetManager.activateAPS( pSlice->getscalingListAPSId(), SCALING_LIST_APS ) )
+      parameterSetManager.clearAPSChangedFlag( picHeader->getScalingListAPSId(), SCALING_LIST_APS );
+      if( false == parameterSetManager.activateAPS( picHeader->getScalingListAPSId(), SCALING_LIST_APS ) )
       {
         THROW( "SCALING LIST APS activation failed!" );
       }
 
-#if JVET_O0245_VPS_DPS_APS
       CHECK( scalingListAPS->getTemporalId() > pSlice->getTLayer(), "TemporalId shall be less than or equal to the TemporalId of the coded slice NAL unit" );
       //ToDO: APS NAL unit containing the APS RBSP shall have nuh_layer_id either equal to the nuh_layer_id of a coded slice NAL unit that referrs it, or equal to the nuh_layer_id of a direct dependent layer of the layer containing a coded slice NAL unit that referrs it.
-#endif
     }
   }
-  pSlice->setscalingListAPS(scalingListAPS);
-#endif
+  picHeader->setScalingListAPS(scalingListAPS);
 }
 
-void DecLib::xActivateParameterSets()
+void DecLib::xActivateParameterSets( const int layerId )
 {
   if (m_bFirstSliceInPicture)
   {
     APS** apss = m_parameterSetManager.getAPSs();
-#if JVET_O_MAX_NUM_ALF_APS_8
     memset(apss, 0, sizeof(*apss) * ALF_CTB_MAX_NUM_APS);
-#else
-    memset(apss, 0, sizeof(*apss) * MAX_NUM_APS);
-#endif
-    const PPS *pps = m_parameterSetManager.getPPS(m_apcSlicePilot->getPPSId()); // this is a temporary PPS object. Do not store this value
+    const PPS *pps = m_parameterSetManager.getPPS(m_picHeader.getPPSId()); // this is a temporary PPS object. Do not store this value
     CHECK(pps == 0, "No PPS present");
 
     const SPS *sps = m_parameterSetManager.getSPS(pps->getSPSId());             // this is a temporary SPS object. Do not store this value
     CHECK(sps == 0, "No SPS present");
 
-    if (NULL == pps->pcv)
+    const VPS *vps = sps->getVPSId() ? m_parameterSetManager.getVPS( sps->getVPSId() ) : nullptr;
+
+    if( nullptr != pps->pcv )
     {
-      m_parameterSetManager.getPPS( m_apcSlicePilot->getPPSId() )->pcv = new PreCalcValues( *sps, *pps, false );
+      delete m_parameterSetManager.getPPS( m_picHeader.getPPSId() )->pcv;
     }
+    m_parameterSetManager.getPPS( m_picHeader.getPPSId() )->pcv = new PreCalcValues( *sps, *pps, false );
     m_parameterSetManager.clearSPSChangedFlag(sps->getSPSId());
     m_parameterSetManager.clearPPSChangedFlag(pps->getPPSId());
 
-    if (false == m_parameterSetManager.activatePPS(m_apcSlicePilot->getPPSId(),m_apcSlicePilot->isIRAP()))
+    if (false == m_parameterSetManager.activatePPS(m_picHeader.getPPSId(),m_apcSlicePilot->isIRAP()))
     {
       THROW("Parameter set activation failed!");
     }
-    m_parameterSetManager.getApsMap()->clear();
-#if JVET_O_MAX_NUM_ALF_APS_8
-    for (int i = 0; i < ALF_CTB_MAX_NUM_APS; i++)
-#else
-    for (int i = 0; i < MAX_NUM_APS; i++)
+    
+#if JVET_O1143_SUBPIC_BOUNDARY && !JVET_Q0044_SLICE_IDX_WITH_SUBPICS
+    PPS* nonconstPPS = m_parameterSetManager.getPPS(m_picHeader.getPPSId());
+    nonconstPPS->initSubPic(*sps);
 #endif
+
+    m_parameterSetManager.getApsMap()->clear();
+    for (int i = 0; i < ALF_CTB_MAX_NUM_APS; i++)
     {
       APS* aps = m_parameterSetManager.getAPS(i, ALF_APS);
       if (aps)
@@ -939,12 +1245,8 @@ void DecLib::xActivateParameterSets()
       }
     }
     APS* lmcsAPS = nullptr;
-#if JVET_O0299_APS_SCALINGLIST
     APS* scalinglistAPS = nullptr;
-    activateAPS(m_apcSlicePilot, m_parameterSetManager, apss, lmcsAPS, scalinglistAPS);
-#else
-    activateAPS(m_apcSlicePilot, m_parameterSetManager, apss, lmcsAPS);
-#endif
+    activateAPS(&m_picHeader, m_apcSlicePilot, m_parameterSetManager, apss, lmcsAPS, scalinglistAPS);
 
     xParsePrefixSEImessages();
 
@@ -956,17 +1258,16 @@ void DecLib::xActivateParameterSets()
 #endif
 
     //  Get a new picture buffer. This will also set up m_pcPic, and therefore give us a SPS and PPS pointer that we can use.
-    m_pcPic = xGetNewPicBuffer (*sps, *pps, m_apcSlicePilot->getTLayer());
+    m_pcPic = xGetNewPicBuffer( *sps, *pps, m_apcSlicePilot->getTLayer(), layerId );
 
-    m_apcSlicePilot->applyReferencePictureListBasedMarking(m_cListPic, m_apcSlicePilot->getRPL0(), m_apcSlicePilot->getRPL1());
-#if JVET_O0299_APS_SCALINGLIST
-    m_pcPic->finalInit( *sps, *pps, apss, lmcsAPS, scalinglistAPS );
+#if JVET_Q0751_MIXED_NAL_UNIT_TYPES
+    m_apcSlicePilot->applyReferencePictureListBasedMarking( m_cListPic, m_apcSlicePilot->getRPL0(), m_apcSlicePilot->getRPL1(), layerId, *pps);
 #else
-    m_pcPic->finalInit(*sps, *pps, apss, lmcsAPS);
+    m_apcSlicePilot->applyReferencePictureListBasedMarking( m_cListPic, m_apcSlicePilot->getRPL0(), m_apcSlicePilot->getRPL1(), layerId );
 #endif
-    m_parameterSetManager.getPPS(m_apcSlicePilot->getPPSId())->setNumBricksInPic((int)m_pcPic->brickMap->bricks.size());
+    m_pcPic->finalInit( vps, *sps, *pps, &m_picHeader, apss, lmcsAPS, scalinglistAPS );
     m_pcPic->createTempBuffers( m_pcPic->cs->pps->pcv->maxCUWidth );
-    m_pcPic->cs->createCoeffs();
+    m_pcPic->cs->createCoeffs((bool)m_pcPic->cs->sps->getPLTMode());
 
     m_pcPic->allocateNewSlice();
     // make the slice-pilot a real slice, and set up the slice-pilot for the next slice
@@ -984,28 +1285,46 @@ void DecLib::xActivateParameterSets()
     m_pcPic->cs->slice = pSlice;
     m_pcPic->cs->sps   = sps;
     m_pcPic->cs->pps   = pps;
+    m_pcPic->cs->vps = vps;
+
     memcpy(m_pcPic->cs->alfApss, apss, sizeof(m_pcPic->cs->alfApss));
     m_pcPic->cs->lmcsAps = lmcsAPS;
-#if JVET_O0299_APS_SCALINGLIST
     m_pcPic->cs->scalinglistAps = scalinglistAPS;
-#endif
 
     m_pcPic->cs->pcv   = pps->pcv;
 
     // Initialise the various objects for the new set of settings
-#if JVET_O1164_PS
-    m_cSAO.create( pps->getPicWidthInLumaSamples(), pps->getPicHeightInLumaSamples(), sps->getChromaFormatIdc(), sps->getMaxCUWidth(), sps->getMaxCUHeight(), sps->getMaxCodingDepth(), pps->getPpsRangeExtension().getLog2SaoOffsetScale( CHANNEL_TYPE_LUMA ), pps->getPpsRangeExtension().getLog2SaoOffsetScale( CHANNEL_TYPE_CHROMA ) );
+#if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
+    const int maxDepth = floorLog2(sps->getMaxCUWidth()) - pps->pcv->minCUWidthLog2;
+#if JVET_Q0441_SAO_MOD_12_BIT
+    const uint32_t  log2SaoOffsetScaleLuma   = (uint32_t) std::max(0, sps->getBitDepth(CHANNEL_TYPE_LUMA  ) - MAX_SAO_TRUNCATED_BITDEPTH);
+    const uint32_t  log2SaoOffsetScaleChroma = (uint32_t) std::max(0, sps->getBitDepth(CHANNEL_TYPE_CHROMA) - MAX_SAO_TRUNCATED_BITDEPTH);
+    m_cSAO.create( pps->getPicWidthInLumaSamples(), pps->getPicHeightInLumaSamples(),
+                   sps->getChromaFormatIdc(),
+                   sps->getMaxCUWidth(), sps->getMaxCUHeight(),
+                   maxDepth,
+                   log2SaoOffsetScaleLuma, log2SaoOffsetScaleChroma );
 #else
-    m_cSAO.create( sps->getPicWidthInLumaSamples(), sps->getPicHeightInLumaSamples(), sps->getChromaFormatIdc(), sps->getMaxCUWidth(), sps->getMaxCUHeight(), sps->getMaxCodingDepth(), pps->getPpsRangeExtension().getLog2SaoOffsetScale(CHANNEL_TYPE_LUMA), pps->getPpsRangeExtension().getLog2SaoOffsetScale(CHANNEL_TYPE_CHROMA) );
+    m_cSAO.create(pps->getPicWidthInLumaSamples(), pps->getPicHeightInLumaSamples(), sps->getChromaFormatIdc(), sps->getMaxCUWidth(), sps->getMaxCUHeight(), maxDepth, pps->getPpsRangeExtension().getLog2SaoOffsetScale(CHANNEL_TYPE_LUMA), pps->getPpsRangeExtension().getLog2SaoOffsetScale(CHANNEL_TYPE_CHROMA));
+#endif
+    m_cLoopFilter.create(maxDepth);
+#else
+#if JVET_Q0441_SAO_MOD_12_BIT
+    const uint32_t  log2SaoOffsetScaleLuma   = (uint32_t) std::max(0, sps->getBitDepth(CHANNEL_TYPE_LUMA  ) - MAX_SAO_TRUNCATED_BITDEPTH);
+    const uint32_t  log2SaoOffsetScaleChroma = (uint32_t) std::max(0, sps->getBitDepth(CHANNEL_TYPE_CHROMA) - MAX_SAO_TRUNCATED_BITDEPTH);
+    m_cSAO.create( pps->getPicWidthInLumaSamples(), pps->getPicHeightInLumaSamples(),
+                   sps->getChromaFormatIdc(),
+                   sps->getMaxCUWidth(), sps->getMaxCUHeight(),
+                   sps->getMaxCodingDepth(),
+                   log2SaoOffsetScaleLuma, log2SaoOffsetScaleChroma );
+#else
+    m_cSAO.create( pps->getPicWidthInLumaSamples(), pps->getPicHeightInLumaSamples(), sps->getChromaFormatIdc(), sps->getMaxCUWidth(), sps->getMaxCUHeight(), sps->getMaxCodingDepth(), pps->getPpsRangeExtension().getLog2SaoOffsetScale( CHANNEL_TYPE_LUMA ), pps->getPpsRangeExtension().getLog2SaoOffsetScale( CHANNEL_TYPE_CHROMA ) );
 #endif
     m_cLoopFilter.create( sps->getMaxCodingDepth() );
-    m_cIntraPred.init( sps->getChromaFormatIdc(), sps->getBitDepth( CHANNEL_TYPE_LUMA ) );
-#if JVET_O1170_IBC_VIRTUAL_BUFFER
-    m_cInterPred.init( &m_cRdCost, sps->getChromaFormatIdc(), sps->getMaxCUHeight() );
-#else
-    m_cInterPred.init( &m_cRdCost, sps->getChromaFormatIdc() );
 #endif
-    if (sps->getUseReshaper())
+    m_cIntraPred.init( sps->getChromaFormatIdc(), sps->getBitDepth( CHANNEL_TYPE_LUMA ) );
+    m_cInterPred.init( &m_cRdCost, sps->getChromaFormatIdc(), sps->getMaxCUHeight() );
+    if (sps->getUseLmcs())
     {
       m_cReshaper.createDec(sps->getBitDepth(CHANNEL_TYPE_LUMA));
     }
@@ -1015,16 +1334,6 @@ void DecLib::xActivateParameterSets()
 
     if(!m_SEIs.empty())
     {
-#if !JVET_O0041_FRAME_FIELD_SEI
-      // Check if any new Picture Timing SEI has arrived
-      SEIMessages pictureTimingSEIs = getSeisByType(m_SEIs, SEI::PICTURE_TIMING);
-      if (pictureTimingSEIs.size()>0)
-      {
-        SEIPictureTiming* pictureTiming = (SEIPictureTiming*) *(pictureTimingSEIs.begin());
-        isField    = (pictureTiming->m_picStruct == 1) || (pictureTiming->m_picStruct == 2) || (pictureTiming->m_picStruct == 9) || (pictureTiming->m_picStruct == 10) || (pictureTiming->m_picStruct == 11) || (pictureTiming->m_picStruct == 12);
-        isTopField = (pictureTiming->m_picStruct == 1) || (pictureTiming->m_picStruct == 9) || (pictureTiming->m_picStruct == 11);
-      }
-#else
       // Check if any new Frame Field Info SEI has arrived
       SEIMessages frameFieldSEIs = getSeisByType(m_SEIs, SEI::FRAME_FIELD_INFO);
       if (frameFieldSEIs.size()>0)
@@ -1033,7 +1342,6 @@ void DecLib::xActivateParameterSets()
         isField    = ff->m_fieldPicFlag;
         isTopField = isField && (!ff->m_bottomFieldFlag);
       }
-#endif
     }
 
     //Set Field/Frame coding mode
@@ -1046,15 +1354,11 @@ void DecLib::xActivateParameterSets()
 
     // Recursive structure
     m_cCuDecoder.init( &m_cTrQuant, &m_cIntraPred, &m_cInterPred );
-    if (sps->getUseReshaper())
+    if (sps->getUseLmcs())
     {
       m_cCuDecoder.initDecCuReshaper(&m_cReshaper, sps->getChromaFormatIdc());
     }
-#if MAX_TB_SIZE_SIGNALLING
-    m_cTrQuant.init( nullptr, sps->getMaxTbSize(), false, false, false, false );
-#else
-    m_cTrQuant.init( nullptr, MAX_TB_SIZEY, false, false, false, false );
-#endif
+    m_cTrQuant.init(m_cTrQuantScalingList.getQuant(), sps->getMaxTbSize(), false, false, false, false);
 
     // RdCost
     m_cRdCost.setCostMode ( COST_STANDARD_LOSSY ); // not used in decoder side RdCost stuff -> set to default
@@ -1063,12 +1367,17 @@ void DecLib::xActivateParameterSets()
 
     if( sps->getALFEnabledFlag() )
     {
-#if JVET_O1164_PS
-      m_cALF.create( pps->getPicWidthInLumaSamples(), pps->getPicHeightInLumaSamples(), sps->getChromaFormatIdc(), sps->getMaxCUWidth(), sps->getMaxCUHeight(), sps->getMaxCodingDepth(), sps->getBitDepths().recon );
+#if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
+      const int maxDepth = floorLog2(sps->getMaxCUWidth()) - sps->getLog2MinCodingBlockSize();
+      m_cALF.create( pps->getPicWidthInLumaSamples(), pps->getPicHeightInLumaSamples(), sps->getChromaFormatIdc(), sps->getMaxCUWidth(), sps->getMaxCUHeight(), maxDepth, sps->getBitDepths().recon);
 #else
-      m_cALF.create( sps->getPicWidthInLumaSamples(), sps->getPicHeightInLumaSamples(), sps->getChromaFormatIdc(), sps->getMaxCUWidth(), sps->getMaxCUHeight(), sps->getMaxCodingDepth(), sps->getBitDepths().recon );
+      m_cALF.create( pps->getPicWidthInLumaSamples(), pps->getPicHeightInLumaSamples(), sps->getChromaFormatIdc(), sps->getMaxCUWidth(), sps->getMaxCUHeight(), sps->getMaxCodingDepth(), sps->getBitDepths().recon );
 #endif
     }
+#if JVET_Q0795_CCALF
+    pSlice->m_ccAlfFilterControl[0] = m_cALF.getCcAlfControlIdc(COMPONENT_Cb);
+    pSlice->m_ccAlfFilterControl[1] = m_cALF.getCcAlfControlIdc(COMPONENT_Cr);
+#endif
   }
   else
   {
@@ -1082,10 +1391,8 @@ void DecLib::xActivateParameterSets()
     const SPS *sps = pSlice->getSPS();
     const PPS *pps = pSlice->getPPS();
     APS** apss = pSlice->getAlfAPSs();
-    APS *lmcsAPS = pSlice->getLmcsAPS();
-#if JVET_O0299_APS_SCALINGLIST
-    APS *scalinglistAPS = pSlice->getscalingListAPS();
-#endif
+    APS *lmcsAPS = m_picHeader.getLmcsAPS();
+    APS *scalinglistAPS = m_picHeader.getScalingListAPS();
 
     // fix Parameter Sets, now that we have the real slice
     m_pcPic->cs->slice = pSlice;
@@ -1093,9 +1400,7 @@ void DecLib::xActivateParameterSets()
     m_pcPic->cs->pps   = pps;
     memcpy(m_pcPic->cs->alfApss, apss, sizeof(m_pcPic->cs->alfApss));
     m_pcPic->cs->lmcsAps = lmcsAPS;
-#if JVET_O0299_APS_SCALINGLIST
     m_pcPic->cs->scalinglistAps = scalinglistAPS;
-#endif
 
     m_pcPic->cs->pcv   = pps->pcv;
 
@@ -1108,11 +1413,7 @@ void DecLib::xActivateParameterSets()
     {
       EXIT("Error - a new PPS has been decoded while processing a picture");
     }
-#if JVET_O_MAX_NUM_ALF_APS_8
     for (int i = 0; i < ALF_CTB_MAX_NUM_APS; i++)
-#else
-    for (int i = 0; i < MAX_NUM_APS; i++)
-#endif
     {
       APS* aps = m_parameterSetManager.getAPS(i, ALF_APS);
       if (aps && m_parameterSetManager.getAPSChangedFlag(i, ALF_APS))
@@ -1125,23 +1426,15 @@ void DecLib::xActivateParameterSets()
     {
       EXIT("Error - a new LMCS APS has been decoded while processing a picture");
     }
-#if JVET_O0299_APS_SCALINGLIST
     if( scalinglistAPS && m_parameterSetManager.getAPSChangedFlag( scalinglistAPS->getAPSId(), SCALING_LIST_APS ) )
     {
       EXIT( "Error - a new SCALING LIST APS has been decoded while processing a picture" );
     }
-#endif
 
-#if JVET_O0299_APS_SCALINGLIST
-    activateAPS(pSlice, m_parameterSetManager, apss, lmcsAPS, scalinglistAPS);
-#else
-    activateAPS(pSlice, m_parameterSetManager, apss, lmcsAPS);
-#endif
+    activateAPS(&m_picHeader, pSlice, m_parameterSetManager, apss, lmcsAPS, scalinglistAPS);
 
     m_pcPic->cs->lmcsAps = lmcsAPS;
-#if JVET_O0299_APS_SCALINGLIST
     m_pcPic->cs->scalinglistAps = scalinglistAPS;
-#endif
 
     xParsePrefixSEImessages();
 
@@ -1155,13 +1448,46 @@ void DecLib::xActivateParameterSets()
        deleteSEIs(m_SEIs);
      }
   }
-
+  xCheckParameterSetConstraints(layerId);
+}
+void DecLib::xCheckParameterSetConstraints(const int layerId)
+{
   // Conformance checks
-#if JVET_O0244_DELTA_POC
-  Slice *pSlice = m_pcPic->slices[m_uiSliceSegmentIdx];
-  const SPS *sps = pSlice->getSPS();
-  const PPS *pps = pSlice->getPPS();
+  Slice *slice = m_pcPic->slices[m_uiSliceSegmentIdx];
+  const SPS *sps = slice->getSPS();
+  const PPS *pps = slice->getPPS();
+#if JVET_Q0814_DPB
+  const VPS *vps = slice->getVPS();
+#endif
+#if JVET_P0118_HRD_ASPECTS
+  if (((vps!=nullptr)&&(vps->getVPSGeneralHrdParamsPresentFlag()))||(sps->getGeneralHrdParametersPresentFlag()))
+  {
+    if (((vps != nullptr) && (vps->getVPSGeneralHrdParamsPresentFlag())) && (sps->getGeneralHrdParametersPresentFlag()))
+    {
+      CHECK(!(*vps->getGeneralHrdParameters() == *sps->getGeneralHrdParameters()), "It is a requirement of bitstream conformance that the content of the general_hrd_parameters( ) syntax structure present in any VPSs or SPSs in the bitstream shall be identical");
+    }
+    if (!m_isFirstGeneralHrd)
+    {
+      CHECK(!(m_prevGeneralHrdParams == (sps->getGeneralHrdParametersPresentFlag() ? *sps->getGeneralHrdParameters() : *vps->getGeneralHrdParameters())), "It is a requirement of bitstream conformance that the content of the general_hrd_parameters( ) syntax structure present in any VPSs or SPSs in the bitstream shall be identical");
+    }
+    m_prevGeneralHrdParams = (sps->getGeneralHrdParametersPresentFlag() ? *sps->getGeneralHrdParameters() : *vps->getGeneralHrdParameters());
+  }
+  m_isFirstGeneralHrd = false;
+#endif
+#if SPS_ID_CHECK
+  static std::unordered_map<int, int> m_clvssSPSid;
 
+  if( slice->isClvssPu() && m_bFirstSliceInPicture )
+  {
+    m_clvssSPSid[layerId] = pps->getSPSId();
+  }
+
+  CHECK( m_clvssSPSid[layerId] != pps->getSPSId(), "The value of pps_seq_parameter_set_id shall be the same in all PPSs that are referred to by coded pictures in a CLVS" );
+#endif
+
+#if JVET_Q414_CONSTRAINT_ON_GDR_PIC_FLAG
+  CHECK(sps->getGDREnabledFlag() == false && m_picHeader.getGdrPicFlag(), "When gdr_enabled_flag is equal to 0, the value of gdr_pic_flag shall be equal to 0 ");
+#endif
   if( !sps->getUseWP() )
   {
     CHECK( pps->getUseWP(), "When sps_weighted_pred_flag is equal to 0, the value of pps_weighted_pred_flag shall be equal to 0." );
@@ -1171,17 +1497,185 @@ void DecLib::xActivateParameterSets()
   {
     CHECK( pps->getWPBiPred(), "When sps_weighted_bipred_flag is equal to 0, the value of pps_weighted_bipred_flag shall be equal to 0." );
   }
-#endif
 
-#if JVET_O1164_PS
-#if JVET_O0640_PICTURE_SIZE_CONSTRAINT
+#if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
+  const int minCuSize = 1 << sps->getLog2MinCodingBlockSize();
+  CHECK( ( pps->getPicWidthInLumaSamples() % ( std::max( 8, minCuSize) ) ) != 0, "Coded frame width must be a multiple of Max(8, the minimum unit size)" );
+  CHECK( ( pps->getPicHeightInLumaSamples() % ( std::max( 8, minCuSize) ) ) != 0, "Coded frame height must be a multiple of Max(8, the minimum unit size)" );
+#else
   CHECK( ( pps->getPicWidthInLumaSamples() % ( std::max( 8, int( sps->getMaxCUWidth() >> ( sps->getMaxCodingDepth() - 1 ) ) ) ) ) != 0, "Coded frame width must be a multiple of Max(8, the minimum unit size)" );
   CHECK( ( pps->getPicHeightInLumaSamples() % ( std::max( 8, int( sps->getMaxCUHeight() >> ( sps->getMaxCodingDepth() - 1 ) ) ) ) ) != 0, "Coded frame height must be a multiple of Max(8, the minimum unit size)" );
 #endif
+#if JVET_Q0043_RPR_and_Subpics
+  if( !sps->getRprEnabledFlag() ) 
+  {
+    CHECK( pps->getPicWidthInLumaSamples() != sps->getMaxPicWidthInLumaSamples(), "When res_change_in_clvs_allowed_flag equal to 0, the value of pic_width_in_luma_samples shall be equal to pic_width_max_in_luma_samples." );
+    CHECK( pps->getPicHeightInLumaSamples() != sps->getMaxPicHeightInLumaSamples(), "When res_change_in_clvs_allowed_flag equal to 0, the value of pic_height_in_luma_samples shall be equal to pic_height_max_in_luma_samples." );
+  }
+  if( sps->getRprEnabledFlag() )
+  {
+#if JVET_Q0119_CLEANUPS
+    CHECK( sps->getSubPicInfoPresentFlag() != 0, "When res_change_in_clvs_allowed_flag is equal to 1, the value of subpic_info_present_flag shall be equal to 0." );
+#else
+    CHECK( sps->getSubPicPresentFlag() != 0, "When res_change_in_clvs_allowed_flag is equal to 1, the value of subpic_info_present_flag shall be equal to 0." );
+#endif
+  }
+#if !JVET_Q0399_SCALING_INFERENCE
+  CHECK( !sps->getRprEnabledFlag() && pps->getScalingWindow().getWindowEnabledFlag(), "When res_change_in_clvs_allowed_flag is equal to 0, the value of scaling_window_flag shall be equal to 0." );
+#endif
+#else
+  if( !sps->getRprEnabledFlag() && sps->getSubPicPresentFlag() )
+  {
+    CHECK( pps->getPicWidthInLumaSamples() != sps->getMaxPicWidthInLumaSamples(), "When subpics_present_flag is equal to 1 or ref_pic_resampling_enabled_flag equal to 0, the value of pic_width_in_luma_samples shall be equal to pic_width_max_in_luma_samples." );
+    CHECK( pps->getPicHeightInLumaSamples() != sps->getMaxPicHeightInLumaSamples(), "When subpics_present_flag is equal to 1 or ref_pic_resampling_enabled_flag equal to 0, the value of pic_height_in_luma_samples shall be equal to pic_height_max_in_luma_samples." );
+  }
+#if !JVET_Q0399_SCALING_INFERENCE
+  CHECK( !sps->getRprEnabledFlag() && pps->getScalingWindow().getWindowEnabledFlag(), "When ref_pic_resampling_enabled_flag is equal to 0, the value of scaling_window_flag shall be equal to 0." );
+#endif
+#endif
+
+#if JVET_Q0417_CONSTRAINT_SPS_VB_PRESENT_FLAG
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
+  CHECK( sps->getRprEnabledFlag() && sps->getVirtualBoundariesEnabledFlag(), "when the value of res_change_in_clvs_allowed_flag is equal to 1, the value of sps_virtual_boundaries_present_flag shall be equal to 0" );
+#else
+  CHECK(sps->getRprEnabledFlag() && sps->getLoopFilterAcrossVirtualBoundariesDisabledFlag(), "when the value of res_change_in_clvs_allowed_flag is equal to 1, the value of sps_virtual_boundaries_present_flag shall be equal to 0");
+#endif
+#endif
 
   if( sps->getCTUSize() + 2 * ( 1 << sps->getLog2MinCodingBlockSize() ) > pps->getPicWidthInLumaSamples() )
-  {    
+  {
     CHECK( sps->getWrapAroundEnabledFlag(), "Wraparound shall be disabled when the value of ( CtbSizeY / MinCbSizeY + 1) is less than or equal to ( pic_width_in_luma_samples / MinCbSizeY - 1 )" );
+  }
+
+#if JVET_Q0814_DPB
+  if( vps != nullptr && vps->m_numOutputLayersInOls[vps->m_targetOlsIdx] > 1 )
+  {
+    CHECK( sps->getMaxPicWidthInLumaSamples() > vps->getOlsDpbPicSize( vps->m_targetOlsIdx ).width, "pic_width_max_in_luma_samples shall be less than or equal to the value of ols_dpb_pic_width[ i ]" );
+    CHECK( sps->getMaxPicHeightInLumaSamples() > vps->getOlsDpbPicSize( vps->m_targetOlsIdx ).height, "pic_height_max_in_luma_samples shall be less than or equal to the value of ols_dpb_pic_height[ i ]" );
+  }
+#endif
+
+#if JVET_Q0172_CHROMA_FORMAT_BITDEPTH_CONSTRAINT
+  static std::unordered_map<int, int> m_layerChromaFormat;
+  static std::unordered_map<int, int> m_layerBitDepth;
+
+  if (vps != nullptr && vps->getMaxLayers() > 1)
+  {
+    int curLayerIdx = vps->getGeneralLayerIdx(layerId);
+    int curLayerChromaFormat = sps->getChromaFormatIdc();
+    int curLayerBitDepth = sps->getBitDepth(CHANNEL_TYPE_LUMA);
+
+#if SPS_ID_CHECK
+    if( slice->isClvssPu() && m_bFirstSliceInPicture )
+#else
+    if (m_layerBitDepth[curLayerIdx] == 0)
+#endif
+    {
+      m_layerChromaFormat[curLayerIdx] = curLayerChromaFormat;
+      m_layerBitDepth[curLayerIdx] = curLayerBitDepth;
+    }
+    else
+    {
+      CHECK(m_layerChromaFormat[curLayerIdx] != curLayerChromaFormat, "Different chroma format in the same layer.");
+      CHECK(m_layerBitDepth[curLayerIdx] != curLayerBitDepth, "Different bit-depth in the same layer.");
+    }
+
+    for (int i = 0; i < curLayerIdx; i++)
+    {
+      if (vps->getDirectRefLayerFlag(curLayerIdx, i))
+      {
+        int refLayerChromaFormat = m_layerChromaFormat[i];
+        CHECK(curLayerChromaFormat != refLayerChromaFormat, "The chroma formats of the current layer and the reference layer are different");
+        int refLayerBitDepth = m_layerBitDepth[i];
+        CHECK(curLayerBitDepth != refLayerBitDepth, "The bit-depth of the current layer and the reference layer are different");
+      }
+    }
+  }
+#endif
+
+#if JVET_Q0114_CONSTRAINT_FLAGS
+  if (sps->getProfileTierLevel()->getConstraintInfo()->getOneTilePerPicConstraintFlag())
+  {
+    CHECK(pps->getNumTiles() != 1, "When one_tile_per_pic_constraint_flag is equal to 1, each picture shall contain only one tile");
+  }
+  if (sps->getProfileTierLevel()->getConstraintInfo()->getOneSlicePerPicConstraintFlag())
+  {
+    CHECK( pps->getNumSlicesInPic() != 1, "When one_slice_per_pic_constraint_flag is equal to 1, each picture shall contain only one slice");
+  }
+#endif
+
+#if JVET_Q0260_CONFORMANCE_WINDOW_IN_SPS
+  if (sps->getMaxPicWidthInLumaSamples() == pps->getPicWidthInLumaSamples() &&
+      sps->getMaxPicHeightInLumaSamples() == pps->getPicHeightInLumaSamples())
+  {
+    const Window& spsConfWin = sps->getConformanceWindow();
+    const Window& ppsConfWin = pps->getConformanceWindow();
+    CHECK(spsConfWin.getWindowLeftOffset() != ppsConfWin.getWindowLeftOffset(), "When picture size is equal to maximum picutre size, conformance window left offset in SPS and PPS shall be equal");
+    CHECK(spsConfWin.getWindowRightOffset() != ppsConfWin.getWindowRightOffset(), "When picture size is equal to maximum picutre size, conformance window right offset in SPS and PPS shall be equal");
+    CHECK(spsConfWin.getWindowTopOffset() != ppsConfWin.getWindowTopOffset(), "When picture size is equal to maximum picutre size, conformance window top offset in SPS and PPS shall be equal");
+    CHECK(spsConfWin.getWindowBottomOffset() != ppsConfWin.getWindowBottomOffset(), "When picture size is equal to maximum picutre size, conformance window bottom offset in SPS and PPS shall be equal");
+  }
+#endif
+#if JVET_Q0355_DCI_LEVEL_IDC_CONSTRAINT
+  int levelIdcSps = int(sps->getProfileTierLevel()->getLevelIdc());
+  int maxLevelIdxDci = 0;
+  if (m_dci)
+  {
+    for (int i = 0; i < m_dci->getNumPTLs(); i++)
+    {
+      if (maxLevelIdxDci < int(m_dci->getProfileTierLevel(i).getLevelIdc()))
+      {
+        maxLevelIdxDci = int(m_dci->getProfileTierLevel(i).getLevelIdc());
+      }
+    }
+    CHECK(levelIdcSps > maxLevelIdxDci, "max level signaled in the DCI shall not be less than the level signaled in the SPS");
+  }
+#endif
+
+#if JVET_Q0157_SUBPICTURE_REORDERING_CONSTRAINT
+  // When the current picture is not the first picture of the CLVS, if the value of SubpicId[ i ] is not equal to the value of SubpicId[ i ] of previous picture in decoding order in the same layer,
+  // the nal_unit_type for all coded slice NAL units of the the subpicture with subpicture index i shall be in the range of IDR_W_RADL to CRA_NUT, inclusive.
+  if( sps->getSubPicInfoPresentFlag() )
+  {    
+    static std::unordered_map<int, std::vector<int>> previousSubPicIds;
+
+    if( m_firstSliceInSequence[layerId] )
+    {
+      for( int subPicIdx = 0; subPicIdx < sps->getNumSubPics(); subPicIdx++ )
+      {
+        previousSubPicIds[layerId].push_back( pps->getSubPic( subPicIdx ).getSubPicID() );
+      }
+    }
+    else
+    {
+      int currentSubPicIdx = NOT_VALID;
+      for( int subPicIdx = 0; subPicIdx < sps->getNumSubPics(); subPicIdx++ )
+      {
+        if( pps->getSubPic( subPicIdx ).getSubPicID() == slice->getSliceSubPicId() )
+        {
+          currentSubPicIdx = subPicIdx;
+          break;
+        }
+      }
+
+      CHECK( currentSubPicIdx == NOT_VALID, "Sub-picture was not found" );
+      CHECK( !previousSubPicIds.count( layerId ), "Sub-picture information of the previously decoded picture was not stored" );
+
+      if( previousSubPicIds[layerId][currentSubPicIdx] != slice->getSliceSubPicId() )
+      {
+        CHECK( !slice->isIRAP(), "For reordered sub-pictures, the slice NAL shall be in the range of IDR_W_RADL to CRA_NUT, inclusive" )
+      }
+
+      // store PPS ID to have sub-picture info for the next pictures when last rectangular slice in the picture is encountered
+      if( slice->getSliceID() + 1 == pps->getNumSlicesInPic() )
+      {
+        previousSubPicIds[layerId].clear();
+        for( int subPicIdx = 0; subPicIdx < sps->getNumSubPics(); subPicIdx++ )
+        {
+          previousSubPicIds[layerId].push_back( pps->getSubPic( subPicIdx ).getSubPicID() );
+        }
+      }
+    }    
   }
 #endif
 }
@@ -1204,8 +1698,14 @@ void DecLib::xParsePrefixSEImessages()
   while (!m_prefixSEINALUs.empty())
   {
     InputNALUnit &nalu=*m_prefixSEINALUs.front();
-#if !JVET_N0867_TEMP_SCAL_HRD
-    m_seiReader.parseSEImessage( &(nalu.getBitstream()), m_SEIs, nalu.m_nalUnitType, m_parameterSetManager.getActiveSPS(), m_HRD, m_pDecodedSEIOutputStream );
+#if JVET_P0125_ASPECT_TID_LAYER_ID_NUH
+    m_accessUnitSeiTids.push_back(nalu.m_temporalId);
+#endif
+#if JVET_P0125_SEI_CONSTRAINTS
+    const SPS *sps = m_parameterSetManager.getActiveSPS();
+    const VPS *vps = m_parameterSetManager.getVPS(sps->getVPSId());
+    m_seiReader.parseSEImessage( &(nalu.getBitstream()), m_SEIs, nalu.m_nalUnitType, nalu.m_nuhLayerId, nalu.m_temporalId, vps, sps, m_HRD, m_pDecodedSEIOutputStream );
+    m_accessUnitSeiPayLoadTypes.push_back(std::tuple<NalUnitType, int, SEI::PayloadType>(nalu.m_nalUnitType, nalu.m_nuhLayerId, m_SEIs.back()->payloadType()));
 #else
     m_seiReader.parseSEImessage( &(nalu.getBitstream()), m_SEIs, nalu.m_nalUnitType, nalu.m_temporalId, m_parameterSetManager.getActiveSPS(), m_HRD, m_pDecodedSEIOutputStream );
 #endif
@@ -1214,15 +1714,30 @@ void DecLib::xParsePrefixSEImessages()
   }
 }
 
+void DecLib::xDecodePicHeader( InputNALUnit& nalu )
+{
+  m_HLSReader.setBitstream( &nalu.getBitstream() );
+#if JVET_Q0775_PH_IN_SH
+  m_HLSReader.parsePictureHeader( &m_picHeader, &m_parameterSetManager, true );
+#else
+  m_HLSReader.parsePictureHeader( &m_picHeader, &m_parameterSetManager);
+#endif
+  m_picHeader.setValid();
+}
 
 bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDisplay )
 {
+#if !JVET_Q0775_PH_IN_SH
+  if(m_picHeader.isValid() == false)
+  {
+    return false;
+  }
+#endif
+  m_apcSlicePilot->setPicHeader( &m_picHeader );
   m_apcSlicePilot->initSlice(); // the slice pilot is an object to prepare for a new slice
                                 // it is not associated with picture, sps or pps structures.
 
-#if JVET_O1164_RPR
   Picture* scaledRefPic[MAX_NUM_REF] = {};
-#endif
 
   if (m_bFirstSliceInPicture)
   {
@@ -1230,37 +1745,127 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   }
   else
   {
+    CHECK(nalu.m_nalUnitType != m_pcPic->slices[m_uiSliceSegmentIdx - 1]->getNalUnitType(), "The value of NAL unit type shall be the same for all coded slice NAL units of a picture");
     m_apcSlicePilot->copySliceInfo( m_pcPic->slices[m_uiSliceSegmentIdx-1] );
   }
 
-  m_apcSlicePilot->setSliceCurStartCtuTsAddr(0);
-  m_apcSlicePilot->setSliceCurEndCtuTsAddr(0);
-  m_apcSlicePilot->setSliceCurStartBrickIdx(0);
-  m_apcSlicePilot->setSliceCurEndBrickIdx(0);
   m_apcSlicePilot->setNalUnitType(nalu.m_nalUnitType);
+#if JVET_Q0118_CLEANUPS
+  m_apcSlicePilot->setNalUnitLayerId(nalu.m_nuhLayerId);
+#endif
   m_apcSlicePilot->setTLayer(nalu.m_temporalId);
 
-#if JVET_O0245_VPS_DPS_APS
   for( auto& naluTemporalId : m_accessUnitNals )
   {
-    if( naluTemporalId.first != NAL_UNIT_DPS
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+    if (
+      naluTemporalId.first != NAL_UNIT_DCI
+      && naluTemporalId.first != NAL_UNIT_VPS
+      && naluTemporalId.first != NAL_UNIT_SPS
+      && naluTemporalId.first != NAL_UNIT_EOS
+      && naluTemporalId.first != NAL_UNIT_EOB)
+#else
+    if (
+      naluTemporalId.first != NAL_UNIT_DPS
       && naluTemporalId.first != NAL_UNIT_VPS
       && naluTemporalId.first != NAL_UNIT_SPS
       && naluTemporalId.first != NAL_UNIT_EOS
       && naluTemporalId.first != NAL_UNIT_EOB )
+#endif
+
     {
       CHECK( naluTemporalId.second < nalu.m_temporalId, "TemporalId shall be greater than or equal to the TemporalId of the layer access unit containing the NAL unit" );
     }
   }
-#endif
 
-#if JVET_N0865_NONSYNTAX
   if (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_GDR)
+  {
     CHECK(nalu.m_temporalId != 0, "Current GDR picture has TemporalId not equal to 0");
-#endif
+  }
 
   m_HLSReader.setBitstream( &nalu.getBitstream() );
-  m_HLSReader.parseSliceHeader( m_apcSlicePilot, &m_parameterSetManager, m_prevTid0POC );
+#if JVET_Q0795_CCALF
+  m_apcSlicePilot->m_ccAlfFilterParam = m_cALF.getCcAlfFilterParam();
+#endif
+  m_HLSReader.parseSliceHeader( m_apcSlicePilot, &m_picHeader, &m_parameterSetManager, m_prevTid0POC );
+
+#if JVET_P0101_POC_MULTILAYER || JVET_P0097_REMOVE_VPS_DEP_NONSCALABLE_LAYER
+  PPS *pps = m_parameterSetManager.getPPS(m_picHeader.getPPSId());
+  CHECK(pps == 0, "No PPS present");
+  SPS *sps = m_parameterSetManager.getSPS(pps->getSPSId());
+  CHECK(sps == 0, "No SPS present");
+  VPS *vps = m_parameterSetManager.getVPS(sps->getVPSId());
+#endif
+
+#if JVET_Q0237_STSA_TID_ZERO_DEPLAYER
+
+  if (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_STSA && vps != nullptr && (vps->getIndependentLayerFlag(nalu.m_nuhLayerId) == 1))
+  {
+    CHECK(nalu.m_temporalId == 0, "TemporalID of STSA picture shall not be zero in independent layers");
+  }
+
+#endif
+
+#if JVET_Q0044_SLICE_IDX_WITH_SUBPICS
+  int currSubPicIdx = pps->getSubPicIdxFromSubPicId( m_apcSlicePilot->getSliceSubPicId() );
+  int currSliceAddr = m_apcSlicePilot->getSliceID();
+  for(int sp = 0; sp < currSubPicIdx; sp++)
+  {
+    currSliceAddr -= pps->getSubPic(sp).getNumSlicesInSubPic();
+  }
+  CHECK( currSubPicIdx < m_maxDecSubPicIdx, "Error in the order of coded slice NAL units of subpictures" );
+  CHECK( currSubPicIdx == m_maxDecSubPicIdx && currSliceAddr <= m_maxDecSliceAddrInSubPic, "Error in the order of coded slice NAL units within a subpicture" );
+  if( currSubPicIdx == m_maxDecSubPicIdx )
+  {
+    m_maxDecSliceAddrInSubPic = currSliceAddr;
+  }
+  if( currSubPicIdx > m_maxDecSubPicIdx )
+  {
+    m_maxDecSubPicIdx = currSubPicIdx; 
+    m_maxDecSliceAddrInSubPic = currSliceAddr;
+  }
+#endif
+#if JVET_P0097_REMOVE_VPS_DEP_NONSCALABLE_LAYER
+  if ((sps->getVPSId() == 0) && (m_prevLayerID != MAX_INT))
+  {
+    CHECK(m_prevLayerID != nalu.m_nuhLayerId, "All VCL NAL unit in the CVS shall have the same value of nuh_layer_id "
+                                              "when sps_video_parameter_set_id is equal to 0");
+  }
+#endif
+#if JVET_P0101_POC_MULTILAYER
+  CHECK((sps->getVPSId() > 0) && (vps == 0), "Invalid VPS");
+  if (vps != nullptr && (vps->getIndependentLayerFlag(nalu.m_nuhLayerId) == 0)) 
+  {
+    bool pocIsSet = false;
+    for(auto auNALit=m_accessUnitPicInfo.begin(); auNALit != m_accessUnitPicInfo.end();auNALit++)
+    {      
+      for (int iRefIdx = 0; iRefIdx < m_apcSlicePilot->getNumRefIdx(REF_PIC_LIST_0) && !pocIsSet; iRefIdx++)
+      {
+#if JVET_Q0819_PH_CHANGES
+        if (m_apcSlicePilot->getRefPic(REF_PIC_LIST_0, iRefIdx) && m_apcSlicePilot->getRefPic(REF_PIC_LIST_0, iRefIdx)->getPOC() == (*auNALit).m_POC)
+#else
+        if (m_apcSlicePilot->getRefPic(REF_PIC_LIST_0, iRefIdx)->getPOC() == (*auNALit).m_POC)
+#endif
+        {
+          m_apcSlicePilot->setPOC(m_apcSlicePilot->getRefPic(REF_PIC_LIST_0, iRefIdx)->getPOC());
+          pocIsSet = true;
+        }
+      }
+      for (int iRefIdx = 0; iRefIdx < m_apcSlicePilot->getNumRefIdx(REF_PIC_LIST_1) && !pocIsSet; iRefIdx++)
+      {
+#if JVET_Q0819_PH_CHANGES
+        if (m_apcSlicePilot->getRefPic(REF_PIC_LIST_1, iRefIdx) && m_apcSlicePilot->getRefPic(REF_PIC_LIST_1, iRefIdx)->getPOC() == (*auNALit).m_POC)
+#else
+        if (m_apcSlicePilot->getRefPic(REF_PIC_LIST_1, iRefIdx)->getPOC() == (*auNALit).m_POC)
+#endif
+        {
+          m_apcSlicePilot->setPOC(m_apcSlicePilot->getRefPic(REF_PIC_LIST_1, iRefIdx)->getPOC());
+          pocIsSet = true;
+        }
+      }
+    }
+  }
+#endif
 
   // update independent slice index
   uint32_t uiIndependentSliceIdx = 0;
@@ -1272,101 +1877,117 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   m_apcSlicePilot->setIndependentSliceIdx(uiIndependentSliceIdx);
 
 #if K0149_BLOCK_STATISTICS
-  PPS *pps = m_parameterSetManager.getPPS(m_apcSlicePilot->getPPSId());
+#if !JVET_P0101_POC_MULTILAYER
+  PPS *pps = m_parameterSetManager.getPPS(m_picHeader.getPPSId());
   CHECK(pps == 0, "No PPS present");
   SPS *sps = m_parameterSetManager.getSPS(pps->getSPSId());
   CHECK(sps == 0, "No SPS present");
-
+#endif
   writeBlockStatisticsHeader(sps);
 #endif
 
   DTRACE_UPDATE( g_trace_ctx, std::make_pair( "poc", m_apcSlicePilot->getPOC() ) );
 
-#if JVET_O0610_DETECT_AUD
-#if JVET_N0865_NONSYNTAX
   if ((m_bFirstSliceInPicture ||
         m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA ||
         m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR) &&
       getNoOutputPriorPicsFlag())
-#else
-    if ((m_bFirstSliceInPicture ||
-          m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA)
-        && getNoOutputPriorPicsFlag() )
-#endif
     {
       checkNoOutputPriorPics(&m_cListPic);
       setNoOutputPriorPicsFlag (false);
     }
-#endif
 
   xUpdatePreviousTid0POC(m_apcSlicePilot);
 
   m_apcSlicePilot->setAssociatedIRAPPOC(m_pocCRA);
   m_apcSlicePilot->setAssociatedIRAPType(m_associatedIRAPType);
 
-  //For inference of NoOutputOfPriorPicsFlag
-#if JVET_N0865_NONSYNTAX
-  if (m_apcSlicePilot->getRapPicFlag() || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR)
-#else
-  if (m_apcSlicePilot->getRapPicFlag())
-#endif
+#if SPS_ID_CHECK
+  if( m_apcSlicePilot->getRapPicFlag() || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR )
   {
-#if JVET_N0865_NONSYNTAX
+    // Derive NoOutputBeforeRecoveryFlag
+    if( !pps->getMixedNaluTypesInPicFlag() )
+    {
+      if( m_firstSliceInSequence[nalu.m_nuhLayerId] )
+      {
+        m_picHeader.setNoOutputBeforeRecoveryFlag( true );
+      }
+      else if( m_apcSlicePilot->getIdrPicFlag() )
+      {
+        m_picHeader.setNoOutputBeforeRecoveryFlag( true );
+      }
+      else if( m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA )
+      {
+        m_picHeader.setNoOutputBeforeRecoveryFlag( m_picHeader.getHandleCraAsCvsStartFlag() );
+      }
+      else if( m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR )
+      {
+        m_picHeader.setNoOutputBeforeRecoveryFlag( m_picHeader.getHandleGdrAsCvsStartFlag() );
+      }
+    }
+#else
+  //For inference of NoOutputOfPriorPicsFlag
+  if (m_apcSlicePilot->getRapPicFlag() || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR)
+  {
+#if JVET_P0125_EOS_LAYER_SPECIFIC
+    if ((m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA && m_bFirstSliceInSequence[nalu.m_nuhLayerId]) ||
+      (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA && m_apcSlicePilot->getHandleCraAsCvsStartFlag()) ||
+      (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR && m_bFirstSliceInSequence[nalu.m_nuhLayerId]))
+#else
     if ((m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA && m_bFirstSliceInSequence) ||
-        (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA && m_apcSlicePilot->getHandleCraAsCvsStartFlag()) || 
+        (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA && m_apcSlicePilot->getHandleCraAsCvsStartFlag()) ||
         (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR && m_bFirstSliceInSequence))
+#endif
     {
       m_apcSlicePilot->setNoIncorrectPicOutputFlag(true);
     }
-#else
-    if ((m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA && m_bFirstSliceInSequence) ||
-        (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA && m_apcSlicePilot->getHandleCraAsCvsStartFlag()))
-    {
-      m_apcSlicePilot->setNoRaslOutputFlag(true);
-    }
 #endif
-    //the inference for NoOutputPriorPicsFlag
-#if JVET_N0865_NONSYNTAX
-    if (!m_bFirstSliceInBitstream &&
-        (m_apcSlicePilot->getRapPicFlag() || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR) &&
+
+    //the inference for NoOutputOfPriorPicsFlag
+#if SPS_ID_CHECK
+    if( !m_firstSliceInBitstream && m_picHeader.getNoOutputBeforeRecoveryFlag() )
+    {
+      m_picHeader.setNoOutputOfPriorPicsFlag( true );
+    }
+#else
+    if( !m_firstSliceInBitstream &&
+        ( m_apcSlicePilot->getRapPicFlag() || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR ) &&
         m_apcSlicePilot->getNoIncorrectPicOutputFlag())
     {
       if (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR)
       {
-        m_apcSlicePilot->setNoOutputPriorPicsFlag(true);
-      }
-    }
-#else
-    if (!m_bFirstSliceInBitstream && m_apcSlicePilot->getRapPicFlag() && m_apcSlicePilot->getNoRaslOutputFlag())
-    {
-      if (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA)
-      {
-        m_apcSlicePilot->setNoOutputPriorPicsFlag(true);
+        m_picHeader.setNoOutputOfPriorPicsFlag(true);
       }
     }
 #endif
     else
     {
-      m_apcSlicePilot->setNoOutputPriorPicsFlag(false);
+      m_picHeader.setNoOutputOfPriorPicsFlag(false);
     }
 
-#if JVET_N0865_NONSYNTAX
     if (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR)
     {
+#if SPS_ID_CHECK
+      m_lastNoOutputBeforeRecoveryFlag = m_picHeader.getNoOutputBeforeRecoveryFlag();
+#else
       m_lastNoIncorrectPicOutputFlag = m_apcSlicePilot->getNoIncorrectPicOutputFlag();
+#endif
     }
-#else
-    if(m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA)
+#if SPS_ID_CHECK
+
+    if( m_picHeader.getNoOutputOfPriorPicsFlag() )
     {
-      m_craNoRaslOutputFlag = m_apcSlicePilot->getNoRaslOutputFlag();
+      m_lastPOCNoOutputPriorPics = m_apcSlicePilot->getPOC();
+      m_isNoOutputPriorPics = true;
     }
-#endif
+    else
+    {
+      m_isNoOutputPriorPics = false;
+    }
   }
-#if JVET_N0865_NONSYNTAX
-  if ((m_apcSlicePilot->getRapPicFlag() || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR) && m_apcSlicePilot->getNoOutputPriorPicsFlag())
 #else
-  if (m_apcSlicePilot->getRapPicFlag() && m_apcSlicePilot->getNoOutputPriorPicsFlag())
-#endif
+  }
+  if ((m_apcSlicePilot->getRapPicFlag() || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR) && m_picHeader.getNoOutputOfPriorPicsFlag())
   {
     m_lastPOCNoOutputPriorPics = m_apcSlicePilot->getPOC();
     m_isNoOutputPriorPics = true;
@@ -1375,35 +1996,70 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   {
     m_isNoOutputPriorPics = false;
   }
+#endif
 
   //For inference of PicOutputFlag
-  if (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_RASL)
-  {
-#if JVET_N0865_NONSYNTAX
-    if (m_lastNoIncorrectPicOutputFlag)
+#if SPS_ID_CHECK
+  if( !pps->getMixedNaluTypesInPicFlag() && ( m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_RASL ) )
 #else
-    if ( m_craNoRaslOutputFlag )
+  if (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_RASL)
+#endif
+  {
+#if SPS_ID_CHECK
+    if( m_lastNoOutputBeforeRecoveryFlag )
+#else
+    if (m_lastNoIncorrectPicOutputFlag)
 #endif
     {
-      m_apcSlicePilot->setPicOutputFlag(false);
+      m_picHeader.setPicOutputFlag(false);
     }
   }
 
-#if JVET_N0865_NONSYNTAX
-  if ((m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR) &&
-      m_lastNoIncorrectPicOutputFlag)                     //Reset POC MSB when CRA or GDR has NoIncorrectPicOutputFlag equal to 1
-#else
-  if (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA && m_craNoRaslOutputFlag) //Reset POC MSB when CRA has NoRaslOutputFlag equal to 1
-#endif
+#if JVET_P0288_PIC_OUTPUT
   {
-    PPS *pps = m_parameterSetManager.getPPS(m_apcSlicePilot->getPPSId());
+    PPS *pps = m_parameterSetManager.getPPS(m_picHeader.getPPSId());
     CHECK(pps == 0, "No PPS present");
     SPS *sps = m_parameterSetManager.getSPS(pps->getSPSId());
     CHECK(sps == 0, "No SPS present");
+    if (sps->getVPSId() > 0)
+    {
+      VPS *vps = m_parameterSetManager.getVPS(sps->getVPSId());
+      CHECK(vps == 0, "No VPS present");
+      if ((vps->getOlsModeIdc() == 0 && vps->getGeneralLayerIdx(nalu.m_nuhLayerId) < (vps->getMaxLayers() - 1) && vps->getOlsOutputLayerFlag(vps->m_targetOlsIdx, vps->getMaxLayers() - 1) == 1) || (vps->getOlsModeIdc() == 2 && vps->getOlsOutputLayerFlag(vps->m_targetOlsIdx, vps->getGeneralLayerIdx(nalu.m_nuhLayerId)) == 0))
+      {
+        m_picHeader.setPicOutputFlag(false);
+      }
+    }
+  }
+#endif
+
+#if SPS_ID_CHECK
+  //Reset POC MSB when CRA or GDR has NoOutputBeforeRecoveryFlag equal to 1
+  if( !pps->getMixedNaluTypesInPicFlag() && ( m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR ) && m_lastNoOutputBeforeRecoveryFlag )
+#else
+  if( ( m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR ) &&
+      m_lastNoIncorrectPicOutputFlag)                     //Reset POC MSB when CRA or GDR has NoIncorrectPicOutputFlag equal to 1
+#endif
+  {
+#if !JVET_P0101_POC_MULTILAYER
+    PPS *pps = m_parameterSetManager.getPPS(m_picHeader.getPPSId());
+    CHECK(pps == 0, "No PPS present");
+    SPS *sps = m_parameterSetManager.getSPS(pps->getSPSId());
+    CHECK(sps == 0, "No SPS present");
+#endif
     int iMaxPOClsb = 1 << sps->getBitsForPOC();
     m_apcSlicePilot->setPOC( m_apcSlicePilot->getPOC() & (iMaxPOClsb - 1) );
     xUpdatePreviousTid0POC(m_apcSlicePilot);
   }
+
+#if JVET_P0101_POC_MULTILAYER
+  AccessUnitPicInfo picInfo;
+  picInfo.m_nalUnitType = nalu.m_nalUnitType;
+  picInfo.m_nuhLayerId  = nalu.m_nuhLayerId;
+  picInfo.m_temporalId  = nalu.m_temporalId;
+  picInfo.m_POC         = m_apcSlicePilot->getPOC();
+  m_accessUnitPicInfo.push_back(picInfo);
+#endif
 
   // Skip pictures due to random access
 
@@ -1419,13 +2075,18 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   m_prevSliceSkipped = false;
 
   //we should only get a different poc for a new picture (with CTU address==0)
-  if(m_apcSlicePilot->getPOC() != m_prevPOC && !m_bFirstSliceInSequence && (m_apcSlicePilot->getSliceCurStartCtuTsAddr() != 0))
+#if JVET_P0125_EOS_LAYER_SPECIFIC
+  if (m_apcSlicePilot->getPOC() != m_prevPOC && !m_firstSliceInSequence[nalu.m_nuhLayerId] && (m_apcSlicePilot->getFirstCtuRsAddrInSlice() != 0))
+#else
+  if(m_apcSlicePilot->getPOC() != m_prevPOC && !m_bFirstSliceInSequence && (m_apcSlicePilot->getFirstCtuRsAddrInSlice() != 0))
+#endif
   {
     msg( WARNING, "Warning, the first slice of a picture might have been lost!\n");
   }
+  m_prevLayerID = nalu.m_nuhLayerId;
 
   // leave when a new picture is found
-  if(m_apcSlicePilot->getSliceCurStartCtuTsAddr() == 0 && !m_bFirstSliceInPicture)
+  if(m_apcSlicePilot->getFirstCtuRsAddrInSlice() == 0 && !m_bFirstSliceInPicture)
   {
     if (m_prevPOC >= m_pocRandomAccess)
     {
@@ -1443,46 +2104,43 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   //detect lost reference picture and insert copy of earlier frame.
   {
     int lostPoc;
-  #if JVET_O0241
     int refPicIndex;
-    while ((lostPoc = m_apcSlicePilot->checkThatAllRefPicsAreAvailable(m_cListPic, m_apcSlicePilot->getRPL0(), 0, true, &refPicIndex)) > 0)
+    while ((lostPoc = m_apcSlicePilot->checkThatAllRefPicsAreAvailable(m_cListPic, m_apcSlicePilot->getRPL0(), 0, true, &refPicIndex, m_apcSlicePilot->getNumRefIdx(REF_PIC_LIST_0))) > 0)
     {
-#if JVET_N0865_GRA2GDR
+#if SPS_ID_CHECK
+      if( !pps->getMixedNaluTypesInPicFlag() && ( m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA ) && m_picHeader.getNoOutputBeforeRecoveryFlag() )
+#else
       if ( ( (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR) || (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA) ) && m_apcSlicePilot->getNoIncorrectPicOutputFlag() )
-#else
-      if (((m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GRA) || (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA)) && m_apcSlicePilot->getNoIncorrectPicOutputFlag())
 #endif
       {
-
-        xCreateUnavailablePicture(lostPoc - 1, m_apcSlicePilot->getRPL0()->isRefPicLongterm(refPicIndex));
+        if (m_apcSlicePilot->getRPL0()->isInterLayerRefPic(refPicIndex) == 0)
+        {
+          xCreateUnavailablePicture(lostPoc - 1, m_apcSlicePilot->getRPL0()->isRefPicLongterm(refPicIndex), m_apcSlicePilot->getPic()->layerId, m_apcSlicePilot->getRPL0()->isInterLayerRefPic(refPicIndex));
+        }
       }
       else
       {
-        xCreateLostPicture(lostPoc - 1);
+        xCreateLostPicture( lostPoc - 1, m_apcSlicePilot->getPic()->layerId );
       }
     }
-    while ((lostPoc = m_apcSlicePilot->checkThatAllRefPicsAreAvailable(m_cListPic, m_apcSlicePilot->getRPL0(), 0, true, &refPicIndex)) > 0)
+    while ((lostPoc = m_apcSlicePilot->checkThatAllRefPicsAreAvailable(m_cListPic, m_apcSlicePilot->getRPL1(), 0, true, &refPicIndex, m_apcSlicePilot->getNumRefIdx(REF_PIC_LIST_1))) > 0)
     {
-#if JVET_N0865_GRA2GDR
-      if (((m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR) || (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA)) && m_apcSlicePilot->getNoIncorrectPicOutputFlag())
+#if SPS_ID_CHECK
+      if( !pps->getMixedNaluTypesInPicFlag() && ( m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA ) && m_picHeader.getNoOutputBeforeRecoveryFlag() )
 #else
-      if (((m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GRA) || (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA)) && m_apcSlicePilot->getNoIncorrectPicOutputFlag())
+      if (((m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR) || (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA)) && m_apcSlicePilot->getNoIncorrectPicOutputFlag())
 #endif
       {
-
-        xCreateUnavailablePicture(lostPoc - 1, m_apcSlicePilot->getRPL0()->isRefPicLongterm(refPicIndex));
+        if (m_apcSlicePilot->getRPL1()->isInterLayerRefPic(refPicIndex) == 0)
+        {
+          xCreateUnavailablePicture(lostPoc - 1, m_apcSlicePilot->getRPL1()->isRefPicLongterm(refPicIndex), m_apcSlicePilot->getPic()->layerId, m_apcSlicePilot->getRPL1()->isInterLayerRefPic(refPicIndex));
+        }
       }
       else
       {
-        xCreateLostPicture(lostPoc - 1);
+        xCreateLostPicture( lostPoc - 1, m_apcSlicePilot->getPic()->layerId );
       }
     }
-#else
-    while ((lostPoc = m_apcSlicePilot->checkThatAllRefPicsAreAvailable(m_cListPic, m_apcSlicePilot->getRPL0(), 0, true)) > 0)
-      xCreateLostPicture(lostPoc - 1);
-    while ((lostPoc = m_apcSlicePilot->checkThatAllRefPicsAreAvailable(m_cListPic, m_apcSlicePilot->getRPL1(), 1, true)) > 0)
-      xCreateLostPicture(lostPoc - 1);
-#endif
   }
 
     m_prevPOC = m_apcSlicePilot->getPOC();
@@ -1493,11 +2151,14 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   }
 
   // actual decoding starts here
-  xActivateParameterSets();
+  xActivateParameterSets( nalu.m_nuhLayerId );
 
+#if JVET_P0125_EOS_LAYER_SPECIFIC
+  m_firstSliceInSequence[nalu.m_nuhLayerId] = false;
+#else
   m_bFirstSliceInSequence = false;
-  m_bFirstSliceInBitstream  = false;
-
+#endif
+  m_firstSliceInBitstream  = false;
 
   Slice* pcSlice = m_pcPic->slices[m_uiSliceSegmentIdx];
   pcSlice->setPic( m_pcPic );
@@ -1505,58 +2166,28 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   m_pcPic->layer       = pcSlice->getTLayer();
   m_pcPic->referenced  = true;
   m_pcPic->layer       = nalu.m_temporalId;
+  m_pcPic->layerId    = nalu.m_nuhLayerId;
+  m_pcPic->subLayerNonReferencePictureDueToSTSA = false;
 
-#if JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
-  if (pcSlice->getPPS()->getRectSliceFlag())
+
+#if JVET_P0978_RPL_RESTRICTIONS
+  if (m_bFirstSliceInPicture)
   {
-    int sliceIdx = pcSlice->getSliceIndex();
-    int topLeft = pcSlice->getPic()->brickMap->getTopLeftBrickIdx(sliceIdx);
-    int bottomRight = pcSlice->getPic()->brickMap->getBottomRightBrickIdx(sliceIdx);
-
-    pcSlice->setSliceCurStartBrickIdx(topLeft);
-    pcSlice->setSliceCurEndBrickIdx(bottomRight);
-    pcSlice->setSliceCurStartCtuTsAddr(pcSlice->getSliceCurStartBrickIdx());
+    m_pcPic->setDecodingOrderNumber(m_decodingOrderCounter);
+    m_decodingOrderCounter++;
+    m_pcPic->setPictureType(nalu.m_nalUnitType);
   }
-#endif
-
-  // When decoding the slice header, the stored start and end addresses were actually RS addresses, not TS addresses.
-  // Now, having set up the maps, convert them to the correct form.
-  const BrickMap& tileMap = *(m_pcPic->brickMap);
-  const uint32_t numberOfCtusInFrame = m_pcPic->cs->pcv->sizeInCtus;
-
-  uint32_t startCtuIdx = 0;
-  while (pcSlice->getSliceCurStartBrickIdx() != tileMap.getBrickIdxBsMap(startCtuIdx) && startCtuIdx < numberOfCtusInFrame)
-  {
-    startCtuIdx++;
-  }
-  uint32_t endCtuIdx = startCtuIdx;
-  while (pcSlice->getSliceCurEndBrickIdx() != tileMap.getBrickIdxBsMap(endCtuIdx) && endCtuIdx < numberOfCtusInFrame)
-  {
-    endCtuIdx++;
-  }
-  if (endCtuIdx == numberOfCtusInFrame)
-    EXIT("Cannot find the last CTU index of the current slice");
-
-  while ( (endCtuIdx < numberOfCtusInFrame) && (pcSlice->getSliceCurEndBrickIdx() == tileMap.getBrickIdxBsMap(endCtuIdx)) )
-  {
-    endCtuIdx++;
-  }
-  if (pcSlice->getSliceCurEndBrickIdx() != tileMap.getBrickIdxBsMap(endCtuIdx - 1))
-    EXIT("Cannot find the last CTU index of the current slice");
-
-  pcSlice->setSliceCurStartCtuTsAddr(startCtuIdx);
-  pcSlice->setSliceCurEndCtuTsAddr(endCtuIdx);
-
-  pcSlice->checkCRA(pcSlice->getRPL0(), pcSlice->getRPL1(), m_pocCRA, m_associatedIRAPType, m_cListPic);
-  pcSlice->constructRefPicList(m_cListPic);
-
-#if JVET_O1164_RPR
-#if JVET_O0299_APS_SCALINGLIST
-  pcSlice->scaleRefPicList( scaledRefPic, m_parameterSetManager.getAPSs(), pcSlice->getLmcsAPS(), pcSlice->getscalingListAPS(), true );
+  pcSlice->checkCRA(pcSlice->getRPL0(), pcSlice->getRPL1(), m_pocCRA, m_cListPic);
 #else
-  pcSlice->scaleRefPicList( scaledRefPic, m_parameterSetManager.getAPSs(), pcSlice->getLmcsAPS(), true );
+  pcSlice->checkCRA(pcSlice->getRPL0(), pcSlice->getRPL1(), m_pocCRA, m_associatedIRAPType, m_cListPic);
 #endif
+  pcSlice->constructRefPicList(m_cListPic);
+#if JVET_P0978_RPL_RESTRICTIONS
+  pcSlice->checkRPL(pcSlice->getRPL0(), pcSlice->getRPL1(), m_associatedIRAPDecodingOrderNumber, m_cListPic);
 #endif
+  pcSlice->checkSTSA(m_cListPic);
+
+  pcSlice->scaleRefPicList( scaledRefPic, m_pcPic->cs->picHeader, m_parameterSetManager.getAPSs(), m_picHeader.getLmcsAPS(), m_picHeader.getScalingListAPS(), true );
 
     if (!pcSlice->isIntra())
     {
@@ -1586,9 +2217,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
     }
 
     if (pcSlice->getSPS()->getUseSMVD() && pcSlice->getCheckLDC() == false
-#if JVET_O0284_CONDITION_SMVD_MVDL1ZEROFLAG
-      && pcSlice->getMvdL1ZeroFlag() == false
-#endif
+      && pcSlice->getPicHeader()->getMvdL1ZeroFlag() == false
       )
     {
       int currPOC = pcSlice->getPOC();
@@ -1603,12 +2232,8 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
       for ( ref = 0; ref < pcSlice->getNumRefIdx( REF_PIC_LIST_0 ); ref++ )
       {
         int poc = pcSlice->getRefPic( REF_PIC_LIST_0, ref )->getPOC();
-#if JVET_O0414_SMVD_LTRP
         const bool isRefLongTerm = pcSlice->getRefPic(REF_PIC_LIST_0, ref)->longTerm;
         if ( poc < currPOC && (poc > forwardPOC || refIdx0 == -1) && !isRefLongTerm )
-#else
-        if ( poc < currPOC && (poc > forwardPOC || refIdx0 == -1) )
-#endif
         {
           forwardPOC = poc;
           refIdx0 = ref;
@@ -1619,12 +2244,8 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
       for ( ref = 0; ref < pcSlice->getNumRefIdx( REF_PIC_LIST_1 ); ref++ )
       {
         int poc = pcSlice->getRefPic( REF_PIC_LIST_1, ref )->getPOC();
-#if JVET_O0414_SMVD_LTRP
         const bool isRefLongTerm = pcSlice->getRefPic(REF_PIC_LIST_1, ref)->longTerm;
         if ( poc > currPOC && (poc < backwardPOC || refIdx1 == -1) && !isRefLongTerm )
-#else
-        if ( poc > currPOC && (poc < backwardPOC || refIdx1 == -1) )
-#endif
         {
           backwardPOC = poc;
           refIdx1 = ref;
@@ -1642,12 +2263,8 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
         for ( ref = 0; ref < pcSlice->getNumRefIdx( REF_PIC_LIST_0 ); ref++ )
         {
           int poc = pcSlice->getRefPic( REF_PIC_LIST_0, ref )->getPOC();
-#if JVET_O0414_SMVD_LTRP
           const bool isRefLongTerm = pcSlice->getRefPic(REF_PIC_LIST_0, ref)->longTerm;
           if ( poc > currPOC && (poc < backwardPOC || refIdx0 == -1) && !isRefLongTerm )
-#else
-          if ( poc > currPOC && (poc < backwardPOC || refIdx0 == -1) )
-#endif
           {
             backwardPOC = poc;
             refIdx0 = ref;
@@ -1658,12 +2275,8 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
         for ( ref = 0; ref < pcSlice->getNumRefIdx( REF_PIC_LIST_1 ); ref++ )
         {
           int poc = pcSlice->getRefPic( REF_PIC_LIST_1, ref )->getPOC();
-#if JVET_O0414_SMVD_LTRP
           const bool isRefLongTerm = pcSlice->getRefPic(REF_PIC_LIST_1, ref)->longTerm;
           if ( poc < currPOC && (poc > forwardPOC || refIdx1 == -1) && !isRefLongTerm )
-#else
-          if ( poc < currPOC && (poc > forwardPOC || refIdx1 == -1) )
-#endif
           {
             forwardPOC = poc;
             refIdx1 = ref;
@@ -1688,7 +2301,15 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
     //---------------
     pcSlice->setRefPOCList();
 
-#if JVET_N0494_DRAP
+#if JVET_P0124_MIXED_NALU
+    NalUnitInfo naluInfo;
+    naluInfo.m_nalUnitType = nalu.m_nalUnitType;
+    naluInfo.m_nuhLayerId = nalu.m_nuhLayerId;
+    naluInfo.m_firstCTUinSlice = pcSlice->getFirstCtuRsAddrInSlice();
+    naluInfo.m_POC = pcSlice->getPOC();
+    xCheckMixedNalUnit(pcSlice, sps, nalu);
+    m_nalUnitInfo[naluInfo.m_nuhLayerId].push_back(naluInfo);
+#endif
     SEIMessages drapSEIs = getSeisByType(m_pcPic->SEIs, SEI::DEPENDENT_RAP_INDICATION );
     if (!drapSEIs.empty())
     {
@@ -1697,66 +2318,56 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
       pcSlice->setLatestDRAPPOC(pcSlice->getPOC());
     }
     pcSlice->checkConformanceForDRAP(nalu.m_temporalId);
-#endif
 
   Quant *quant = m_cTrQuant.getQuant();
 
-#if JVET_O0299_APS_SCALINGLIST
+#if JVET_Q0346_SCALING_LIST_USED_IN_SH
+  if (pcSlice->getExplicitScalingListUsed())
+  {
+    APS* scalingListAPS = pcSlice->getPicHeader()->getScalingListAPS();
+    ScalingList scalingList = scalingListAPS->getScalingList();
+    quant->setScalingListDec(scalingList);
+    quant->setUseScalingList(true);
+  }
+#else
   if( pcSlice->getSPS()->getScalingListFlag() )
   {
     ScalingList scalingList;
-    if( pcSlice->getscalingListPresentFlag() )
+    if( pcSlice->getPicHeader()->getScalingListPresentFlag() )
     {
-      APS* scalingListAPS = pcSlice->getscalingListAPS();
+      APS* scalingListAPS = pcSlice->getPicHeader()->getScalingListAPS();
       scalingList = scalingListAPS->getScalingList();
     }
     else
     {
       scalingList.setDefaultScalingList();
     }
-    quant->setScalingListDec( scalingList );
+    int scalingListAPSId = pcSlice->getPicHeader()->getScalingListAPSId();
+    if (getScalingListUpdateFlag() || (scalingListAPSId != getPreScalingListAPSId()))
+    {
+      quant->setScalingListDec(scalingList);
+      setScalingListUpdateFlag(false);
+      setPreScalingListAPSId(scalingListAPSId);
+    }
     quant->setUseScalingList( true );
   }
+#endif
   else
   {
     quant->setUseScalingList( false );
   }
-#else
-  if(pcSlice->getSPS()->getScalingListFlag())
-  {
-    ScalingList scalingList;
-    if(pcSlice->getPPS()->getScalingListPresentFlag())
-    {
-      scalingList = pcSlice->getPPS()->getScalingList();
-    }
-    else if (pcSlice->getSPS()->getScalingListPresentFlag())
-    {
-      scalingList = pcSlice->getSPS()->getScalingList();
-    }
-    else
-    {
-      scalingList.setDefaultScalingList();
-    }
-    quant->setScalingListDec(scalingList);
-    quant->setUseScalingList(true);
-  }
-  else
-  {
-    quant->setUseScalingList(false);
-  }
-#endif
 
-
-  if (pcSlice->getSPS()->getUseReshaper())
+  if (pcSlice->getSPS()->getUseLmcs())
   {
-#if JVET_O0428_LMCS_CLEANUP
     if (m_bFirstSliceInPicture)
       m_sliceLmcsApsId = -1;
-#endif
+#if JVET_Q0346_LMCS_ENABLE_IN_SH
     if (pcSlice->getLmcsEnabledFlag())
+#else
+    if (pcSlice->getPicHeader()->getLmcsEnabledFlag())
+#endif
     {
-      APS* lmcsAPS = pcSlice->getLmcsAPS();
-#if JVET_O0428_LMCS_CLEANUP
+      APS* lmcsAPS = pcSlice->getPicHeader()->getLmcsAPS();
       if (m_sliceLmcsApsId == -1)
       {
         m_sliceLmcsApsId = lmcsAPS->getAPSId();
@@ -1765,15 +2376,19 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
       {
         CHECK(lmcsAPS->getAPSId() != m_sliceLmcsApsId, "same APS ID shall be used for all slices in one picture");
       }
-#endif
       SliceReshapeInfo& sInfo = lmcsAPS->getReshaperAPSInfo();
       SliceReshapeInfo& tInfo = m_cReshaper.getSliceReshaperInfo();
       tInfo.reshaperModelMaxBinIdx = sInfo.reshaperModelMaxBinIdx;
       tInfo.reshaperModelMinBinIdx = sInfo.reshaperModelMinBinIdx;
       memcpy(tInfo.reshaperModelBinCWDelta, sInfo.reshaperModelBinCWDelta, sizeof(int)*(PIC_CODE_CW_BINS));
       tInfo.maxNbitsNeededDeltaCW = sInfo.maxNbitsNeededDeltaCW;
+      tInfo.chrResScalingOffset = sInfo.chrResScalingOffset;
+#if JVET_Q0346_LMCS_ENABLE_IN_SH
       tInfo.setUseSliceReshaper(pcSlice->getLmcsEnabledFlag());
-      tInfo.setSliceReshapeChromaAdj(pcSlice->getLmcsChromaResidualScaleFlag());
+#else
+      tInfo.setUseSliceReshaper(pcSlice->getPicHeader()->getLmcsEnabledFlag());
+#endif
+      tInfo.setSliceReshapeChromaAdj(pcSlice->getPicHeader()->getLmcsChromaResidualScaleFlag());
       tInfo.setSliceReshapeModelPresentFlag(true);
     }
     else
@@ -1783,7 +2398,11 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
       tInfo.setSliceReshapeChromaAdj(false);
       tInfo.setSliceReshapeModelPresentFlag(false);
     }
+#if JVET_Q0346_LMCS_ENABLE_IN_SH
     if (pcSlice->getLmcsEnabledFlag())
+#else
+    if (pcSlice->getPicHeader()->getLmcsEnabledFlag())
+#endif
     {
       m_cReshaper.constructReshaper();
     }
@@ -1809,9 +2428,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
         m_cReshaper.setRecReshaped(false);
       }
     }
-#if JVET_O1109_UNFIY_CRS
     m_cReshaper.setVPDULoc(-1, -1);
-#endif
   }
   else
   {
@@ -1825,47 +2442,72 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   m_bFirstSliceInPicture = false;
   m_uiSliceSegmentIdx++;
 
-#if JVET_O1164_RPR
   pcSlice->freeScaledRefPicList( scaledRefPic );
-#endif
 
   return false;
 }
 
-void DecLib::xDecodeVPS( InputNALUnit& nalu )
+#if JVET_P0978_RPL_RESTRICTIONS
+void DecLib::updateAssociatedIRAP()
 {
-  VPS* vps = new VPS();
-  m_HLSReader.setBitstream( &nalu.getBitstream() );
-
-#if JVET_O0245_VPS_DPS_APS
-  CHECK( nalu.m_temporalId, "The value of TemporalId of VPS NAL units shall be equal to 0" );
+  const NalUnitType pictureType = m_pcPic->getPictureType();
+  if (pictureType == NAL_UNIT_CODED_SLICE_IDR_W_RADL || pictureType == NAL_UNIT_CODED_SLICE_IDR_N_LP || pictureType == NAL_UNIT_CODED_SLICE_CRA)
+  {
+    m_associatedIRAPDecodingOrderNumber = m_pcPic->getDecodingOrderNumber();
+    m_pocCRA = m_pcPic->getPOC();
+    m_associatedIRAPType = pictureType;
+  }
+}
 #endif
 
-  m_HLSReader.parseVPS( vps );
-  delete vps;
+void DecLib::xDecodeVPS( InputNALUnit& nalu )
+{
+  m_vps = new VPS();
+  m_HLSReader.setBitstream( &nalu.getBitstream() );
+
+  CHECK( nalu.m_temporalId, "The value of TemporalId of VPS NAL units shall be equal to 0" );
+
+  m_HLSReader.parseVPS( m_vps );
+  m_parameterSetManager.storeVPS( m_vps, nalu.getBitstream().getFifo());
 }
 
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+void DecLib::xDecodeDCI(InputNALUnit& nalu)
+{
+  m_HLSReader.setBitstream(&nalu.getBitstream());
+
+  CHECK(nalu.m_temporalId, "The value of TemporalId of DCI NAL units shall be equal to 0");
+  if (!m_dci)
+  {
+    m_dci = new DCI;
+    m_HLSReader.parseDCI(m_dci);
+  }
+  else
+  {
+    DCI dupDCI;
+    m_HLSReader.parseDCI(&dupDCI);
+    CHECK( !m_dci->IsIndenticalDCI(dupDCI), "Two signaled DCIs are different");
+  }
+}
+#else
 void DecLib::xDecodeDPS( InputNALUnit& nalu )
 {
   DPS* dps = new DPS();
   m_HLSReader.setBitstream( &nalu.getBitstream() );
 
-#if JVET_O0245_VPS_DPS_APS
   CHECK( nalu.m_temporalId, "The value of TemporalId of DPS NAL units shall be equal to 0" );
-#endif
 
   m_HLSReader.parseDPS( dps );
   m_parameterSetManager.storeDPS( dps, nalu.getBitstream().getFifo() );
 }
+#endif
 
 void DecLib::xDecodeSPS( InputNALUnit& nalu )
 {
   SPS* sps = new SPS();
   m_HLSReader.setBitstream( &nalu.getBitstream() );
 
-#if JVET_O0245_VPS_DPS_APS
   CHECK( nalu.m_temporalId, "The value of TemporalId of SPS NAL units shall be equal to 0" );
-#endif
 
   m_HLSReader.parseSPS( sps );
   DTRACE( g_trace_ctx, D_QP_PER_CTU, "CTU Size: %dx%d", sps->getMaxCUWidth(), sps->getMaxCUHeight() );
@@ -1876,11 +2518,9 @@ void DecLib::xDecodePPS( InputNALUnit& nalu )
 {
   PPS* pps = new PPS();
   m_HLSReader.setBitstream( &nalu.getBitstream() );
-  m_HLSReader.parsePPS( pps, &m_parameterSetManager );
-#if JVET_O0245_VPS_DPS_APS
+  m_HLSReader.parsePPS( pps );
   pps->setLayerId( nalu.m_nuhLayerId );
   pps->setTemporalId( nalu.m_temporalId );
-#endif
   m_parameterSetManager.storePPS( pps, nalu.getBitstream().getFifo() );
 }
 
@@ -1890,36 +2530,47 @@ void DecLib::xDecodeAPS(InputNALUnit& nalu)
   m_HLSReader.setBitstream(&nalu.getBitstream());
   m_HLSReader.parseAPS(aps);
   aps->setTemporalId(nalu.m_temporalId);
-#if JVET_O0245_VPS_DPS_APS
   aps->setLayerId( nalu.m_nuhLayerId );
-  m_parameterSetManager.checkAuApsContent( aps, m_accessUnitApsNals );  
+  m_parameterSetManager.checkAuApsContent( aps, m_accessUnitApsNals );
+#if !JVET_Q0346_SCALING_LIST_USED_IN_SH
+  if (aps->getAPSType() == SCALING_LIST_APS)
+  {
+    setScalingListUpdateFlag(true);
+  }
 #endif
+
+  // aps will be deleted if it was already stored (and did not changed),
+  // thus, storing it must be last action.
   m_parameterSetManager.storeAPS(aps, nalu.getBitstream().getFifo());
 }
+#if JVET_P0288_PIC_OUTPUT
+bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay, int iTargetOlsIdx)
+#else
 bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
+#endif
 {
   bool ret;
   // ignore all NAL units of layers > 0
-  if (getTargetDecLayer() >= 0 && nalu.m_nuhLayerId != getTargetDecLayer()) //TBC: ignore bitstreams whose nuh_layer_id is not the target layer id
-  {
-    msg( WARNING, "Warning: found NAL unit with nuh_layer_id equal to %d. Ignoring.\n", nalu.m_nuhLayerId);
-    return false;
-  }
 
-#if JVET_O0245_VPS_DPS_APS
   m_accessUnitNals.push_back( std::pair<NalUnitType, int>( nalu.m_nalUnitType, nalu.m_temporalId ) );
-#endif
 
   switch (nalu.m_nalUnitType)
   {
     case NAL_UNIT_VPS:
       xDecodeVPS( nalu );
+#if JVET_P0288_PIC_OUTPUT
+      m_vps->m_targetOlsIdx = iTargetOlsIdx;
+#endif
       return false;
-
+#if JVET_Q0117_PARAMETER_SETS_CLEANUP
+    case NAL_UNIT_DCI:
+      xDecodeDCI( nalu );
+      return false;
+#else
     case NAL_UNIT_DPS:
       xDecodeDPS( nalu );
       return false;
-
+#endif
     case NAL_UNIT_SPS:
       xDecodeSPS( nalu );
       return false;
@@ -1927,7 +2578,13 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
     case NAL_UNIT_PPS:
       xDecodePPS( nalu );
       return false;
-    case NAL_UNIT_APS:
+
+    case NAL_UNIT_PH:
+      xDecodePicHeader(nalu);
+      return !m_bFirstSliceInPicture;
+
+    case NAL_UNIT_PREFIX_APS:
+    case NAL_UNIT_SUFFIX_APS:
       xDecodeAPS(nalu);
       return false;
 
@@ -1939,8 +2596,14 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
     case NAL_UNIT_SUFFIX_SEI:
       if (m_pcPic)
       {
-#if !JVET_N0867_TEMP_SCAL_HRD
-        m_seiReader.parseSEImessage( &(nalu.getBitstream()), m_pcPic->SEIs, nalu.m_nalUnitType, m_parameterSetManager.getActiveSPS(), m_HRD, m_pDecodedSEIOutputStream );
+#if JVET_P0125_ASPECT_TID_LAYER_ID_NUH
+        m_accessUnitSeiTids.push_back(nalu.m_temporalId);
+#endif
+#if JVET_P0125_SEI_CONSTRAINTS
+        const SPS *sps = m_parameterSetManager.getActiveSPS();
+        const VPS *vps = m_parameterSetManager.getVPS(sps->getVPSId());
+        m_seiReader.parseSEImessage( &(nalu.getBitstream()), m_pcPic->SEIs, nalu.m_nalUnitType, nalu.m_nuhLayerId, nalu.m_temporalId, vps, sps, m_HRD, m_pDecodedSEIOutputStream );
+        m_accessUnitSeiPayLoadTypes.push_back(std::tuple<NalUnitType, int, SEI::PayloadType>(nalu.m_nalUnitType, nalu.m_nuhLayerId, m_pcPic->SEIs.back()->payloadType()));
 #else
         m_seiReader.parseSEImessage( &(nalu.getBitstream()), m_pcPic->SEIs, nalu.m_nalUnitType, nalu.m_temporalId, m_parameterSetManager.getActiveSPS(), m_HRD, m_pDecodedSEIOutputStream );
 #endif
@@ -1956,26 +2619,17 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
     case NAL_UNIT_CODED_SLICE_IDR_W_RADL:
     case NAL_UNIT_CODED_SLICE_IDR_N_LP:
     case NAL_UNIT_CODED_SLICE_CRA:
-#if JVET_N0865_NONSYNTAX
     case NAL_UNIT_CODED_SLICE_GDR:
-#endif
     case NAL_UNIT_CODED_SLICE_RADL:
     case NAL_UNIT_CODED_SLICE_RASL:
       ret = xDecodeSlice(nalu, iSkipFrame, iPOCLastDisplay);
-#if JVET_J0090_MEMORY_BANDWITH_MEASURE
-      if ( ret )
-      {
-        m_cacheModel.reportFrame( );
-        m_cacheModel.accumulateFrame( );
-        m_cacheModel.clear( );
-      }
-#endif
       return ret;
 
     case NAL_UNIT_EOS:
       m_associatedIRAPType = NAL_UNIT_INVALID;
       m_pocCRA = 0;
       m_pocRandomAccess = MAX_INT;
+      m_prevLayerID = MAX_INT;
       m_prevPOC = MAX_INT;
       m_prevSliceSkipped = false;
       m_skippedPOC = 0;
@@ -1986,50 +2640,22 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay)
         AUDReader audReader;
         uint32_t picType;
         audReader.parseAccessUnitDelimiter(&(nalu.getBitstream()),picType);
-#if JVET_O0245_VPS_DPS_APS
-        // vectors clearing shall be moved to the right place if mandatory AUD starting an AU is removed
-        m_accessUnitNals.clear();
-        m_accessUnitApsNals.clear();
-        m_accessUnitNals.push_back( std::pair<NalUnitType, int>( NAL_UNIT_ACCESS_UNIT_DELIMITER, nalu.m_temporalId ) );
-#endif
-#if JVET_O0610_DETECT_AUD
         return !m_bFirstSliceInPicture;
-#else
-        msg( NOTICE, "Note: found NAL_UNIT_ACCESS_UNIT_DELIMITER\n");
-        return false;
-#endif
       }
 
     case NAL_UNIT_EOB:
       return false;
 
-#if JVET_O0179
+    case NAL_UNIT_RESERVED_IRAP_VCL_11:
     case NAL_UNIT_RESERVED_IRAP_VCL_12:
-    case NAL_UNIT_RESERVED_IRAP_VCL_13:
-#else
-    case NAL_UNIT_RESERVED_VCL_12:
-    case NAL_UNIT_RESERVED_VCL_13:
-#endif
-    case NAL_UNIT_RESERVED_VCL_14:
-    case NAL_UNIT_RESERVED_VCL_15:
       msg( NOTICE, "Note: found reserved VCL NAL unit.\n");
       xParsePrefixSEIsForUnknownVCLNal();
       return false;
-#if JVET_O0179
     case NAL_UNIT_RESERVED_VCL_4:
     case NAL_UNIT_RESERVED_VCL_5:
     case NAL_UNIT_RESERVED_VCL_6:
-    case NAL_UNIT_RESERVED_VCL_7:
     case NAL_UNIT_RESERVED_NVCL_26:
     case NAL_UNIT_RESERVED_NVCL_27:
-#else
-    case NAL_UNIT_RESERVED_NVCL_5:
-    case NAL_UNIT_RESERVED_NVCL_6:
-    case NAL_UNIT_RESERVED_NVCL_7:
-    case NAL_UNIT_RESERVED_NVCL_21:
-    case NAL_UNIT_RESERVED_NVCL_22:
-    case NAL_UNIT_RESERVED_NVCL_23:
-#endif
       msg( NOTICE, "Note: found reserved NAL unit.\n");
       return false;
     case NAL_UNIT_UNSPECIFIED_28:
@@ -2063,16 +2689,16 @@ bool DecLib::isRandomAccessSkipPicture( int& iSkipFrame, int& iPOCLastDisplay )
     iSkipFrame--;   // decrement the counter
     return true;
   }
+  else if ( m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_W_RADL || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_N_LP )
+  {
+    m_pocRandomAccess = -MAX_INT; // no need to skip the reordered pictures in IDR, they are decodable.
+  }
   else if (m_pocRandomAccess == MAX_INT) // start of random access point, m_pocRandomAccess has not been set yet.
   {
     if (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA )
     {
       // set the POC random access since we need to skip the reordered pictures in the case of CRA/CRANT/BLA/BLANT.
       m_pocRandomAccess = m_apcSlicePilot->getPOC();
-    }
-    else if ( m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_W_RADL || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_N_LP )
-    {
-      m_pocRandomAccess = -MAX_INT; // no need to skip the reordered pictures in IDR, they are decodable.
     }
     else
     {
@@ -2094,7 +2720,240 @@ bool DecLib::isRandomAccessSkipPicture( int& iSkipFrame, int& iPOCLastDisplay )
   return false;
 }
 
+void DecLib::checkNalUnitConstraints( uint32_t naluType )
+{
+  if (m_parameterSetManager.getActiveSPS() != NULL && m_parameterSetManager.getActiveSPS()->getProfileTierLevel() != NULL)
+  {
+    const ConstraintInfo *cInfo = m_parameterSetManager.getActiveSPS()->getProfileTierLevel()->getConstraintInfo();
+    xCheckNalUnitConstraintFlags( cInfo, naluType );
+  }
 
+#if !JVET_Q0117_PARAMETER_SETS_CLEANUP
+  if (m_parameterSetManager.getActiveDPS() != NULL)
+  {
+    const DPS *dps = m_parameterSetManager.getActiveDPS();
+    for (int i=0; i< dps->getNumPTLs(); i++)
+    { 
+      ProfileTierLevel ptl = dps->getProfileTierLevel(i);
+      const ConstraintInfo *cInfo = ptl.getConstraintInfo();
+      xCheckNalUnitConstraintFlags( cInfo, naluType );
+    }
+  }
+#endif
+}
+void DecLib::xCheckNalUnitConstraintFlags( const ConstraintInfo *cInfo, uint32_t naluType )
+{
+  if (cInfo != NULL)
+  {
+    CHECK(cInfo->getNoTrailConstraintFlag() && naluType == NAL_UNIT_CODED_SLICE_TRAIL,
+      "Non-conforming bitstream. no_trail_constraint_flag is equal to 1 but bitstream contains NAL unit of type TRAIL_NUT.");
+    CHECK(cInfo->getNoStsaConstraintFlag() && naluType == NAL_UNIT_CODED_SLICE_STSA,
+      "Non-conforming bitstream. no_stsa_constraint_flag is equal to 1 but bitstream contains NAL unit of type STSA_NUT.");
+    CHECK(cInfo->getNoRaslConstraintFlag() && naluType == NAL_UNIT_CODED_SLICE_RASL,
+      "Non-conforming bitstream. no_rasl_constraint_flag is equal to 1 but bitstream contains NAL unit of type RASL_NUT.");
+    CHECK(cInfo->getNoRadlConstraintFlag() && naluType == NAL_UNIT_CODED_SLICE_RADL,
+      "Non-conforming bitstream. no_radl_constraint_flag is equal to 1 but bitstream contains NAL unit of type RADL_NUT.");
+    CHECK(cInfo->getNoIdrConstraintFlag() && (naluType == NAL_UNIT_CODED_SLICE_IDR_W_RADL),
+      "Non-conforming bitstream. no_idr_constraint_flag is equal to 1 but bitstream contains NAL unit of type IDR_W_RADL.");
+    CHECK(cInfo->getNoIdrConstraintFlag() && (naluType == NAL_UNIT_CODED_SLICE_IDR_N_LP),
+      "Non-conforming bitstream. no_idr_constraint_flag is equal to 1 but bitstream contains NAL unit of type IDR_N_LP.");
+    CHECK(cInfo->getNoCraConstraintFlag() && naluType == NAL_UNIT_CODED_SLICE_CRA,
+      "Non-conforming bitstream. no_cra_constraint_flag is equal to 1 but bitstream contains NAL unit of type CRA_NUT.");
+    CHECK(cInfo->getNoGdrConstraintFlag() && naluType == NAL_UNIT_CODED_SLICE_GDR,
+      "Non-conforming bitstream. no_gdr_constraint_flag is equal to 1 but bitstream contains NAL unit of type GDR_NUT.");
+    CHECK(cInfo->getNoApsConstraintFlag() && naluType == NAL_UNIT_PREFIX_APS,
+      "Non-conforming bitstream. no_aps_constraint_flag is equal to 1 but bitstream contains NAL unit of type APS_PREFIX_NUT.");
+    CHECK(cInfo->getNoApsConstraintFlag() && naluType == NAL_UNIT_SUFFIX_APS,
+      "Non-conforming bitstream. no_aps_constraint_flag is equal to 1 but bitstream contains NAL unit of type APS_SUFFIX_NUT.");
+  }
+}
+#if JVET_P0124_MIXED_NALU
+void DecLib::xCheckMixedNalUnit(Slice* pcSlice, SPS *sps, InputNALUnit &nalu)
+{
+  if (pcSlice->getPPS()->getMixedNaluTypesInPicFlag())
+  {
+    CHECK(pcSlice->getPPS()->getNumSlicesInPic() < 2, "mixed nal unit type picture, but with less than 2 slices");
 
+    const unsigned  ctuRsAddr = pcSlice->getCtuAddrInSlice(0);
+    const unsigned  ctuXPosInCtus = ctuRsAddr % pcSlice->getPPS()->getPicWidthInCtu();
+    const unsigned  ctuYPosInCtus = ctuRsAddr / pcSlice->getPPS()->getPicWidthInCtu();
+    const unsigned  maxCUSize = sps->getMaxCUWidth();
+    Position pos(ctuXPosInCtus*maxCUSize, ctuYPosInCtus*maxCUSize);
+    const SubPic &curSubPic = pcSlice->getPPS()->getSubPicFromPos(pos);
 
+    // check subpicture constraints
+    if ((pcSlice->getNalUnitType() >= NAL_UNIT_CODED_SLICE_IDR_W_RADL) && (pcSlice->getNalUnitType() <= NAL_UNIT_CODED_SLICE_CRA))
+    {
+      CHECK(curSubPic.getTreatedAsPicFlag() != true, "a slice of IDR_W_RADL to CRA_NUT shall have its subpic's sub_pic_treated_as_pic_flag equal to 1");
+    }
+    else
+    {
+      // check reference list constraint
+      if (!m_nalUnitInfo[nalu.m_nuhLayerId].empty())
+      {
+        //find out the closest IRAP nal unit that are in the same layer and in the corresponding subpicture
+        NalUnitInfo *latestIRAPNalUnit = nullptr;
+        int size = (int)m_nalUnitInfo[nalu.m_nuhLayerId].size();
+        int naluIdx;
+        for (naluIdx = size - 1; naluIdx >= 0; naluIdx--)
+        {
+          NalUnitInfo *iterNalu = &m_nalUnitInfo[nalu.m_nuhLayerId][naluIdx];
+          bool isIRAPSlice = iterNalu->m_nalUnitType >= NAL_UNIT_CODED_SLICE_IDR_W_RADL && iterNalu->m_nalUnitType <= NAL_UNIT_CODED_SLICE_CRA;
+          if (isIRAPSlice)
+          {
+            latestIRAPNalUnit = iterNalu;
+            break;
+          }
+        }
+#if JVET_Q0751_MIXED_NAL_UNIT_TYPES
+        if (latestIRAPNalUnit != nullptr && ((latestIRAPNalUnit->m_nalUnitType >= NAL_UNIT_CODED_SLICE_IDR_W_RADL && latestIRAPNalUnit->m_nalUnitType <= NAL_UNIT_CODED_SLICE_IDR_N_LP)
+            || (latestIRAPNalUnit->m_nalUnitType == NAL_UNIT_CODED_SLICE_CRA && pcSlice->getPOC() > latestIRAPNalUnit->m_POC)))
+#else
+        if (latestIRAPNalUnit != nullptr)
+#endif
+        {
+          // clear the nalu unit before the latest IRAP slice
+          m_nalUnitInfo[nalu.m_nuhLayerId].erase(m_nalUnitInfo[nalu.m_nuhLayerId].begin(), m_nalUnitInfo[nalu.m_nuhLayerId].begin() + naluIdx);
+
+          const unsigned  ctuRsAddrIRAP = latestIRAPNalUnit->m_firstCTUinSlice;
+          const unsigned  ctuXPosInCtusIRAP = ctuRsAddrIRAP % pcSlice->getPPS()->getPicWidthInCtu();
+          const unsigned  ctuYPosInCtusIRAP = ctuRsAddrIRAP / pcSlice->getPPS()->getPicWidthInCtu();
+          Position posIRAP(ctuXPosInCtusIRAP*maxCUSize, ctuYPosInCtusIRAP*maxCUSize);
+          bool isInCorrespondingSubpic = curSubPic.isContainingPos(posIRAP);
+          if (isInCorrespondingSubpic)
+          {
+            // check RefPicList[0]
+            for (int refIdx = 0; refIdx < pcSlice->getNumRefIdx(REF_PIC_LIST_0); refIdx++)
+            {
+              int POC = pcSlice->getRefPOC(REF_PIC_LIST_0, refIdx);
+              bool notInPOCAfterIRAP = true;
+              // check all ref pics of the current slice are from poc after the IRAP slice
+              for (auto iterNalu : m_nalUnitInfo[nalu.m_nuhLayerId])
+              {
+                if (POC == iterNalu.m_POC)
+                  notInPOCAfterIRAP = false;
+              }
+              CHECK(notInPOCAfterIRAP, "all reference pictures of a slice after the IRAP picture are from pictures after the IRAP");
+            }
+            // check RefPicList[1]
+            for (int refIdx = 0; refIdx < pcSlice->getNumRefIdx(REF_PIC_LIST_1); refIdx++)
+            {
+              int POC = pcSlice->getRefPOC(REF_PIC_LIST_1, refIdx);
+              bool notInPOCAfterIRAP = true;
+              // check all ref pics of the current slice are from poc after the IRAP slice
+              for (auto iterNalu : m_nalUnitInfo[nalu.m_nuhLayerId])
+              {
+                if (POC == iterNalu.m_POC)
+                  notInPOCAfterIRAP = false;
+              }
+              CHECK(notInPOCAfterIRAP, "all reference pictures of a slice after the IRAP picture are from pictures after the IRAP");
+            }
+          }
+        }
+      }
+    }
+    // if this is the last slice of the picture, check whether the nalu type of the slices meet the nal unit type constraints
+    if (pcSlice->getPPS()->getNumSlicesInPic() == (m_uiSliceSegmentIdx + 1))
+    {
+#if JVET_Q0751_MIXED_NAL_UNIT_TYPES
+      std::set<NalUnitType> firstSet = { NAL_UNIT_CODED_SLICE_STSA, NAL_UNIT_CODED_SLICE_RADL,
+        NAL_UNIT_CODED_SLICE_RASL, NAL_UNIT_CODED_SLICE_IDR_W_RADL, NAL_UNIT_CODED_SLICE_IDR_N_LP, NAL_UNIT_CODED_SLICE_CRA };
+      std::set<NalUnitType> secondSet = { NAL_UNIT_CODED_SLICE_TRAIL, NAL_UNIT_CODED_SLICE_RADL, NAL_UNIT_CODED_SLICE_RASL };
+      bool allNalsOK = true;
+      bool foundNalInOtherSet = false;
+      //if the NAL unit of the current slice is in the first set
+      if (firstSet.find(pcSlice->getNalUnitType()) != firstSet.end())
+      {
+        NalUnitType otherNalType = pcSlice->getNalUnitType();
+        for (int i = 0; i < m_uiSliceSegmentIdx; i++)
+        {
+          Slice* PreSlice = m_pcPic->slices[i];
+          if (PreSlice->getNalUnitType() != pcSlice->getNalUnitType())
+          {
+            foundNalInOtherSet = true;
+            //Set the value of the other NAL unit type the first time a different NAL unit is found
+            if (otherNalType == pcSlice->getNalUnitType())
+            {
+              otherNalType = PreSlice->getNalUnitType();
+            }
+            if (otherNalType != PreSlice->getNalUnitType())
+            {
+              allNalsOK = false;
+            }
+            if (secondSet.find(PreSlice->getNalUnitType()) == secondSet.end())
+            {
+              allNalsOK = false;
+            }
+          }
+        }
+      }
+      if (foundNalInOtherSet == false || allNalsOK == false)
+      {
+        allNalsOK = true;
+        foundNalInOtherSet = false;
+        //if the NAL unit of the current slice is in the second set
+        if (secondSet.find(pcSlice->getNalUnitType()) != secondSet.end())
+        {
+          NalUnitType otherNalType = pcSlice->getNalUnitType();
+          for (int i = 0; i < m_uiSliceSegmentIdx; i++)
+          {
+            Slice* PreSlice = m_pcPic->slices[i];
+            if (PreSlice->getNalUnitType() != pcSlice->getNalUnitType())
+            {
+              foundNalInOtherSet = true;
+              //Set the value of the other NAL unit type the first time a different NAL unit is found
+              if (otherNalType == pcSlice->getNalUnitType())
+              {
+                otherNalType = PreSlice->getNalUnitType();
+              }
+              if (otherNalType != PreSlice->getNalUnitType())
+              {
+                allNalsOK = false;
+              }
+              if (firstSet.find(PreSlice->getNalUnitType()) == firstSet.end())
+              {
+                allNalsOK = false;
+              }
+            }
+          }
+        }
+        CHECK(!allNalsOK || !foundNalInOtherSet, "disallowed mix of nal unit types");
+      }
+#else
+      int num1stSetSlice = 0;
+      int num2ndSetSlice = 0;
+      int num3rdSetSlice = 0;
+      for (int i = 0; i < pcSlice->getPPS()->getNumSlicesInPic(); i++)
+      {
+        NalUnitType naluType = pcSlice->getNalUnitType();
+        if (naluType >= NAL_UNIT_CODED_SLICE_IDR_W_RADL && naluType <= NAL_UNIT_CODED_SLICE_CRA)
+        {
+          num1stSetSlice++;
+        }
+        else if ((naluType >= NAL_UNIT_CODED_SLICE_TRAIL && naluType <= NAL_UNIT_RESERVED_VCL_6) || naluType == NAL_UNIT_CODED_SLICE_GDR)
+        {
+          num2ndSetSlice++;
+        }
+        else
+        {
+          num3rdSetSlice++;
+        }
+      }
+      CHECK((num1stSetSlice + num2ndSetSlice) != pcSlice->getPPS()->getNumSlicesInPic() || num3rdSetSlice != 0, "mixed nal unit picture contain more than two nal unit types");
+#endif
+    }
+  }
+  else // all slices shall have the same nal unit type
+  {
+    bool sameNalUnitType = true;
+    for (int i = 0; i < m_uiSliceSegmentIdx; i++)
+    {
+      Slice *PreSlice = m_pcPic->slices[i];
+      if (PreSlice->getNalUnitType() != pcSlice->getNalUnitType())
+        sameNalUnitType = false;
+    }
+    CHECK(!sameNalUnitType, "mixed_nalu_types_in_pic_flag is zero, but have different nal unit types");
+  }
+}
+#endif
 //! \}

@@ -3,7 +3,7 @@
 * and contributor rights, including patent rights, and no such rights are
 * granted under this license.
 *
-* Copyright (c) 2010-2019, ITU/ISO/IEC
+* Copyright (c) 2010-2020, ITU/ISO/IEC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -35,9 +35,9 @@
 #ifndef __ENCHRD__
 #define __ENCHRD__
 
-#include "Common.h"
-#include "HRD.h"
-#include "Slice.h"
+#include "CommonLib/Common.h"
+#include "CommonLib/HRD.h"
+#include "CommonLib/Slice.h"
 #include "EncCfg.h"
 
 class EncHRD:public HRD

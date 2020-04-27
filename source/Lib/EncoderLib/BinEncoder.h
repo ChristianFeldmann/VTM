@@ -3,7 +3,7 @@
 * and contributor rights, including patent rights, and no such rights are
 * granted under this license.
 *
-* Copyright (c) 2010-2019, ITU/ISO/IEC
+* Copyright (c) 2010-2020, ITU/ISO/IEC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -118,16 +118,10 @@ public:
   virtual void      encodeBinsEP      ( unsigned bins,  unsigned numBins  ) = 0;
   virtual void      encodeRemAbsEP    ( unsigned bins,
                                         unsigned goRicePar,
-                                        bool     useLimitedPrefixLength,
+                                        unsigned cutoff,
                                         int      maxLog2TrDynamicRange    ) = 0;
   virtual void      encodeBinTrm      ( unsigned bin                      ) = 0;
-#if !JVET_O0525_REMOVE_PCM
-  virtual void      encodeBinsPCM     ( unsigned bins,  unsigned numBins  ) = 0;
-#endif
   virtual void      align             ()                                    = 0;
-#if !JVET_O0525_REMOVE_PCM
-  virtual void      pcmAlignBits      ()                                    = 0;
-#endif
 public:
   virtual uint32_t  getNumBins        ()                                    = 0;
   virtual bool      isEncoding        ()                                    = 0;
@@ -187,16 +181,10 @@ public:
   void      encodeBinsEP        ( unsigned bins,  unsigned numBins  );
   void      encodeRemAbsEP      ( unsigned bins,
                                   unsigned goRicePar,
-                                  bool     useLimitedPrefixLength,
+                                  unsigned cutoff,
                                   int      maxLog2TrDynamicRange    );
   void      encodeBinTrm        ( unsigned bin                      );
-#if !JVET_O0525_REMOVE_PCM
-  void      encodeBinsPCM       ( unsigned bins,  unsigned numBins  );
-#endif
   void      align               ();
-#if !JVET_O0525_REMOVE_PCM
-  void      pcmAlignBits        ();
-#endif
   unsigned  getNumWrittenBits   () { return ( m_Bitstream->getNumberOfWrittenBits() + 8 * m_numBufferedBytes + 23 - m_bitsLeft ); }
 public:
   uint32_t  getNumBins          ()                          { return BinCounter::getAll(); }
@@ -259,15 +247,9 @@ public:
   void      encodeBinsEP        ( unsigned bins,  unsigned numBins  ) { m_EstFracBits += BinProbModelBase::estFracBitsEP ( numBins ); }
   void      encodeRemAbsEP      ( unsigned bins,
                                   unsigned goRicePar,
-                                  bool     useLimitedPrefixLength,
+                                  unsigned cutoff,
                                   int      maxLog2TrDynamicRange    );
-#if !JVET_O0525_REMOVE_PCM
-  void      encodeBinsPCM       ( unsigned bins,  unsigned numBins  ) { m_EstFracBits += BinProbModelBase::estFracBitsEP ( numBins ); }
-#endif
   void      align               ();
-#if !JVET_O0525_REMOVE_PCM
-  void      pcmAlignBits        ();
-#endif
 public:
   uint32_t  getNumBins          ()                                      { THROW("Not supported"); return 0; }
   bool      isEncoding          ()                                      { return false; }

@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -58,9 +58,7 @@ enum CodingStatisticsType
   STATS__CABAC_BITS__MERGE_INDEX,
   STATS__CABAC_BITS__MVP_IDX,
   STATS__CABAC_BITS__SPLIT_FLAG,
-#if JVET_O0050_LOCAL_DUAL_TREE
   STATS__CABAC_BITS__MODE_CONSTRAINT_FLAG,
-#endif
   STATS__CABAC_BITS__PART_SIZE,
   STATS__CABAC_BITS__PRED_MODE,
   STATS__CABAC_BITS__INTRA_DIR_ANG,
@@ -102,10 +100,6 @@ enum CodingStatisticsType
   STATS__CABAC_BITS__ALF,
   STATS__CABAC_TRM_BITS,
   STATS__CABAC_FIXED_BITS,
-#if !JVET_O0525_REMOVE_PCM
-  STATS__CABAC_PCM_ALIGN_BITS,
-  STATS__CABAC_PCM_CODE_BITS,
-#endif
   STATS__BYTE_ALIGNMENT_BITS,
   STATS__TRAILING_BITS,
   STATS__EXPLICIT_RDPCM_BITS,
@@ -115,14 +109,22 @@ enum CodingStatisticsType
   STATS__CABAC_BITS__OTHER,
   STATS__CABAC_BITS__INVALID,
   STATS__CABAC_BITS__IMV_FLAG,
-  STATS__CABAC_BITS__GBI_IDX,
+  STATS__CABAC_BITS__BCW_IDX,
   STATS__CABAC_BITS__SBT_MODE,
   STATS__CABAC_BITS__MH_INTRA_FLAG,
+#if !JVET_Q0806
   STATS__CABAC_BITS__TRIANGLE_FLAG,
   STATS__CABAC_BITS__TRIANGLE_INDEX,
+#else
+  STATS__CABAC_BITS__GEO_FLAG,
+  STATS__CABAC_BITS__GEO_INDEX,
+#endif
   STATS__CABAC_BITS__MULTI_REF_LINE,
   STATS__CABAC_BITS__SYMMVD_FLAG,
   STATS__CABAC_BITS__BDPCM_MODE,
+#if JVET_Q0795_CCALF
+  STATS__CABAC_BITS__CROSS_COMPONENT_ALF_BLOCK_LEVEL_IDC,
+#endif
   STATS__TOOL_TOTAL_FRAME,// This is a special case and is not included in the report.
   STATS__TOOL_AFF,
   STATS__TOOL_EMT,
@@ -156,9 +158,7 @@ static inline const char* getName(CodingStatisticsType name)
     "CABAC_BITS__MERGE_INDEX",
     "CABAC_BITS__MVP_IDX",
     "CABAC_BITS__SPLIT_FLAG",
-#if JVET_O0050_LOCAL_DUAL_TREE
     "CABAC_BITS__MODE_CONSTRAINT_FLAG",
-#endif
     "CABAC_BITS__PART_SIZE",
     "CABAC_BITS__PRED_MODE",
     "CABAC_BITS__INTRA_DIR_ANG",
@@ -200,10 +200,6 @@ static inline const char* getName(CodingStatisticsType name)
     "CABAC_BITS__ALF",
     "CABAC_TRM_BITS",
     "CABAC_FIXED_BITS",
-#if !JVET_O0525_REMOVE_PCM
-    "CABAC_PCM_ALIGN_BITS",
-    "CABAC_PCM_CODE_BITS",
-#endif
     "BYTE_ALIGNMENT_BITS",
     "TRAILING_BITS",
     "EXPLICIT_RDPCM_BITS",
@@ -213,14 +209,22 @@ static inline const char* getName(CodingStatisticsType name)
     "CABAC_BITS__OTHER",
     "CABAC_BITS__INVALID",
     "CABAC_BITS__IMV_FLAG",
-    "CABAC_BITS__GBI_IDX",
+    "CABAC_BITS__BCW_IDX",
     "CABAC_BITS__SBT_MODE",
     "CABAC_BITS__MH_INTRA_FLAG",
+#if !JVET_Q0806
     "CABAC_BITS__TRIANGLE_FLAG",
     "CABAC_BITS__TRIANGLE_INDEX",
+#else
+    "CABAC_BITS__GEO_FLAG",
+    "CABAC_BITS__GEO_INDEX",
+#endif
     "CABAC_BITS__MULTI_REF_LINE",
     "CABAC_BITS__SYMMVD_FLAG",
     "CABAC_BITS__BDPCM_MODE",
+#if JVET_Q0795_CCALF
+    "CABAC_BITS__CROSS_COMPONENT_ALF_BLOCK_LEVEL_IDC",
+#endif
     "TOOL_FRAME",
     "TOOL_AFFINE",
     "TOOL_EMT",

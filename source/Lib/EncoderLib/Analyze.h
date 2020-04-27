@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -69,9 +69,7 @@ private:
   uint32_t      m_uiNumPic;
   double    m_dFrmRate; //--CFG_KDY
   double    m_MSEyuvframe[MAX_NUM_COMPONENT]; // sum of MSEs
-#if RPR_CTC_PRINT
   double    m_upscaledPSNR[MAX_NUM_COMPONENT];
-#endif
 #if EXTENSION_360_VIDEO
   TExt360EncAnalyze m_ext360;
 #endif
@@ -85,9 +83,7 @@ public:
   Analyze() { clear(); }
 
   void  addResult( double psnr[MAX_NUM_COMPONENT], double bits, const double MSEyuvframe[MAX_NUM_COMPONENT]
-#if RPR_CTC_PRINT
     , const double upscaledPSNR[MAX_NUM_COMPONENT]
-#endif
     , bool isEncodeLtRef
   )
   {
@@ -98,9 +94,7 @@ public:
     {
       m_dPSNRSum[i] += psnr[i];
       m_MSEyuvframe[i] += MSEyuvframe[i];
-#if RPR_CTC_PRINT
       m_upscaledPSNR[i] += upscaledPSNR[i];
-#endif
     }
 
     m_uiNumPic++;
@@ -138,9 +132,7 @@ public:
     {
       m_dPSNRSum[i] = 0;
       m_MSEyuvframe[i] = 0;
-#if RPR_CTC_PRINT
       m_upscaledPSNR[i] = 0;
-#endif
     }
     m_uiNumPic = 0;
 #if EXTENSION_360_VIDEO
@@ -196,19 +188,11 @@ public:
   }
 
 #if ENABLE_QPA || WCG_WPSNR
-#if RPR_CTC_PRINT
   void    printOut( char cDelim, const ChromaFormat chFmt, const bool printMSEBasedSNR, const bool printSequenceMSE, const bool printHexPsnr, const bool printRprPSNR, const BitDepths &bitDepths, const bool useWPSNR = false
 #if JVET_O0756_CALCULATE_HDRMETRICS
       , const bool printHdrMetrics = false
 #endif
   )
-#else
-  void    printOut ( char cDelim, const ChromaFormat chFmt, const bool printMSEBasedSNR, const bool printSequenceMSE, const bool printHexPsnr, const BitDepths &bitDepths, const bool useWPSNR = false
-#if JVET_O0756_CALCULATE_HDRMETRICS
-      , const bool printHdrMetrics = false
-#endif
-  )
-#endif
 #else
   void    printOut ( char cDelim, const ChromaFormat chFmt, const bool printMSEBasedSNR, const bool printSequenceMSE, const bool printHexPsnr, const BitDepths &bitDepths
 #if JVET_O0756_CALCULATE_HDRMETRICS
@@ -541,18 +525,18 @@ public:
               for (int i = 0; i < 1; i++)
               {
                 dDeltaE[i] = getDeltaE() / (double)getNumPic();
-                
+
                 copy(reinterpret_cast<uint8_t *>(&dDeltaE[i]),
                      reinterpret_cast<uint8_t *>(&dDeltaE[i]) + sizeof(dDeltaE[i]),
                      reinterpret_cast<uint8_t *>(&xDeltaE[i]));
               }
-              
+
               double dPsnrL[MAX_NUM_COMPONENT];
               uint64_t xPsnrL[MAX_NUM_COMPONENT];
               for (int i = 0; i < 1; i++)
               {
                 dPsnrL[i] = getPsnrL() / (double)getNumPic();
-                
+
                 copy(reinterpret_cast<uint8_t *>(&dPsnrL[i]),
                      reinterpret_cast<uint8_t *>(&dPsnrL[i]) + sizeof(dPsnrL[i]),
                      reinterpret_cast<uint8_t *>(&xPsnrL[i]));
@@ -572,7 +556,6 @@ public:
             {
               msg( e_msg_level, "\n");
             }
-#if RPR_CTC_PRINT
             if( printRprPSNR )
             {
               double psnr[MAX_NUM_COMPONENT];
@@ -601,7 +584,6 @@ public:
                 m_upscaledPSNR[COMPONENT_Cb] / (double)getNumPic(),
                 m_upscaledPSNR[COMPONENT_Cr] / (double)getNumPic());
             }
-#endif
           }
         }
         break;

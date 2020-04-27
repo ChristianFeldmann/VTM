@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -92,6 +92,9 @@ private:
   uint32_t                    m_uiSliceSegmentIdx;
   Ctx                     m_entropyCodingSyncContextState;      ///< context storage for state of contexts at the wavefront/WPP/entropy-coding-sync second CTU of tile-row
   SliceType               m_encCABACTableIdx;
+#if JVET_Q0501_PALETTE_WPP_INIT_ABOVECTU
+  PLTBuf                  m_palettePredictorSyncState;
+#endif
 #if SHARP_LUMA_DELTA_QP || ENABLE_QPA_SUB_CTU
   int                     m_gopID;
 #endif
@@ -104,11 +107,6 @@ public:
 #endif
   void    setUpLambda( Slice* slice, const double dLambda, int iQP );
 
-private:
-  void    calculateBoundingCtuTsAddrForSlice( uint32_t &startCtuTSAddrSlice, uint32_t &boundingCtuTSAddrSlice, bool &haveReachedTileBoundary, Picture* pcPic, const int sliceMode, const int sliceArgument );
-
-
-public:
 #if ENABLE_QPA
   int                     m_adaptedLumaQP;
 
@@ -134,17 +132,14 @@ public:
   void    calCostSliceI       ( Picture* pcPic );
 
   void    encodeSlice         ( Picture* pcPic, OutputBitstream* pcSubstreams, uint32_t &numBinsCoded );
-#if ENABLE_WPP_PARALLELISM
-  static
-#endif
-  void    encodeCtus          ( Picture* pcPic, const bool bCompressEntireSlice, const bool bFastDeltaQP, uint32_t startCtuTsAddr, uint32_t boundingCtuTsAddr, EncLib* pcEncLib );
+  void    encodeCtus          ( Picture* pcPic, const bool bCompressEntireSlice, const bool bFastDeltaQP, EncLib* pcEncLib );
   void    checkDisFracMmvd    ( Picture* pcPic, uint32_t startCtuTsAddr, uint32_t boundingCtuTsAddr );
+  void    setJointCbCrModes( CodingStructure& cs, const Position topLeftLuma, const Size sizeLuma );
 
   // misc. functions
   void    setSearchRange      ( Slice* pcSlice  );                                  ///< set ME range adaptively
 
   EncCu*  getCUEncoder        ()                    { return m_pcCuEncoder; }                        ///< CU encoder
-  void    xDetermineStartAndBoundingCtuTsAddr  ( uint32_t& startCtuTsAddr, uint32_t& boundingCtuTsAddr, Picture* pcPic );
   uint32_t    getSliceSegmentIdx  ()                    { return m_uiSliceSegmentIdx;       }
   void    setSliceSegmentIdx  (uint32_t i)              { m_uiSliceSegmentIdx = i;          }
 

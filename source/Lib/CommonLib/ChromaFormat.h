@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -115,12 +115,6 @@ static inline int getTransformShift(const int channelBitDepth, const Size size, 
 
 
 //------------------------------------------------
-#if !JVET_O0650_SIGNAL_CHROMAQP_MAPPING_TABLE
-static inline int getScaledChromaQP(int unscaledChromaQP, const ChromaFormat chFmt)
-{
-  return g_aucChromaScale[chFmt][Clip3(0, (chromaQPMappingTableSize - 1), unscaledChromaQP)];
-}
-#endif
 
 //======================================================================================================================
 //Scaling lists  =======================================================================================================
@@ -128,11 +122,7 @@ static inline int getScaledChromaQP(int unscaledChromaQP, const ChromaFormat chF
 
 static inline int getScalingListType(const PredMode predMode, const ComponentID compID)
 {
-#if JVET_O0267_IBC_SCALING_LIST
   return ((predMode == MODE_INTRA) ? 0 : MAX_NUM_COMPONENT) + MAP_CHROMA(compID);
-#else
-  return ((predMode != MODE_INTER) ? 0 : MAX_NUM_COMPONENT) + MAP_CHROMA(compID);
-#endif
 }
 
 #endif

@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -126,26 +126,12 @@ void readNalUnitHeader(InputNALUnit& nalu)
 {
   InputBitstream& bs = nalu.getBitstream();
 
-#if JVET_O0179
   nalu.m_forbiddenZeroBit   = bs.read(1);                 // forbidden zero bit
   nalu.m_nuhReservedZeroBit = bs.read(1);                 // nuh_reserved_zero_bit
   nalu.m_nuhLayerId         = bs.read(6);                 // nuh_layer_id
+  CHECK(nalu.m_nuhLayerId > 55, "The value of nuh_layer_id shall be in the range of 0 to 55, inclusive");
   nalu.m_nalUnitType        = (NalUnitType) bs.read(5);   // nal_unit_type
   nalu.m_temporalId         = bs.read(3) - 1;             // nuh_temporal_id_plus1
-#else
-  bool zeroTidRequiredFlag = bs.read(1);       // zero_tid_required_flag
-  nalu.m_temporalId        = bs.read(3) - 1;   // nuh_temporal_id_plus1
-  // When zero_tid_required_flag is equal to 1, the value of nuh_temporal_id_plus1 shall be equal to 1.
-  CHECK((zeroTidRequiredFlag == 1) && (nalu.m_temporalId != 0), "Temporal ID is not '0' when zero tid is required.");
-  uint32_t nalUnitTypeLsb = bs.read(4);             // nal_unit_type_lsb
-  nalu.m_nalUnitType = (NalUnitType) ((zeroTidRequiredFlag << 4) + nalUnitTypeLsb);
-  nalu.m_nuhLayerId = bs.read(7);                     // nuh_layer_id
-  CHECK (nalu.m_nuhLayerId == 0, "nuh_layer_id_plus1 must be greater than zero");
-  nalu.m_nuhLayerId--;
-  CHECK(nalu.m_nuhLayerId > 125, "Layer ID out of range");
-  uint32_t nuh_reserved_zero_bit = bs.read(1);        // nuh_reserved_zero_bit
-  CHECK(nuh_reserved_zero_bit != 0, "Reserved zero bit is not '0'");
-#endif
 
 #if RExt__DECODER_DEBUG_BIT_STATISTICS
   CodingStatistics::IncrementStatisticEP(STATS__NAL_UNIT_HEADER_BITS, 1+3+4+7+1, 0);
@@ -160,17 +146,11 @@ void readNalUnitHeader(InputNALUnit& nalu)
   {
     if ( nalu.m_temporalId )
     {
-#if !JVET_O0179
-      CHECK(
-           (uint32_t)nalu.m_nalUnitType >= 16
-        && (uint32_t)nalu.m_nalUnitType <= 31
-            , "Invalid NAL type" );
-#endif
     }
     else
     {
       CHECK(nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_STSA
-         , "Invalid NAL type");
+        , "When NAL unit type is equal to STSA_NUT, TemporalId shall not be equal to 0"); 
     }
   }
 }
@@ -187,4 +167,12 @@ void read(InputNALUnit& nalu)
   bitstream.resetToStart();
   readNalUnitHeader(nalu);
 }
+#if JVET_Q0775_PH_IN_SH
+bool checkPictureHeaderInSliceHeaderFlag(InputNALUnit& nalu)
+{
+  InputBitstream& bitstream = nalu.getBitstream();
+  CHECK(bitstream.getByteLocation() != 2, "The picture_header_in_slice_header_flag is the first bit after the NAL unit header");
+  return (bool)bitstream.read(1);
+}
+#endif
 //! \}

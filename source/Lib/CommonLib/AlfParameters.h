@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -48,8 +48,16 @@ enum AlfFilterType
 {
   ALF_FILTER_5,
   ALF_FILTER_7,
+#if JVET_Q0795_CCALF
+  CC_ALF,
+#endif
   ALF_NUM_OF_FILTER_TYPES
 };
+
+
+#if JVET_Q0795_CCALF
+static const int size_CC_ALF = -1;
+#endif
 
 struct AlfFilterShape
 {
@@ -73,13 +81,6 @@ struct AlfFilterShape
               2, 2, 2,
            2, 2, 1, 1
       };
-#if !JVET_O0216_ALF_COEFF_EG3 || !JVET_O0064_SIMP_ALF_CLIP_CODING
-      golombIdx = {
-                 0,
-              0, 1, 0,
-           0, 1, 2, 2
-      };
-#endif
 
       filterType = ALF_FILTER_5;
     }
@@ -101,17 +102,19 @@ struct AlfFilterShape
             2,  2,  2,  2,  2,
         2,  2,  2,  1,  1
       };
-#if !JVET_O0216_ALF_COEFF_EG3 || !JVET_O0064_SIMP_ALF_CLIP_CODING
-      golombIdx = {
-                    0,
-                 0, 1, 0,
-              0, 1, 2, 1, 0,
-           0, 1, 2, 3, 3
-      };
-#endif
 
       filterType = ALF_FILTER_7;
     }
+#if JVET_Q0795_CCALF
+    else if (size == size_CC_ALF)
+    {
+      size = 4;
+      filterLength = 8;
+      numCoeff = 8;
+      filterSize = 8;
+      filterType   = CC_ALF;
+    }
+#endif
     else
     {
       filterType = ALF_NUM_OF_FILTER_TYPES;
@@ -125,46 +128,27 @@ struct AlfFilterShape
   int filterSize;
   std::vector<int> pattern;
   std::vector<int> weights;
-#if !JVET_O0216_ALF_COEFF_EG3 || !JVET_O0064_SIMP_ALF_CLIP_CODING
-  std::vector<int> golombIdx;
-#endif
 };
 
 struct AlfParam
 {
   bool                         enabledFlag[MAX_NUM_COMPONENT];                          // alf_slice_enable_flag, alf_chroma_idc
-#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
-  bool                         nonLinearFlag[MAX_NUM_CHANNEL_TYPE][MAX_NUM_ALF_ALTERNATIVES_CHROMA]; // alf_[luma/chroma]_clip_flag
+#if JVET_Q0249_ALF_CHROMA_CLIPFLAG
+  bool                         nonLinearFlag[MAX_NUM_CHANNEL_TYPE];                     // alf_[luma/chroma]_clip_flag
 #else
-  bool                         nonLinearFlag[MAX_NUM_CHANNEL_TYPE];                     // alf_nonlinear_enable_flag[Luma/Chroma]
+  bool                         nonLinearFlag[MAX_NUM_CHANNEL_TYPE][MAX_NUM_ALF_ALTERNATIVES_CHROMA]; // alf_[luma/chroma]_clip_flag
 #endif
   short                        lumaCoeff[MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF]; // alf_coeff_luma_delta[i][j]
   short                        lumaClipp[MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF]; // alf_clipp_luma_[i][j]
-#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
   int                          numAlternativesChroma;                                                  // alf_chroma_num_alts_minus_one + 1
   short                        chromaCoeff[MAX_NUM_ALF_ALTERNATIVES_CHROMA][MAX_NUM_ALF_CHROMA_COEFF]; // alf_coeff_chroma[i]
   short                        chromaClipp[MAX_NUM_ALF_ALTERNATIVES_CHROMA][MAX_NUM_ALF_CHROMA_COEFF]; // alf_clipp_chroma[i]
-#else
-  short                        chromaCoeff[MAX_NUM_ALF_CHROMA_COEFF];                   // alf_coeff_chroma[i]
-  short                        chromaClipp[MAX_NUM_ALF_CHROMA_COEFF];                   // alf_clipp_chroma[i]
-#endif
   short                        filterCoeffDeltaIdx[MAX_NUM_ALF_CLASSES];                // filter_coeff_delta[i]
   bool                         alfLumaCoeffFlag[MAX_NUM_ALF_CLASSES];                   // alf_luma_coeff_flag[i]
   int                          numLumaFilters;                                          // number_of_filters_minus1 + 1
   bool                         alfLumaCoeffDeltaFlag;                                   // alf_luma_coeff_delta_flag
-#if !JVET_O0669_REMOVE_ALF_COEFF_PRED
-  bool                         alfLumaCoeffDeltaPredictionFlag;                         // alf_luma_coeff_delta_prediction_flag
-#endif
   std::vector<AlfFilterShape>* filterShapes;
-#if !JVET_O0245_VPS_DPS_APS
-  int                          tLayer;
-#endif
   bool                         newFilterFlag[MAX_NUM_CHANNEL_TYPE];
-#if !JVET_O0669_REMOVE_ALF_COEFF_PRED
-  int                          fixedFilterPattern;
-  int                          fixedFilterIdx[MAX_NUM_ALF_CLASSES];
-  int                          fixedFilterSetIndex;
-#endif
 
   AlfParam()
   {
@@ -177,27 +161,14 @@ struct AlfParam
     std::memset( nonLinearFlag, false, sizeof( nonLinearFlag ) );
     std::memset( lumaCoeff, 0, sizeof( lumaCoeff ) );
     std::memset( lumaClipp, 0, sizeof( lumaClipp ) );
-#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
     numAlternativesChroma = 1;
-#endif
     std::memset( chromaCoeff, 0, sizeof( chromaCoeff ) );
     std::memset( chromaClipp, 0, sizeof( chromaClipp ) );
     std::memset( filterCoeffDeltaIdx, 0, sizeof( filterCoeffDeltaIdx ) );
     std::memset( alfLumaCoeffFlag, true, sizeof( alfLumaCoeffFlag ) );
     numLumaFilters = 1;
     alfLumaCoeffDeltaFlag = false;
-#if !JVET_O0669_REMOVE_ALF_COEFF_PRED
-    alfLumaCoeffDeltaPredictionFlag = false;
-#endif
-#if !JVET_O0245_VPS_DPS_APS
-    tLayer = 0;
-#endif
     memset(newFilterFlag, 0, sizeof(newFilterFlag));
-#if !JVET_O0669_REMOVE_ALF_COEFF_PRED
-    fixedFilterPattern = 0;
-    std::memset(fixedFilterIdx, 0, sizeof(fixedFilterIdx));
-    fixedFilterSetIndex = 0;
-#endif
   }
 
   const AlfParam& operator = ( const AlfParam& src )
@@ -206,32 +177,18 @@ struct AlfParam
     std::memcpy( nonLinearFlag, src.nonLinearFlag, sizeof( nonLinearFlag ) );
     std::memcpy( lumaCoeff, src.lumaCoeff, sizeof( lumaCoeff ) );
     std::memcpy( lumaClipp, src.lumaClipp, sizeof( lumaClipp ) );
-#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
     numAlternativesChroma = src.numAlternativesChroma;
-#endif
     std::memcpy( chromaCoeff, src.chromaCoeff, sizeof( chromaCoeff ) );
     std::memcpy( chromaClipp, src.chromaClipp, sizeof( chromaClipp ) );
     std::memcpy( filterCoeffDeltaIdx, src.filterCoeffDeltaIdx, sizeof( filterCoeffDeltaIdx ) );
     std::memcpy( alfLumaCoeffFlag, src.alfLumaCoeffFlag, sizeof( alfLumaCoeffFlag ) );
     numLumaFilters = src.numLumaFilters;
     alfLumaCoeffDeltaFlag = src.alfLumaCoeffDeltaFlag;
-#if !JVET_O0669_REMOVE_ALF_COEFF_PRED
-    alfLumaCoeffDeltaPredictionFlag = src.alfLumaCoeffDeltaPredictionFlag;
-#endif
     filterShapes = src.filterShapes;
-#if !JVET_O0245_VPS_DPS_APS
-    tLayer = src.tLayer;
-#endif
     std::memcpy(newFilterFlag, src.newFilterFlag, sizeof(newFilterFlag));
-#if !JVET_O0669_REMOVE_ALF_COEFF_PRED
-    fixedFilterPattern = src.fixedFilterPattern;
-    std::memcpy(fixedFilterIdx, src.fixedFilterIdx, sizeof(fixedFilterIdx));
-    fixedFilterSetIndex = src.fixedFilterSetIndex;
-#endif
     return *this;
   }
 
-#if JVET_O0245_VPS_DPS_APS
   bool operator==( const AlfParam& other )
   {
     if( memcmp( enabledFlag, other.enabledFlag, sizeof( enabledFlag ) ) )
@@ -269,7 +226,7 @@ struct AlfParam
     if( memcmp( newFilterFlag, other.newFilterFlag, sizeof( newFilterFlag ) ) )
     {
       return false;
-    }    
+    }
     if( numAlternativesChroma != other.numAlternativesChroma )
     {
       return false;
@@ -290,9 +247,45 @@ struct AlfParam
   {
     return !( *this == other );
   }
-#endif
 };
 
+#if JVET_Q0795_CCALF
+struct CcAlfFilterParam
+{
+  bool    ccAlfFilterEnabled[2];
+  bool    ccAlfFilterIdxEnabled[2][MAX_NUM_CC_ALF_FILTERS];
+  uint8_t ccAlfFilterCount[2];
+  short   ccAlfCoeff[2][MAX_NUM_CC_ALF_FILTERS][MAX_NUM_CC_ALF_CHROMA_COEFF];
+  int     newCcAlfFilter[2];
+  int     numberValidComponents;
+  CcAlfFilterParam()
+  {
+    reset();
+  }
+  void reset()
+  {
+    std::memset( ccAlfFilterEnabled, false, sizeof( ccAlfFilterEnabled ) );
+    std::memset( ccAlfFilterIdxEnabled, false, sizeof( ccAlfFilterIdxEnabled ) );
+    std::memset( ccAlfCoeff, 0, sizeof( ccAlfCoeff ) );
+    ccAlfFilterCount[0] = ccAlfFilterCount[1] = MAX_NUM_CC_ALF_FILTERS;
+    numberValidComponents = 3;
+    newCcAlfFilter[0] = newCcAlfFilter[1] = 0;
+  }
+  const CcAlfFilterParam& operator = ( const CcAlfFilterParam& src )
+  {
+    std::memcpy( ccAlfFilterEnabled, src.ccAlfFilterEnabled, sizeof( ccAlfFilterEnabled ) );
+    std::memcpy( ccAlfFilterIdxEnabled, src.ccAlfFilterIdxEnabled, sizeof( ccAlfFilterIdxEnabled ) );
+    std::memcpy( ccAlfCoeff, src.ccAlfCoeff, sizeof( ccAlfCoeff ) );
+    ccAlfFilterCount[0] = src.ccAlfFilterCount[0];
+    ccAlfFilterCount[1] = src.ccAlfFilterCount[1];
+    numberValidComponents = src.numberValidComponents;
+    newCcAlfFilter[0] = src.newCcAlfFilter[0];
+    newCcAlfFilter[1] = src.newCcAlfFilter[1];
+
+    return *this;
+  }
+};
+#endif
 //! \}
 
 #endif  // end of #ifndef  __ALFPARAMETERS__

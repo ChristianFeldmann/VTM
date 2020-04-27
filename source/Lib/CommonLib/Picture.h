@@ -3,7 +3,7 @@
 * and contributor rights, including patent rights, and no such rights are
 * granted under this license.
 *
-* Copyright (c) 2010-2019, ITU/ISO/IEC
+* Copyright (c) 2010-2020, ITU/ISO/IEC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -50,15 +50,7 @@
 #include "MCTS.h"
 #include <deque>
 
-#if JVET_O1164_RPR
-#include "CommonLib/InterpolationFilter.h"
-#endif
-
-#if ENABLE_WPP_PARALLELISM || ENABLE_SPLIT_PARALLELISM
-#if ENABLE_WPP_PARALLELISM
-#include <mutex>
-class SyncObj;
-#endif
+#if ENABLE_SPLIT_PARALLELISM
 
 #define CURR_THREAD_ID -1
 
@@ -78,34 +70,9 @@ public:
   void     setSplitThreadId( const int tId = CURR_THREAD_ID );
   unsigned getNumSplitThreads() const { return m_numSplitThreads; };
 #endif
-#if ENABLE_WPP_PARALLELISM
-  unsigned getWppDataId  ( int lId = CURR_THREAD_ID ) const;
-  unsigned getWppThreadId() const;
-  void     setWppThreadId( const int tId = CURR_THREAD_ID );
-#endif
   unsigned getDataId     () const;
   bool init              ( const int ctuYsize, const int ctuXsize, const int numWppThreadsRunning, const int numWppExtraLines, const int numSplitThreads );
   int  getNumPicInstances() const;
-#if ENABLE_WPP_PARALLELISM
-  void setReady          ( const int ctuPosX, const int ctuPosY );
-  void wait              ( const int ctuPosX, const int ctuPosY );
-
-private:
-  bool getNextCtu( Position& pos, int ctuLine, int offset );
-
-private:
-  int m_firstNonFinishedLine;
-  int m_numWppThreads;
-  int m_numWppThreadsRunning;
-  int m_numWppDataInstances;
-  int m_ctuYsize;
-  int m_ctuXsize;
-
-  std::vector<int>         m_LineDone;
-  std::vector<bool>        m_LineProc;
-  std::mutex               m_mutex;
-  std::vector<SyncObj*>    m_SyncObjs;
-#endif
 #if ENABLE_SPLIT_PARALLELISM
 
   int   m_numSplitThreads;
@@ -120,77 +87,6 @@ class AQpLayer;
 typedef std::list<SEI*> SEIMessages;
 
 
-class Brick
-{
-private:
-  uint32_t      m_widthInCtus;
-  uint32_t      m_heightInCtus;
-  uint32_t      m_colBd;
-  uint32_t      m_rowBd;
-  uint32_t      m_firstCtuRsAddr;
-
-public:
-  Brick();
-  virtual ~Brick();
-
-  void      setWidthInCtus         ( uint32_t i )            { m_widthInCtus = i; }
-  uint32_t  getWidthInCtus         () const                  { return m_widthInCtus; }
-  void      setHeightInCtus        ( uint32_t i )            { m_heightInCtus = i; }
-  uint32_t  getHeightInCtus        () const                  { return m_heightInCtus; }
-  void      setColBd  ( uint32_t i )                         { m_colBd = i; }
-  uint32_t  getColBd  () const                               { return m_colBd; }
-  void      setRowBd ( uint32_t i )                          { m_rowBd = i; }
-  uint32_t  getRowBd () const                                { return m_rowBd; }
-
-  void      setFirstCtuRsAddr      ( uint32_t i )            { m_firstCtuRsAddr = i; }
-  uint32_t  getFirstCtuRsAddr      () const                  { return m_firstCtuRsAddr; }
-};
-
-
-struct BrickMap
-{
-  BrickMap();
-
-  void create( const SPS& sps, const PPS& pps );
-  void destroy();
-
-  uint32_t getBrickIdxRsMap( uint32_t ctuRsAddr )       const { return *(brickIdxRsMap + ctuRsAddr); }
-  uint32_t getBrickIdxRsMap( const Position& pos )      const { return getBrickIdxRsMap( ( pos.x / pcv->maxCUWidth ) + ( pos.y / pcv->maxCUHeight ) * pcv->widthInCtus ); };
-
-  uint32_t getBrickIdxBsMap( uint32_t ctuRsAddr )       const { return *(brickIdxBsMap + ctuRsAddr); }
-  uint32_t getBrickIdxBsMap( const Position& pos )      const { return getBrickIdxBsMap( ( pos.x / pcv->maxCUWidth ) + ( pos.y / pcv->maxCUHeight ) * pcv->widthInCtus ); };
-
-  uint32_t getCtuBsToRsAddrMap( uint32_t ctuTsAddr ) const { return *(ctuBsToRsAddrMap + (ctuTsAddr>=pcv->sizeInCtus ? pcv->sizeInCtus : ctuTsAddr)); }
-  uint32_t getCtuRsToBsAddrMap( uint32_t ctuRsAddr ) const { return *(ctuRsToBsAddrMap + (ctuRsAddr>=pcv->sizeInCtus ? pcv->sizeInCtus : ctuRsAddr)); }
-
-  uint32_t getSubstreamForCtuAddr(const uint32_t ctuAddr, const bool addressInRaster, Slice *slice) const;
-
-#if JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
-  int     getTopLeftBrickIdx(uint32_t val) const                    { return  m_topLeftBrickIdx[val]; }
-  void    setTopLeftBrickIdx(const std::vector<int>& val)           { m_topLeftBrickIdx = val; }
-  int     getBottomRightBrickIdx(uint32_t val) const                { return  m_bottomRightBrickIdx[val]; }
-  void    setBottomRightBrickIdx(const std::vector<int>& val)       { m_bottomRightBrickIdx = val; }
-#endif
-
-  const PreCalcValues* pcv;
-  std::vector<Brick> bricks;
-
-  uint32_t  numTiles;
-  uint32_t  numTileColumns;
-  uint32_t  numTileRows;
-  uint32_t* brickIdxRsMap;
-  uint32_t* brickIdxBsMap;
-  uint32_t* ctuBsToRsAddrMap;
-  uint32_t* ctuRsToBsAddrMap;
-
-#if JVET_O0143_BOTTOM_RIGHT_BRICK_IDX_DELTA
-  std::vector<int> m_topLeftBrickIdx;
-  std::vector<int> m_bottomRightBrickIdx;
-#endif
-
-  void initBrickMap( const SPS& sps, const PPS& pps );
-  void initCtuBsRsAddrMap();
-};
 
 #if ENABLE_SPLIT_PARALLELISM
 #define M_BUFS(JID,PID) m_bufs[JID][PID]
@@ -203,7 +99,7 @@ struct Picture : public UnitArea
   uint32_t margin;
   Picture();
 
-  void create(const ChromaFormat &_chromaFormat, const Size &size, const unsigned _maxCUSize, const unsigned margin, const bool bDecoder);
+  void create( const ChromaFormat &_chromaFormat, const Size &size, const unsigned _maxCUSize, const unsigned margin, const bool bDecoder, const int layerId );
   void destroy();
 
   void createTempBuffers( const unsigned _maxCUSize );
@@ -249,13 +145,15 @@ struct Picture : public UnitArea
   const CPelUnitBuf getBuf(const UnitArea &unit,     const PictureType &type) const;
 
   void extendPicBorder();
-#if JVET_O0299_APS_SCALINGLIST
-  void finalInit( const SPS& sps, const PPS& pps, APS** alfApss, APS* lmcsAps, APS* scalingListAps );
-#else
-  void finalInit(const SPS& sps, const PPS& pps, APS** alfApss, APS* lmcsAps);
-#endif
+  void finalInit( const VPS* vps, const SPS& sps, const PPS& pps, PicHeader *picHeader, APS** alfApss, APS* lmcsAps, APS* scalingListAps );
 
   int  getPOC()                               const { return poc; }
+#if JVET_P0978_RPL_RESTRICTIONS
+  int  getDecodingOrderNumber()               const { return m_decodingOrderNumber; }
+  void setDecodingOrderNumber(const int val)        { m_decodingOrderNumber = val;  }
+  NalUnitType getPictureType()                const { return m_pictureType;         }
+  void setPictureType(const NalUnitType val)        { m_pictureType = val;          }
+#endif
   void setBorderExtension( bool bFlag)              { m_bIsBorderExtended = bFlag;}
   Pel* getOrigin( const PictureType &type, const ComponentID compID ) const;
 
@@ -263,17 +161,42 @@ struct Picture : public UnitArea
   void          setSpliceIdx(uint32_t idx, int poc) { m_spliceIdx[idx] = poc; }
   void          createSpliceIdx(int nums);
   bool          getSpliceFull();
-#if JVET_O1164_RPR
-  static void   sampleRateConv( const Pel* orgSrc, SizeType orgWidth, SizeType orgHeight, SizeType orgStride, Pel* scaledSrc, SizeType scaledWidth, SizeType scaledHeight, SizeType paddedWidth, SizeType paddedHeight, SizeType scaledStride, const int bitDepth, const bool useLumaFilter, const bool downsampling = false );
+  static void   sampleRateConv( const std::pair<int, int> scalingRatio, const std::pair<int, int> compScale,
+                                const CPelBuf& beforeScale, const int beforeScaleLeftOffset, const int beforeScaleTopOffset,
+                                const PelBuf& afterScale, const int afterScaleLeftOffset, const int afterScaleTopOffset,
+                                const int bitDepth, const bool useLumaFilter, const bool downsampling,
+                                const bool horCollocatedPositionFlag, const bool verCollocatedPositionFlag );
 
-#if RPR_CONF_WINDOW
-  static void   rescalePicture(const CPelUnitBuf& beforeScaling, const Window& confBefore, const PelUnitBuf& afterScaling, const Window& confAfter, const ChromaFormat chromaFormatIDC, const BitDepths& bitDepths, const bool useLumaFilter, const bool downsampling = false);
-#else
-  static void   rescalePicture(const CPelUnitBuf& beforeScaling, const PelUnitBuf& afterScaling, const ChromaFormat chromaFormatIDC, const BitDepths& bitDepths, const bool useLumaFilter, const bool downsampling = false);
-#endif
+  static void   rescalePicture( const std::pair<int, int> scalingRatio, 
+                                const CPelUnitBuf& beforeScaling, const Window& scalingWindowBefore, 
+                                const PelUnitBuf& afterScaling, const Window& scalingWindowAfter,
+                                const ChromaFormat chromaFormatIDC, const BitDepths& bitDepths, const bool useLumaFilter, const bool downsampling,
+                                const bool horCollocatedChromaFlag, const bool verCollocatedChromaFlag );
+
+private:
+  Window        m_conformanceWindow;
+  Window        m_scalingWindow;
+#if JVET_P0978_RPL_RESTRICTIONS
+  int           m_decodingOrderNumber;
+  NalUnitType   m_pictureType;
 #endif
 
 public:
+#if JVET_O1143_MV_ACROSS_SUBPIC_BOUNDARY  
+  bool m_isSubPicBorderSaved;
+
+  PelStorage m_bufSubPicAbove;
+  PelStorage m_bufSubPicBelow;
+  PelStorage m_bufSubPicLeft;
+  PelStorage m_bufSubPicRight;
+
+  void    saveSubPicBorder(int POC, int subPicX0, int subPicY0, int subPicWidth, int subPicHeight);
+  void  extendSubPicBorder(int POC, int subPicX0, int subPicY0, int subPicWidth, int subPicHeight);
+  void restoreSubPicBorder(int POC, int subPicX0, int subPicY0, int subPicWidth, int subPicHeight);
+
+  bool getSubPicSaved()          { return m_isSubPicBorderSaved; }
+  void setSubPicSaved(bool bVal) { m_isSubPicBorderSaved = bVal; }
+#endif
   bool m_bIsBorderExtended;
   bool referenced;
   bool reconstructed;
@@ -283,29 +206,26 @@ public:
   bool topField;
   bool fieldPic;
   int  m_prevQP[MAX_NUM_CHANNEL_TYPE];
-#if JVET_N0494_DRAP
   bool precedingDRAP; // preceding a DRAP picture in decoding order
-#endif
 
   int  poc;
   uint32_t layer;
   uint32_t depth;
+  int      layerId;
+
+  bool subLayerNonReferencePictureDueToSTSA;
 
   int* m_spliceIdx;
   int  m_ctuNums;
 
+  bool interLayerRefPicFlag;
+
 #if ENABLE_SPLIT_PARALLELISM
-#if ENABLE_WPP_PARALLELISM
-  PelStorage m_bufs[( PARL_SPLIT_MAX_NUM_JOBS * PARL_WPP_MAX_NUM_THREADS )][NUM_PIC_TYPES];
-#else
   PelStorage m_bufs[PARL_SPLIT_MAX_NUM_JOBS][NUM_PIC_TYPES];
-#endif
 #else
   PelStorage m_bufs[NUM_PIC_TYPES];
 #endif
-#if JVET_O1164_RPR
   const Picture*           unscaledPic;
-#endif
 
   TComHash           m_hashMap;
   TComHash*          getHashMap() { return &m_hashMap; }
@@ -316,11 +236,25 @@ public:
   std::deque<Slice*> slices;
   SEIMessages        SEIs;
 
+  uint32_t           getPicWidthInLumaSamples() const                                { return  getRecoBuf( COMPONENT_Y ).width; }
+  uint32_t           getPicHeightInLumaSamples() const                               { return  getRecoBuf( COMPONENT_Y ).height; }
+  Window&            getConformanceWindow()                                          { return  m_conformanceWindow; }
+  const Window&      getConformanceWindow() const                                    { return  m_conformanceWindow; }
+  Window&            getScalingWindow()                                              { return  m_scalingWindow; }
+  const Window&      getScalingWindow()                                        const { return  m_scalingWindow; }
+#if JVET_Q0487_SCALING_WINDOW_ISSUES
+  bool               isRefScaled( const PPS* pps ) const                             { return  unscaledPic->getPicWidthInLumaSamples()    != pps->getPicWidthInLumaSamples()                ||
+                                                                                               unscaledPic->getPicHeightInLumaSamples()   != pps->getPicHeightInLumaSamples()               ||
+                                                                                               getScalingWindow().getWindowLeftOffset()   != pps->getScalingWindow().getWindowLeftOffset()  ||
+                                                                                               getScalingWindow().getWindowRightOffset()  != pps->getScalingWindow().getWindowRightOffset() ||
+                                                                                               getScalingWindow().getWindowTopOffset()    != pps->getScalingWindow().getWindowTopOffset()   ||
+                                                                                               getScalingWindow().getWindowBottomOffset() != pps->getScalingWindow().getWindowBottomOffset(); }
+#endif
+
   void         allocateNewSlice();
   Slice        *swapSliceObject(Slice * p, uint32_t i);
   void         clearSliceBuffer();
 
-  BrickMap*     brickMap;
   MCTSInfo     mctsInfo;
   std::vector<AQpLayer*> aqlayer;
 
@@ -332,11 +266,8 @@ private:
 #if ENABLE_SPLIT_PARALLELISM
 public:
   void finishParallelPart   ( const UnitArea& ctuArea );
-#if ENABLE_WPP_PARALLELISM
-  void finishCtuPart        ( const UnitArea& ctuArea );
 #endif
-#endif
-#if ENABLE_WPP_PARALLELISM || ENABLE_SPLIT_PARALLELISM
+#if ENABLE_SPLIT_PARALLELISM
 public:
   Scheduler                  scheduler;
 #endif
@@ -378,7 +309,6 @@ public:
       m_alfCtbFilterIndex[i] = 0;
     }
   }
-#if JVET_O0090_ALF_CHROMA_FILTER_ALTERNATIVES_CTB
   std::vector<uint8_t> m_alfCtuAlternative[MAX_NUM_COMPONENT];
   std::vector<uint8_t>& getAlfCtuAlternative( int compIdx ) { return m_alfCtuAlternative[compIdx]; }
   uint8_t* getAlfCtuAlternativeData( int compIdx ) { return m_alfCtuAlternative[compIdx].data(); }
@@ -390,11 +320,14 @@ public:
       std::fill( m_alfCtuAlternative[compIdx].begin(), m_alfCtuAlternative[compIdx].end(), 0 );
     }
   }
-#endif
 };
 
 int calcAndPrintHashStatus(const CPelUnitBuf& pic, const class SEIDecodedPictureHash* pictureHashSEI, const BitDepths &bitDepths, const MsgLevel msgl);
 
+#if JVET_P2008_OUTPUT_LOG
+uint32_t calcMD5(const CPelUnitBuf& pic, PictureHash &digest, const BitDepths &bitDepths);
+std::string hashToString(const PictureHash &digest, int numChar);
+#endif // JVET_P2008_OUTPUT_LOG
 
 typedef std::list<Picture*> PicList;
 

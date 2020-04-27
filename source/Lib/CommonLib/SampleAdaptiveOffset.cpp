@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -112,6 +112,7 @@ const SAOBlkParam& SAOBlkParam::operator= (const SAOBlkParam& src)
 
 SampleAdaptiveOffset::SampleAdaptiveOffset()
 {
+  m_numberOfComponents = 0;
 }
 
 
@@ -578,7 +579,7 @@ void SampleAdaptiveOffset::offsetCTU( const UnitArea& area, const CPelUnitBuf& s
   int verVirBndryPos[] = { -1,-1,-1 };
   int horVirBndryPosComp[] = { -1,-1,-1 };
   int verVirBndryPosComp[] = { -1,-1,-1 };
-  bool isCtuCrossedByVirtualBoundaries = isCrossedByVirtualBoundaries(area.Y().x, area.Y().y, area.Y().width, area.Y().height, numHorVirBndry, numVerVirBndry, horVirBndryPos, verVirBndryPos, cs.slice->getPPS());
+  bool isCtuCrossedByVirtualBoundaries = isCrossedByVirtualBoundaries(area.Y().x, area.Y().y, area.Y().width, area.Y().height, numHorVirBndry, numVerVirBndry, horVirBndryPos, verVirBndryPos, cs.picHeader );
   for(int compIdx = 0; compIdx < numberOfComponents; compIdx++)
   {
     const ComponentID compID = ComponentID(compIdx);
@@ -661,159 +662,8 @@ void SampleAdaptiveOffset::SAOProcess( CodingStructure& cs, SAOBlkParam* saoBlkP
   DTRACE    ( g_trace_ctx, D_CRC, "SAO" );
   DTRACE_CRC( g_trace_ctx, D_CRC, cs, cs.getRecoBuf() );
 
-#if !JVET_O0525_REMOVE_PCM
-  xPCMLFDisableProcess(cs);
-#else
-  xLosslessDisableProcess(cs);
-#endif
 }
 
-#if !JVET_O0525_REMOVE_PCM
-void SampleAdaptiveOffset::xPCMLFDisableProcess(CodingStructure& cs)
-#else
-void SampleAdaptiveOffset::xLosslessDisableProcess(CodingStructure& cs)
-#endif
-{
-  const PreCalcValues& pcv = *cs.pcv;
-#if !JVET_O0525_REMOVE_PCM
-  const bool bPCMFilter = (cs.sps->getPCMEnabledFlag() && cs.sps->getPCMFilterDisableFlag()) ? true : false;
-
-  if( bPCMFilter || cs.pps->getTransquantBypassEnabledFlag() )
-#else
-  if( cs.pps->getTransquantBypassEnabledFlag() )
-#endif
-  {
-    for( uint32_t yPos = 0; yPos < pcv.lumaHeight; yPos += pcv.maxCUHeight )
-    {
-      for( uint32_t xPos = 0; xPos < pcv.lumaWidth; xPos += pcv.maxCUWidth )
-      {
-        UnitArea ctuArea( cs.area.chromaFormat, Area( xPos, yPos, pcv.maxCUWidth, pcv.maxCUHeight ) );
-
-#if !JVET_O0525_REMOVE_PCM
-        // CU-based deblocking
-        xPCMCURestoration(cs, ctuArea);
-#else
-        xLosslessCURestoration(cs, ctuArea);
-#endif
-      }
-    }
-  }
-}
-
-#if !JVET_O0525_REMOVE_PCM
-void SampleAdaptiveOffset::xPCMCURestoration(CodingStructure& cs, const UnitArea &ctuArea)
-#else
-void SampleAdaptiveOffset::xLosslessCURestoration(CodingStructure& cs, const UnitArea &ctuArea)
-#endif
-{
-#if !JVET_O0525_REMOVE_PCM
-  const SPS& sps = *cs.sps;
-#endif
-  uint32_t numComponents;
-  bool anyDualTree = false;
-  for( auto &cu : cs.traverseCUs( ctuArea, CH_L ) )
-  {
-#if !JVET_O0525_REMOVE_PCM
-    // restore PCM samples
-    if( ( cu.ipcm && sps.getPCMFilterDisableFlag() ) || CU::isLosslessCoded( cu ) )
-#else
-    // restore lossless samples
-    if( CU::isLosslessCoded( cu ) )
-#endif
-    {
-
-      cs.slice = cu.slice;
-      anyDualTree |= CS::isDualITree(cs);
-      numComponents = CS::isDualITree(cs) ? 1 : m_numberOfComponents;
-      for( uint32_t comp = 0; comp < numComponents; comp++ )
-      {
-#if !JVET_O0525_REMOVE_PCM
-        xPCMSampleRestoration( cu, ComponentID( comp ) );
-#else
-        xLosslessSampleRestoration( cu, ComponentID( comp ) );
-#endif
-      }
-    }
-  }
-  numComponents = m_numberOfComponents;
-  if (anyDualTree && numComponents)
-  {
-    for (auto &cu : cs.traverseCUs(ctuArea, CH_C))
-    {
-      if (cu.slice->isIntra() == false)
-      {
-        continue;
-      }
-
-#if !JVET_O0525_REMOVE_PCM
-      // restore PCM samples
-      if ((cu.ipcm && sps.getPCMFilterDisableFlag()) || CU::isLosslessCoded(cu))
-#else
-      // restore lossless samples
-      if (CU::isLosslessCoded(cu))
-#endif
-      {
-        for (uint32_t comp = 1; comp < numComponents; comp++)
-        {
-#if !JVET_O0525_REMOVE_PCM
-          xPCMSampleRestoration(cu, ComponentID(comp));
-#else
-          xLosslessSampleRestoration(cu, ComponentID(comp));
-#endif
-        }
-      }
-    }
-  }
-}
-
-#if !JVET_O0525_REMOVE_PCM
-void SampleAdaptiveOffset::xPCMSampleRestoration(CodingUnit& cu, const ComponentID compID)
-#else
-void SampleAdaptiveOffset::xLosslessSampleRestoration(CodingUnit& cu, const ComponentID compID)
-#endif
-{
-#if !JVET_O0525_REMOVE_PCM
-  const CompArea& ca = cu.block(compID);
-  if( CU::isLosslessCoded( cu ) && !cu.ipcm )
-#else
-  if( CU::isLosslessCoded( cu ) )
-#endif
-  {
-    for( auto &currTU : CU::traverseTUs( cu ) )
-    {
-      const CPelBuf& pcmBuf = currTU.getPcmbuf( compID );
-             PelBuf dstBuf  = cu.cs->getRecoBuf( currTU.block(compID) );
-
-      dstBuf.copyFrom( pcmBuf );
-      if (cu.slice->getLmcsEnabledFlag() && isLuma(compID))
-      {
-        dstBuf.rspSignal(m_pcReshape->getInvLUT());
-      }
-    }
-
-    return;
-  }
-
-#if !JVET_O0525_REMOVE_PCM
-  const TransformUnit& tu = *cu.firstTU; CHECK( cu.firstTU != cu.lastTU, "Multiple TUs present in a PCM CU" );
-  const CPelBuf& pcmBuf   = tu.getPcmbuf( compID );
-         PelBuf dstBuf    = cu.cs->getRecoBuf( ca );
-  const SPS &sps = *cu.cs->sps;
-  const uint32_t uiPcmLeftShiftBit = sps.getBitDepth(toChannelType(compID)) - sps.getPCMBitDepth(toChannelType(compID));
-
-  for (uint32_t y = 0; y < ca.height; y++)
-  {
-    for (uint32_t x = 0; x < ca.width; x++)
-    {
-      dstBuf.at(x,y) = (pcmBuf.at(x,y) << uiPcmLeftShiftBit);
-    }
-  }
-  if (cu.slice->getLmcsEnabledFlag()&& isLuma(compID))
-  {
-    dstBuf.rspSignal(m_pcReshape->getInvLUT());
-  }
-#endif
-}
 
 void SampleAdaptiveOffset::deriveLoopFilterBoundaryAvailibility(CodingStructure& cs, const Position &pos,
   bool& isLeftAvail,
@@ -839,44 +689,32 @@ void SampleAdaptiveOffset::deriveLoopFilterBoundaryAvailibility(CodingStructure&
   const CodingUnit* cuBelowRight = cs.getCU(pos.offset(width, height), CH_L);
 
   // check cross slice flags
+  const bool isLoopFilterAcrossSlicePPS = cs.pps->getLoopFilterAcrossSlicesEnabledFlag();
+  if (!isLoopFilterAcrossSlicePPS)
   {
-    //left
-    isLeftAvail       = (cuLeft != NULL)       ? ( !CU::isSameSlice(*cuCurr, *cuLeft)       ? cuCurr->slice->getLFCrossSliceBoundaryFlag()       : true ) : false;
-
-    //above
-    isAboveAvail      = (cuAbove != NULL)      ? ( !CU::isSameSlice(*cuCurr, *cuAbove)      ? cuCurr->slice->getLFCrossSliceBoundaryFlag()       : true ) : false;
-
-    //right
-    isRightAvail      = (cuRight != NULL)      ? ( !CU::isSameSlice(*cuCurr, *cuRight)      ? cuRight->slice->getLFCrossSliceBoundaryFlag()      : true ) : false;
-
-    //below
-    isBelowAvail      = (cuBelow != NULL)      ? ( !CU::isSameSlice(*cuCurr, *cuBelow)      ? cuBelow->slice->getLFCrossSliceBoundaryFlag()      : true ) : false;
-
-    //above-left
-    isAboveLeftAvail  = (cuAboveLeft != NULL)  ? ( !CU::isSameSlice(*cuCurr, *cuAboveLeft)  ? cuCurr->slice->getLFCrossSliceBoundaryFlag()       : true ) : false;
-
-    //below-right
-    isBelowRightAvail = (cuBelowRight != NULL) ? ( !CU::isSameSlice(*cuCurr, *cuBelowRight) ? cuBelowRight->slice->getLFCrossSliceBoundaryFlag() : true ) : false;
-
-    //above-right
-    isAboveRightAvail = false;
-    if (cuAboveRight != NULL)
-    {
-      const bool bLFCrossSliceBoundaryFlag = (cuCurr->slice->getSliceCurStartCtuTsAddr() > cuAboveRight->slice->getSliceCurStartCtuTsAddr()) ? cuCurr->slice->getLFCrossSliceBoundaryFlag() : cuAboveRight->slice->getLFCrossSliceBoundaryFlag();
-      isAboveRightAvail = ( !CU::isSameSlice(*cuCurr, *cuAboveRight) ) ? bLFCrossSliceBoundaryFlag : true;
-    }
-
-    //below-left
-    isBelowLeftAvail = false;
-    if (cuBelowLeft != NULL)
-    {
-      const bool bLFCrossSliceBoundaryFlag = (cuCurr->slice->getSliceCurStartCtuTsAddr() > cuBelowLeft->slice->getSliceCurStartCtuTsAddr()) ? cuCurr->slice->getLFCrossSliceBoundaryFlag() : cuBelowLeft->slice->getLFCrossSliceBoundaryFlag();
-      isBelowLeftAvail = ( !CU::isSameSlice(*cuCurr, *cuBelowLeft) ) ? bLFCrossSliceBoundaryFlag : true;
-    }
+    isLeftAvail       = (cuLeft == NULL)       ? false : CU::isSameSlice(*cuCurr, *cuLeft);
+    isAboveAvail      = (cuAbove == NULL)      ? false : CU::isSameSlice(*cuCurr, *cuAbove);
+    isRightAvail      = (cuRight == NULL)      ? false : CU::isSameSlice(*cuCurr, *cuRight);
+    isBelowAvail      = (cuBelow == NULL)      ? false : CU::isSameSlice(*cuCurr, *cuBelow);
+    isAboveLeftAvail  = (cuAboveLeft == NULL)  ? false : CU::isSameSlice(*cuCurr, *cuAboveLeft);
+    isAboveRightAvail = (cuAboveRight == NULL) ? false : CU::isSameSlice(*cuCurr, *cuAboveRight);
+    isBelowLeftAvail  = (cuBelowLeft == NULL)  ? false : CU::isSameSlice(*cuCurr, *cuBelowLeft);
+    isBelowRightAvail = (cuBelowRight == NULL) ? false : CU::isSameSlice(*cuCurr, *cuBelowRight);
+  }
+  else
+  {
+    isLeftAvail       = (cuLeft != NULL);
+    isAboveAvail      = (cuAbove != NULL);
+    isRightAvail      = (cuRight != NULL);
+    isBelowAvail      = (cuBelow != NULL);
+    isAboveLeftAvail  = (cuAboveLeft != NULL);
+    isAboveRightAvail = (cuAboveRight != NULL);
+    isBelowLeftAvail  = (cuBelowLeft != NULL);
+    isBelowRightAvail = (cuBelowRight != NULL);
   }
 
   // check cross tile flags
-  const bool isLoopFilterAcrossTilePPS = cs.pps->getLoopFilterAcrossBricksEnabledFlag();
+  const bool isLoopFilterAcrossTilePPS = cs.pps->getLoopFilterAcrossTilesEnabledFlag();
   if (!isLoopFilterAcrossTilePPS)
   {
     isLeftAvail       = (!isLeftAvail)       ? false : CU::isSameTile(*cuCurr, *cuLeft);
@@ -888,25 +726,46 @@ void SampleAdaptiveOffset::deriveLoopFilterBoundaryAvailibility(CodingStructure&
     isBelowLeftAvail  = (!isBelowLeftAvail)  ? false : CU::isSameTile(*cuCurr, *cuBelowLeft);
     isBelowRightAvail = (!isBelowRightAvail) ? false : CU::isSameTile(*cuCurr, *cuBelowRight);
   }
+
+#if JVET_O1143_LPF_ACROSS_SUBPIC_BOUNDARY
+  // check cross subpic flags
+  const SubPic& curSubPic = cs.pps->getSubPicFromCU(*cuCurr);
+  if (!curSubPic.getloopFilterAcrossEnabledFlag())
+  {
+    isLeftAvail       = (!isLeftAvail)       ? false : CU::isSameSubPic(*cuCurr, *cuLeft);
+    isAboveAvail      = (!isAboveAvail)      ? false : CU::isSameSubPic(*cuCurr, *cuAbove);
+    isRightAvail      = (!isRightAvail)      ? false : CU::isSameSubPic(*cuCurr, *cuRight);
+    isBelowAvail      = (!isBelowAvail)      ? false : CU::isSameSubPic(*cuCurr, *cuBelow);
+    isAboveLeftAvail  = (!isAboveLeftAvail)  ? false : CU::isSameSubPic(*cuCurr, *cuAboveLeft);
+    isAboveRightAvail = (!isAboveRightAvail) ? false : CU::isSameSubPic(*cuCurr, *cuAboveRight);
+    isBelowLeftAvail  = (!isBelowLeftAvail)  ? false : CU::isSameSubPic(*cuCurr, *cuBelowLeft);
+    isBelowRightAvail = (!isBelowRightAvail) ? false : CU::isSameSubPic(*cuCurr, *cuBelowRight);
+  }
+#endif
 }
 
-bool SampleAdaptiveOffset::isCrossedByVirtualBoundaries(const int xPos, const int yPos, const int width, const int height, int& numHorVirBndry, int& numVerVirBndry, int horVirBndryPos[], int verVirBndryPos[], const PPS* pps)
+bool SampleAdaptiveOffset::isCrossedByVirtualBoundaries(const int xPos, const int yPos, const int width, const int height, int& numHorVirBndry, int& numVerVirBndry, int horVirBndryPos[], int verVirBndryPos[], const PicHeader* picHeader )
 {
   numHorVirBndry = 0; numVerVirBndry = 0;
-  if (pps->getLoopFilterAcrossVirtualBoundariesDisabledFlag())
+#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
+  if( picHeader->getVirtualBoundariesPresentFlag() )
   {
-    for (int i = 0; i < pps->getNumHorVirtualBoundaries(); i++)
+#else
+  if (picHeader->getLoopFilterAcrossVirtualBoundariesDisabledFlag())
+  {
+#endif
+    for (int i = 0; i < picHeader->getNumHorVirtualBoundaries(); i++)
     {
-     if (yPos <= pps->getVirtualBoundariesPosY(i) && pps->getVirtualBoundariesPosY(i) <= yPos + height)
+     if (yPos <= picHeader->getVirtualBoundariesPosY(i) && picHeader->getVirtualBoundariesPosY(i) <= yPos + height)
       {
-        horVirBndryPos[numHorVirBndry++] = pps->getVirtualBoundariesPosY(i);
+        horVirBndryPos[numHorVirBndry++] = picHeader->getVirtualBoundariesPosY(i);
       }
     }
-    for (int i = 0; i < pps->getNumVerVirtualBoundaries(); i++)
+    for (int i = 0; i < picHeader->getNumVerVirtualBoundaries(); i++)
     {
-      if (xPos <= pps->getVirtualBoundariesPosX(i) && pps->getVirtualBoundariesPosX(i) <= xPos + width)
+      if (xPos <= picHeader->getVirtualBoundariesPosX(i) && picHeader->getVirtualBoundariesPosX(i) <= xPos + width)
       {
-        verVirBndryPos[numVerVirBndry++] = pps->getVirtualBoundariesPosX(i);
+        verVirBndryPos[numVerVirBndry++] = picHeader->getVirtualBoundariesPosX(i);
       }
     }
   }

@@ -3,7 +3,7 @@
  * and contributor rights, including patent rights, and no such rights are
  * granted under this license.
  *
- * Copyright (c) 2010-2019, ITU/ISO/IEC
+ * Copyright (c) 2010-2020, ITU/ISO/IEC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -61,11 +61,7 @@ enum MvPrecision
 class Mv
 {
 private:
-#if JVET_O0057_ALTHPELIF
   static const MvPrecision m_amvrPrecision[4];
-#else
-  static const MvPrecision m_amvrPrecision[3];
-#endif
   static const MvPrecision m_amvrPrecAffine[3];
   static const MvPrecision m_amvrPrecIbc[3];
 
@@ -288,17 +284,13 @@ namespace std
 void clipMv ( Mv& rcMv, const struct Position& pos,
               const struct Size& size,
               const class SPS& sps
-#if JVET_O1164_PS
             , const class PPS& pps
-#endif
 );
 
 bool wrapClipMv( Mv& rcMv, const Position& pos,
                  const struct Size& size,
                  const SPS *sps
-#if JVET_O1164_PS
                , const PPS* pps
-#endif
 );
 
 void roundAffineMv( int& mvx, int& mvy, int nShift );

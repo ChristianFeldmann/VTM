@@ -31,7 +31,7 @@ jobs:
         jom
       working-directory: ./build
       shell: cmd
-    -name: list dirs
+    - name: list dirs
       run: |
         dir ./bin
         dir ./bin/nmake_makefiles/

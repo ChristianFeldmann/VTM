@@ -1981,8 +1981,8 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
       int bitsSliceAddress = ceilLog2(pcSlice->getPPS()->getNumTiles());
       WRITE_CODE( pcSlice->getSliceID(), bitsSliceAddress, "slice_address");
 #if JVET_R0210_NUMTILESINSLICE_SIGNALLING
-	  if (pcSlice->getPPS()->getNumTiles() - pcSlice->getSliceID() > 1)
-	  {
+      if (pcSlice->getPPS()->getNumTiles() - pcSlice->getSliceID() > 1)
+      {
 #endif
       WRITE_UVLC(pcSlice->getNumTilesInSlice() - 1, "num_tiles_in_slice_minus1");
 #if JVET_R0210_NUMTILESINSLICE_SIGNALLING

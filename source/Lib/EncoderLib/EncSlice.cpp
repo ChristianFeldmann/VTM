@@ -339,7 +339,11 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
     picHeader->setPicOutputFlag(true);
   }
   rpcSlice->setPOC( pocCurr );
+#if JVET_R0143_TSRCdisableLL
+  if( ( m_pcCfg->getCostMode() == COST_LOSSLESS_CODING ) && m_pcCfg->getTSRCdisableLL() )
+#else
   if( m_pcCfg->getCostMode() == COST_LOSSLESS_CODING )
+#endif
   {
     rpcSlice->setTSResidualCodingDisabledFlag(true);
   }

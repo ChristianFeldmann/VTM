@@ -54,7 +54,7 @@
 
 
 
-#define JVET_R0156_ASPECT4_SPS_CLEANUP                    1 // JVET-R0071, R0156 aspect 4, R0284: Condition sps_independent_subpics_flag on "sps_num_subpics_minus1 > 0"
+#define JVET_R0156_ASPECT4_SPS_CLEANUP                    1 // JVET-R0071 #1, R0156 #4, R0284 #1: Condition sps_independent_subpics_flag on "sps_num_subpics_minus1 > 0"
 
 #define JVET_R0233_CCALF_LINE_BUFFER_REDUCTION            1 // JVET-R0233 method 2: Line buffer reduction for CCALF
 

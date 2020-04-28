@@ -1514,6 +1514,10 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_UVLC(uiCode, "sps_log2_diff_min_qt_min_cb_intra_slice_luma");
   unsigned minQtLog2SizeIntraY = uiCode + pcSPS->getLog2MinCodingBlockSize();
   minQT[0] = 1 << minQtLog2SizeIntraY;
+#if JVET_R0347_MTT_SIZE_CONSTRAIN
+  CHECK(minQT[0] > 64, "The value of sps_log2_diff_min_qt_min_cb_intra_slice_luma shall be in the range of 0 to min(6,CtbLog2SizeY) − MinCbLog2Size");
+  CHECK(minQT[0] > (1<<ctbLog2SizeY), "The value of sps_log2_diff_min_qt_min_cb_intra_slice_luma shall be in the range of 0 to min(6,CtbLog2SizeY) - MinCbLog2Size");
+#endif
   READ_UVLC(uiCode, "sps_max_mtt_hierarchy_depth_intra_slice_luma");     maxBTD[0] = uiCode;
   CHECK(uiCode > 2 * (ctbLog2SizeY - log2MinCUSize), "sps_max_mtt_hierarchy_depth_intra_slice_luma shall be in the range 0 to 2*(ctbLog2SizeY - log2MinCUSize)");
 
@@ -1524,6 +1528,9 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     CHECK(uiCode > ctbLog2SizeY - minQtLog2SizeIntraY, "The value of sps_log2_diff_max_bt_min_qt_intra_slice_luma shall be in the range of 0 to CtbLog2SizeY − MinQtLog2SizeIntraY");
     READ_UVLC(uiCode, "sps_log2_diff_max_tt_min_qt_intra_slice_luma");     maxTTSize[0] <<= uiCode;
     CHECK(uiCode > ctbLog2SizeY - minQtLog2SizeIntraY, "The value of sps_log2_diff_max_tt_min_qt_intra_slice_luma shall be in the range of 0 to CtbLog2SizeY − MinQtLog2SizeIntraY");
+#if JVET_R0347_MTT_SIZE_CONSTRAIN
+    CHECK(maxTTSize[0] > 64, "The value of sps_log2_diff_max_tt_min_qt_intra_slice_luma shall be in the range of 0 to min(6,CtbLog2SizeY) − MinQtLog2SizeIntraY");
+#endif
   }
   READ_UVLC(uiCode, "sps_log2_diff_min_qt_min_cb_inter_slice");
   unsigned minQtLog2SizeInterY = uiCode + pcSPS->getLog2MinCodingBlockSize();
@@ -1537,6 +1544,9 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     CHECK(uiCode > ctbLog2SizeY - minQtLog2SizeInterY, "The value of sps_log2_diff_max_bt_min_qt_inter_slice shall be in the range of 0 to CtbLog2SizeY − MinQtLog2SizeInterY");
     READ_UVLC(uiCode, "sps_log2_diff_max_tt_min_qt_inter_slice");     maxTTSize[1] <<= uiCode;
     CHECK(uiCode > ctbLog2SizeY - minQtLog2SizeInterY, "The value of sps_log2_diff_max_tt_min_qt_inter_slice shall be in the range of 0 to CtbLog2SizeY − MinQtLog2SizeInterY");
+#if JVET_R0347_MTT_SIZE_CONSTRAIN
+    CHECK(maxTTSize[1] > 64, "The value of sps_log2_diff_max_tt_min_qt_inter_slice shall be in the range of 0 to min(6,CtbLog2SizeY) − MinQtLog2SizeInterY");
+#endif
   }
   if (pcSPS->getUseDualITree())
   {
@@ -1548,6 +1558,10 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     {
       READ_UVLC(uiCode, "sps_log2_diff_max_bt_min_qt_intra_slice_chroma");       maxBTSize[2] <<= uiCode;
       READ_UVLC(uiCode, "sps_log2_diff_max_tt_min_qt_intra_slice_chroma");       maxTTSize[2] <<= uiCode;
+#if JVET_R0347_MTT_SIZE_CONSTRAIN
+      CHECK(maxTTSize[2] > 64, "The value of sps_log2_diff_max_tt_min_qt_intra_slice_chroma shall be in the range of 0 to min(6,CtbLog2SizeY) − MinQtLog2SizeIntraChroma");
+      CHECK(maxBTSize[2] > 64, "The value of sps_log2_diff_max_bt_min_qt_intra_slice_chroma shall be in the range of 0 to min(6,CtbLog2SizeY) − MinQtLog2SizeIntraChroma");
+#endif
     }
 }
 
@@ -2617,6 +2631,9 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
       READ_UVLC(uiCode, "ph_log2_diff_min_qt_min_cb_intra_slice_luma");
       unsigned minQtLog2SizeIntraY = uiCode + sps->getLog2MinCodingBlockSize();
       minQT[0] = 1 << minQtLog2SizeIntraY;
+#if JVET_R0347_MTT_SIZE_CONSTRAIN
+      CHECK(minQT[0] > 64, "The value of ph_log2_diff_min_qt_min_cb_intra_slice_luma shall be in the range of 0 to min(6,CtbLog2SizeY) − MinCbLog2Size");
+#endif
       READ_UVLC(uiCode, "ph_max_mtt_hierarchy_depth_intra_slice_luma");         maxBTD[0] = uiCode;
 
       maxTTSize[0] = maxBTSize[0] = minQT[0];
@@ -2626,17 +2643,27 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
         CHECK(uiCode > ctbLog2SizeY - minQtLog2SizeIntraY, "The value of ph_log2_diff_max_bt_min_qt_intra_slice_luma shall be in the range of 0 to CtbLog2SizeY − MinQtLog2SizeIntraY");
         READ_UVLC(uiCode, "ph_log2_diff_max_tt_min_qt_intra_slice_luma");       maxTTSize[0] <<= uiCode;
         CHECK(uiCode > ctbLog2SizeY - minQtLog2SizeIntraY, "The value of ph_log2_diff_max_tt_min_qt_intra_slice_luma shall be in the range of 0 to CtbLog2SizeY − MinQtLog2SizeIntraY");
+#if JVET_R0347_MTT_SIZE_CONSTRAIN
+        CHECK(maxTTSize[0] > 64, "The value of ph_log2_diff_max_tt_min_qt_intra_slice_luma shall be in the range of 0 to min(6,CtbLog2SizeY) − MinQtLog2SizeIntraY");
+#endif
       }
 
       if (sps->getUseDualITree())
       {
         READ_UVLC(uiCode, "ph_log2_diff_min_qt_min_cb_intra_slice_chroma");     minQT[2] = 1 << (uiCode + sps->getLog2MinCodingBlockSize());
+#if JVET_R0347_MTT_SIZE_CONSTRAIN
+        CHECK(minQT[2] > 64, "The value of ph_log2_diff_min_qt_min_cb_intra_slice_chroma shall be in the range of 0 to min(6,CtbLog2SizeY) − MinCbLog2Size");
+#endif
         READ_UVLC(uiCode, "ph_max_mtt_hierarchy_depth_intra_slice_chroma");     maxBTD[2] = uiCode;
         maxTTSize[2] = maxBTSize[2] = minQT[2];
         if (maxBTD[2] != 0)
         {
           READ_UVLC(uiCode, "ph_log2_diff_max_bt_min_qt_intra_slice_chroma");   maxBTSize[2] <<= uiCode;
           READ_UVLC(uiCode, "ph_log2_diff_max_tt_min_qt_intra_slice_chroma");   maxTTSize[2] <<= uiCode;
+#if JVET_R0347_MTT_SIZE_CONSTRAIN
+          CHECK(maxBTSize[2] > 64, "The value of ph_log2_diff_max_bt_min_qt_intra_slice_chroma shall be in the range of 0 to min(6,CtbLog2SizeY) − MinQtLog2SizeIntraChroma");
+          CHECK(maxTTSize[2] > 64, "The value of ph_log2_diff_max_tt_min_qt_intra_slice_chroma shall be in the range of 0 to min(6,CtbLog2SizeY) − MinQtLog2SizeIntraChroma");
+#endif
         }
       }
     }
@@ -2672,6 +2699,10 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
       READ_UVLC(uiCode, "ph_log2_diff_min_qt_min_cb_inter_slice");
       unsigned minQtLog2SizeInterY = uiCode + sps->getLog2MinCodingBlockSize();
       minQT[1] = 1 << minQtLog2SizeInterY;
+#if JVET_R0347_MTT_SIZE_CONSTRAIN
+      CHECK(minQT[1] > 64, "The value of ph_log2_diff_min_qt_min_cb_inter_slice shall be in the range of 0 to min(6, CtbLog2SizeY) - MinCbLog2SizeY.");
+      CHECK(minQT[1] > (1<<ctbLog2SizeY), "The value of ph_log2_diff_min_qt_min_cb_inter_slice shall be in the range of 0 to min(6, CtbLog2SizeY) - MinCbLog2SizeY");
+#endif
       READ_UVLC(uiCode, "ph_max_mtt_hierarchy_depth_inter_slice");              maxBTD[1] = uiCode;
 
       maxTTSize[1] = maxBTSize[1] = minQT[1];
@@ -2681,6 +2712,9 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
         CHECK(uiCode > ctbLog2SizeY - minQtLog2SizeInterY, "The value of ph_log2_diff_max_bt_min_qt_inter_slice shall be in the range of 0 to CtbLog2SizeY − MinQtLog2SizeInterY");
         READ_UVLC(uiCode, "ph_log2_diff_max_tt_min_qt_inter_slice");            maxTTSize[1] <<= uiCode;
         CHECK(uiCode > ctbLog2SizeY - minQtLog2SizeInterY, "The value of ph_log2_diff_max_tt_min_qt_inter_slice shall be in the range of 0 to CtbLog2SizeY − MinQtLog2SizeInterY");
+#if JVET_R0347_MTT_SIZE_CONSTRAIN
+        CHECK(maxTTSize[1] > 64, "The value of ph_log2_diff_max_tt_min_qt_inter_slice shall be in the range of 0 to min(6,CtbLog2SizeY) − MinQtLog2SizeInterY.");
+#endif
       }
     }
     // delta quantization and chrom and chroma offset

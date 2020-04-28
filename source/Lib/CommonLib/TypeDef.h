@@ -83,6 +83,8 @@
 
 #define JVET_R0350_MIP_CHROMA_444_SINGLETREE              1 // JVET-R0350: MIP for chroma in case of 4:4:4 format and single tree
 
+#define JVET_R0347_MTT_SIZE_CONSTRAIN                     1 // JVET-R0347: Set upper limit of minQtSize and maxTtSize to 64, set upper limit of maxBtSize to 64 in chroma-tree
+
 //########### place macros to be be kept below this line ###############
 
 #define JVET_R0164_MEAN_SCALED_SATD                       1 // JVET-R0164: Use a mean scaled version of SATD in encoder decisions

@@ -641,6 +641,12 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
     READ_CODE(1, uiCode, "loop_filter_across_tiles_enabled_flag");    pcPPS->setLoopFilterAcrossTilesEnabledFlag( uiCode == 1 );
     READ_CODE(1, uiCode, "loop_filter_across_slices_enabled_flag");   pcPPS->setLoopFilterAcrossSlicesEnabledFlag( uiCode == 1 );
   }
+#if JVET_R0071_SPS_PPS_CELANUP
+  else
+  {
+    pcPPS->setSingleSlicePerSubPicFlag(1);
+  }
+#endif
 
   READ_FLAG( uiCode,   "cabac_init_present_flag" );            pcPPS->setCabacInitPresentFlag( uiCode ? true : false );
 
@@ -1285,8 +1291,13 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
       pcSPS->setSubPicCtuTopLeftY( 0, 0 );
       pcSPS->setSubPicWidth( 0, ( pcSPS->getMaxPicWidthInLumaSamples() + pcSPS->getCTUSize() - 1 ) >> floorLog2( pcSPS->getCTUSize() ) );
       pcSPS->setSubPicHeight( 0, ( pcSPS->getMaxPicHeightInLumaSamples() + pcSPS->getCTUSize() - 1 ) >> floorLog2( pcSPS->getCTUSize() ) );
+#if JVET_R0071_SPS_PPS_CELANUP
+      pcSPS->setSubPicTreatedAsPicFlag(0, 1);
+      pcSPS->setLoopFilterAcrossSubpicEnabledFlag(0, 0);
+#else
       pcSPS->setSubPicTreatedAsPicFlag( 0, 0 );
       pcSPS->setLoopFilterAcrossSubpicEnabledFlag( 0, 1 );
+#endif
     }
     else
     {

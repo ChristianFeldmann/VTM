@@ -51,6 +51,7 @@
 #include <cassert>
 
 //########### place macros to be removed in next cycle below this line ###############
+#define JVET_R0071_SPS_PPS_CELANUP                        1 // JVET-R0071 item 2-4: cleanups on subpicture signalling (item 1 has been ported in JVET_R0156_ASPECT4)
 
 #define JVET_R0233_CCALF_LINE_BUFFER_REDUCTION            1 // JVET-R0233 method 2: Line buffer reduction for CCALF
 

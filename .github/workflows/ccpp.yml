@@ -16,7 +16,7 @@ jobs:
         make -j 2
       working-directory: ./build
     - name: list dirs
-      run: ls -R
+      run: ls
       working-directory: ./build/bin
   build-windows:
     runs-on: windows-2019
@@ -36,9 +36,8 @@ jobs:
       shell: cmd
     - name: list dirs
       run: |
-        dir /s
+        dir
       working-directory: ./build/bin
-      shell: cmd
     - name: upload files
       if: github.event_name == 'release' && github.event.action == 'created'
       run: echo "This is a release build"
@@ -55,7 +54,7 @@ jobs:
         make -j 2
       working-directory: ./build
     - name: list dirs
-      run: ls -R
+      run: ls 
       working-directory: ./build/bin
   # How to upload files to the release:
   # https://github.com/Blacksmoke16/oq/pull/47/files#diff-082c28d748ad2e3eecc5508d740d9417R9-R29

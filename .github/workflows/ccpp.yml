@@ -31,6 +31,18 @@ jobs:
         jom
       working-directory: ./build
       shell: cmd
+    -name: list dirs
+      run: |
+        dir ./bin
+        dir ./bin/nmake_makefiles/
+        dir ./bin/nmake_makefiles/msvc-19.23
+        dir ./bin/nmake_makefiles/msvc-19.23/x86_64
+        dir ./bin/nmake_makefiles/msvc-19.23/x86_64/release
+      working-directory: ./build
+      shell: cmd
+    - name: upload files
+      if: github.event_name == 'release' && github.event.action == 'created'
+      run: echo "This is a release build"
   build-macos:
     runs-on: macos-10.15
     steps:
@@ -43,4 +55,5 @@ jobs:
         cmake ..
         make -j 2
       working-directory: ./build
-    
+  # How to upload files to the release:
+  # https://github.com/Blacksmoke16/oq/pull/47/files#diff-082c28d748ad2e3eecc5508d740d9417R9-R29

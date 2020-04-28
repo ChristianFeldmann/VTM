@@ -59,6 +59,7 @@
 #define JVET_Q0471_CHROMA_QT_SPLIT                        1 // JVET-Q0471: Chroma QT split
 #define JVET_R0208_ALF_VB_ROUNDING_FIX                    1 // JVET-R0208: Rounding offset fix for ALF virtual boundary processing
 #define JVET_R0232_CCALF_APS_CONSTRAINT                   1 // JVET-R0232 section 3.2: APS contraint for CCALF
+#define JVET_R0210_NUMTILESINSLICE_SIGNALLING             1 // JVET-R0210 section 3.3: Don't signal NumTilesInSlice syntax element when numTilesInPic - slice_address is 1.
 
 //########### place macros to be be kept below this line ###############
 

@@ -15,6 +15,9 @@ jobs:
         cmake ..
         make -j 2
       working-directory: ./build
+    - name: list dirs
+      run: ls -R
+      working-directory: ./build/bin
   build-windows:
     runs-on: windows-2019
     steps:
@@ -33,12 +36,8 @@ jobs:
       shell: cmd
     - name: list dirs
       run: |
-        dir ./bin
-        dir ./bin/nmake_makefiles/
-        dir ./bin/nmake_makefiles/msvc-19.23
-        dir ./bin/nmake_makefiles/msvc-19.23/x86_64
-        dir ./bin/nmake_makefiles/msvc-19.23/x86_64/release
-      working-directory: ./build
+        dir /s
+      working-directory: ./build/bin
       shell: cmd
     - name: upload files
       if: github.event_name == 'release' && github.event.action == 'created'
@@ -55,5 +54,8 @@ jobs:
         cmake ..
         make -j 2
       working-directory: ./build
+    - name: list dirs
+      run: ls -R
+      working-directory: ./build/bin
   # How to upload files to the release:
   # https://github.com/Blacksmoke16/oq/pull/47/files#diff-082c28d748ad2e3eecc5508d740d9417R9-R29

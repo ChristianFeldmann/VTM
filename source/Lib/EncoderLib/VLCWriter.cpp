@@ -1862,6 +1862,7 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader, bool writeRbspTrailingB
   }
 
 
+#if !JVET_R0271_SLICE_LEVEL_DQ_SDH_RRC
   // dependent quantization
   if (sps->getDepQuantEnabledFlag())
   {
@@ -1880,6 +1881,7 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader, bool writeRbspTrailingB
   {
     picHeader->setSignDataHidingEnabledFlag(false);
   }
+#endif
 
   // deblocking filter controls
   if (pps->getDeblockingFilterControlPresentFlag())
@@ -2330,7 +2332,35 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
       pcSlice->setDeblockingFilterCrTcOffsetDiv2  ( 0 );
     }
 
+#if JVET_R0271_SLICE_LEVEL_DQ_SDH_RRC
+  // dependent quantization
+  if( pcSlice->getSPS()->getDepQuantEnabledFlag() )
+  {
+    WRITE_FLAG(pcSlice->getDepQuantEnabledFlag(), "slice_dep_quant_enabled_flag");
+  }
+  else
+  {
+    pcSlice->setDepQuantEnabledFlag(false);
+  }
+
+  // sign data hiding
+  if( pcSlice->getSPS()->getSignDataHidingEnabledFlag() && !pcSlice->getDepQuantEnabledFlag() )
+  {
+    WRITE_FLAG(pcSlice->getSignDataHidingEnabledFlag(), "slice_sign_data_hiding_enabled_flag" );
+  }
+  else
+  {
+    pcSlice->setSignDataHidingEnabledFlag(false);
+  }
+
+  // signal TS residual coding disabled flag
+  if( !pcSlice->getDepQuantEnabledFlag() && !pcSlice->getSignDataHidingEnabledFlag() )
+  {
+    WRITE_FLAG(pcSlice->getTSResidualCodingDisabledFlag() ? 1 : 0, "slice_ts_residual_coding_disabled_flag");
+  }
+#else
 	WRITE_FLAG(pcSlice->getTSResidualCodingDisabledFlag() ? 1 : 0, "slice_ts_residual_coding_disabled_flag");
+#endif
 
   if (picHeader->getLmcsEnabledFlag())
   {

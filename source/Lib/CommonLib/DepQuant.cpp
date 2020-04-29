@@ -1574,9 +1574,9 @@ DepQuant::~DepQuant()
 void DepQuant::quant( TransformUnit &tu, const ComponentID &compID, const CCoeffBuf &pSrc, TCoeff &uiAbsSum, const QpParam &cQP, const Ctx& ctx )
 {
 #if JVET_R0271_SLICE_LEVEL_DQ_SDH_RRC
-  if ( tu.cs->slice->getDepQuantEnabledFlag() && (tu.cu->slice->getTSResidualCodingDisabledFlag() || (tu.mtsIdx[compID] != MTS_SKIP)) )
+  if( tu.cs->slice->getDepQuantEnabledFlag() && (tu.cu->slice->getTSResidualCodingDisabledFlag() || (tu.mtsIdx[compID] != MTS_SKIP)) )
 #else
-  if (tu.cs->picHeader->getDepQuantEnabledFlag() && (tu.cu->slice->getTSResidualCodingDisabledFlag() || (tu.mtsIdx[compID] != MTS_SKIP)))
+  if( tu.cs->picHeader->getDepQuantEnabledFlag() && (tu.cu->slice->getTSResidualCodingDisabledFlag() || (tu.mtsIdx[compID] != MTS_SKIP)) )
 #endif
   {
     //===== scaling matrix ====
@@ -1606,7 +1606,7 @@ void DepQuant::dequant( const TransformUnit &tu, CoeffBuf &dstCoeff, const Compo
 #if JVET_R0271_SLICE_LEVEL_DQ_SDH_RRC
   if( tu.cs->slice->getDepQuantEnabledFlag() && (tu.cu->slice->getTSResidualCodingDisabledFlag() || (tu.mtsIdx[compID] != MTS_SKIP)) )
 #else
-  if (tu.cs->picHeader->getDepQuantEnabledFlag() && (tu.cu->slice->getTSResidualCodingDisabledFlag() || (tu.mtsIdx[compID] != MTS_SKIP)))
+  if( tu.cs->picHeader->getDepQuantEnabledFlag() && (tu.cu->slice->getTSResidualCodingDisabledFlag() || (tu.mtsIdx[compID] != MTS_SKIP)) )
 #endif
   {
     const int         qpDQ            = cQP.Qp(tu.mtsIdx[compID] == MTS_SKIP) + 1;

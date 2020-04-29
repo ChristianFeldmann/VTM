@@ -52,6 +52,8 @@
 
 //########### place macros to be removed in next cycle below this line ###############
 
+#define JVET_R0200_MOVE_LMCS_AND_SCALING_LIST_SE          1 // JVET-R0200 Move the SH flags slice_lmcs_enabled_flag and slice_explicit_scaling_list_used_flag to be just after the ALF parameters
+
 #define JVET_R0271_SLICE_LEVEL_DQ_SDH_RRC                 1 // JVET-R0271/R0155: Slice level DQ and SDH granularity for mixed lossy/lossless.
 
 #define JVET_R0143_TSRCdisableLL                          1 // JVET-R0143: disable TSRC for lossless coding

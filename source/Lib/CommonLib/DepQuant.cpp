@@ -1573,7 +1573,7 @@ DepQuant::~DepQuant()
 
 void DepQuant::quant( TransformUnit &tu, const ComponentID &compID, const CCoeffBuf &pSrc, TCoeff &uiAbsSum, const QpParam &cQP, const Ctx& ctx )
 {
-  if ( tu.cs->picHeader->getDepQuantEnabledFlag() && (tu.mtsIdx[compID] != MTS_SKIP) )
+  if(tu.cs->picHeader->getDepQuantEnabledFlag() && (tu.cu->slice->getTSResidualCodingDisabledFlag() || (tu.mtsIdx[compID] != MTS_SKIP)) )
   {
     //===== scaling matrix ====
     const int         qpDQ            = cQP.Qp(tu.mtsIdx[compID] == MTS_SKIP) + 1;
@@ -1599,7 +1599,7 @@ void DepQuant::quant( TransformUnit &tu, const ComponentID &compID, const CCoeff
 
 void DepQuant::dequant( const TransformUnit &tu, CoeffBuf &dstCoeff, const ComponentID &compID, const QpParam &cQP )
 {
-  if( tu.cs->picHeader->getDepQuantEnabledFlag() && (tu.mtsIdx[compID] != MTS_SKIP))
+  if( tu.cs->picHeader->getDepQuantEnabledFlag() && (tu.cu->slice->getTSResidualCodingDisabledFlag() || (tu.mtsIdx[compID] != MTS_SKIP)) )
   {
     const int         qpDQ            = cQP.Qp(tu.mtsIdx[compID] == MTS_SKIP) + 1;
     const int         qpPer           = qpDQ / 6;

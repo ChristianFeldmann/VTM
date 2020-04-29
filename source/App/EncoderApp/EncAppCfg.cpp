@@ -3411,6 +3411,7 @@ bool EncAppCfg::xCheckParameter()
     }
   }
   xConfirmPara(m_log2ParallelMergeLevel < 2, "Log2ParallelMergeLevel should be larger than or equal to 2");
+  xConfirmPara(m_log2ParallelMergeLevel > m_uiCTUSize, "Log2ParallelMergeLevel should be less than or equal to CTU size");
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
   xConfirmPara(m_preferredTransferCharacteristics > 255, "transfer_characteristics_idc should not be greater than 255.");
 #endif

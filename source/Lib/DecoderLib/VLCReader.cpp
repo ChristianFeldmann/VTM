@@ -3055,10 +3055,10 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
       int bitsSliceAddress = ceilLog2(pps->getNumTiles());
       READ_CODE(bitsSliceAddress, uiCode, "slice_address");  sliceAddr = uiCode;
 #if JVET_R0210_NUMTILESINSLICE_SIGNALLING
-      if ((pps->getNumTiles() - sliceAddr) > 1)
+      if (((int)pps->getNumTiles() - (int)sliceAddr) > 1)
       {
 #endif
-      READ_UVLC(uiCode, "num_tiles_in_slice_minus1");        numTilesInSlice = uiCode + 1;
+        READ_UVLC(uiCode, "num_tiles_in_slice_minus1");        numTilesInSlice = uiCode + 1;
 #if JVET_R0210_NUMTILESINSLICE_SIGNALLING
       }
       else

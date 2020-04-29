@@ -2151,7 +2151,11 @@ Distortion RdCost::xCalcHADs2x2( const Pel *piOrg, const Pel *piCur, int iStride
   m[2] = diff[0] - diff[2];
   m[3] = diff[1] - diff[3];
 
+#if JVET_R0164_MEAN_SCALED_SATD
+  satd += abs(m[0] + m[1]) >> 2;
+#else
   satd += abs(m[0] + m[1]);
+#endif
   satd += abs(m[0] - m[1]);
   satd += abs(m[2] + m[3]);
   satd += abs(m[2] - m[3]);
@@ -2250,7 +2254,12 @@ Distortion RdCost::xCalcHADs4x4( const Pel *piOrg, const Pel *piCur, int iStride
   {
     satd += abs(d[k]);
   }
-  satd = ((satd+1)>>1);
+
+#if JVET_R0164_MEAN_SCALED_SATD
+  satd -= abs(d[0]);
+  satd += abs(d[0]) >> 2;
+#endif
+  satd  = ((satd+1)>>1);
 
   return satd;
 }
@@ -2347,7 +2356,11 @@ Distortion RdCost::xCalcHADs8x8( const Pel *piOrg, const Pel *piCur, int iStride
     }
   }
 
-  sad=((sad+2)>>2);
+#if JVET_R0164_MEAN_SCALED_SATD
+  sad -= abs(m2[0][0]);
+  sad += abs(m2[0][0]) >> 2;
+#endif
+  sad  = ((sad+2)>>2);
 
   return sad;
 }
@@ -2493,7 +2506,11 @@ Distortion RdCost::xCalcHADs16x8( const Pel *piOrg, const Pel *piCur, int iStrid
     }
   }
 
-  sad = ( int ) ( sad / sqrt( 16.0 * 8 ) * 2 );
+#if JVET_R0164_MEAN_SCALED_SATD
+  sad -= abs(m2[0][0]);
+  sad += abs(m2[0][0]) >> 2;
+#endif
+  sad  = ( int ) ( sad / sqrt( 16.0 * 8 ) * 2 );
 
   return sad;
 }
@@ -2630,7 +2647,11 @@ Distortion RdCost::xCalcHADs8x16( const Pel *piOrg, const Pel *piCur, int iStrid
     }
   }
 
-  sad = ( int ) ( sad / sqrt( 16.0 * 8 ) * 2 );
+#if JVET_R0164_MEAN_SCALED_SATD
+  sad -= abs(m2[0][0]);
+  sad += abs(m2[0][0]) >> 2;
+#endif
+  sad  = ( int ) ( sad / sqrt( 16.0 * 8 ) * 2 );
 
   return sad;
 }
@@ -2703,7 +2724,11 @@ Distortion RdCost::xCalcHADs4x8( const Pel *piOrg, const Pel *piCur, int iStride
     }
   }
 
-  sad = ( int ) ( sad / sqrt( 4.0 * 8 ) * 2 );
+#if JVET_R0164_MEAN_SCALED_SATD
+  sad -= abs(m2[0][0]);
+  sad += abs(m2[0][0]) >> 2;
+#endif
+  sad  = ( int ) ( sad / sqrt( 4.0 * 8 ) * 2 );
 
   return sad;
 }
@@ -2782,7 +2807,11 @@ Distortion RdCost::xCalcHADs8x4( const Pel *piOrg, const Pel *piCur, int iStride
     }
   }
 
-  sad = ( int ) ( sad / sqrt( 4.0 * 8 ) * 2 );
+#if JVET_R0164_MEAN_SCALED_SATD
+  sad -= abs(m2[0][0]);
+  sad += abs(m2[0][0]) >> 2;
+#endif
+  sad  = ( int ) ( sad / sqrt( 4.0 * 8 ) * 2 );
 
   return sad;
 }

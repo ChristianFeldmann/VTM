@@ -2879,8 +2879,19 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
 
     if(picHeader->getDeblockingFilterOverrideFlag())
     {
-      READ_FLAG( uiCode, "ph_deblocking_filter_disabled_flag" );
-      picHeader->setDeblockingFilterDisable(uiCode != 0);
+#if JVET_R0388_DBF_CLEANUP
+      if (!pps->getPPSDeblockingFilterDisabledFlag())
+      {
+#endif
+        READ_FLAG(uiCode, "ph_deblocking_filter_disabled_flag");
+        picHeader->setDeblockingFilterDisable(uiCode != 0);
+#if JVET_R0388_DBF_CLEANUP
+      }
+      else
+      {
+        picHeader->setDeblockingFilterDisable(false);
+      }
+#endif
       if (!picHeader->getDeblockingFilterDisable())
       {
         READ_SVLC( iCode, "ph_beta_offset_div2" );
@@ -3685,7 +3696,18 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
       }
       if(pcSlice->getDeblockingFilterOverrideFlag())
       {
-        READ_FLAG ( uiCode, "slice_deblocking_filter_disabled_flag" );   pcSlice->setDeblockingFilterDisable(uiCode ? 1 : 0);
+#if JVET_R0388_DBF_CLEANUP
+        if (!pps->getPPSDeblockingFilterDisabledFlag())
+        {
+#endif
+          READ_FLAG(uiCode, "slice_deblocking_filter_disabled_flag");   pcSlice->setDeblockingFilterDisable(uiCode ? 1 : 0);
+#if JVET_R0388_DBF_CLEANUP
+        }
+        else
+        {
+          pcSlice->setDeblockingFilterDisable(false);
+        }
+#endif
         if(!pcSlice->getDeblockingFilterDisable())
         {
           READ_SVLC( iCode, "slice_beta_offset_div2" );                     pcSlice->setDeblockingFilterBetaOffsetDiv2( iCode );

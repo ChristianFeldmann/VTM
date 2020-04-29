@@ -1763,6 +1763,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 #endif
 
   READ_UVLC(uiCode, "log2_parallel_merge_level_minus2");
+  CHECK(uiCode + 2 > ctbLog2SizeY, "The value of log2_parallel_merge_level_minus2 shall be in the range of 0 to ctbLog2SizeY - 2");
   pcSPS->setLog2ParallelMergeLevelMinus2(uiCode);
 
   READ_FLAG(uiCode, "sps_explicit_scaling_list_enabled_flag");                 pcSPS->setScalingListFlag(uiCode);

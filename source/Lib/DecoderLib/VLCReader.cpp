@@ -1402,12 +1402,20 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_CODE(2, uiCode, "num_extra_sh_bits_bytes");  pcSPS->setNumExtraSHBitsBytes(uiCode);
   parseExtraSHBitsStruct( pcSPS, uiCode );
 
+#if !JVET_R0156_ASPECT3_SPS_CLEANUP
   if (pcSPS->getMaxTLayers() - 1 > 0)
   {
     READ_FLAG(uiCode, "sps_sublayer_dpb_params_flag");     pcSPS->setSubLayerDpbParamsFlag(uiCode ? true : false);
   }
+#endif
   if (pcSPS->getPtlDpbHrdParamsPresentFlag())
   {
+#if JVET_R0156_ASPECT3_SPS_CLEANUP
+    if (pcSPS->getMaxTLayers() - 1 > 0)
+    {
+      READ_FLAG(uiCode, "sps_sublayer_dpb_params_flag");     pcSPS->setSubLayerDpbParamsFlag(uiCode ? true : false);
+    }
+#endif
     dpb_parameters(pcSPS->getMaxTLayers() - 1, pcSPS->getSubLayerDpbParamsFlag(), pcSPS);
   }
 

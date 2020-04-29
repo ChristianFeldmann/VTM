@@ -62,6 +62,8 @@
 #define JVET_R0208_ALF_VB_ROUNDING_FIX                    1 // JVET-R0208: Rounding offset fix for ALF virtual boundary processing
 #define JVET_R0232_CCALF_APS_CONSTRAINT                   1 // JVET-R0232 section 3.2: APS contraint for CCALF
 
+#define JVET_R0156_ASPECT3_SPS_CLEANUP                    1 // Condition sps_sublayer_dpb_params_flag on sps_ptl_dpb_hrd_params_present_flag, in addition to sps_max_sublayer_minus1,	JVET-R0156 proposal 3, JVET-R0170, JVET-R0222 proposal 2
+
 //########### place macros to be be kept below this line ###############
 
 #define JVET_M0497_MATRIX_MULT                            0 // 0: Fast method; 1: Matrix multiplication

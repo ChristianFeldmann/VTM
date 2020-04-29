@@ -854,10 +854,18 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   WRITE_CODE(0, 2, "num_extra_sh_bits_bytes");
   // extra_sh_bits_struct( num_extra_sh_bits_bytes )
 
+#if !JVET_R0156_ASPECT3_SPS_CLEANUP
   if (pcSPS->getMaxTLayers() - 1 > 0)
     WRITE_FLAG(pcSPS->getSubLayerDpbParamsFlag(), "sps_sublayer_dpb_params_flag");
+#endif
   if (pcSPS->getPtlDpbHrdParamsPresentFlag())
   {
+#if JVET_R0156_ASPECT3_SPS_CLEANUP
+    if (pcSPS->getMaxTLayers() - 1 > 0)
+    {
+      WRITE_FLAG(pcSPS->getSubLayerDpbParamsFlag(), "sps_sublayer_dpb_params_flag");
+    }
+#endif
     dpb_parameters(pcSPS->getMaxTLayers() - 1, pcSPS->getSubLayerDpbParamsFlag(), pcSPS);
   }
   CHECK( pcSPS->getMaxCUWidth() != pcSPS->getMaxCUHeight(),                          "Rectangular CTUs not supported" );

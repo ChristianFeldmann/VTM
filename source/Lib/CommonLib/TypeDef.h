@@ -51,6 +51,7 @@
 #include <cassert>
 
 //########### place macros to be removed in next cycle below this line ###############
+#define JVET_R0327_ONE_PASS_CCALF                         1 // JVET-R0327: One-pass CCALF
 
 #define JVET_R0271_SLICE_LEVEL_DQ_SDH_RRC                 1 // JVET-R0271/R0155: Slice level DQ and SDH granularity for mixed lossy/lossless.
 

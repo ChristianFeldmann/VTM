@@ -339,7 +339,36 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
     picHeader->setPicOutputFlag(true);
   }
   rpcSlice->setPOC( pocCurr );
+
+#if JVET_R0271_SLICE_LEVEL_DQ_SDH_RRC
+  if( m_pcCfg->getCostMode() != COST_LOSSLESS_CODING )
+  {
+    rpcSlice->setDepQuantEnabledFlag( m_pcCfg->getDepQuantEnabledFlag() );
+    rpcSlice->setSignDataHidingEnabledFlag( m_pcCfg->getSignDataHidingEnabledFlag() );
+    rpcSlice->setTSResidualCodingDisabledFlag( false );
+
+    CHECK( (m_pcCfg->getDepQuantEnabledFlag() || m_pcCfg->getSignDataHidingEnabledFlag() ) 
+           && rpcSlice->getTSResidualCodingDisabledFlag() , "TSRC cannot be bypassed if either DQ or SDH are enabled at slice level.");
+  }
+  else
+  {
+    rpcSlice->setDepQuantEnabledFlag( false ); //should be disabled for lossless
+    rpcSlice->setSignDataHidingEnabledFlag( false ); //should be disabled for lossless
+#if JVET_R0143_TSRCdisableLL
+    if( m_pcCfg->getTSRCdisableLL() )
+    {
+      rpcSlice->setTSResidualCodingDisabledFlag( true );
+    }
+#else
+    rpcSlice->setTSResidualCodingDisabledFlag( true );
+#endif
+  }
+#else
+#if JVET_R0143_TSRCdisableLL
+  if( ( m_pcCfg->getCostMode() == COST_LOSSLESS_CODING ) && m_pcCfg->getTSRCdisableLL() )
+#else
   if( m_pcCfg->getCostMode() == COST_LOSSLESS_CODING )
+#endif
   {
     rpcSlice->setTSResidualCodingDisabledFlag(true);
   }
@@ -347,6 +376,7 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
   {
     rpcSlice->setTSResidualCodingDisabledFlag(false);
   }
+#endif
 
 #if SHARP_LUMA_DELTA_QP
   pcPic->fieldPic = isField;

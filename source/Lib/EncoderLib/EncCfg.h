@@ -651,7 +651,9 @@ protected:
   double    m_RCInitialCpbFullness;
 #endif
   CostMode  m_costMode;                                       ///< The cost function to use, primarily when considering lossless coding.
-
+#if JVET_R0143_TSRCdisableLL
+  bool      m_TSRCdisableLL;                                  ///< Disable TSRC for lossless
+#endif
 
   DCI       m_dci;
   bool      m_DCIEnabled;                                     ///< enable Decoding Capability Information (DCI)
@@ -1687,8 +1689,10 @@ public:
 #endif
   CostMode     getCostMode( ) const                                  { return m_costMode; }
   void         setCostMode(CostMode m )                              { m_costMode = m; }
-
-
+#if JVET_R0143_TSRCdisableLL
+  bool         getTSRCdisableLL       ()                             { return m_TSRCdisableLL;         }
+  void         setTSRCdisableLL       ( bool b )                     { m_TSRCdisableLL = b;            }
+#endif
 
   void         setDCI(DCI *p)                                        { m_dci = *p; }
   DCI*         getDCI()                                              { return &m_dci; }

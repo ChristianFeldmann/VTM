@@ -622,6 +622,9 @@ protected:
   std::string m_scalingListFileName;                          ///< quantization matrix file name
   bool      m_disableScalingMatrixForLfnstBlks;
   CostMode  m_costMode;                                       ///< Cost mode to use
+#if JVET_R0143_TSRCdisableLL
+  bool      m_TSRCdisableLL;                                  ///< disable TSRC for lossless
+#endif
 
   bool      m_recalculateQPAccordingToLambda;                 ///< recalculate QP value according to the lambda value
 

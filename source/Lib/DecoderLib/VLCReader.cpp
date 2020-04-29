@@ -1293,7 +1293,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
       pcSPS->setSubPicHeight( 0, ( pcSPS->getMaxPicHeightInLumaSamples() + pcSPS->getCTUSize() - 1 ) >> floorLog2( pcSPS->getCTUSize() ) );
 
 #if JVET_R0156_ASPECT4_SPS_CLEANUP
-      pcSPS->setSubPicsIndependentFlag(1);
+      pcSPS->setIndependentSubPicsFlag(1);
 #endif
 
 #if JVET_R0071_SPS_PPS_CELANUP
@@ -1307,7 +1307,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     else
     {
 #if JVET_R0156_ASPECT4_SPS_CLEANUP
-    READ_FLAG(uiCode, "sps_independent_subpics_flag"); pcSPS->setSubPicsIndependentFlag(uiCode != 0);
+    READ_FLAG(uiCode, "sps_independent_subpics_flag"); pcSPS->setIndependentSubPicsFlag(uiCode != 0);
 #endif
     for (int picIdx = 0; picIdx < pcSPS->getNumSubPics(); picIdx++)
     {
@@ -1348,7 +1348,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
         pcSPS->setSubPicHeight(picIdx, (pcSPS->getMaxPicHeightInLumaSamples() + pcSPS->getCTUSize() - 1) /pcSPS->getCTUSize() - pcSPS->getSubPicCtuTopLeftY(picIdx));
       }
 #if JVET_R0156_ASPECT4_SPS_CLEANUP
-      if (!pcSPS->getSubPicsIndependentFlag())
+      if (!pcSPS->getIndependentSubPicsFlag())
       {
 #endif
         READ_FLAG(uiCode, "subpic_treated_as_pic_flag[ i ]");

@@ -1406,8 +1406,8 @@ public:
                                                                                               m_subPicId.resize(m_numSubPics);
                                                                                             }
   #if JVET_R0156_ASPECT4_SPS_CLEANUP
-  void      setSubPicsIndependentFlag(bool b)                                                { m_independentSubPicsFlag = b;                    }
-  bool      getSubPicsIndependentFlag() const                                                { return m_independentSubPicsFlag;                 }
+  void      setIndependentSubPicsFlag(bool b)                                                { m_independentSubPicsFlag = b;                    }
+  bool      getIndependentSubPicsFlag() const                                                { return m_independentSubPicsFlag;                 }
 #endif
   uint32_t  getNumSubPics( ) const                                                          { return  m_numSubPics;                           }
   void      setSubPicCtuTopLeftX( int i, uint32_t u )                                       { m_subPicCtuTopLeftX[i] = u;                     }

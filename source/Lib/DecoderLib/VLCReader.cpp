@@ -338,9 +338,9 @@ void HLSyntaxReader::parseRefPicList(SPS* sps, ReferencePictureList* rpl
     rpl->setLtrpInSliceHeaderFlag(code);
   }
 #if JVET_R0059_RPL_CLEANUP
-  else
+  else if(sps->getLongTermRefsPresent())
   {
-    rpl->setLtrpInSliceHeaderFlag(1);
+    rpl->setLtrpInSliceHeaderFlag( 1 );
   }
 #endif
 

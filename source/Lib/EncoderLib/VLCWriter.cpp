@@ -1922,7 +1922,14 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader, bool writeRbspTrailingB
 
     if(picHeader->getDeblockingFilterOverrideFlag())
     {
-      WRITE_FLAG( picHeader->getDeblockingFilterDisable(), "ph_deblocking_filter_disabled_flag" );
+#if JVET_R0388_DBF_CLEANUP
+      if (!pps->getPPSDeblockingFilterDisabledFlag())
+      {
+#endif
+        WRITE_FLAG(picHeader->getDeblockingFilterDisable(), "ph_deblocking_filter_disabled_flag");
+#if JVET_R0388_DBF_CLEANUP
+      }
+#endif
       if( !picHeader->getDeblockingFilterDisable() )
       {
         WRITE_SVLC( picHeader->getDeblockingFilterBetaOffsetDiv2(), "ph_beta_offset_div2" );
@@ -2324,7 +2331,14 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
       }
       if (pcSlice->getDeblockingFilterOverrideFlag())
       {
-        WRITE_FLAG(pcSlice->getDeblockingFilterDisable(), "slice_deblocking_filter_disabled_flag");
+#if JVET_R0388_DBF_CLEANUP
+        if (!pcSlice->getPPS()->getPPSDeblockingFilterDisabledFlag())
+        {
+#endif
+          WRITE_FLAG(pcSlice->getDeblockingFilterDisable(), "slice_deblocking_filter_disabled_flag");
+#if JVET_R0388_DBF_CLEANUP
+        }
+#endif
         if(!pcSlice->getDeblockingFilterDisable())
         {
           WRITE_SVLC (pcSlice->getDeblockingFilterBetaOffsetDiv2(), "slice_beta_offset_div2");

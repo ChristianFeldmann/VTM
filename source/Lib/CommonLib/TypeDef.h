@@ -51,6 +51,9 @@
 #include <cassert>
 
 //########### place macros to be removed in next cycle below this line ###############
+
+#define JVET_R0388_DBF_CLEANUP                            1 // JVET-R0388: Cleanups on deblocking signalling
+
 #define JVET_R0071_SPS_PPS_CELANUP                        1 // JVET-R0071 item 2-4: cleanups on subpicture signalling (item 1 has been ported in JVET_R0156_ASPECT4)
 
 #define JVET_R0271_SLICE_LEVEL_DQ_SDH_RRC                 1 // JVET-R0271/R0155: Slice level DQ and SDH granularity for mixed lossy/lossless.

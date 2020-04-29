@@ -1217,6 +1217,9 @@ private:
   Window                m_conformanceWindow;
   bool                  m_subPicInfoPresentFlag;                // indicates the presence of sub-picture info
   uint32_t              m_numSubPics;                        //!< number of sub-pictures used
+#if JVET_R0156_ASPECT4_SPS_CLEANUP
+  bool                  m_independentSubPicsFlag;
+#endif
   std::vector<uint32_t> m_subPicCtuTopLeftX;
   std::vector<uint32_t> m_subPicCtuTopLeftY;
   std::vector<uint32_t> m_subPicWidth;
@@ -1402,6 +1405,10 @@ public:
                                                                                               m_loopFilterAcrossSubpicEnabledFlag.resize(m_numSubPics);
                                                                                               m_subPicId.resize(m_numSubPics);
                                                                                             }
+  #if JVET_R0156_ASPECT4_SPS_CLEANUP
+  void      setIndependentSubPicsFlag(bool b)                                                { m_independentSubPicsFlag = b;                    }
+  bool      getIndependentSubPicsFlag() const                                                { return m_independentSubPicsFlag;                 }
+#endif
   uint32_t  getNumSubPics( ) const                                                          { return  m_numSubPics;                           }
   void      setSubPicCtuTopLeftX( int i, uint32_t u )                                       { m_subPicCtuTopLeftX[i] = u;                     }
   uint32_t  getSubPicCtuTopLeftX( int i ) const                                             { return  m_subPicCtuTopLeftX[i];                 }

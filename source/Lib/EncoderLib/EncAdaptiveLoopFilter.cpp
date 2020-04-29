@@ -4015,7 +4015,8 @@ void EncAdaptiveLoopFilter::getBlkStatsCcAlf(AlfCovariance &alfCovariance, const
   {
     int vbDistance = ((i << getComponentScaleY(compID, m_chromaFormat)) % vbCTUHeight) - vbPos;
 #if JVET_R0233_CCALF_LINE_BUFFER_REDUCTION
-    for (int j = 0; j < compArea.width && (!((getComponentScaleY(compID, m_chromaFormat) == 0) && (vbDistance == 0 || vbDistance == 1))); j++)
+    const bool skipThisRow = getComponentScaleY(compID, m_chromaFormat) == 0 && (vbDistance == 0 || vbDistance == 1);
+    for (int j = 0; j < compArea.width && (!skipThisRow); j++)
 #else
     for (int j = 0; j < compArea.width; j++)
 #endif

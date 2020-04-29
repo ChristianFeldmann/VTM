@@ -641,6 +641,12 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
     READ_CODE(1, uiCode, "loop_filter_across_tiles_enabled_flag");    pcPPS->setLoopFilterAcrossTilesEnabledFlag( uiCode == 1 );
     READ_CODE(1, uiCode, "loop_filter_across_slices_enabled_flag");   pcPPS->setLoopFilterAcrossSlicesEnabledFlag( uiCode == 1 );
   }
+#if JVET_R0071_SPS_PPS_CELANUP
+  else
+  {
+    pcPPS->setSingleSlicePerSubPicFlag(1);
+  }
+#endif
 
   READ_FLAG( uiCode,   "cabac_init_present_flag" );            pcPPS->setCabacInitPresentFlag( uiCode ? true : false );
 
@@ -1285,11 +1291,18 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
       pcSPS->setSubPicCtuTopLeftY( 0, 0 );
       pcSPS->setSubPicWidth( 0, ( pcSPS->getMaxPicWidthInLumaSamples() + pcSPS->getCTUSize() - 1 ) >> floorLog2( pcSPS->getCTUSize() ) );
       pcSPS->setSubPicHeight( 0, ( pcSPS->getMaxPicHeightInLumaSamples() + pcSPS->getCTUSize() - 1 ) >> floorLog2( pcSPS->getCTUSize() ) );
+
 #if JVET_R0156_ASPECT4_SPS_CLEANUP
       pcSPS->setSubPicsIndependentFlag(1);
 #endif
+
+#if JVET_R0071_SPS_PPS_CELANUP
+      pcSPS->setSubPicTreatedAsPicFlag(0, 1);
+      pcSPS->setLoopFilterAcrossSubpicEnabledFlag(0, 0);
+#else
       pcSPS->setSubPicTreatedAsPicFlag( 0, 0 );
       pcSPS->setLoopFilterAcrossSubpicEnabledFlag( 0, 1 );
+#endif
     }
     else
     {
@@ -1415,12 +1428,20 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_CODE(2, uiCode, "num_extra_sh_bits_bytes");  pcSPS->setNumExtraSHBitsBytes(uiCode);
   parseExtraSHBitsStruct( pcSPS, uiCode );
 
+#if !JVET_R0156_ASPECT3_SPS_CLEANUP
   if (pcSPS->getMaxTLayers() - 1 > 0)
   {
     READ_FLAG(uiCode, "sps_sublayer_dpb_params_flag");     pcSPS->setSubLayerDpbParamsFlag(uiCode ? true : false);
   }
+#endif
   if (pcSPS->getPtlDpbHrdParamsPresentFlag())
   {
+#if JVET_R0156_ASPECT3_SPS_CLEANUP
+    if (pcSPS->getMaxTLayers() - 1 > 0)
+    {
+      READ_FLAG(uiCode, "sps_sublayer_dpb_params_flag");     pcSPS->setSubLayerDpbParamsFlag(uiCode ? true : false);
+    }
+#endif
     dpb_parameters(pcSPS->getMaxTLayers() - 1, pcSPS->getSubLayerDpbParamsFlag(), pcSPS);
   }
 
@@ -2827,6 +2848,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   }
 
 
+#if !JVET_R0271_SLICE_LEVEL_DQ_SDH_RRC
   // dependent quantization
   if (sps->getDepQuantEnabledFlag())
   {
@@ -2848,6 +2870,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   {
     picHeader->setSignDataHidingEnabledFlag(false);
   }
+#endif
 
   // deblocking filter controls
   if (pps->getDeblockingFilterControlPresentFlag())
@@ -3724,8 +3747,43 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
       pcSlice->setDeblockingFilterCrTcOffsetDiv2  ( 0 );
     }
 
+#if JVET_R0271_SLICE_LEVEL_DQ_SDH_RRC
+  // dependent quantization
+  if( sps->getDepQuantEnabledFlag() )
+  {
+    READ_FLAG(uiCode, "slice_dep_quant_enabled_flag");
+    pcSlice->setDepQuantEnabledFlag(uiCode != 0);
+  }
+  else
+  {
+    pcSlice->setDepQuantEnabledFlag(false);
+  }
+
+  // sign data hiding
+  if( sps->getSignDataHidingEnabledFlag() && !pcSlice->getDepQuantEnabledFlag() )
+  {
+    READ_FLAG( uiCode, "slice_sign_data_hiding_enabled_flag" );
+    pcSlice->setSignDataHidingEnabledFlag( uiCode != 0 );
+  }
+  else
+  {
+    pcSlice->setSignDataHidingEnabledFlag(false);
+  }
+
+  // signal TS residual coding disabled flag
+  if( !pcSlice->getDepQuantEnabledFlag() && !pcSlice->getSignDataHidingEnabledFlag() )
+  {
+    READ_FLAG(uiCode, "slice_ts_residual_coding_disabled_flag");
+    pcSlice->setTSResidualCodingDisabledFlag( uiCode != 0 );
+  }
+  else
+  {
+    pcSlice->setTSResidualCodingDisabledFlag( false );
+  }
+#else
 	READ_FLAG(uiCode, "slice_ts_residual_coding_disabled_flag");
 	pcSlice->setTSResidualCodingDisabledFlag(uiCode != 0);
+#endif
 
   if (picHeader->getLmcsEnabledFlag())
   {

@@ -69,6 +69,10 @@ Slice::Slice()
 , m_deblockingFilterCbTcOffsetDiv2  ( 0 )
 , m_deblockingFilterCrBetaOffsetDiv2( 0 )
 , m_deblockingFilterCrTcOffsetDiv2  ( 0 )
+#if JVET_R0271_SLICE_LEVEL_DQ_SDH_RRC
+, m_depQuantEnabledFlag             ( false )
+, m_signDataHidingEnabledFlag       ( false )
+#endif
 , m_tsResidualCodingDisabledFlag  ( false )
 , m_pendingRasInit                ( false )
 , m_bCheckLDC                     ( false )
@@ -907,6 +911,10 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
   m_deblockingFilterCbTcOffsetDiv2    = pSrc->m_deblockingFilterCbTcOffsetDiv2;
   m_deblockingFilterCrBetaOffsetDiv2  = pSrc->m_deblockingFilterCrBetaOffsetDiv2;
   m_deblockingFilterCrTcOffsetDiv2    = pSrc->m_deblockingFilterCrTcOffsetDiv2;
+#if JVET_R0271_SLICE_LEVEL_DQ_SDH_RRC
+  m_depQuantEnabledFlag               = pSrc->m_depQuantEnabledFlag;
+  m_signDataHidingEnabledFlag         = pSrc->m_signDataHidingEnabledFlag;
+#endif
   m_tsResidualCodingDisabledFlag      = pSrc->m_tsResidualCodingDisabledFlag;
 
   for (i = 0; i < NUM_REF_PIC_LIST_01; i++)
@@ -2170,8 +2178,10 @@ PicHeader::PicHeader()
 , m_numAlfAps                                     ( 0 )
 , m_alfApsId                                      ( 0 )
 , m_alfChromaApsId                                ( 0 )
+#if !JVET_R0271_SLICE_LEVEL_DQ_SDH_RRC
 , m_depQuantEnabledFlag                           ( 0 )
 , m_signDataHidingEnabledFlag                     ( 0 )
+#endif
 , m_deblockingFilterOverrideFlag                  ( 0 )
 , m_deblockingFilterDisable                       ( 0 )
 , m_deblockingFilterBetaOffsetDiv2                ( 0 )
@@ -2261,8 +2271,10 @@ void PicHeader::initPicHeader()
   m_qpDelta                                       = 0;
   m_numAlfAps                                     = 0;
   m_alfChromaApsId                                = 0;
+#if !JVET_R0271_SLICE_LEVEL_DQ_SDH_RRC
   m_depQuantEnabledFlag                           = 0;
   m_signDataHidingEnabledFlag                     = 0;
+#endif
   m_deblockingFilterOverrideFlag                  = 0;
   m_deblockingFilterDisable                       = 0;
   m_deblockingFilterBetaOffsetDiv2                = 0;

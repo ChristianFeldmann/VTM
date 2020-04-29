@@ -2365,7 +2365,7 @@ SPS::SPS()
 , m_subPicInfoPresentFlag     (false)
 , m_numSubPics(1)
 #if JVET_R0156_ASPECT4_SPS_CLEANUP
-, m_independentSubPicFlag     (false)
+, m_independentSubPicsFlag     (false)
 #endif
 , m_subPicIdMappingExplicitlySignalledFlag ( false )
 , m_subPicIdMappingInSpsFlag ( false )

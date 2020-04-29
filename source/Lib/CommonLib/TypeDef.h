@@ -61,6 +61,9 @@
 #define JVET_R0208_ALF_VB_ROUNDING_FIX                    1 // JVET-R0208: Rounding offset fix for ALF virtual boundary processing
 #define JVET_R0232_CCALF_APS_CONSTRAINT                   1 // JVET-R0232 section 3.2: APS contraint for CCALF
 
+
+
+
 #define JVET_R0156_ASPECT4_SPS_CLEANUP                    1 // JVET-R0071 #1, R0156 #4, R0284 #1: Condition sps_independent_subpics_flag on "sps_num_subpics_minus1 > 0"
 
 //########### place macros to be be kept below this line ###############

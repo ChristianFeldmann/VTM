@@ -1218,7 +1218,7 @@ private:
   bool                  m_subPicInfoPresentFlag;                // indicates the presence of sub-picture info
   uint32_t              m_numSubPics;                        //!< number of sub-pictures used
 #if JVET_R0156_ASPECT4_SPS_CLEANUP
-  bool                  m_independentSubPicFlag;
+  bool                  m_independentSubPicsFlag;
 #endif
   std::vector<uint32_t> m_subPicCtuTopLeftX;
   std::vector<uint32_t> m_subPicCtuTopLeftY;
@@ -1406,8 +1406,8 @@ public:
                                                                                               m_subPicId.resize(m_numSubPics);
                                                                                             }
   #if JVET_R0156_ASPECT4_SPS_CLEANUP
-  void      setSubPicIndependentFlag(bool b)                                                { m_independentSubPicFlag = b;                    }
-  bool      getSubPicIndependentFlag() const                                                { return m_independentSubPicFlag;                 }
+  void      setSubPicsIndependentFlag(bool b)                                                { m_independentSubPicsFlag = b;                    }
+  bool      getSubPicsIndependentFlag() const                                                { return m_independentSubPicsFlag;                 }
 #endif
   uint32_t  getNumSubPics( ) const                                                          { return  m_numSubPics;                           }
   void      setSubPicCtuTopLeftX( int i, uint32_t u )                                       { m_subPicCtuTopLeftX[i] = u;                     }

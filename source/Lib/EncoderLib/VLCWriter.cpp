@@ -793,7 +793,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
     if( pcSPS->getNumSubPics() > 1 )
     {
 #if JVET_R0156_ASPECT4_SPS_CLEANUP
-    WRITE_FLAG(pcSPS->getSubPicIndependentFlag(), "sps_independent_subpics_flag");
+    WRITE_FLAG(pcSPS->getSubPicsIndependentFlag(), "sps_independent_subpics_flag");
 #endif
     for (int picIdx = 0; picIdx < pcSPS->getNumSubPics(); picIdx++)
     {
@@ -814,7 +814,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
         WRITE_CODE( pcSPS->getSubPicHeight(picIdx) - 1,  ceilLog2(( pcSPS->getMaxPicHeightInLumaSamples() +  pcSPS->getCTUSize() - 1)  / pcSPS->getCTUSize()), "subpic_height_minus1[ i ]"   );
       }
 #if JVET_R0156_ASPECT4_SPS_CLEANUP
-      if (!pcSPS->getSubPicIndependentFlag())
+      if (!pcSPS->getSubPicsIndependentFlag())
       {
 #endif
         WRITE_FLAG( pcSPS->getSubPicTreatedAsPicFlag(picIdx),  "subpic_treated_as_pic_flag[ i ]" );

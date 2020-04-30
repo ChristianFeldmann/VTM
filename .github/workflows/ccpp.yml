@@ -17,6 +17,11 @@ jobs:
       working-directory: ./build
     - name: list dirs
       run: ls
+    - name: zip
+      run: zip -r VTM-Ubuntu.zip ./bin/umake/gcc-7.5/x86_64/release
+    - uses: actions/upload-artifact@v2
+      with:
+        path: VTM-Mac.zip
   build-windows:
     runs-on: windows-2019
     steps:
@@ -29,7 +34,7 @@ jobs:
     - name: build
       run: |
         call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-        cmake -G "NMake Makefiles" ..
+        cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release ..
         jom
       working-directory: ./build
       shell: cmd
@@ -39,6 +44,11 @@ jobs:
     - name: upload files
       if: github.event_name == 'release' && github.event.action == 'created'
       run: echo "This is a release build"
+    - name: zip
+      run: 7zip a VTM-Windows.zip ./bin/nmake_makefiles/msvc-19.25/x86_64/release/*
+    - uses: actions/upload-artifact@v2
+      with:
+        path: VTM-Mac.zip
   build-macos:
     runs-on: macos-10.15
     steps:
@@ -46,12 +56,18 @@ jobs:
     - uses: actions/checkout@v2
     - name: make build dir
       run: mkdir build
-    - name: cmake
+    - name: build
       run: |
         cmake ..
         make -j 2
       working-directory: ./build
     - name: list dirs
       run: ls 
+    - name: zip
+      run: zip -r VTM-Mac.zip ./bin/umake/clang-11.0/x86_64/release
+    - uses: actions/upload-artifact@v2
+      with:
+        path: VTM-Mac.zip
+
   # How to upload files to the release:
   # https://github.com/Blacksmoke16/oq/pull/47/files#diff-082c28d748ad2e3eecc5508d740d9417R9-R29

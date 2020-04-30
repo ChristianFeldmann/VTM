@@ -217,6 +217,9 @@ void IntraPrediction::predIntraAng( const ComponentID compId, PelBuf &piPred, co
   const int            iWidth       = piPred.width;
   const int            iHeight      = piPred.height;
   CHECK(iWidth == 2, "Width of 2 is not supported");
+#if JVET_R0350_MIP_CHROMA_444_SINGLETREE
+  CHECK(PU::isMIP(pu, toChannelType(compId)), "We should not get here for MIP.");
+#endif
   const uint32_t       uiDirMode    = isLuma( compId ) && pu.cu->bdpcmMode ? BDPCM_IDX : !isLuma(compId) && pu.cu->bdpcmModeChroma ? BDPCM_IDX : PU::getFinalIntraMode(pu, channelType);
 
   CHECK( floorLog2(iWidth) < 2 && pu.cs->pcv->noChroma2x2, "Size not allowed" );
@@ -1836,24 +1839,62 @@ void IntraPrediction::initIntraMip( const PredictionUnit &pu, const CompArea &ar
 
   // prepare input (boundary) data for prediction
   CHECK( m_ipaParam.refFilterFlag, "ERROR: unfiltered refs expected for MIP" );
+#if JVET_R0350_MIP_CHROMA_444_SINGLETREE
+  Pel       *ptrSrc     = getPredictorPtr(area.compID);
+  const int  srcStride  = m_refBufferStride[area.compID];
+  const int  srcHStride = 2;
+
+  m_matrixIntraPred.prepareInputForPred(CPelBuf(ptrSrc, srcStride, srcHStride), area,
+                                        pu.cu->slice->getSPS()->getBitDepth(toChannelType(area.compID)), area.compID);
+#else
   Pel *ptrSrc = getPredictorPtr( COMPONENT_Y );
   const int srcStride  = m_refBufferStride[COMPONENT_Y];
   const int srcHStride = 2;
 
   m_matrixIntraPred.prepareInputForPred( CPelBuf( ptrSrc, srcStride, srcHStride ), area, pu.cu->slice->getSPS()->getBitDepth( CHANNEL_TYPE_LUMA ) );
+#endif
 }
 
 void IntraPrediction::predIntraMip( const ComponentID compId, PelBuf &piPred, const PredictionUnit &pu )
 {
+#if !JVET_R0350_MIP_CHROMA_444_SINGLETREE
   CHECK( compId != COMPONENT_Y, "Error: chroma not supported" );
+#endif
   CHECK( piPred.width > MIP_MAX_WIDTH || piPred.height > MIP_MAX_HEIGHT, "Error: block size not supported for MIP" );
   CHECK( piPred.width != (1 << floorLog2(piPred.width)) || piPred.height != (1 << floorLog2(piPred.height)), "Error: expecting blocks of size 2^M x 2^N" );
 
   // generate mode-specific prediction
+#if JVET_R0350_MIP_CHROMA_444_SINGLETREE
+  uint32_t modeIdx       = MAX_NUM_MIP_MODE;
+  bool     transposeFlag = false;
+  if (compId == COMPONENT_Y)
+  {
+    modeIdx       = pu.intraDir[CHANNEL_TYPE_LUMA];
+    transposeFlag = pu.mipTransposedFlag;
+  }
+  else
+  {
+    const PredictionUnit &coLocatedLumaPU = PU::getCoLocatedLumaPU(pu);
+
+    CHECK(pu.intraDir[CHANNEL_TYPE_CHROMA] != DM_CHROMA_IDX, "Error: MIP is only supported for chroma with DM_CHROMA.");
+    CHECK(!coLocatedLumaPU.cu->mipFlag, "Error: Co-located luma CU should use MIP.");
+
+    modeIdx       = coLocatedLumaPU.intraDir[CHANNEL_TYPE_LUMA];
+    transposeFlag = coLocatedLumaPU.mipTransposedFlag;
+  }
+  const int bitDepth = pu.cu->slice->getSPS()->getBitDepth(toChannelType(compId));
+
+  CHECK(modeIdx >= getNumModesMip(piPred), "Error: Wrong MIP mode index");
+#else
   const int bitDepth = pu.cu->slice->getSPS()->getBitDepth( CHANNEL_TYPE_LUMA );
+#endif
 
   static_vector<int, MIP_MAX_WIDTH* MIP_MAX_HEIGHT> predMip( piPred.width * piPred.height );
+#if JVET_R0350_MIP_CHROMA_444_SINGLETREE
+  m_matrixIntraPred.predBlock(predMip.data(), modeIdx, transposeFlag, bitDepth, compId);
+#else
   m_matrixIntraPred.predBlock( predMip.data(), pu.intraDir[CHANNEL_TYPE_LUMA], pu.mipTransposedFlag, bitDepth );
+#endif
 
   for( int y = 0; y < piPred.height; y++ )
   {

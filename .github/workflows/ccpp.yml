@@ -21,6 +21,7 @@ jobs:
       run: zip -r VTM-Ubuntu.zip ./bin/umake/gcc-7.5/x86_64/release
     - uses: actions/upload-artifact@v2
       with:
+        name: VTM-Ubuntu.zip
         path: VTM-Ubuntu.zip
   build-windows:
     runs-on: windows-2019
@@ -48,7 +49,8 @@ jobs:
       run: 7zip a VTM-Windows.zip .\bin\nmake_makefiles\msvc-19.25\x86_64\release
     - uses: actions/upload-artifact@v2
       with:
-        path: VTM-Mac.zip
+        name: VTM-Windows.zip
+        path: VTM-Windows.zip
   build-macos:
     runs-on: macos-10.15
     steps:
@@ -67,6 +69,7 @@ jobs:
       run: zip -r VTM-Mac.zip ./bin/umake/clang-11.0/x86_64/release
     - uses: actions/upload-artifact@v2
       with:
+        name: VTM-Mac.zip
         path: VTM-Mac.zip
 
   # How to upload files to the release:

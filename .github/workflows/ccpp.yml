@@ -21,7 +21,7 @@ jobs:
       run: zip -r VTM-Ubuntu.zip ./bin/umake/gcc-7.5/x86_64/release
     - uses: actions/upload-artifact@v2
       with:
-        path: VTM-Mac.zip
+        path: VTM-Ubuntu.zip
   build-windows:
     runs-on: windows-2019
     steps:
@@ -45,7 +45,7 @@ jobs:
       if: github.event_name == 'release' && github.event.action == 'created'
       run: echo "This is a release build"
     - name: zip
-      run: 7zip a VTM-Windows.zip ./bin/nmake_makefiles/msvc-19.25/x86_64/release/*
+      run: 7zip a VTM-Windows.zip .\bin\nmake_makefiles\msvc-19.25\x86_64\release
     - uses: actions/upload-artifact@v2
       with:
         path: VTM-Mac.zip

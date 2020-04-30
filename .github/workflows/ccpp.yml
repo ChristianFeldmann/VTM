@@ -7,19 +7,18 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
     # Checkout the current branch
-    - uses: actions/checkout@v2
-    - name: make build dir
-      run: mkdir build
+    - name: Checkout code
+      uses: actions/checkout@v2
     - name: build
       run: |
+        mkdir build
+        cd build
         cmake ..
         make -j 2
-      working-directory: ./build
-    - name: list dirs
-      run: ls
-    - name: zip
+    - name: Zip build files
       run: zip -r VTM-Ubuntu.zip ./bin/umake/gcc-7.5/x86_64/release
-    - uses: actions/upload-artifact@v2
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v2
       with:
         name: VTM-Ubuntu.zip
         path: VTM-Ubuntu.zip
@@ -27,27 +26,25 @@ jobs:
     runs-on: windows-2019
     steps:
     # Checkout the current branch
-    - uses: actions/checkout@v2
-    - name: install jom
+    - name: Checkout code
+      uses: actions/checkout@v2
+    - name: Install jom
       run: choco install jom
-    - name: make build dir
-      run: mkdir build
-    - name: build
+    - name: Build
       run: |
+        mkdir build
+        cd build
         call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
         cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release ..
         jom
-      working-directory: ./build
       shell: cmd
-    - name: list dirs
-      run: |
-        dir
     - name: upload files
       if: github.event_name == 'release' && github.event.action == 'created'
       run: echo "This is a release build"
-    - name: zip
-      run: 7zip a VTM-Windows.zip .\bin\nmake_makefiles\msvc-19.25\x86_64\release
-    - uses: actions/upload-artifact@v2
+    - name: Zip build files
+      run: 7z a VTM-Windows.zip .\bin\nmake_makefiles\msvc-19.25\x86_64\release
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v2
       with:
         name: VTM-Windows.zip
         path: VTM-Windows.zip
@@ -55,19 +52,18 @@ jobs:
     runs-on: macos-10.15
     steps:
     # Checkout the current branch
-    - uses: actions/checkout@v2
-    - name: make build dir
-      run: mkdir build
-    - name: build
+    - name: Checkout code
+      uses: actions/checkout@v2
+    - name: Build
       run: |
+        mkdir build
+        cd build
         cmake ..
         make -j 2
-      working-directory: ./build
-    - name: list dirs
-      run: ls 
-    - name: zip
+    - name: Zip build files
       run: zip -r VTM-Mac.zip ./bin/umake/clang-11.0/x86_64/release
-    - uses: actions/upload-artifact@v2
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v2
       with:
         name: VTM-Mac.zip
         path: VTM-Mac.zip

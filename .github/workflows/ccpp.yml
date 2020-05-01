@@ -3,32 +3,35 @@ name: C/C++ CI
 on: [push]
 
 jobs:
-  build-ubuntu:
-    runs-on: ubuntu-18.04
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: ['ubuntu-18.04', 'windows-2019', 'macos-10.15']
+    include: 
+        - os: ubuntu-18.04
+          BIN_PATH: bin/umake/gcc-7.5/x86_64/release
+          ARTIFACT_NAME: VTM-Ubuntu
+        - os: windows-2019
+          BIN_PATH: bin\nmake_makefiles\msvc-19.25\x86_64\release
+          ARTIFACT_NAME: VTM-Windows
+        - os: macos-10.15
+          BIN_PATH: bin/umake/clang-11.0/x86_64/release
+          ARTIFACT_NAME: VTM-Macos
     steps:
-    # Checkout the current branch
     - name: Checkout code
       uses: actions/checkout@v2
-    - name: build
+    - name: Install jom
+      run: choco install jom
+      if: matrix.os == 'windows-2019'
+    - name: Build ${{ matrix.os }}
       run: |
         mkdir build
         cd build
         cmake ..
         make -j 2
-    - name: Upload Artifact
-      uses: actions/upload-artifact@v2
-      with:
-        name: VTM-Ubuntu
-        path: bin/umake/gcc-7.5/x86_64/release
-  build-windows:
-    runs-on: windows-2019
-    steps:
-    # Checkout the current branch
-    - name: Checkout code
-      uses: actions/checkout@v2
-    - name: Install jom
-      run: choco install jom
-    - name: Build
+      if: matrix.os == 'ubuntu-18.04' || matrix.os == 'macos-10.15'
+    - name: Build ${{ matrix.os }}
       run: |
         mkdir build
         cd build
@@ -36,31 +39,12 @@ jobs:
         cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release ..
         jom
       shell: cmd
-    - name: upload files
-      if: github.event_name == 'release' && github.event.action == 'created'
-      run: echo "This is a release build"
+      if: matrix.os == 'windows-2019'
     - name: Upload Artifact
       uses: actions/upload-artifact@v2
       with:
-        name: VTM-Windows
-        path: bin\nmake_makefiles\msvc-19.25\x86_64\release
-  build-macos:
-    runs-on: macos-10.15
-    steps:
-    # Checkout the current branch
-    - name: Checkout code
-      uses: actions/checkout@v2
-    - name: Build
-      run: |
-        mkdir build
-        cd build
-        cmake ..
-        make -j 2
-    - name: Upload Artifact
-      uses: actions/upload-artifact@v2
-      with:
-        name: VTM-Mac
-        path: bin/umake/clang-11.0/x86_64/release
+        name: ${{matrix.ARTIFACT_NAME}}
+        path: ${{matrix.BIN_PATH}}
 
   # How to upload files to the release:
   # https://github.com/Blacksmoke16/oq/pull/47/files#diff-082c28d748ad2e3eecc5508d740d9417R9-R29

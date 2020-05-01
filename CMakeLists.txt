@@ -148,6 +148,7 @@ add_subdirectory( "source/Lib/Utilities" )
 
 add_subdirectory( "source/App/DecoderAnalyserApp" )
 add_subdirectory( "source/App/DecoderApp" )
+add_subdirectory( "source/App/DecoderLib" )
 add_subdirectory( "source/App/EncoderApp" )
 add_subdirectory( "source/App/SEIRemovalApp" )
 add_subdirectory( "source/App/Parcat" )

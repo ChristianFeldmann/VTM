@@ -21,17 +21,17 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
-    - name: Install jom
+    - name: Install jom (Windows only)
       run: choco install jom
       if: matrix.os == 'windows-2019'
-    - name: Build ${{ matrix.os }}
+    - name: Build Linux/Mac
       run: |
         mkdir build
         cd build
         cmake ..
         make -j 2
       if: matrix.os == 'ubuntu-18.04' || matrix.os == 'macos-10.15'
-    - name: Build ${{ matrix.os }}
+    - name: Build Windows
       run: |
         mkdir build
         cd build

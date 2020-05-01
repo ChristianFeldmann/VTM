@@ -1168,8 +1168,8 @@ static void
 validateMinCrRequirements(const ProfileLevelTierFeatures &plt, std::size_t numBytesInVclNalUnits, const Picture *pPic, const EncCfg *pCfg)
 {
   //  numBytesInVclNalUnits shall be less than or equal to
-  //     FormatCapabilityFactor * MaxLumaSr * framePeriod ÷ MinCr,
-  //     ( = FormatCapabilityFactor * MaxLumaSr ÷ (MinCr * frameRate),
+  //     FormatCapabilityFactor * MaxLumaSr * framePeriod / MinCr,
+  //     ( = FormatCapabilityFactor * MaxLumaSr / (MinCr * frameRate),
   if (plt.getLevelTierFeatures() && plt.getProfileFeatures() && plt.getLevelTierFeatures()->level!=Level::LEVEL8_5)
   {
     const uint32_t formatCapabilityFactorx1000 = plt.getProfileFeatures()->formatCapabilityFactorx1000;

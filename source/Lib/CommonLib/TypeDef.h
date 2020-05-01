@@ -51,18 +51,41 @@
 #include <cassert>
 
 //########### place macros to be removed in next cycle below this line ###############
+#define JVET_R0327_ONE_PASS_CCALF                         1 // JVET-R0327: One-pass CCALF
+
+#define JVET_R0200_MOVE_LMCS_AND_SCALING_LIST_SE          1 // JVET-R0200 Move the SH flags slice_lmcs_enabled_flag and slice_explicit_scaling_list_used_flag to be just after the ALF parameters
+
+#define JVET_R0388_DBF_CLEANUP                            1 // JVET-R0388: Cleanups on deblocking signalling
+
+#define JVET_R0071_SPS_PPS_CELANUP                        1 // JVET-R0071 item 2-4: cleanups on subpicture signalling (item 1 has been ported in JVET_R0156_ASPECT4)
 
 #define JVET_R0271_SLICE_LEVEL_DQ_SDH_RRC                 1 // JVET-R0271/R0155: Slice level DQ and SDH granularity for mixed lossy/lossless.
 
 #define JVET_R0143_TSRCdisableLL                          1 // JVET-R0143: disable TSRC for lossless coding
 
+#define JVET_R0371_MAX_NUM_SUB_BLK_MRG_CAND               1 // JVET-R0371: set the range of max number of subblock based merge candidate to 0 to 5 – sps_sbtmvp_enabled_flag. 
+
 #define JVET_R0233_CCALF_LINE_BUFFER_REDUCTION            1 // JVET-R0233 method 2: Line buffer reduction for CCALF
 
-#define JVET_Q0471_CHROMA_QT_SPLIT                        1 // JVET-Q0471: Chroma QT split
+#define JVET_Q0471_CHROMA_QT_SPLIT                        0 // JVET-Q0471: Chroma QT split, reverted by JVET-R0131
 #define JVET_R0208_ALF_VB_ROUNDING_FIX                    1 // JVET-R0208: Rounding offset fix for ALF virtual boundary processing
 #define JVET_R0232_CCALF_APS_CONSTRAINT                   1 // JVET-R0232 section 3.2: APS contraint for CCALF
+#define JVET_R0210_NUMTILESINSLICE_SIGNALLING             1 // JVET-R0210 section 3.3: Don't signal NumTilesInSlice syntax element when numTilesInPic - slice_address is 1.
+
+
+
+
+
+#define JVET_R0156_ASPECT4_SPS_CLEANUP                    1 // JVET-R0071 #1, R0156 #4, R0284 #1: Condition sps_independent_subpics_flag on "sps_num_subpics_minus1 > 0"
+
+#define JVET_R0156_ASPECT3_SPS_CLEANUP                    1 // Condition sps_sublayer_dpb_params_flag on sps_ptl_dpb_hrd_params_present_flag, in addition to sps_max_sublayer_minus1,	JVET-R0156 proposal 3, JVET-R0170, JVET-R0222 proposal 2
+
+
+#define JVET_R0350_MIP_CHROMA_444_SINGLETREE              1 // JVET-R0350: MIP for chroma in case of 4:4:4 format and single tree
 
 //########### place macros to be be kept below this line ###############
+
+#define JVET_R0164_MEAN_SCALED_SATD                       1 // JVET-R0164: Use a mean scaled version of SATD in encoder decisions
 
 #define JVET_M0497_MATRIX_MULT                            0 // 0: Fast method; 1: Matrix multiplication
 

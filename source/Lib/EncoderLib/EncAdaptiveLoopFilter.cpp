@@ -1077,6 +1077,13 @@ void EncAdaptiveLoopFilter::ALFProcess(CodingStructure& cs, const double *lambda
   m_tempBuf.get(COMPONENT_Cr).copyFrom(cs.getRecoBuf().get(COMPONENT_Cr));
   recYuv = m_tempBuf.getBuf(cs.area);
   recYuv.extendBorderPel(MAX_ALF_FILTER_LENGTH >> 1);
+  
+#if JVET_R0327_ONE_PASS_CCALF
+  deriveStatsForCcAlfFiltering(orgYuv, recYuv, COMPONENT_Cb, m_numCTUsInWidth, (0 + 1), cs);
+  deriveStatsForCcAlfFiltering(orgYuv, recYuv, COMPONENT_Cr, m_numCTUsInWidth, (0 + 1), cs);
+  initDistortionCcalf();
+#endif
+
   m_CABACEstimator->getCtx() = SubCtx(Ctx::CcAlfFilterControlFlag, ctxStartCcAlf);
   deriveCcAlfFilter(cs, COMPONENT_Cb, orgYuv, recYuv, cs.getRecoBuf());
   m_CABACEstimator->getCtx() = SubCtx(Ctx::CcAlfFilterControlFlag, ctxStartCcAlf);
@@ -2538,6 +2545,20 @@ void  EncAdaptiveLoopFilter::initDistortion()
     }
   }
 }
+
+#if JVET_R0327_ONE_PASS_CCALF
+void  EncAdaptiveLoopFilter::initDistortionCcalf()
+{
+  for (int comp = 1; comp < MAX_NUM_COMPONENT; comp++)
+  {
+    for (int ctbIdx = 0; ctbIdx < m_numCTUsInPic; ctbIdx++)
+    {
+      m_ctbDistortionUnfilter[comp][ctbIdx] = m_alfCovarianceCcAlf[comp - 1][0][0][ctbIdx].pixAcc;
+    }
+  }
+}
+#endif
+
 void  EncAdaptiveLoopFilter::alfEncoderCtb(CodingStructure& cs, AlfParam& alfParamNewFilters
 #if ENABLE_QPA
   , const double lambdaChromaWeight
@@ -3568,6 +3589,36 @@ std::vector<int> EncAdaptiveLoopFilter::getAvailableCcAlfApsIds(CodingStructure&
   return result;
 }
 
+#if JVET_R0327_ONE_PASS_CCALF
+void EncAdaptiveLoopFilter::getFrameStatsCcalf(ComponentID compIdx, int filterIdc)
+{
+        int ctuRsAddr = 0;
+  const int filterIdx = filterIdc - 1;
+
+  // init Frame stats buffers
+  for (int shape = 0; shape != m_filterShapesCcAlf[compIdx - 1].size(); shape++)
+  {
+    m_alfCovarianceFrameCcAlf[compIdx - 1][shape][filterIdx].reset();
+  }
+
+  for (int yPos = 0; yPos < m_picHeight; yPos += m_maxCUHeight)
+  {
+    for (int xPos = 0; xPos < m_picWidth; xPos += m_maxCUWidth)
+    {
+      if (m_trainingCovControl[ctuRsAddr] == filterIdc)
+      {
+        for (int shape = 0; shape != m_filterShapesCcAlf[compIdx - 1].size(); shape++)
+        {
+          m_alfCovarianceFrameCcAlf[compIdx - 1][shape][filterIdx] +=
+            m_alfCovarianceCcAlf[compIdx - 1][shape][0][ctuRsAddr];
+        }
+      }
+      ctuRsAddr++;
+    }
+  }
+}
+#endif
+
 void EncAdaptiveLoopFilter::deriveCcAlfFilter( CodingStructure& cs, ComponentID compID, const PelUnitBuf& orgYuv, const PelUnitBuf& tempDecYuvBuf, const PelUnitBuf& dstYuv )
 {
   if (!cs.slice->getTileGroupAlfEnabledFlag(COMPONENT_Y))
@@ -3624,8 +3675,10 @@ void EncAdaptiveLoopFilter::deriveCcAlfFilter( CodingStructure& cs, ComponentID 
   const Pel *unfiltered         = dstYuv.get( compID ).bufAt(0,0);
   const int orgStride           = orgYuv.get( compID ).stride;
   const int unfilteredStride    = dstYuv.get( compID ).stride;
+#if !JVET_R0327_ONE_PASS_CCALF
   const Pel *filtered           = m_buf->bufAt(0,0);
   const int filteredStride      = m_buf->stride;
+#endif
   uint64_t unfilteredDistortion = 0;
   computeLog2BlockSizeDistortion(org, orgStride, unfiltered, unfilteredStride, m_buf->height, m_buf->width,
                                  m_unfilteredDistortion[0], m_numCTUsInWidth, cs.pcv->maxCUWidthLog2 - scaleX,
@@ -3717,9 +3770,27 @@ void EncAdaptiveLoopFilter::deriveCcAlfFilter( CodingStructure& cs, ComponentID 
           {
             if (!referencingExistingAps)
             {
+#if JVET_R0327_ONE_PASS_CCALF
+              getFrameStatsCcalf(compID, (filterIdx + 1));
+#else
               deriveStatsForCcAlfFiltering(orgYuv, tempDecYuvBuf, compID, m_numCTUsInWidth, (filterIdx + 1), cs);
+#endif
               deriveCcAlfFilterCoeff(compID, dstYuv, tempDecYuvBuf, ccAlfFilterCoeff, filterIdx);
             }
+#if JVET_R0327_ONE_PASS_CCALF
+            const int numCoeff  = m_filterShapesCcAlf[compID - 1][0].numCoeff - 1;
+            int log2BlockWidth  = cs.pcv->maxCUWidthLog2 - scaleX;
+            int log2BlockHeight = cs.pcv->maxCUHeightLog2 - scaleY;
+            for (int y = 0; y < m_buf->height; y += (1 << log2BlockHeight))
+            {
+              for (int x = 0; x < m_buf->width; x += (1 << log2BlockWidth))
+              {
+                int ctuIdx = (y >> log2BlockHeight) * m_numCTUsInWidth + (x >> log2BlockWidth);
+                m_trainingDistortion[filterIdx][ctuIdx] = int(m_ctbDistortionUnfilter[compID][ctuIdx] +
+                  m_alfCovarianceCcAlf[compID - 1][0][0][ctuIdx].calcErrorForCcAlfCoeffs((int*)(ccAlfFilterCoeff[filterIdx]), numCoeff, (m_scaleBits + 1)));
+              }
+            }
+#else
             m_buf->copyFrom(dstYuv.get(compID));
             applyCcAlfFilter(cs, compID, *m_buf, tempDecYuvBuf, nullptr, ccAlfFilterCoeff, filterIdx);
 
@@ -3727,6 +3798,7 @@ void EncAdaptiveLoopFilter::deriveCcAlfFilter( CodingStructure& cs, ComponentID 
             computeLog2BlockSizeDistortion(
                                            org, orgStride, filtered, filteredStride, m_buf->height, m_buf->width, m_trainingDistortion[filterIdx],
                                            m_numCTUsInWidth, cs.pcv->maxCUWidthLog2 - scaleX, cs.pcv->maxCUHeightLog2 - scaleY, distortion);
+#endif
           }
         }
 
@@ -3900,7 +3972,9 @@ void EncAdaptiveLoopFilter::deriveStatsForCcAlfFiltering(const PelUnitBuf &orgYu
   {
     for (int xPos = 0; xPos < m_picWidth; xPos += m_maxCUWidth)
     {
+#if !JVET_R0327_ONE_PASS_CCALF
       if (m_trainingCovControl[ctuRsAddr] == filterIdc)
+#endif
       {
         const int width             = (xPos + m_maxCUWidth > m_picWidth) ? (m_picWidth - xPos) : m_maxCUWidth;
         const int height            = (yPos + m_maxCUHeight > m_picHeight) ? (m_picHeight - yPos) : m_maxCUHeight;
@@ -4015,12 +4089,11 @@ void EncAdaptiveLoopFilter::getBlkStatsCcAlf(AlfCovariance &alfCovariance, const
   {
     int vbDistance = ((i << getComponentScaleY(compID, m_chromaFormat)) % vbCTUHeight) - vbPos;
 #if JVET_R0233_CCALF_LINE_BUFFER_REDUCTION
-    if ((getComponentScaleY(compID, m_chromaFormat) == 0) && (vbDistance == 0 || vbDistance == 1))
-    {
-      continue;
-    }
-#endif
+    const bool skipThisRow = getComponentScaleY(compID, m_chromaFormat) == 0 && (vbDistance == 0 || vbDistance == 1);
+    for (int j = 0; j < compArea.width && (!skipThisRow); j++)
+#else
     for (int j = 0; j < compArea.width; j++)
+#endif
     {
       std::memset(ELocal, 0, sizeof(ELocal));
 

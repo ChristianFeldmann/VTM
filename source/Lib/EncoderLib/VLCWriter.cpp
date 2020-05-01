@@ -792,6 +792,9 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
     WRITE_UVLC(pcSPS->getNumSubPics() - 1, "sps_num_subpics_minus1");
     if( pcSPS->getNumSubPics() > 1 )
     {
+#if JVET_R0156_ASPECT4_SPS_CLEANUP
+    WRITE_FLAG(pcSPS->getIndependentSubPicsFlag(), "sps_independent_subpics_flag");
+#endif
     for (int picIdx = 0; picIdx < pcSPS->getNumSubPics(); picIdx++)
     {
       if ((picIdx > 0) && (pcSPS->getMaxPicWidthInLumaSamples() > pcSPS->getCTUSize()))
@@ -810,8 +813,15 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
       {
         WRITE_CODE( pcSPS->getSubPicHeight(picIdx) - 1,  ceilLog2(( pcSPS->getMaxPicHeightInLumaSamples() +  pcSPS->getCTUSize() - 1)  / pcSPS->getCTUSize()), "subpic_height_minus1[ i ]"   );
       }
-      WRITE_FLAG( pcSPS->getSubPicTreatedAsPicFlag(picIdx),  "subpic_treated_as_pic_flag[ i ]" );
-      WRITE_FLAG( pcSPS->getLoopFilterAcrossSubpicEnabledFlag(picIdx),  "loop_filter_across_subpic_enabled_flag[ i ]" );
+#if JVET_R0156_ASPECT4_SPS_CLEANUP
+      if (!pcSPS->getIndependentSubPicsFlag())
+      {
+#endif
+        WRITE_FLAG( pcSPS->getSubPicTreatedAsPicFlag(picIdx),  "subpic_treated_as_pic_flag[ i ]" );
+        WRITE_FLAG( pcSPS->getLoopFilterAcrossSubpicEnabledFlag(picIdx),  "loop_filter_across_subpic_enabled_flag[ i ]" );
+#if JVET_R0156_ASPECT4_SPS_CLEANUP
+      }
+#endif
     }
     }
 
@@ -854,10 +864,18 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   WRITE_CODE(0, 2, "num_extra_sh_bits_bytes");
   // extra_sh_bits_struct( num_extra_sh_bits_bytes )
 
+#if !JVET_R0156_ASPECT3_SPS_CLEANUP
   if (pcSPS->getMaxTLayers() - 1 > 0)
     WRITE_FLAG(pcSPS->getSubLayerDpbParamsFlag(), "sps_sublayer_dpb_params_flag");
+#endif
   if (pcSPS->getPtlDpbHrdParamsPresentFlag())
   {
+#if JVET_R0156_ASPECT3_SPS_CLEANUP
+    if (pcSPS->getMaxTLayers() - 1 > 0)
+    {
+      WRITE_FLAG(pcSPS->getSubLayerDpbParamsFlag(), "sps_sublayer_dpb_params_flag");
+    }
+#endif
     dpb_parameters(pcSPS->getMaxTLayers() - 1, pcSPS->getSubLayerDpbParamsFlag(), pcSPS);
   }
   CHECK( pcSPS->getMaxCUWidth() != pcSPS->getMaxCUHeight(),                          "Rectangular CTUs not supported" );
@@ -1904,7 +1922,14 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader, bool writeRbspTrailingB
 
     if(picHeader->getDeblockingFilterOverrideFlag())
     {
-      WRITE_FLAG( picHeader->getDeblockingFilterDisable(), "ph_deblocking_filter_disabled_flag" );
+#if JVET_R0388_DBF_CLEANUP
+      if (!pps->getPPSDeblockingFilterDisabledFlag())
+      {
+#endif
+        WRITE_FLAG(picHeader->getDeblockingFilterDisable(), "ph_deblocking_filter_disabled_flag");
+#if JVET_R0388_DBF_CLEANUP
+      }
+#endif
       if( !picHeader->getDeblockingFilterDisable() )
       {
         WRITE_SVLC( picHeader->getDeblockingFilterBetaOffsetDiv2(), "ph_beta_offset_div2" );
@@ -1982,7 +2007,14 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
     {
       int bitsSliceAddress = ceilLog2(pcSlice->getPPS()->getNumTiles());
       WRITE_CODE( pcSlice->getSliceID(), bitsSliceAddress, "slice_address");
-      WRITE_UVLC( pcSlice->getNumTilesInSlice() - 1, "num_tiles_in_slice_minus1");
+#if JVET_R0210_NUMTILESINSLICE_SIGNALLING
+      if ((int)pcSlice->getPPS()->getNumTiles() - (int)pcSlice->getSliceID() > 1)
+      {
+#endif
+        WRITE_UVLC(pcSlice->getNumTilesInSlice() - 1, "num_tiles_in_slice_minus1");
+#if JVET_R0210_NUMTILESINSLICE_SIGNALLING
+      }
+#endif
     }
   }
   // rectangular slices
@@ -2055,6 +2087,18 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
       }
     }
   }
+
+#if JVET_R0200_MOVE_LMCS_AND_SCALING_LIST_SE
+  if (picHeader->getLmcsEnabledFlag())
+  {
+    WRITE_FLAG(pcSlice->getLmcsEnabledFlag(), "slice_lmcs_enabled_flag");
+  }
+
+  if (picHeader->getExplicitScalingListEnabledFlag())
+  {
+    WRITE_FLAG(pcSlice->getExplicitScalingListUsed(), "slice_explicit_scaling_list_used_flag");
+  }
+#endif
 
     // 4:4:4 colour plane ID
     if( pcSlice->getSPS()->getSeparateColourPlaneFlag() )
@@ -2299,7 +2343,14 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
       }
       if (pcSlice->getDeblockingFilterOverrideFlag())
       {
-        WRITE_FLAG(pcSlice->getDeblockingFilterDisable(), "slice_deblocking_filter_disabled_flag");
+#if JVET_R0388_DBF_CLEANUP
+        if (!pcSlice->getPPS()->getPPSDeblockingFilterDisabledFlag())
+        {
+#endif
+          WRITE_FLAG(pcSlice->getDeblockingFilterDisable(), "slice_deblocking_filter_disabled_flag");
+#if JVET_R0388_DBF_CLEANUP
+        }
+#endif
         if(!pcSlice->getDeblockingFilterDisable())
         {
           WRITE_SVLC (pcSlice->getDeblockingFilterBetaOffsetDiv2(), "slice_beta_offset_div2");
@@ -2362,6 +2413,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
 	WRITE_FLAG(pcSlice->getTSResidualCodingDisabledFlag() ? 1 : 0, "slice_ts_residual_coding_disabled_flag");
 #endif
 
+#if !JVET_R0200_MOVE_LMCS_AND_SCALING_LIST_SE
   if (picHeader->getLmcsEnabledFlag())
   {
     WRITE_FLAG(pcSlice->getLmcsEnabledFlag(), "slice_lmcs_enabled_flag");
@@ -2371,6 +2423,7 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
   {
     WRITE_FLAG(pcSlice->getExplicitScalingListUsed(), "slice_explicit_scaling_list_used_flag");
   }
+#endif
 
   if(pcSlice->getPPS()->getSliceHeaderExtensionPresentFlag())
   {

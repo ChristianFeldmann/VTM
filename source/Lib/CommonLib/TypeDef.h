@@ -51,6 +51,10 @@
 #include <cassert>
 
 //########### place macros to be removed in next cycle below this line ###############
+#define JVET_R0202_WHEN_PH_IN_SH_INFO_FLAGS_EQUAL_0       1 // JVET-R0202 When sh_picture_header_in_slice_header_flag is equal to 1, rpl_info_in_ph_flag, dbf_info_in_ph_flag, sao_info_in_ph_flag, wp_info_in_ph_flag, qp_delta_info_in_ph_flag shall be be equal to 0
+
+#define JVET_R0202_WHEN_PH_IN_SH_NO_SUBPIC_SEPARATE_COLOR 1 // JVET-R0202 Add constraints when sh_picture_header_in_slice_header_flag equal to 1 sps_subpic_info_present_flag and separate_colour_plane_flag shall be equal to 0
+
 #define JVET_R0327_ONE_PASS_CCALF                         1 // JVET-R0327: One-pass CCALF
 
 #define JVET_R0200_MOVE_LMCS_AND_SCALING_LIST_SE          1 // JVET-R0200 Move the SH flags slice_lmcs_enabled_flag and slice_explicit_scaling_list_used_flag to be just after the ALF parameters

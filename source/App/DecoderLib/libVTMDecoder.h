@@ -106,6 +106,7 @@ extern "C" {
 typedef enum
 {
   LIBVTMDEC_OK = 0,            ///< No error occured
+  LIBVTMDEC_OK_FLUSH_REPUSH,   ///< When the libVTMDec_push_nal_unit returns this, flush pictures next and repush the same NAL after that again
   LIBVTMDEC_ERROR,             ///< There was an unspecified error
   LIBVTMDEC_ERROR_READ_ERROR   ///< There was an error reading the provided data
 } libVTMDec_error;
@@ -152,11 +153,9 @@ VTM_DEC_API void libVTMDec_set_max_temporal_layer(libVTMDec_context* decCtx, int
  * \param data8 The raw byte data from the NAL unit starting with the first byte of the NAL unit header. 
  * \param length The length in number of bytes in the data
  * \param eof Is this NAL the last one in the bitstream?
- * \param bNewPicture This bool is set by the function if the NAL unit must be pushed to the decoder again after reading frames.
- * \param checkOutputPictures This bool is set by the function if pictures might be available (see libVTMDec_get_picture).
  * \return An error code or LIBVTMDEC_OK if no error occured
  */
-VTM_DEC_API libVTMDec_error libVTMDec_push_nal_unit(libVTMDec_context *decCtx, const void* data8, int length, bool eof, bool &bNewPicture, bool &checkOutputPictures);
+VTM_DEC_API libVTMDec_error libVTMDec_push_nal_unit(libVTMDec_context *decCtx, const void* data8, int length, bool eof);
 
 /** This private structure represents a picture.
  * You can save a pointer to it and use all the following functions to access it 

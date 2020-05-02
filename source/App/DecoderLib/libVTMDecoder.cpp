@@ -43,6 +43,13 @@
 
 #include <fstream>
 
+enum class PictureBufferStatus
+{
+  FLUSHED,
+  FLUSHING_NEEDED_IN_BITSTREAM,
+  FLUSHING_EOF
+};
+
 class vtmDecoderWrapper
 {
 public:
@@ -52,27 +59,38 @@ public:
     initROM();
     m_cDecLib.create();
     m_cDecLib.init();
-    m_cDecLib.setDecodedPictureHashSEIEnabled(true);
+    const bool m_decodedPictureHashSEIEnabled = true;
+    m_cDecLib.setDecodedPictureHashSEIEnabled(m_decodedPictureHashSEIEnabled);
+
+    m_cDecLib.m_targetSubPicIdx = 0;
+    m_cDecLib.initScalingList();
   }
   ~vtmDecoderWrapper() { m_cDecLib.destroy(); };
 
+  // Members of the DecApp
+  int m_iPOCLastDisplay{ -MAX_INT };
+  DecLib m_cDecLib;
+  // Members of the DecAppCfg
   int m_targetOlsIdx {-1};
   std::vector<int> m_targetOutputLayerIdSet;          ///< set of LayerIds to be outputted
   int m_iMaxTemporalLayer{ -1 };
   std::vector<int> m_targetDecLayerIdSet;             ///< set of LayerIds to be included in the sub-bitstream extraction process.
 
-  // We need to keep some local variables for our current "status" in the decoding loop
-  bool bPicSkipped {false};
-  
-  int m_iPOCLastDisplay{ -MAX_INT };
-  PicList *pcListPic{ nullptr };
+  unsigned int nrNalUnitsPushed {0};
+  PictureBufferStatus bufferStatus { PictureBufferStatus::FLUSHED };
 
+  // Variables which are locally defined in DecApp::decode locally in the loop
+  PicList *pcListPic{ nullptr };
   bool loopFiltered[MAX_VPS_LAYERS] = { false };
-  bool flushOutput{ false };
+  bool bPicSkipped {false};
+
+  // Variables which are locally defined in DecApp::xWriteOutput
   int numPicsNotYetDisplayed{ 0 };
   int dpbFullness{ 0 };
   uint32_t numReorderPicsHighestTid{ 0 };
   uint32_t maxDecPicBufferingHighestTid{ 0 };
+
+  // 
   int pcListPic_readIdx{ 0 };
 
   // In the DecApp the xWriteOutput function can be called up to 3 times after a NAL was pushed
@@ -83,8 +101,6 @@ public:
   // The vector is defined, filled and cleared only in this library so that no chaos is created
   // between the heap of the shared library and the caller programm.
   std::vector<libVTMDec_BlockValue> internalsBlockData;
-
-  DecLib m_cDecLib;
 };
 
 void initFrameRetrieval(vtmDecoderWrapper *d)
@@ -126,12 +142,102 @@ void initFrameRetrieval(vtmDecoderWrapper *d)
   d->pcListPic_readIdx = 0;
 }
 
-void initFrameFlushing(vtmDecoderWrapper *d)
+bool libCheckPictureHeaderInSliceHeaderFlag(InputNALUnit& nalu)
 {
-  d->flushOutput = true;
+  InputBitstream& bitstream = nalu.getBitstream();
+  // Or do we have to seek/peek here?
+  return (bool)bitstream.read(1);
+}
 
-  // Reset the iterator over the output images
-  d->pcListPic_readIdx = 0;
+bool isNewPicture(InputNALUnit &nalu)
+{
+  switch( nalu.m_nalUnitType ) 
+  {
+
+    // NUT that indicate the start of a new picture
+    case NAL_UNIT_ACCESS_UNIT_DELIMITER:
+    case NAL_UNIT_DCI:
+    case NAL_UNIT_VPS:
+    case NAL_UNIT_SPS:
+    case NAL_UNIT_PPS:
+    case NAL_UNIT_PH:
+      return true;
+
+    // NUT that may be the start of a new picture - check first bit in slice header
+    case NAL_UNIT_CODED_SLICE_TRAIL:
+    case NAL_UNIT_CODED_SLICE_STSA:
+    case NAL_UNIT_CODED_SLICE_RASL:
+    case NAL_UNIT_CODED_SLICE_RADL:
+    case NAL_UNIT_RESERVED_VCL_4:
+    case NAL_UNIT_RESERVED_VCL_5:
+    case NAL_UNIT_RESERVED_VCL_6:
+    case NAL_UNIT_CODED_SLICE_IDR_W_RADL:
+    case NAL_UNIT_CODED_SLICE_IDR_N_LP:
+    case NAL_UNIT_CODED_SLICE_CRA:
+    case NAL_UNIT_CODED_SLICE_GDR:
+    case NAL_UNIT_RESERVED_IRAP_VCL_11:
+    case NAL_UNIT_RESERVED_IRAP_VCL_12:
+      return libCheckPictureHeaderInSliceHeaderFlag(nalu);
+      
+    // NUT that are not the start of a new picture
+    case NAL_UNIT_EOS:
+    case NAL_UNIT_EOB:
+    case NAL_UNIT_SUFFIX_APS:
+    case NAL_UNIT_SUFFIX_SEI:
+    case NAL_UNIT_FD:
+      return false;
+
+    // NUT that might indicate the start of a new picture - keep looking
+    case NAL_UNIT_PREFIX_APS:
+    case NAL_UNIT_PREFIX_SEI:
+    case NAL_UNIT_RESERVED_NVCL_26:
+    case NAL_UNIT_RESERVED_NVCL_27:
+    case NAL_UNIT_UNSPECIFIED_28:
+    case NAL_UNIT_UNSPECIFIED_29:
+    case NAL_UNIT_UNSPECIFIED_30:
+    case NAL_UNIT_UNSPECIFIED_31:
+    default:
+      return false;
+  }
+}
+
+void filterPicture(vtmDecoderWrapper *d, uint32_t nuhLayerId)
+{
+  const bool eof = d->bufferStatus == PictureBufferStatus::FLUSHING_EOF;
+  // Filter the picture if decoding is complete
+  if (!d->m_cDecLib.getFirstSliceInSequence(nuhLayerId) && !d->bPicSkipped)
+  {
+    if (!d->loopFiltered[nuhLayerId] || !eof)
+    {
+      int poc;
+      d->m_cDecLib.executeLoopFilters();
+      d->m_cDecLib.finishPicture( poc, d->pcListPic );
+    }
+    d->loopFiltered[nuhLayerId] = eof;
+    if (eof)
+    {
+      d->m_cDecLib.setFirstSliceInSequence(true, nuhLayerId);
+    }
+
+    d->m_cDecLib.updateAssociatedIRAP();
+  }
+  else if (d->m_cDecLib.getFirstSliceInSequence(nuhLayerId))
+  {
+    d->m_cDecLib.setFirstSliceInPicture(true);
+  }
+
+  // Check if we might be able to read pictures
+  if (d->pcListPic != nullptr)
+  {
+    // In DecApp "xWriteOutput" is called. Here we just track how often this "function" should be called.
+    d->nrOfTimesToCheckForOutputPictures = 0;
+      d->nrOfTimesToCheckForOutputPictures++;
+    if (eof)
+    {
+      d->nrOfTimesToCheckForOutputPictures++;
+      d->m_cDecLib.setFirstSliceInPicture(false);
+    }
+  }
 }
 
 class rawDataAccessStreamBuffer : public std::streambuf
@@ -188,7 +294,7 @@ extern "C" {
     d->m_iMaxTemporalLayer = max_layer;
   }
 
-  VTM_DEC_API libVTMDec_error libVTMDec_push_nal_unit(libVTMDec_context *decCtx, const void* data8, int length, bool eof, bool &bNewPicture, bool &checkOutputPictures)
+  VTM_DEC_API libVTMDec_error libVTMDec_push_nal_unit(libVTMDec_context *decCtx, const void* data8, int length, bool eof)
   {
     vtmDecoderWrapper *d = (vtmDecoderWrapper*)decCtx;
     if (!d)
@@ -207,11 +313,12 @@ extern "C" {
     std::istream dataInputStream(&dataStreamBuffer);
     InputByteStream bytestream(dataInputStream);
 
-    if (d->flushOutput)
+    if (d->bufferStatus == PictureBufferStatus::FLUSHING_EOF)
     {
-      // We should check if the picture buffer was successfully flushed
-      d->flushOutput = false;
+      // When we are in this state, no new data should arrive
+      return LIBVTMDEC_ERROR;
     }
+    d->bufferStatus = PictureBufferStatus::FLUSHED;
 
     if (length > 0)
     {
@@ -228,112 +335,84 @@ extern "C" {
          */
         return LIBVTMDEC_ERROR_READ_ERROR;
       }
+
+      read(nalu);
+      bool bNewPicture = !d->m_cDecLib.getFirstSliceInPicture() && isNewPicture(nalu);
+
+      if (bNewPicture)
+      {
+        filterPicture(d, nalu.m_nuhLayerId);
+        if (d->nrOfTimesToCheckForOutputPictures > 0)
+        {
+          initFrameRetrieval(d);
+          return LIBVTMDEC_OK_FLUSH_REPUSH;
+        }
+      }
+
+      // flush output for first slice of an IDR picture
+      if(d->bufferStatus != PictureBufferStatus::FLUSHED &&
+          d->m_cDecLib.getFirstSliceInPicture() &&
+          (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL ||
+            nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP))
+      {
+        d->bufferStatus = PictureBufferStatus::FLUSHING_NEEDED_IN_BITSTREAM;
+        bNewPicture = true;
+        return LIBVTMDEC_OK;
+      }
+
+      bool isNaluWithinTargetDecLayerIdSet = false;
+      if (d->m_targetDecLayerIdSet.empty())
+      {
+        isNaluWithinTargetDecLayerIdSet = true;
+      }
       else
       {
-        read(nalu);
+        isNaluWithinTargetDecLayerIdSet = (std::count(d->m_targetDecLayerIdSet.begin(), d->m_targetDecLayerIdSet.end(), nalu.m_nuhLayerId) != 0);
+      }
 
-        // flush output for first slice of an IDR picture
-        if(d->m_cDecLib.getFirstSliceInPicture() &&
-            (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL ||
-             nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP))
+      // parse NAL unit syntax if within target decoding layer
+      if( ( d->m_iMaxTemporalLayer < 0 || nalu.m_temporalId <= d->m_iMaxTemporalLayer ) && isNaluWithinTargetDecLayerIdSet )
+      {
+        if (nalu.m_temporalId > d->m_iMaxTemporalLayer)
         {
-          d->flushOutput = true;
-          bNewPicture = true;
-          return LIBVTMDEC_OK;
+          // bitstream shall not include any NAL unit with TemporalId greater than HighestTid
+          return LIBVTMDEC_ERROR;
         }
-
-        // parse NAL unit syntax if within target decoding layer
-        if( ( d->m_iMaxTemporalLayer < 0 || nalu.m_temporalId <= d->m_iMaxTemporalLayer ) && d->m_targetDecLayerIdSet.size() > 0 )
+        if (d->bPicSkipped)
         {
-          if (nalu.m_temporalId > d->m_iMaxTemporalLayer) 
-            // bitstream shall not include any NAL unit with TemporalId greater than HighestTid
-            return LIBVTMDEC_ERROR;
-          if (d->m_targetDecLayerIdSet.size())
+          if ((nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_TRAIL) || (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_STSA) || (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_RASL) || (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_RADL) || (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL) || (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP) || (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_CRA) || (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_GDR))
           {
-            if (std::find(d->m_targetDecLayerIdSet.begin(), d->m_targetDecLayerIdSet.end(), nalu.m_nuhLayerId) == d->m_targetDecLayerIdSet.end())
-              // bitstream shall not contain any other layers than included in the OLS with OlsIdx
-              return LIBVTMDEC_ERROR;
-          }
-          if (d->bPicSkipped)
-          {
-            if ((nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_TRAIL) || (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_STSA) || (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_RASL) || (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_RADL) || (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL) || (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP) || (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_CRA) || (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_GDR))
+            if (d->m_cDecLib.isSliceNaluFirstInAU(true, nalu))
             {
-              if (d->m_cDecLib.isSliceNaluFirstInAU(true, nalu))
-              {
-                d->m_cDecLib.resetAccessUnitNals();
-                d->m_cDecLib.resetAccessUnitApsNals();
-                d->m_cDecLib.resetAccessUnitPicInfo();
-              }
-              d->bPicSkipped = false;
+              d->m_cDecLib.resetAccessUnitNals();
+              d->m_cDecLib.resetAccessUnitApsNals();
+              d->m_cDecLib.resetAccessUnitPicInfo();
             }
-          }
-          // The concept of "skip frames" does not make sense for a library interface.
-          // If you want to ignore N frames at the beginning then just do so.
-          int iSkipFrame = 0;
-          d->m_cDecLib.decode(nalu, iSkipFrame, d->m_iPOCLastDisplay, d->m_targetOlsIdx);
-          if (nalu.m_nalUnitType == NAL_UNIT_VPS)
-          {
-            d->m_cDecLib.deriveTargetOutputLayerSet( d->m_targetOlsIdx );
-            d->m_targetDecLayerIdSet = d->m_cDecLib.getVPS()->m_targetLayerIdSet;
-            d->m_targetOutputLayerIdSet = d->m_cDecLib.getVPS()->m_targetOutputLayerIdSet;
+            d->bPicSkipped = false;
           }
         }
-        else
+        // The concept of "skip frames" does not make sense for a library interface.
+        // If you want to ignore N frames at the beginning then just do so.
+        int iSkipFrame = 0;
+        d->m_cDecLib.decode(nalu, iSkipFrame, d->m_iPOCLastDisplay, d->m_targetOlsIdx);
+        d->nrNalUnitsPushed++;
+        if (nalu.m_nalUnitType == NAL_UNIT_VPS)
         {
-          d->bPicSkipped = true;
+          d->m_cDecLib.deriveTargetOutputLayerSet( d->m_targetOlsIdx );
+          d->m_targetDecLayerIdSet = d->m_cDecLib.getVPS()->m_targetLayerIdSet;
+          d->m_targetOutputLayerIdSet = d->m_cDecLib.getVPS()->m_targetOutputLayerIdSet;
         }
       }
-
-      // Filter the picture if decoding is complete
-      if ((bNewPicture || eof || nalu.m_nalUnitType == NAL_UNIT_EOS) && !d->m_cDecLib.getFirstSliceInSequence(nalu.m_nuhLayerId) && !d->bPicSkipped)
+      else
       {
-        if (!d->loopFiltered[nalu.m_nuhLayerId] || !eof)
-        {
-          int poc;
-          d->m_cDecLib.executeLoopFilters();
-          d->m_cDecLib.finishPicture( poc, d->pcListPic );
-        }
-        d->loopFiltered[nalu.m_nuhLayerId] = (nalu.m_nalUnitType == NAL_UNIT_EOS);
-        if (nalu.m_nalUnitType == NAL_UNIT_EOS)
-        {
-          d->m_cDecLib.setFirstSliceInSequence(true, nalu.m_nuhLayerId);
-        }
-
-        d->m_cDecLib.updateAssociatedIRAP();
+        d->bPicSkipped = true;
       }
-      else if ((bNewPicture || eof || nalu.m_nalUnitType == NAL_UNIT_EOS) && 
-        d->m_cDecLib.getFirstSliceInSequence(nalu.m_nuhLayerId))
-      {
-        d->m_cDecLib.setFirstSliceInPicture(true);
-      }
-
-      // Check if we might be able to read pictures
-      if (d->pcListPic != nullptr)
-      {
-        // In DecApp "xWriteOutput" is called. Here we just track how often this "function" should be called.
-        d->nrOfTimesToCheckForOutputPictures = 0;
-        if (bNewPicture)
-        {
-          d->nrOfTimesToCheckForOutputPictures++;
-        }
-        if (nalu.m_nalUnitType == NAL_UNIT_EOS)
-        {
-          d->nrOfTimesToCheckForOutputPictures++;
-          d->m_cDecLib.setFirstSliceInPicture(false);
-        }
-        if (!bNewPicture && ((nalu.m_nalUnitType >= NAL_UNIT_CODED_SLICE_TRAIL && nalu.m_nalUnitType <= NAL_UNIT_RESERVED_IRAP_VCL_12)
-          || (nalu.m_nalUnitType >= NAL_UNIT_CODED_SLICE_IDR_W_RADL && nalu.m_nalUnitType <= NAL_UNIT_CODED_SLICE_GDR)))
-        {
-          d->nrOfTimesToCheckForOutputPictures++;
-        }
-      }
-
-      checkOutputPictures = (d->nrOfTimesToCheckForOutputPictures > 0);
 
       // TODO: We should be ablte to detect this here, right?
       //       When is this even used in the original decoder? I need to test this.
-      const bool bNewAccessUnit = false;
-      if (bNewAccessUnit)
+      //       For now, we rely on the AU delimiters.
+      const bool bNewAccessUnit = (nalu.m_nalUnitType == NAL_UNIT_ACCESS_UNIT_DELIMITER);
+      if (bNewAccessUnit && d->nrNalUnitsPushed > 1)
       {
         d->m_cDecLib.checkTidLayerIdInAccessUnit();
         d->m_cDecLib.resetAccessUnitSeiTids();
@@ -345,16 +424,18 @@ extern "C" {
       }
     }
 
+    const bool checkOutputPictures = (d->nrOfTimesToCheckForOutputPictures > 0 || eof);
     if (checkOutputPictures)
       initFrameRetrieval(d);
 
     if (eof)
     {
       // At the end of the file we have to use the normal output function once and then the flushing
-      checkOutputPictures = true;
-      initFrameFlushing(d);
+      d->bufferStatus = PictureBufferStatus::FLUSHING_EOF;
     }
 
+    if (length > 0 && checkOutputPictures)
+      return LIBVTMDEC_OK_FLUSH_REPUSH;
     return LIBVTMDEC_OK;
   }
 
@@ -381,14 +462,15 @@ extern "C" {
       return NULL;
 
     // Go on in the list until we run out of frames or find one that we can output
+    const bool flushOutput = d->bufferStatus == PictureBufferStatus::FLUSHING_NEEDED_IN_BITSTREAM || d->bufferStatus == PictureBufferStatus::FLUSHING_EOF;
     while (iterPic != d->pcListPic->end())
     {
       Picture* pcPic = *(iterPic);
 
-      if ((d->flushOutput && pcPic->neededForOutput) || (pcPic->neededForOutput && pcPic->getPOC() > d->m_iPOCLastDisplay &&
+      if ((flushOutput && pcPic->neededForOutput) || (pcPic->neededForOutput && pcPic->getPOC() > d->m_iPOCLastDisplay &&
         (d->numPicsNotYetDisplayed > d->numReorderPicsHighestTid || d->dpbFullness > d->maxDecPicBufferingHighestTid)))
       {
-        if (!d->flushOutput)
+        if (!flushOutput)
         {
           // Output picture found
           d->numPicsNotYetDisplayed--;
@@ -422,12 +504,11 @@ extern "C" {
       initFrameRetrieval(d);
       return libVTMDec_get_picture(decCtx);
     }
-    if (d->flushOutput)
+    if (d->bufferStatus == PictureBufferStatus::FLUSHING_EOF)
     {
       // Flushing is over. There nothing we can decode anymore. The end.
       d->pcListPic->clear();
       d->m_iPOCLastDisplay = -MAX_INT;
-      d->flushOutput = false;
     }
 
     return NULL;

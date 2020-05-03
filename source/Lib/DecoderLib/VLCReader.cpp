@@ -315,7 +315,11 @@ void HLSyntaxReader::copyRefPicList(SPS* sps, ReferencePictureList* source_rpl, 
   }
 }
 
+#if JVET_R0059_RPL_CLEANUP
+void HLSyntaxReader::parseRefPicList(SPS* sps, ReferencePictureList* rpl, int rplIdx)
+#else
 void HLSyntaxReader::parseRefPicList(SPS* sps, ReferencePictureList* rpl)
+#endif
 {
   uint32_t code;
   READ_UVLC(code, "num_ref_entries[ listIdx ][ rplsIdx ]");
@@ -324,11 +328,21 @@ void HLSyntaxReader::parseRefPicList(SPS* sps, ReferencePictureList* rpl)
   uint32_t numLtrp = 0;
   uint32_t numIlrp = 0;
 
+#if JVET_R0059_RPL_CLEANUP
+  if (sps->getLongTermRefsPresent() && rplIdx != -1)
+#else
   if (sps->getLongTermRefsPresent())
+#endif
   {
     READ_FLAG(code, "ltrp_in_slice_header_flag[ listIdx ][ rplsIdx ]");
     rpl->setLtrpInSliceHeaderFlag(code);
   }
+#if JVET_R0059_RPL_CLEANUP
+  else if(sps->getLongTermRefsPresent())
+  {
+    rpl->setLtrpInSliceHeaderFlag( 1 );
+  }
+#endif
 
   bool isLongTerm;
   int prevDelta = MAX_INT;
@@ -1460,7 +1474,11 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   for (uint32_t ii = 0; ii < numberOfRPL; ii++)
   {
     rpl = rplList->getReferencePictureList(ii);
+#if JVET_R0059_RPL_CLEANUP
+    parseRefPicList(pcSPS, rpl, ii);
+#else
     parseRefPicList(pcSPS, rpl);
+#endif
   }
 
   //Read candidate for List1
@@ -1473,7 +1491,11 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     for (uint32_t ii = 0; ii < numberOfRPL; ii++)
     {
       rpl = rplList->getReferencePictureList(ii);
+#if JVET_R0059_RPL_CLEANUP
+      parseRefPicList(pcSPS, rpl, ii);
+#else
       parseRefPicList(pcSPS, rpl);
+#endif
     }
   }
   else
@@ -2530,7 +2552,11 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
       {
         ReferencePictureList* rpl = picHeader->getLocalRPL( listIdx );
         (*rpl) = ReferencePictureList();
+#if JVET_R0059_RPL_CLEANUP
+        parseRefPicList(sps, rpl, -1);
+#else
         parseRefPicList(sps, rpl);
+#endif
         picHeader->setRPLIdx(listIdx, -1);
         picHeader->setRPL(listIdx, rpl);
       }
@@ -3394,7 +3420,11 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
       {
         ReferencePictureList* rpl0 = pcSlice->getLocalRPL0();
         (*rpl0) = ReferencePictureList();
+#if JVET_R0059_RPL_CLEANUP
+        parseRefPicList(sps, rpl0, -1);
+#else
         parseRefPicList(sps, rpl0);
+#endif
         pcSlice->setRPL0idx(-1);
         pcSlice->setRPL0(rpl0);
       }
@@ -3500,7 +3530,11 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
       {
         ReferencePictureList* rpl1 = pcSlice->getLocalRPL1();
         (*rpl1) = ReferencePictureList();
+#if JVET_R0059_RPL_CLEANUP
+        parseRefPicList(sps, rpl1, -1);
+#else
         parseRefPicList(sps, rpl1);
+#endif
         pcSlice->setRPL1idx(-1);
         pcSlice->setRPL1(rpl1);
       }

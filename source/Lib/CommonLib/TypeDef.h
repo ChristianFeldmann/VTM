@@ -51,6 +51,8 @@
 #include <cassert>
 
 //########### place macros to be removed in next cycle below this line ###############
+#define JVET_R0059_RPL_CLEANUP                            1 // JVET-R0059 aspect 2: Condition the signalling of ltrp_in_header_flag[ listIdx ][ rplsIdx ].
+
 #define JVET_R0202_WHEN_PH_IN_SH_INFO_FLAGS_EQUAL_0       1 // JVET-R0202 When sh_picture_header_in_slice_header_flag is equal to 1, rpl_info_in_ph_flag, dbf_info_in_ph_flag, sao_info_in_ph_flag, wp_info_in_ph_flag, qp_delta_info_in_ph_flag shall be be equal to 0
 
 #define JVET_R0202_WHEN_PH_IN_SH_NO_SUBPIC_SEPARATE_COLOR 1 // JVET-R0202 Add constraints when sh_picture_header_in_slice_header_flag equal to 1 sps_subpic_info_present_flag and separate_colour_plane_flag shall be equal to 0

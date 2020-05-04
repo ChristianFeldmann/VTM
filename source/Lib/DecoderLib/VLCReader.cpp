@@ -538,14 +538,14 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
     // rectangular slice signalling
     if (pcPPS->getNumTiles() > 1)
     {
-#if JVET_R0113_PICTURE_PARAMETER_SET_CLEANUP
+#if JVET_R0113_AND_JVET_R0106_PPS_CLEANUP
       READ_CODE(1, uiCode, "pps_loop_filter_across_tiles_enabled_flag");    pcPPS->setLoopFilterAcrossTilesEnabledFlag(uiCode == 1);
 #endif
       READ_CODE(1, uiCode, "rect_slice_flag");
     }
     else
     {
-#if JVET_R0113_PICTURE_PARAMETER_SET_CLEANUP
+#if JVET_R0113_AND_JVET_R0106_PPS_CLEANUP
       pcPPS->setLoopFilterAcrossTilesEnabledFlag(true);
 #endif
       uiCode = 1;
@@ -679,7 +679,7 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
       pcPPS->setSliceTileIdx(pcPPS->getNumSlicesInPic()-1, tileIdx );
     }
 
-#if !JVET_R0113_PICTURE_PARAMETER_SET_CLEANUP
+#if !JVET_R0113_AND_JVET_R0106_PPS_CLEANUP
     // loop filtering across slice/tile controls
     READ_CODE(1, uiCode, "loop_filter_across_tiles_enabled_flag");    pcPPS->setLoopFilterAcrossTilesEnabledFlag( uiCode == 1 );
 #endif
@@ -808,6 +808,17 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
   {
     READ_FLAG( uiCode, "deblocking_filter_override_enabled_flag" );    pcPPS->setDeblockingFilterOverrideEnabledFlag( uiCode ? true : false );
     READ_FLAG( uiCode, "pps_deblocking_filter_disabled_flag" );        pcPPS->setPPSDeblockingFilterDisabledFlag(uiCode ? true : false );
+#if JVET_R0113_AND_JVET_R0106_PPS_CLEANUP
+    if (!pcPPS->getNoPicPartitionFlag() && pcPPS->getDeblockingFilterOverrideEnabledFlag())
+    {
+      READ_FLAG(uiCode, "pps_dbf_info_in_ph_flag");
+      pcPPS->setDbfInfoInPhFlag(uiCode ? true : false);
+    }
+    else
+    {
+      pcPPS->setDbfInfoInPhFlag(false);
+    }
+#endif
     if(!pcPPS->getPPSDeblockingFilterDisabledFlag())
     {
       READ_SVLC( iCode, "pps_beta_offset_div2" );                    pcPPS->setDeblockingFilterBetaOffsetDiv2( iCode );
@@ -838,9 +849,12 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
   else
   {
     pcPPS->setDeblockingFilterOverrideEnabledFlag(false);
+#if JVET_R0113_AND_JVET_R0106_PPS_CLEANUP
+    pcPPS->setDbfInfoInPhFlag(false);
+#endif
   }
 
-#if JVET_R0113_PICTURE_PARAMETER_SET_CLEANUP
+#if JVET_R0113_AND_JVET_R0106_PPS_CLEANUP
   if (!pcPPS->getNoPicPartitionFlag())
   {
     READ_FLAG(uiCode, "pps_rpl_info_in_ph_flag");                    pcPPS->setRplInfoInPhFlag(uiCode ? true : false);
@@ -848,15 +862,6 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
   else
   {
     pcPPS->setRplInfoInPhFlag(false);
-  }
-  if(!pcPPS->getNoPicPartitionFlag() && pcPPS->getDeblockingFilterOverrideEnabledFlag())
-  {
-    READ_FLAG(uiCode, "pps_dbf_info_in_ph_flag");
-    pcPPS->setDbfInfoInPhFlag(uiCode ? true : false);
-  }
-  else
-  {
-    pcPPS->setDbfInfoInPhFlag(false);
   }
   if (!pcPPS->getNoPicPartitionFlag())
   {

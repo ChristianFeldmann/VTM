@@ -342,6 +342,9 @@ void HLSWriter::codePPS( const PPS* pcPPS )
     // rectangular slice signalling
     if (pcPPS->getNumTiles() > 1)
     {
+#if JVET_R0113_PICTURE_PARAMETER_SET_CLEANUP
+      WRITE_FLAG(pcPPS->getLoopFilterAcrossTilesEnabledFlag(), "loop_filter_across_tiles_enabled_flag");
+#endif
       WRITE_FLAG(pcPPS->getRectSliceFlag() ? 1 : 0, "rect_slice_flag");
     }
     if (pcPPS->getRectSliceFlag())
@@ -406,8 +409,10 @@ void HLSWriter::codePPS( const PPS* pcPPS )
       }
     }
 
+#if !JVET_R0113_PICTURE_PARAMETER_SET_CLEANUP
     // loop filtering across slice/tile controls
     WRITE_FLAG( pcPPS->getLoopFilterAcrossTilesEnabledFlag(), "loop_filter_across_tiles_enabled_flag");
+#endif
 #if JVET_R0247_PPS_LP_FTR_ACROSS_SLICES_FLAG_CLEANUP
     if (pcPPS->getRectSliceFlag() == 0 || pcPPS->getSingleSlicePerSubPicFlag() || pcPPS->getNumSlicesInPic() > 1)
     {
@@ -475,6 +480,23 @@ void HLSWriter::codePPS( const PPS* pcPPS )
     }
   }
 
+#if JVET_R0113_PICTURE_PARAMETER_SET_CLEANUP
+  if (!pcPPS->getNoPicPartitionFlag())
+  {
+    WRITE_FLAG(pcPPS->getRplInfoInPhFlag() ? 1 : 0, "rpl_info_in_ph_flag");
+    if (pcPPS->getDeblockingFilterOverrideEnabledFlag())
+    {
+      WRITE_FLAG(pcPPS->getDbfInfoInPhFlag() ? 1 : 0, "dbf_info_in_ph_flag");
+    }
+    WRITE_FLAG(pcPPS->getSaoInfoInPhFlag() ? 1 : 0, "sao_info_in_ph_flag");
+    WRITE_FLAG(pcPPS->getAlfInfoInPhFlag() ? 1 : 0, "alf_info_in_ph_flag");
+    if ((pcPPS->getUseWP() || pcPPS->getWPBiPred()) && pcPPS->getRplInfoInPhFlag())
+    {
+      WRITE_FLAG(pcPPS->getWpInfoInPhFlag() ? 1 : 0, "wp_info_in_ph_flag");
+    }
+    WRITE_FLAG(pcPPS->getQpDeltaInfoInPhFlag() ? 1 : 0, "qp_delta_info_in_ph_flag");
+  }
+#else
   WRITE_FLAG(pcPPS->getRplInfoInPhFlag() ? 1 : 0, "rpl_info_in_ph_flag");
   if (pcPPS->getDeblockingFilterOverrideEnabledFlag())
   {
@@ -487,8 +509,7 @@ void HLSWriter::codePPS( const PPS* pcPPS )
     WRITE_FLAG(pcPPS->getWpInfoInPhFlag() ? 1 : 0, "wp_info_in_ph_flag");
   }
   WRITE_FLAG(pcPPS->getQpDeltaInfoInPhFlag() ? 1 : 0, "qp_delta_info_in_ph_flag");
-
-
+#endif
 
   WRITE_FLAG( pcPPS->getPictureHeaderExtensionPresentFlag() ? 1 : 0, "picture_header_extension_present_flag");
   WRITE_FLAG( pcPPS->getSliceHeaderExtensionPresentFlag() ? 1 : 0, "slice_header_extension_present_flag");

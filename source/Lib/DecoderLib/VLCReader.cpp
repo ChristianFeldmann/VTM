@@ -538,10 +538,16 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
     // rectangular slice signalling
     if (pcPPS->getNumTiles() > 1)
     {
+#if JVET_R0113_PICTURE_PARAMETER_SET_CLEANUP
+      READ_CODE(1, uiCode, "loop_filter_across_tiles_enabled_flag");    pcPPS->setLoopFilterAcrossTilesEnabledFlag(uiCode == 1);
+#endif
       READ_CODE(1, uiCode, "rect_slice_flag");
     }
     else
     {
+#if JVET_R0113_PICTURE_PARAMETER_SET_CLEANUP
+      pcPPS->setLoopFilterAcrossTilesEnabledFlag(true);
+#endif
       uiCode = 1;
     }
     pcPPS->setRectSliceFlag(uiCode == 1);
@@ -673,8 +679,10 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
       pcPPS->setSliceTileIdx(pcPPS->getNumSlicesInPic()-1, tileIdx );
     }
 
+#if !JVET_R0113_PICTURE_PARAMETER_SET_CLEANUP
     // loop filtering across slice/tile controls
     READ_CODE(1, uiCode, "loop_filter_across_tiles_enabled_flag");    pcPPS->setLoopFilterAcrossTilesEnabledFlag( uiCode == 1 );
+#endif
 #if JVET_R0247_PPS_LP_FTR_ACROSS_SLICES_FLAG_CLEANUP
     if (pcPPS->getRectSliceFlag() == 0 || pcPPS->getSingleSlicePerSubPicFlag() || pcPPS->getNumSlicesInPic() > 1)
     {
@@ -832,6 +840,57 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
     pcPPS->setDeblockingFilterOverrideEnabledFlag(false);
   }
 
+#if JVET_R0113_PICTURE_PARAMETER_SET_CLEANUP
+  if (!pcPPS->getNoPicPartitionFlag())
+  {
+    READ_FLAG(uiCode, "rpl_info_in_ph_flag");                    pcPPS->setRplInfoInPhFlag(uiCode ? true : false);
+  }
+  else
+  {
+    pcPPS->setRplInfoInPhFlag(false);
+  }
+  if(!pcPPS->getNoPicPartitionFlag() && pcPPS->getDeblockingFilterOverrideEnabledFlag())
+  {
+    READ_FLAG(uiCode, "dbf_info_in_ph_flag");
+    pcPPS->setDbfInfoInPhFlag(uiCode ? true : false);
+  }
+  else
+  {
+    pcPPS->setDbfInfoInPhFlag(false);
+  }
+  if (!pcPPS->getNoPicPartitionFlag())
+  {
+    READ_FLAG(uiCode, "sao_info_in_ph_flag");                    pcPPS->setSaoInfoInPhFlag(uiCode ? true : false);
+  }
+  else
+  {
+    pcPPS->setSaoInfoInPhFlag(false);
+  }
+  if (!pcPPS->getNoPicPartitionFlag())
+  {
+    READ_FLAG(uiCode, "alf_info_in_ph_flag");                    pcPPS->setAlfInfoInPhFlag(uiCode ? true : false);
+  }
+  else
+  {
+    pcPPS->setAlfInfoInPhFlag(false);
+  }
+  if (!pcPPS->getNoPicPartitionFlag() && (pcPPS->getUseWP() || pcPPS->getWPBiPred()) && pcPPS->getRplInfoInPhFlag())
+  {
+    READ_FLAG(uiCode, "wp_info_in_ph_flag");                   pcPPS->setWpInfoInPhFlag(uiCode ? true : false);
+  }
+  else
+  {
+    pcPPS->setWpInfoInPhFlag(false);
+  }
+  if (!pcPPS->getNoPicPartitionFlag())
+  {
+    READ_FLAG(uiCode, "qp_delta_info_in_ph_flag");               pcPPS->setQpDeltaInfoInPhFlag(uiCode ? true : false);
+  }
+  else
+  {
+    pcPPS->setQpDeltaInfoInPhFlag(false);
+  }
+#else
   READ_FLAG(uiCode, "rpl_info_in_ph_flag");                    pcPPS->setRplInfoInPhFlag(uiCode ? true : false);
   if( pcPPS->getDeblockingFilterOverrideEnabledFlag() )
   {
@@ -849,7 +908,7 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
     pcPPS->setWpInfoInPhFlag(false);
   }
   READ_FLAG(uiCode, "qp_delta_info_in_ph_flag");               pcPPS->setQpDeltaInfoInPhFlag(uiCode ? true : false);
-
+#endif
 
 
   READ_FLAG( uiCode, "picture_header_extension_present_flag");

@@ -539,7 +539,7 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
     if (pcPPS->getNumTiles() > 1)
     {
 #if JVET_R0113_PICTURE_PARAMETER_SET_CLEANUP
-      READ_CODE(1, uiCode, "loop_filter_across_tiles_enabled_flag");    pcPPS->setLoopFilterAcrossTilesEnabledFlag(uiCode == 1);
+      READ_CODE(1, uiCode, "pps_loop_filter_across_tiles_enabled_flag");    pcPPS->setLoopFilterAcrossTilesEnabledFlag(uiCode == 1);
 #endif
       READ_CODE(1, uiCode, "rect_slice_flag");
     }
@@ -843,7 +843,7 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
 #if JVET_R0113_PICTURE_PARAMETER_SET_CLEANUP
   if (!pcPPS->getNoPicPartitionFlag())
   {
-    READ_FLAG(uiCode, "rpl_info_in_ph_flag");                    pcPPS->setRplInfoInPhFlag(uiCode ? true : false);
+    READ_FLAG(uiCode, "pps_rpl_info_in_ph_flag");                    pcPPS->setRplInfoInPhFlag(uiCode ? true : false);
   }
   else
   {
@@ -851,7 +851,7 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
   }
   if(!pcPPS->getNoPicPartitionFlag() && pcPPS->getDeblockingFilterOverrideEnabledFlag())
   {
-    READ_FLAG(uiCode, "dbf_info_in_ph_flag");
+    READ_FLAG(uiCode, "pps_dbf_info_in_ph_flag");
     pcPPS->setDbfInfoInPhFlag(uiCode ? true : false);
   }
   else
@@ -860,7 +860,7 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
   }
   if (!pcPPS->getNoPicPartitionFlag())
   {
-    READ_FLAG(uiCode, "sao_info_in_ph_flag");                    pcPPS->setSaoInfoInPhFlag(uiCode ? true : false);
+    READ_FLAG(uiCode, "pps_sao_info_in_ph_flag");                    pcPPS->setSaoInfoInPhFlag(uiCode ? true : false);
   }
   else
   {
@@ -868,7 +868,7 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
   }
   if (!pcPPS->getNoPicPartitionFlag())
   {
-    READ_FLAG(uiCode, "alf_info_in_ph_flag");                    pcPPS->setAlfInfoInPhFlag(uiCode ? true : false);
+    READ_FLAG(uiCode, "pps_alf_info_in_ph_flag");                    pcPPS->setAlfInfoInPhFlag(uiCode ? true : false);
   }
   else
   {
@@ -876,7 +876,7 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
   }
   if (!pcPPS->getNoPicPartitionFlag() && (pcPPS->getUseWP() || pcPPS->getWPBiPred()) && pcPPS->getRplInfoInPhFlag())
   {
-    READ_FLAG(uiCode, "wp_info_in_ph_flag");                   pcPPS->setWpInfoInPhFlag(uiCode ? true : false);
+    READ_FLAG(uiCode, "pps_wp_info_in_ph_flag");                   pcPPS->setWpInfoInPhFlag(uiCode ? true : false);
   }
   else
   {

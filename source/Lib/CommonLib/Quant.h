@@ -78,7 +78,7 @@ private:
           const ComponentID   compID,
           const int           qpBdOffset,
 #if JVET_R0045_TS_MIN_QP_CLEANUP
-          const int           interalMinusInputBitDepth,
+          const int           internalMinusInputBitDepth,
 #else
           const int           minQpPrimeTsMinus4,
 #endif

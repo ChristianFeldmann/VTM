@@ -51,6 +51,8 @@
 #include <cassert>
 
 //########### place macros to be removed in next cycle below this line ###############
+#define JVET_R0094_DPB_TID_OFFSET                         1 // JVET-R0094: DPB output temporal ID offsets
+
 #define JVET_R0330_CRS_CLIP_REM                           1 // JVET-R0330: Remove redundant clipping in chroma residual scaling factor derivation
 
 #define JVET_R0059_RPL_CLEANUP                            1 // JVET-R0059 aspect 2: Condition the signalling of ltrp_in_header_flag[ listIdx ][ rplsIdx ].

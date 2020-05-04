@@ -119,6 +119,10 @@ void SEIBufferingPeriod::copyTo (SEIBufferingPeriod& target) const
   target.m_sublayerInitialCpbRemovalDelayPresentFlag = m_sublayerInitialCpbRemovalDelayPresentFlag;
   target.m_concatenationFlag = m_concatenationFlag;
   target.m_maxInitialRemovalDelayForConcatenation = m_maxInitialRemovalDelayForConcatenation;
+#if JVET_R0094_DPB_TID_OFFSET
+  target.m_sublayerDpbOutputOffsetsPresentFlag = m_sublayerDpbOutputOffsetsPresentFlag;
+  ::memcpy(target.m_dpbOutputTidOffset, m_dpbOutputTidOffset, sizeof(m_dpbOutputTidOffset));
+#endif
   target.m_altCpbParamsPresentFlag = m_altCpbParamsPresentFlag;
 }
 

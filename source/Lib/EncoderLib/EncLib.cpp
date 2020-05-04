@@ -1219,7 +1219,11 @@ void EncLib::xInitSPS( SPS& sps )
   {
     sps.setBitDepth      (ChannelType(channelType), m_bitDepth[channelType] );
     sps.setQpBDOffset  (ChannelType(channelType), (6 * (m_bitDepth[channelType] - 8)));
+#if JVET_R0045_TS_MIN_QP_CLEANUP
+    sps.setInteralMinusInputBitDepth(ChannelType(channelType), max(0, (m_bitDepth[channelType] - m_inputBitDepth[channelType])));
+#else
     sps.setMinQpPrimeTsMinus4(ChannelType(channelType), max(0, 6 * (m_bitDepth[channelType] - m_inputBitDepth[channelType])));
+#endif
   }
 
   sps.setEntropyCodingSyncEnabledFlag( m_entropyCodingSyncEnabledFlag );

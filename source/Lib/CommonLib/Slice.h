@@ -1266,7 +1266,11 @@ private:
   bool              m_entropyCodingSyncEnabledFlag;                    //!< Flag for enabling WPP
   bool              m_entropyCodingSyncEntryPointPresentFlag;          //!< Flag for indicating the presence of WPP entry points
   int               m_qpBDOffset[MAX_NUM_CHANNEL_TYPE];
+#if JVET_R0045_TS_MIN_QP_CLEANUP
+  int               m_interalMinusInputBitDepth[MAX_NUM_CHANNEL_TYPE]; //  QP_internal - QP_input;                                          }
+#else
   int               m_minQpMinus4[MAX_NUM_CHANNEL_TYPE]; //  QP_internal - QP_input;
+#endif
 
   bool              m_sbtmvpEnabledFlag;
   bool              m_bdofEnabledFlag;
@@ -1553,8 +1557,13 @@ public:
   int                     getDifferentialLumaChromaBitDepth() const                                       { return int(m_bitDepths.recon[CHANNEL_TYPE_LUMA]) - int(m_bitDepths.recon[CHANNEL_TYPE_CHROMA]); }
   int                     getQpBDOffset(ChannelType type) const                                           { return m_qpBDOffset[type];                                           }
   void                    setQpBDOffset(ChannelType type, int i)                                          { m_qpBDOffset[type] = i;                                              }
+#if JVET_R0045_TS_MIN_QP_CLEANUP
+  int                     getInteralMinusInputBitDepth(ChannelType type) const                            { return m_interalMinusInputBitDepth[type];                                           }
+  void                    setInteralMinusInputBitDepth(ChannelType type, int i)                           { m_interalMinusInputBitDepth[type] = i;                                              }
+#else
   int                     getMinQpPrimeTsMinus4(ChannelType type) const                                         { return m_minQpMinus4[type];                                           }
   void                    setMinQpPrimeTsMinus4(ChannelType type, int i)                                        { m_minQpMinus4[type] = i;                                              }
+#endif
 
   void                    setSAOEnabledFlag(bool bVal)                                                    { m_saoEnabledFlag = bVal;                                                    }
   bool                    getSAOEnabledFlag() const                                                       { return m_saoEnabledFlag;                                                    }

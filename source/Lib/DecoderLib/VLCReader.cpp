@@ -1743,10 +1743,17 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   }
   if (pcSPS->getTransformSkipEnabledFlag() || pcSPS->getPLTMode())
   {
+#if JVET_R0045_TS_MIN_QP_CLEANUP
+    READ_UVLC(uiCode, "internal_minus_input_bit_depth");
+    pcSPS->setInteralMinusInputBitDepth(CHANNEL_TYPE_LUMA, uiCode);
+    CHECK(uiCode > 8, "Invalid internal_minus_input_bit_depth signalled");
+    pcSPS->setInteralMinusInputBitDepth(CHANNEL_TYPE_CHROMA, uiCode);
+#else
     READ_UVLC(uiCode, "min_qp_prime_ts_minus4");
     pcSPS->setMinQpPrimeTsMinus4(CHANNEL_TYPE_LUMA, uiCode);
     CHECK(uiCode > 48, "Invalid min_qp_prime_ts_minus4 signalled");
     pcSPS->setMinQpPrimeTsMinus4(CHANNEL_TYPE_CHROMA, uiCode);
+#endif
   }
   READ_FLAG( uiCode,    "sps_bcw_enabled_flag" );                   pcSPS->setUseBcw( uiCode != 0 );
   READ_FLAG(uiCode, "sps_ibc_enabled_flag");                                    pcSPS->setIBCFlag(uiCode);

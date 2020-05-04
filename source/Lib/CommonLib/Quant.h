@@ -77,7 +77,11 @@ private:
   QpParam(const int           qpy,
           const ComponentID   compID,
           const int           qpBdOffset,
+#if JVET_R0045_TS_MIN_QP_CLEANUP
+          const int           interalMinusInputBitDepth,
+#else
           const int           minQpPrimeTsMinus4,
+#endif
           const int           chromaQPOffset,
           const ChromaFormat  chFmt,
           const int           dqp

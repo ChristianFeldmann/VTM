@@ -291,12 +291,21 @@ void HLSWriter::codePPS( const PPS* pcPPS )
   }
 
   WRITE_FLAG( pcPPS->getOutputFlagPresentFlag() ? 1 : 0,     "output_flag_present_flag" );
+#if JVET_R0186_CLEANUP
+  WRITE_FLAG( pcPPS->getNoPicPartitionFlag() ? 1 : 0, "pps_no_pic_partition_flag" );
+#endif
   WRITE_FLAG( pcPPS->getSubPicIdMappingInPpsFlag() ? 1 : 0, "subpic_id_mapping_in_pps_flag" );
   if( pcPPS->getSubPicIdMappingInPpsFlag() )
   {
     CHECK(pcPPS->getNumSubPics() < 1, "PPS: NumSubPics cannot be less than 1");
+#if JVET_R0186_CLEANUP
+    if( !pcPPS->getNoPicPartitionFlag() )
+    {
+      WRITE_UVLC(pcPPS->getNumSubPics() - 1, "pps_num_subpics_minus1");
+    }
+#else
     WRITE_UVLC( pcPPS->getNumSubPics() - 1, "pps_num_subpics_minus1" );
-
+#endif
     CHECK(pcPPS->getSubPicIdLen() < 1, "PPS: SubPicIdLen cannot be less than 1");
     WRITE_UVLC( pcPPS->getSubPicIdLen() - 1, "pps_subpic_id_len_minus1" );
 
@@ -306,8 +315,9 @@ void HLSWriter::codePPS( const PPS* pcPPS )
       WRITE_CODE( pcPPS->getSubPicId(picIdx), pcPPS->getSubPicIdLen( ), "pps_subpic_id[i]" );
     }
   }
-
+#if !JVET_R0186_CLEANUP 
   WRITE_FLAG( pcPPS->getNoPicPartitionFlag( ) ? 1 : 0, "no_pic_partition_flag" );
+#endif
   if( !pcPPS->getNoPicPartitionFlag() )
   {
     int colIdx, rowIdx;

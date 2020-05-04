@@ -1744,9 +1744,9 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   if (pcSPS->getTransformSkipEnabledFlag() || pcSPS->getPLTMode())
   {
 #if JVET_R0045_TS_MIN_QP_CLEANUP
-    READ_UVLC(uiCode, "internal_minus_input_bit_depth");
+    READ_UVLC(uiCode, "sps_internal_bit_depth_minus_input_bit_depth");
     pcSPS->setInteralMinusInputBitDepth(CHANNEL_TYPE_LUMA, uiCode);
-    CHECK(uiCode > 8, "Invalid internal_minus_input_bit_depth signalled");
+    CHECK(uiCode > 8, "Invalid sps_internal_bit_depth_minus_input_bit_depth signalled");
     pcSPS->setInteralMinusInputBitDepth(CHANNEL_TYPE_CHROMA, uiCode);
 #else
     READ_UVLC(uiCode, "min_qp_prime_ts_minus4");

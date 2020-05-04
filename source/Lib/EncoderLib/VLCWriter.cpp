@@ -277,10 +277,17 @@ void HLSWriter::codePPS( const PPS* pcPPS )
   WRITE_FLAG( scalingWindow.getWindowEnabledFlag(), "scaling_window_flag" );
   if( scalingWindow.getWindowEnabledFlag() )
   {
+#if JVET_R0114_NEGATIVE_SCALING_WINDOW_OFFSETS
+    WRITE_SVLC( scalingWindow.getWindowLeftOffset(), "pps_scaling_win_left_offset" );
+    WRITE_SVLC( scalingWindow.getWindowRightOffset(), "pps_scaling_win_right_offset" );
+    WRITE_SVLC( scalingWindow.getWindowTopOffset(), "pps_scaling_win_top_offset" );
+    WRITE_SVLC( scalingWindow.getWindowBottomOffset(), "pps_scaling_win_bottom_offset" );
+#else
     WRITE_UVLC( scalingWindow.getWindowLeftOffset(), "scaling_win_left_offset" );
     WRITE_UVLC( scalingWindow.getWindowRightOffset(), "scaling_win_right_offset" );
     WRITE_UVLC( scalingWindow.getWindowTopOffset(), "scaling_win_top_offset" );
     WRITE_UVLC( scalingWindow.getWindowBottomOffset(), "scaling_win_bottom_offset" );
+#endif
   }
 
   WRITE_FLAG( pcPPS->getOutputFlagPresentFlag() ? 1 : 0,     "output_flag_present_flag" );

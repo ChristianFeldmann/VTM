@@ -2771,8 +2771,11 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
     {
       picHeader->setEnableTMVPFlag(false);
     }
-
+#if R0324_PH_SYNTAX_CONDITION_MODIFY
+    if (picHeader->getEnableTMVPFlag() && pps->getRplInfoInPhFlag() && picHeader->getRPL(1)->getNumRefEntries() > 0)
+#else
     if (picHeader->getEnableTMVPFlag() && pps->getRplInfoInPhFlag())
+#endif
     {
       READ_CODE( 1, uiCode, "ph_collocated_from_l0_flag");
       picHeader->setPicColFromL0Flag(uiCode);
@@ -2787,13 +2790,31 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
         picHeader->setColRefIdx(0);
       }
     }
+#if R0324_PH_SYNTAX_CONDITION_MODIFY
+    else if (picHeader->getEnableTMVPFlag() && pps->getRplInfoInPhFlag() && picHeader->getRPL(1)->getNumRefEntries() == 0)
+    {
+      picHeader->setPicColFromL0Flag(1);
+    }
+#else
     else
     {
       picHeader->setPicColFromL0Flag(0);
     }
+#endif
 
   // mvd L1 zero flag
+    #if R0324_PH_SYNTAX_CONDITION_MODIFY
+    if (!pps->getRplInfoInPhFlag() || picHeader->getRPL(1)->getNumRefEntries() > 0)
+    {
+      READ_FLAG(uiCode, "pic_mvd_l1_zero_flag");
+    }
+    else
+    {
+      uiCode = 1;
+    }
+#else
     READ_FLAG(uiCode, "mvd_l1_zero_flag");
+#endif
     picHeader->setMvdL1ZeroFlag( uiCode != 0 );
 
   // merge candidate list size
@@ -2819,23 +2840,53 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
     }
 
   // picture level BDOF disable flags
+#if R0324_PH_SYNTAX_CONDITION_MODIFY
+    if (sps->getBdofControlPresentFlag() && (!pps->getRplInfoInPhFlag() || picHeader->getRPL(1)->getNumRefEntries() > 0))
+#else
     if (sps->getBdofControlPresentFlag())
+#endif
     {
       READ_FLAG(uiCode, "ph_disable_bdof_flag");  picHeader->setDisBdofFlag(uiCode != 0);
     }
     else
     {
+#if R0324_PH_SYNTAX_CONDITION_MODIFY
+      if (sps->getBdofControlPresentFlag() == 0)
+      {
+        picHeader->setDisBdofFlag(1 - (int)(sps->getBDOFEnabledFlag()));
+      }
+      else
+      {
+        picHeader->setDisBdofFlag(1);
+      }
+#else
       picHeader->setDisBdofFlag(0);
+#endif
     }
 
   // picture level DMVR disable flags
+#if R0324_PH_SYNTAX_CONDITION_MODIFY
+    if (sps->getDmvrControlPresentFlag() && (!pps->getRplInfoInPhFlag() || picHeader->getRPL(1)->getNumRefEntries() > 0))
+#else
     if (sps->getDmvrControlPresentFlag())
+#endif
     {
       READ_FLAG(uiCode, "ph_disable_dmvr_flag");  picHeader->setDisDmvrFlag(uiCode != 0);
     }
     else
     {
+#if R0324_PH_SYNTAX_CONDITION_MODIFY
+      if (sps->getDmvrControlPresentFlag() == 0)
+      {
+        picHeader->setDisDmvrFlag(1 - (int)(sps->getUseDMVR()));
+      }
+      else
+      {
+        picHeader->setDisDmvrFlag(1);
+      }
+#else
       picHeader->setDisDmvrFlag(0);
+#endif
     }
 
   // picture level PROF disable flags
@@ -4533,7 +4584,18 @@ void HLSyntaxReader::parsePredWeightTable(PicHeader *picHeader, const SPS *sps)
 
     if (numRef == 0)
     {
+#if R0324_PH_SYNTAX_CONDITION_MODIFY
+      if (picHeader->getRPL(1)->getNumRefEntries() > 0)
+      {
+        READ_UVLC(numLxWeights, "num_l1_weights");
+      }
+      else
+      {
+        numLxWeights = 0;
+      }
+#else
       READ_UVLC(numLxWeights, "num_l1_weights");
+#endif
       moreSyntaxToBeParsed = (numLxWeights == 0) ? false : true;
       picHeader->setNumL1Weights(numLxWeights);
     }

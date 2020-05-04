@@ -99,6 +99,8 @@
 
 #define JVET_R0347_MTT_SIZE_CONSTRAIN                     1 // JVET-R0347: Set upper limit of minQtSize and maxTtSize to 64, set upper limit of maxBtSize to 64 in chroma-tree
 
+#define JVET_R0100                                        1   // JVET-R0100: Proposal 1 DUI Signalling and inference
+
 //########### place macros to be be kept below this line ###############
 
 #define JVET_R0164_MEAN_SCALED_SATD                       1 // JVET-R0164: Use a mean scaled version of SATD in encoder decisions

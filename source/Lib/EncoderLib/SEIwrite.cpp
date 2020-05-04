@@ -238,9 +238,19 @@ void SEIWriter::xWriteSEIDecodingUnitInfo(const SEIDecodingUnitInfo& sei, const 
   WRITE_UVLC(sei.m_decodingUnitIdx, "decoding_unit_idx");
   if( !bp.m_decodingUnitCpbParamsInPicTimingSeiFlag )
   {
-    for( int i = temporalId; i < bp.m_bpMaxSubLayers - 1; i ++ )
+#if JVET_R0100
+    for (int i = temporalId; i <= bp.m_bpMaxSubLayers - 1; i++)
     {
-      WRITE_FLAG( sei.m_duiSubLayerDelaysPresentFlag[i], "dui_sub_layer_delays_present_flag[i]" );
+      if (i < bp.m_bpMaxSubLayers - 1)
+      {
+#else
+    for (int i = temporalId; i < bp.m_bpMaxSubLayers - 1; i++)
+    {
+#endif
+      WRITE_FLAG(sei.m_duiSubLayerDelaysPresentFlag[i], "dui_sub_layer_delays_present_flag[i]");
+#if JVET_R0100
+      }
+#endif
       if( sei.m_duiSubLayerDelaysPresentFlag[i] )
         WRITE_CODE( sei.m_duSptCpbRemovalDelayIncrement[i], bp.getDuCpbRemovalDelayIncrementLength(), "du_spt_cpb_removal_delay_increment[i]");
     }

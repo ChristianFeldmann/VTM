@@ -98,11 +98,7 @@ private:
 
   MotionInfo        m_SubPuMiBuf[(MAX_CU_SIZE * MAX_CU_SIZE) >> (MIN_CU_LOG2 << 1)];
 
-#if !JVET_Q0806
-  MergeCtx          m_triangleMrgCtx;
-#else
   MergeCtx          m_geoMrgCtx;
-#endif
 };
 
 //! \}

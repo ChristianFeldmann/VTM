@@ -266,11 +266,7 @@ CodingUnit& CodingUnit::operator=( const CodingUnit& other )
   affine            = other.affine;
   affineType        = other.affineType;
   colorTransform = other.colorTransform;
-#if !JVET_Q0806
-  triangle          = other.triangle;
-#else
   geoFlag           = other.geoFlag;
-#endif
   bdpcmMode         = other.bdpcmMode;
   bdpcmModeChroma   = other.bdpcmModeChroma;
   qp                = other.qp;
@@ -330,11 +326,7 @@ void CodingUnit::initData()
   affine            = false;
   affineType        = 0;
   colorTransform = false;
-#if !JVET_Q0806
-  triangle          = false;
-#else
   geoFlag           = false;
-#endif
   bdpcmMode         = 0;
   bdpcmModeChroma   = 0;
   qp                = 0;
@@ -376,6 +368,11 @@ void CodingUnit::initData()
 const bool CodingUnit::isSepTree() const
 {
   return treeType != TREE_D || CS::isDualITree( *cs );
+}
+
+const bool CodingUnit::isLocalSepTree() const
+{
+  return treeType != TREE_D && !CS::isDualITree(*cs);
 }
 
 const bool CodingUnit::checkCCLMAllowed() const
@@ -466,12 +463,6 @@ const uint8_t CodingUnit::checkAllowedSbt() const
   {
     return 0;
   }
-#if !JVET_Q0806
-  if( triangle )
-  {
-    return 0;
-  }
-#endif
 
   uint8_t sbtAllowed = 0;
   int cuWidth  = lwidth();
@@ -538,15 +529,9 @@ void PredictionUnit::initData()
   mergeFlag   = false;
   regularMergeFlag = false;
   mergeIdx    = MAX_UCHAR;
-#if !JVET_Q0806
-  triangleSplitDir  = MAX_UCHAR;
-  triangleMergeIdx0 = MAX_UCHAR;
-  triangleMergeIdx1 = MAX_UCHAR;
-#else
   geoSplitDir  = MAX_UCHAR;
   geoMergeIdx0 = MAX_UCHAR;
   geoMergeIdx1 = MAX_UCHAR;
-#endif
   mmvdMergeFlag = false;
   mmvdMergeIdx = MAX_UINT;
   interDir    = MAX_UCHAR;
@@ -595,15 +580,9 @@ PredictionUnit& PredictionUnit::operator=(const InterPredictionData& predData)
   mergeFlag   = predData.mergeFlag;
   regularMergeFlag = predData.regularMergeFlag;
   mergeIdx    = predData.mergeIdx;
-#if !JVET_Q0806
-  triangleSplitDir  = predData.triangleSplitDir  ;
-  triangleMergeIdx0 = predData.triangleMergeIdx0 ;
-  triangleMergeIdx1 = predData.triangleMergeIdx1 ;
-#else
   geoSplitDir  = predData.geoSplitDir;
   geoMergeIdx0 = predData.geoMergeIdx0;
   geoMergeIdx1 = predData.geoMergeIdx1;
-#endif
   mmvdMergeFlag = predData.mmvdMergeFlag;
   mmvdMergeIdx = predData.mmvdMergeIdx;
   interDir    = predData.interDir;
@@ -647,15 +626,9 @@ PredictionUnit& PredictionUnit::operator=( const PredictionUnit& other )
   mergeFlag   = other.mergeFlag;
   regularMergeFlag = other.regularMergeFlag;
   mergeIdx    = other.mergeIdx;
-#if !JVET_Q0806
-  triangleSplitDir  = other.triangleSplitDir  ;
-  triangleMergeIdx0 = other.triangleMergeIdx0 ;
-  triangleMergeIdx1 = other.triangleMergeIdx1 ;
-#else
   geoSplitDir  = other.geoSplitDir;
   geoMergeIdx0 = other.geoMergeIdx0;
   geoMergeIdx1 = other.geoMergeIdx1;
-#endif
   mmvdMergeFlag = other.mmvdMergeFlag;
   mmvdMergeIdx = other.mmvdMergeIdx;
   interDir    = other.interDir;
@@ -764,7 +737,6 @@ void TransformUnit::initData()
   {
     cbf[i]           = 0;
     rdpcm[i]         = NUMBER_OF_RDPCM_MODES;
-    compAlpha[i]     = 0;
     mtsIdx[i]        = MTS_DCT2_DCT2;
   }
   depth              = 0;
@@ -782,7 +754,8 @@ void TransformUnit::init(TCoeff **coeffs, Pel **pcmbuf, bool **runType)
     m_pcmbuf[i] = pcmbuf[i];
   }
 
-  for (uint32_t i = 0; i < numBlocks - 1; i++)
+  // numBlocks is either 1 for 4:0:0, or 3 otherwise. It would perhaps be better to loop over getNumberValidChannels(*cs->pcv.chrFormat) for m_runType.
+  for (uint32_t i = 0; i < std::max<uint32_t>(2, numBlocks)-1; i++)
   {
     m_runType[i] = runType[i];
   }
@@ -807,7 +780,6 @@ TransformUnit& TransformUnit::operator=(const TransformUnit& other)
     }
     cbf[i]           = other.cbf[i];
     rdpcm[i]         = other.rdpcm[i];
-    compAlpha[i]     = other.compAlpha[i];
     mtsIdx[i] = other.mtsIdx[i];
   }
   depth              = other.depth;
@@ -833,8 +805,6 @@ void TransformUnit::copyComponentFrom(const TransformUnit& other, const Componen
 
   cbf[i]           = other.cbf[i];
   rdpcm[i]         = other.rdpcm[i];
-  compAlpha[i]     = other.compAlpha[i];
-
   depth            = other.depth;
   mtsIdx[i]        = other.mtsIdx[i];
   noResidual       = other.noResidual;

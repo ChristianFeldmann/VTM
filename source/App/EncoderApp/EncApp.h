@@ -108,7 +108,7 @@ public:
   virtual ~EncApp();
 
   int   getMaxLayers() const { return m_maxLayers; }
-  void  createLib( int layerId );
+  void  createLib( const int layerIdx );
   void  destroyLib();
   bool  encodePrep( bool& eos );
   bool  encode();                               ///< main encoding function
@@ -118,8 +118,9 @@ public:
 #if JVET_O0756_CALCULATE_HDRMETRICS
   std::chrono::duration<long long, ratio<1, 1000000000>> getMetricTime()    const { return m_metricTime; };
 #endif
-
-
+  VPS * getVPS() { return m_cEncLib.getVPS(); }
+  int   getChromaFormatIDC() const { return m_cEncLib.getChromaFormatIdc(); }
+  int   getBitDepth() const { return m_cEncLib.getBitDepth(CHANNEL_TYPE_LUMA); }
 };// END CLASS DEFINITION EncApp
 
 //! \}

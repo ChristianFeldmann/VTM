@@ -48,12 +48,40 @@
 class ParcatHLSyntaxReader : public VLCReader
 {
   public:
-    void  parseSliceHeaderUpToPoc ( ParameterSetManager *parameterSetManager );
+    void  parsePictureHeaderUpToPoc ( ParameterSetManager *parameterSetManager );
+    bool  parsePictureHeaderInSliceHeaderFlag ( ParameterSetManager *parameterSetManager );
 };
 
-void ParcatHLSyntaxReader::parseSliceHeaderUpToPoc ( ParameterSetManager *parameterSetManager )
+bool ParcatHLSyntaxReader::parsePictureHeaderInSliceHeaderFlag(ParameterSetManager *parameterSetManager) {
+
+
+  uint32_t  uiCode;
+  READ_FLAG(uiCode, "picture_header_in_slice_header_flag");
+  return (uiCode==1);
+}
+
+void ParcatHLSyntaxReader::parsePictureHeaderUpToPoc ( ParameterSetManager *parameterSetManager )
 {
-  // POC is first syntax element in slice header
+  uint32_t  uiCode;
+  PPS* pps = NULL;
+  SPS* sps = NULL;
+  READ_FLAG(uiCode, "gdr_or_irap_pic_flag");
+  if (uiCode)
+  {
+    READ_FLAG(uiCode, "gdr_pic_flag");
+  }
+  READ_FLAG(uiCode, "ph_inter_slice_allowed_flag");
+  if (uiCode)
+  {
+    READ_FLAG(uiCode, "ph_intra_slice_allowed_flag");
+  }
+  READ_FLAG(uiCode, "non_reference_picture_flag");
+  // parameter sets
+  READ_UVLC(uiCode, "ph_pic_parameter_set_id");
+  pps = parameterSetManager->getPPS(uiCode);
+  CHECK(pps == 0, "Invalid PPS");
+  sps = parameterSetManager->getSPS(pps->getSPSId());
+  CHECK(sps == 0, "Invalid SPS");
   return;
 }
 
@@ -190,7 +218,8 @@ std::vector<uint8_t> filter_segment(const std::vector<uint8_t> & v, int idx, int
 
   int bits_for_poc = 8;
   bool skip_next_sei = false;
-  bool first_slice_segment_in_pic_flag = false;
+  bool change_poc = false;
+  bool first_idr_slice_after_ph_nal = false;
 
   while(find_nal_unit(p, sz, &nal_start, &nal_end) > 0)
   {
@@ -234,54 +263,62 @@ std::vector<uint8_t> filter_segment(const std::vector<uint8_t> & v, int idx, int
     {
       PPS* pps = new PPS();
       HLSReader.setBitstream( &inp_nalu.getBitstream() );
-      HLSReader.parsePPS( pps, &parameterSetManager );
+      HLSReader.parsePPS( pps );
       parameterSetManager.storePPS( pps, inp_nalu.getBitstream().getFifo() );
-    }
-    if( inp_nalu.m_nalUnitType == NAL_UNIT_PH )
-    {
-      first_slice_segment_in_pic_flag = true;
     }
 
     if(nalu_type == NAL_UNIT_CODED_SLICE_IDR_W_RADL || nalu_type == NAL_UNIT_CODED_SLICE_IDR_N_LP)
     {
       poc = 0;
       new_poc = *poc_base + poc;
-      first_slice_segment_in_pic_flag = false;
+      if (first_idr_slice_after_ph_nal)
+      {
+        cnt--;
+      }
+      first_idr_slice_after_ph_nal = false;
     }
-    if((nalu_type < NAL_UNIT_CODED_SLICE_IDR_W_RADL) || (nalu_type > NAL_UNIT_CODED_SLICE_IDR_N_LP && nalu_type <= NAL_UNIT_RESERVED_IRAP_VCL_12) )
+    if(inp_nalu.m_nalUnitType == NAL_UNIT_PH || (nalu_type < NAL_UNIT_CODED_SLICE_IDR_W_RADL) || (nalu_type > NAL_UNIT_CODED_SLICE_IDR_N_LP && nalu_type <= NAL_UNIT_RESERVED_IRAP_VCL_12) )
     {
       parcatHLSReader.setBitstream( &inp_nalu.getBitstream() );
-      
-      // beginning of slice header parsing, taken from VLCReader
-      parcatHLSReader.parseSliceHeaderUpToPoc( &parameterSetManager );
-      int num_bits_up_to_poc_lsb = parcatHLSReader.getBitstream()->getNumBitsRead();
-      int offset = num_bits_up_to_poc_lsb;
-
-      int byte_offset = offset / 8;
-      int hi_bits = offset % 8;
-      uint16_t data = (nalu[byte_offset] << 8) | nalu[byte_offset + 1];
-      int low_bits = 16 - hi_bits - bits_for_poc;
-      poc_lsb = (data >> low_bits) & 0xff;
-      poc = poc_lsb; //calc_poc(poc_lsb, 0, bits_for_poc, nalu_type);
-
-      new_poc = poc + *poc_base;
-      // int picOrderCntLSB = (pcSlice->getPOC()-pcSlice->getLastIDR()+(1<<pcSlice->getSPS()->getBitsForPOC())) & ((1<<pcSlice->getSPS()->getBitsForPOC())-1);
-      unsigned picOrderCntLSB = (new_poc - *last_idr_poc +(1 << bits_for_poc)) & ((1<<bits_for_poc)-1);
-
-      int low = data & ((1 << low_bits) - 1);
-      int hi = data >> (16 - hi_bits);
-      data = (hi << (16 - hi_bits)) | (picOrderCntLSB << low_bits) | low;
-
-      nalu[byte_offset] = data >> 8;
-      nalu[byte_offset + 1] = data & 0xff;
-
-      if( first_slice_segment_in_pic_flag )
+      if (inp_nalu.m_nalUnitType == NAL_UNIT_PH)
       {
+        change_poc = true;
+        first_idr_slice_after_ph_nal = true;
+      }
+      else
+      {
+        change_poc = parcatHLSReader.parsePictureHeaderInSliceHeaderFlag(&parameterSetManager);
+      }
+      if (change_poc)
+      {
+        // beginning of picture header parsing
+        parcatHLSReader.parsePictureHeaderUpToPoc(&parameterSetManager);
+        int num_bits_up_to_poc_lsb = parcatHLSReader.getBitstream()->getNumBitsRead();
+        int offset = num_bits_up_to_poc_lsb;
+
+        int byte_offset = offset / 8;
+        int hi_bits = offset % 8;
+        uint16_t data = (nalu[byte_offset] << 8) | nalu[byte_offset + 1];
+        int low_bits = 16 - hi_bits - bits_for_poc;
+        poc_lsb = (data >> low_bits) & 0xff;
+        poc = poc_lsb; //calc_poc(poc_lsb, 0, bits_for_poc, nalu_type);
+
+        new_poc = poc + *poc_base;
+        // int picOrderCntLSB = (pcSlice->getPOC()-pcSlice->getLastIDR()+(1<<pcSlice->getSPS()->getBitsForPOC())) & ((1<<pcSlice->getSPS()->getBitsForPOC())-1);
+        unsigned picOrderCntLSB = (new_poc - *last_idr_poc + (1 << bits_for_poc)) & ((1 << bits_for_poc) - 1);
+
+        int low = data & ((1 << low_bits) - 1);
+        int hi = data >> (16 - hi_bits);
+        data = (hi << (16 - hi_bits)) | (picOrderCntLSB << low_bits) | low;
+
+        nalu[byte_offset] = data >> 8;
+        nalu[byte_offset + 1] = data & 0xff;
+
 #if ENABLE_TRACING
         std::cout << "Changed poc " << poc << " to " << new_poc << std::endl;
 #endif
         ++cnt;
-        first_slice_segment_in_pic_flag = false;
+        change_poc = false;
       }
     }
 
@@ -290,8 +327,7 @@ std::vector<uint8_t> filter_segment(const std::vector<uint8_t> & v, int idx, int
       skip_next_sei = true;
       idr_found = true;
     }
-
-    if( ( idx > 1 && ( nalu_type == NAL_UNIT_CODED_SLICE_IDR_W_RADL || nalu_type == NAL_UNIT_CODED_SLICE_IDR_N_LP ) ) || ( ( idx > 1 && !idr_found ) && ( nalu_type == NAL_UNIT_DPS || nalu_type == NAL_UNIT_VPS || nalu_type == NAL_UNIT_SPS || nalu_type == NAL_UNIT_PPS || nalu_type == NAL_UNIT_PREFIX_APS || nalu_type == NAL_UNIT_SUFFIX_APS || nalu_type == NAL_UNIT_PH || nalu_type == NAL_UNIT_ACCESS_UNIT_DELIMITER ) )
+    if ((idx > 1 && (nalu_type == NAL_UNIT_CODED_SLICE_IDR_W_RADL || nalu_type == NAL_UNIT_CODED_SLICE_IDR_N_LP)) || ((idx > 1 && !idr_found) && (nalu_type == NAL_UNIT_DCI || nalu_type == NAL_UNIT_VPS || nalu_type == NAL_UNIT_SPS || nalu_type == NAL_UNIT_PPS || nalu_type == NAL_UNIT_PREFIX_APS || nalu_type == NAL_UNIT_SUFFIX_APS || nalu_type == NAL_UNIT_PH || nalu_type == NAL_UNIT_ACCESS_UNIT_DELIMITER))
       || (nalu_type == NAL_UNIT_SUFFIX_SEI && skip_next_sei))
     {
     }

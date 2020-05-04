@@ -298,7 +298,7 @@ public:
 
   int deriveModCoeff(int rightPixel, int belowPixel, int absCoeff, int bdpcm = 0)
   {
-    
+
     if (absCoeff == 0)
       return 0;
     int pred1, absBelow = abs(belowPixel), absRight = abs(rightPixel);
@@ -324,7 +324,7 @@ public:
 
   int decDeriveModCoeff(int rightPixel, int belowPixel, int absCoeff)
   {
-    
+
     if (absCoeff == 0)
       return 0;
 
@@ -416,9 +416,7 @@ public:
                            violatesLfnstConstrained[CHANNEL_TYPE_CHROMA] = false;
                            lfnstLastScanPos                              = false;
                            violatesMtsCoeffConstraint                    = false;
-#if JVET_Q0516_MTS_SIGNALLING_DC_ONLY_COND
                            mtsLastScanPos                                = false;
-#endif
                          }
   CUCtx(int _qp)       : isDQPCoded(false), isChromaQpAdjCoded(false),
                          qgStart(false),
@@ -428,9 +426,7 @@ public:
                            violatesLfnstConstrained[CHANNEL_TYPE_CHROMA] = false;
                            lfnstLastScanPos                              = false;
                            violatesMtsCoeffConstraint                    = false;
-#if JVET_Q0516_MTS_SIGNALLING_DC_ONLY_COND
                            mtsLastScanPos                                = false;
-#endif
                          }
   ~CUCtx() {}
 public:
@@ -441,9 +437,7 @@ public:
   int8_t    qp;                   // used as a previous(last) QP and for QP prediction
   bool      violatesLfnstConstrained[MAX_NUM_CHANNEL_TYPE];
   bool      violatesMtsCoeffConstraint;
-#if JVET_Q0516_MTS_SIGNALLING_DC_ONLY_COND 
   bool      mtsLastScanPos;
-#endif
 };
 
 class MergeCtx

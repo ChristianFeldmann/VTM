@@ -65,12 +65,10 @@ double RdCost::calcRdCost( uint64_t fracBits, Distortion distortion, bool useUna
 double RdCost::calcRdCost( uint64_t fracBits, Distortion distortion )
 #endif
 {
-#if JVET_AHG14_LOSSLESS
   if( m_costMode == COST_LOSSLESS_CODING && 0 != distortion )
   {
     return MAX_DOUBLE;
   }
-#endif
 #if WCG_EXT
   return ( useUnadjustedLambda ? m_DistScaleUnadjusted : m_DistScale ) * double( distortion ) + double( fracBits );
 #else
@@ -92,11 +90,7 @@ void RdCost::lambdaAdjustColorTrans(bool forward, ComponentID componentID)
     for (uint8_t component = 0; component < MAX_NUM_COMPONENT; component++)
     {
       ComponentID compID = (ComponentID)component;
-#if JVET_Q0820_ACT
       int       delta_QP = DELTA_QP_ACT[compID];
-#else
-      int       delta_QP = (compID == COMPONENT_Cr ? DELTA_QP_FOR_Co : DELTA_QP_FOR_Y_Cg);
-#endif
       double lamdbaAdjustRate = pow(2.0, delta_QP / 3.0);
 
       m_lambdaStore[0][component] = m_dLambda;
@@ -107,7 +101,7 @@ void RdCost::lambdaAdjustColorTrans(bool forward, ComponentID componentID)
     }
     m_resetStore = false;
   }
-  
+
   if (forward)
   {
     CHECK(m_pairCheck == 1, "lambda has been already adjusted");
@@ -205,9 +199,7 @@ void RdCost::init()
 
   m_afpDistortFunc[DF_SAD_INTERMEDIATE_BITDEPTH] = RdCost::xGetSAD;
 
-#if JVET_Q0806
   m_afpDistortFunc[DF_SAD_WITH_MASK] = RdCost::xGetSADwMask;
-#endif
 
 #if ENABLE_SIMD_OPT_DIST
 #ifdef TARGET_SIMD_X86
@@ -322,7 +314,6 @@ void RdCost::setDistParam( DistParam &rcDP, const CPelBuf &org, const Pel* piRef
       rcDP.subShift = 1;
     }
   }
-#if JVET_Q0806
   else if( subShiftMode == 3 )
   {
     if (rcDP.org.height > 8 )
@@ -330,7 +321,6 @@ void RdCost::setDistParam( DistParam &rcDP, const CPelBuf &org, const Pel* piRef
       rcDP.subShift = 1;
     }
   }
-#endif
 }
 
 void RdCost::setDistParam( DistParam &rcDP, const CPelBuf &org, const CPelBuf &cur, int bitDepth, ComponentID compID, bool useHadamard )
@@ -2161,7 +2151,11 @@ Distortion RdCost::xCalcHADs2x2( const Pel *piOrg, const Pel *piCur, int iStride
   m[2] = diff[0] - diff[2];
   m[3] = diff[1] - diff[3];
 
+#if JVET_R0164_MEAN_SCALED_SATD
+  satd += abs(m[0] + m[1]) >> 2;
+#else
   satd += abs(m[0] + m[1]);
+#endif
   satd += abs(m[0] - m[1]);
   satd += abs(m[2] + m[3]);
   satd += abs(m[2] - m[3]);
@@ -2260,7 +2254,12 @@ Distortion RdCost::xCalcHADs4x4( const Pel *piOrg, const Pel *piCur, int iStride
   {
     satd += abs(d[k]);
   }
-  satd = ((satd+1)>>1);
+
+#if JVET_R0164_MEAN_SCALED_SATD
+  satd -= abs(d[0]);
+  satd += abs(d[0]) >> 2;
+#endif
+  satd  = ((satd+1)>>1);
 
   return satd;
 }
@@ -2357,7 +2356,11 @@ Distortion RdCost::xCalcHADs8x8( const Pel *piOrg, const Pel *piCur, int iStride
     }
   }
 
-  sad=((sad+2)>>2);
+#if JVET_R0164_MEAN_SCALED_SATD
+  sad -= abs(m2[0][0]);
+  sad += abs(m2[0][0]) >> 2;
+#endif
+  sad  = ((sad+2)>>2);
 
   return sad;
 }
@@ -2503,7 +2506,11 @@ Distortion RdCost::xCalcHADs16x8( const Pel *piOrg, const Pel *piCur, int iStrid
     }
   }
 
-  sad = ( int ) ( sad / sqrt( 16.0 * 8 ) * 2 );
+#if JVET_R0164_MEAN_SCALED_SATD
+  sad -= abs(m2[0][0]);
+  sad += abs(m2[0][0]) >> 2;
+#endif
+  sad  = ( int ) ( sad / sqrt( 16.0 * 8 ) * 2 );
 
   return sad;
 }
@@ -2640,7 +2647,11 @@ Distortion RdCost::xCalcHADs8x16( const Pel *piOrg, const Pel *piCur, int iStrid
     }
   }
 
-  sad = ( int ) ( sad / sqrt( 16.0 * 8 ) * 2 );
+#if JVET_R0164_MEAN_SCALED_SATD
+  sad -= abs(m2[0][0]);
+  sad += abs(m2[0][0]) >> 2;
+#endif
+  sad  = ( int ) ( sad / sqrt( 16.0 * 8 ) * 2 );
 
   return sad;
 }
@@ -2713,7 +2724,11 @@ Distortion RdCost::xCalcHADs4x8( const Pel *piOrg, const Pel *piCur, int iStride
     }
   }
 
-  sad = ( int ) ( sad / sqrt( 4.0 * 8 ) * 2 );
+#if JVET_R0164_MEAN_SCALED_SATD
+  sad -= abs(m2[0][0]);
+  sad += abs(m2[0][0]) >> 2;
+#endif
+  sad  = ( int ) ( sad / sqrt( 4.0 * 8 ) * 2 );
 
   return sad;
 }
@@ -2792,7 +2807,11 @@ Distortion RdCost::xCalcHADs8x4( const Pel *piOrg, const Pel *piCur, int iStride
     }
   }
 
-  sad = ( int ) ( sad / sqrt( 4.0 * 8 ) * 2 );
+#if JVET_R0164_MEAN_SCALED_SATD
+  sad -= abs(m2[0][0]);
+  sad += abs(m2[0][0]) >> 2;
+#endif
+  sad  = ( int ) ( sad / sqrt( 4.0 * 8 ) * 2 );
 
   return sad;
 }
@@ -3466,7 +3485,6 @@ Distortion RdCost::xGetMRHADs( const DistParam &rcDtParam )
   return m_afpDistortFunc[DF_HAD]( modDistParam );
 }
 
-#if JVET_Q0806
 void RdCost::setDistParam( DistParam &rcDP, const CPelBuf &org, const Pel* piRefY, int iRefStride, const Pel* mask, int iMaskStride, int stepX, int iMaskStride2, int bitDepth, ComponentID compID)
 {
   rcDP.bitDepth     = bitDepth;
@@ -3529,5 +3547,4 @@ Distortion RdCost::xGetSADwMask( const DistParam& rcDtParam )
   sum <<= subShift;
   return (sum >> distortionShift );
 }
-#endif
 //! \}

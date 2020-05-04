@@ -150,7 +150,7 @@ void readNalUnitHeader(InputNALUnit& nalu)
     else
     {
       CHECK(nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_STSA
-        , "When NAL unit type is equal to STSA_NUT, TemporalId shall not be equal to 0"); 
+        , "When NAL unit type is equal to STSA_NUT, TemporalId shall not be equal to 0");
     }
   }
 }
@@ -167,12 +167,10 @@ void read(InputNALUnit& nalu)
   bitstream.resetToStart();
   readNalUnitHeader(nalu);
 }
-#if JVET_Q0775_PH_IN_SH
 bool checkPictureHeaderInSliceHeaderFlag(InputNALUnit& nalu)
 {
   InputBitstream& bitstream = nalu.getBitstream();
   CHECK(bitstream.getByteLocation() != 2, "The picture_header_in_slice_header_flag is the first bit after the NAL unit header");
   return (bool)bitstream.read(1);
 }
-#endif
 //! \}

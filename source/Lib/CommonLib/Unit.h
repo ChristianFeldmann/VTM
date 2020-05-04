@@ -271,7 +271,7 @@ struct UnitAreaRelative : public UnitArea
 
 class SPS;
 class VPS;
-class DPS;
+class DCI;
 class PPS;
 class Slice;
 
@@ -309,11 +309,7 @@ struct CodingUnit : public UnitArea
   bool           affine;
   int            affineType;
   bool           colorTransform;
-#if !JVET_Q0806
-  bool           triangle;
-#else
   bool           geoFlag;
-#endif
   int            bdpcmMode;
   int            bdpcmModeChroma;
   uint8_t          imv;
@@ -367,6 +363,7 @@ struct CodingUnit : public UnitArea
   const uint8_t     checkAllowedSbt() const;
   const bool        checkCCLMAllowed() const;
   const bool        isSepTree() const;
+  const bool        isLocalSepTree() const;
   const bool        isConsInter() const { return modeType == MODE_TYPE_INTER; }
   const bool        isConsIntra() const { return modeType == MODE_TYPE_INTRA; }
 };
@@ -387,15 +384,9 @@ struct InterPredictionData
   bool      mergeFlag;
   bool      regularMergeFlag;
   uint8_t     mergeIdx;
-#if !JVET_Q0806
-  uint8_t     triangleSplitDir;
-  uint8_t     triangleMergeIdx0;
-  uint8_t     triangleMergeIdx1;
-#else
   uint8_t     geoSplitDir;
   uint8_t     geoMergeIdx0;
   uint8_t     geoMergeIdx1;
-#endif
   bool           mmvdMergeFlag;
   uint32_t       mmvdMergeIdx;
   uint8_t     interDir;
@@ -468,7 +459,6 @@ struct TransformUnit : public UnitArea
   uint8_t        jointCbCr;
   uint8_t        cbf        [ MAX_NUM_TBLOCKS ];
   RDPCMMode    rdpcm        [ MAX_NUM_TBLOCKS ];
-  int8_t        compAlpha   [ MAX_NUM_TBLOCKS ];
 
   TransformUnit() : chType( CH_L ) { }
   TransformUnit(const UnitArea& unit);

@@ -69,8 +69,12 @@ class DecLib
 {
 private:
   int                     m_iMaxRefPicNum;
+  bool m_isFirstGeneralHrd;
+  GeneralHrdParams        m_prevGeneralHrdParams;
 
   NalUnitType             m_associatedIRAPType; ///< NAL unit type of the associated IRAP picture
+  int                     m_associatedIRAPDecodingOrderNumber; ///< Decoding order number of the associated IRAP picture
+  int                     m_decodingOrderCounter;
   int                     m_pocCRA;            ///< POC number of the latest CRA picture
   int                     m_pocRandomAccess;   ///< POC number of the random access point (the first IDR or CRA picture)
   int                     m_lastRasPoc;
@@ -106,23 +110,23 @@ private:
 #endif
   bool isRandomAccessSkipPicture(int& iSkipFrame,  int& iPOCLastDisplay);
   Picture*                m_pcPic;
-  uint32_t                    m_uiSliceSegmentIdx;
+  uint32_t                m_uiSliceSegmentIdx;
   uint32_t                m_prevLayerID;
   int                     m_prevPOC;
   int                     m_prevTid0POC;
   bool                    m_bFirstSliceInPicture;
-  bool                    m_bFirstSliceInSequence;
+  bool                    m_firstSliceInSequence[MAX_VPS_LAYERS];
+  bool                    m_firstSliceInBitstream;
   bool                    m_prevSliceSkipped;
   int                     m_skippedPOC;
-  bool                    m_bFirstSliceInBitstream;
   int                     m_lastPOCNoOutputPriorPics;
   bool                    m_isNoOutputPriorPics;
-  bool                    m_lastNoIncorrectPicOutputFlag;    //value of variable NoIncorrectPicOutputFlag of the last CRA / GDR pic
+  bool                    m_lastNoOutputBeforeRecoveryFlag;    //value of variable NoOutputBeforeRecoveryFlag  of the last CRA / GDR pic
   int                     m_sliceLmcsApsId;         //value of LmcsApsId, constraint is same id for all slices in one picture
   std::ostream           *m_pDecodedSEIOutputStream;
 
   int                     m_decodedPictureHashSEIEnabled;  ///< Checksum(3)/CRC(2)/MD5(1)/disable(0) acting on decoded picture hash SEI message
-  uint32_t                    m_numberOfChecksumErrorsDetected;
+  uint32_t                m_numberOfChecksumErrorsDetected;
 
   bool                    m_warningMessageSkipPicture;
 
@@ -131,16 +135,35 @@ private:
   int                     m_debugCTU;
 
   std::vector<std::pair<NalUnitType, int>> m_accessUnitNals;
+  struct AccessUnitPicInfo
+  {
+    NalUnitType     m_nalUnitType; ///< nal_unit_type
+    uint32_t        m_temporalId;  ///< temporal_id
+    uint32_t        m_nuhLayerId;  ///< nuh_layer_id
+    int             m_POC;
+  };
+  std::vector<AccessUnitPicInfo> m_accessUnitPicInfo;
+  struct NalUnitInfo
+  {
+    NalUnitType     m_nalUnitType; ///< nal_unit_type
+    uint32_t        m_nuhLayerId;  ///< nuh_layer_id
+    uint32_t        m_firstCTUinSlice; /// the first CTU in slice, specified with raster scan order ctu address
+    int             m_POC;             /// the picture order
+  };
+  std::vector<NalUnitInfo> m_nalUnitInfo[MAX_VPS_LAYERS];
   std::vector<int> m_accessUnitApsNals;
+  std::vector<int> m_accessUnitSeiTids;
 
+  // NAL unit type, layer ID, and SEI payloadType
+  std::vector<std::tuple<NalUnitType, int, SEI::PayloadType>> m_accessUnitSeiPayLoadTypes;
   VPS*                    m_vps;
-  bool                    m_scalingListUpdateFlag;
-  int                     m_PreScalingListAPSId;
+  int                     m_maxDecSubPicIdx;
+  int                     m_maxDecSliceAddrInSubPic;
 
-#if SUBPIC_DECCHECK
 public:
   int                     m_targetSubPicIdx;
-#endif
+
+  DCI*                    m_dci;
 public:
   DecLib();
   virtual ~DecLib();
@@ -155,7 +178,7 @@ public:
     const std::string& cacheCfgFileName
 #endif
   );
-  bool  decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay);
+  bool  decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay, int iTargetOlsIdx);
   void  deletePicBuffer();
 
   void  executeLoopFilters();
@@ -163,14 +186,15 @@ public:
   void  finishPictureLight(int& poc, PicList*& rpcListPic );
   void  checkNoOutputPriorPics (PicList* rpcListPic);
   void  checkNalUnitConstraints( uint32_t naluType );
+  void updateAssociatedIRAP();
 
 
   bool  getNoOutputPriorPicsFlag () const   { return m_isNoOutputPriorPics; }
   void  setNoOutputPriorPicsFlag (bool val) { m_isNoOutputPriorPics = val; }
   void  setFirstSliceInPicture (bool val)  { m_bFirstSliceInPicture = val; }
   bool  getFirstSliceInPicture () const  { return m_bFirstSliceInPicture; }
-  bool  getFirstSliceInSequence () const   { return m_bFirstSliceInSequence; }
-  void  setFirstSliceInSequence (bool val) { m_bFirstSliceInSequence = val; }
+  bool  getFirstSliceInSequence(int layerId) const { return m_firstSliceInSequence[layerId]; }
+  void  setFirstSliceInSequence(bool val, int layerId) { m_firstSliceInSequence[layerId] = val; }
   void  setDecodedSEIMessageOutputStream(std::ostream *pOpStream) { m_pDecodedSEIOutputStream = pOpStream; }
   uint32_t  getNumberOfChecksumErrorsDetected() const { return m_numberOfChecksumErrorsDetected; }
 
@@ -179,18 +203,21 @@ public:
   int  getDebugPOC( )               const { return m_debugPOC; };
   void setDebugPOC( int debugPOC )        { m_debugPOC = debugPOC; };
   void resetAccessUnitNals()              { m_accessUnitNals.clear();    }
+  void resetAccessUnitPicInfo()              { m_accessUnitPicInfo.clear();    }
   void resetAccessUnitApsNals()           { m_accessUnitApsNals.clear(); }
+  void resetAccessUnitSeiTids()           { m_accessUnitSeiTids.clear(); }
+  void checkTidLayerIdInAccessUnit();
+  void resetAccessUnitSeiPayLoadTypes()   { m_accessUnitSeiPayLoadTypes.clear(); }
+  void checkSEIInAccessUnit();
   bool isSliceNaluFirstInAU( bool newPicture, InputNALUnit &nalu );
 
   const VPS* getVPS()                     { return m_vps; }
+  void deriveTargetOutputLayerSet( const int targetOlsIdx ) { if( m_vps != nullptr ) m_vps->deriveTargetOutputLayerSet( targetOlsIdx ); }
+
   void  initScalingList()
   {
     m_cTrQuantScalingList.init(nullptr, MAX_TB_SIZEY, false, false, false, false);
   }
-  bool  getScalingListUpdateFlag() { return m_scalingListUpdateFlag; }
-  void  setScalingListUpdateFlag(bool b) { m_scalingListUpdateFlag = b; }
-  int   getPreScalingListAPSId() { return m_PreScalingListAPSId; }
-  void  setPreScalingListAPSId(int id) { m_PreScalingListAPSId = id; }
 
 protected:
   void  xUpdateRasInit(Slice* slice);
@@ -199,10 +226,11 @@ protected:
   void  xCreateLostPicture( int iLostPOC, const int layerId );
   void  xCreateUnavailablePicture(int iUnavailablePoc, bool longTermFlag, const int layerId, const bool interLayerRefPicFlag);
   void  xActivateParameterSets( const int layerId );
+  void  xCheckParameterSetConstraints( const int layerId );
   void      xDecodePicHeader( InputNALUnit& nalu );
   bool      xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDisplay);
   void      xDecodeVPS( InputNALUnit& nalu );
-  void      xDecodeDPS( InputNALUnit& nalu );
+  void      xDecodeDCI( InputNALUnit& nalu );
   void      xDecodeSPS( InputNALUnit& nalu );
   void      xDecodePPS( InputNALUnit& nalu );
   void      xDecodeAPS(InputNALUnit& nalu);
@@ -211,7 +239,7 @@ protected:
   void      xParsePrefixSEIsForUnknownVCLNal();
 
   void  xCheckNalUnitConstraintFlags( const ConstraintInfo *cInfo, uint32_t naluType );
-
+  void     xCheckMixedNalUnit(Slice* pcSlice, SPS *sps, InputNALUnit &nalu);
 };// END CLASS DEFINITION DecLib
 
 

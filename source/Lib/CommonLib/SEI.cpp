@@ -150,18 +150,13 @@ const char *SEI::getSEIMessageString(SEI::PayloadType payloadType)
   {
     case SEI::BUFFERING_PERIOD:                     return "Buffering period";
     case SEI::PICTURE_TIMING:                       return "Picture timing";
-#if HEVC_SEI
-    case SEI::PAN_SCAN_RECT:                        return "Pan-scan rectangle";                   // not currently decoded
-#endif
     case SEI::FILLER_PAYLOAD:                       return "Filler payload";                       // not currently decoded
     case SEI::USER_DATA_REGISTERED_ITU_T_T35:       return "User data registered";                 // not currently decoded
     case SEI::USER_DATA_UNREGISTERED:               return "User data unregistered";
     case SEI::FILM_GRAIN_CHARACTERISTICS:           return "Film grain characteristics";           // not currently decoded
     case SEI::FRAME_PACKING:                        return "Frame packing arrangement";
     case SEI::DECODING_UNIT_INFO:                   return "Decoding unit information";
-#if HEVC_SEI
-    case SEI::TEMPORAL_LEVEL0_INDEX:                return "Temporal sub-layer zero index";
-#endif
+    case SEI::SCALABLE_NESTING:                     return "Scalable nesting";
     case SEI::DECODED_PICTURE_HASH:                 return "Decoded picture hash";
     case SEI::DEPENDENT_RAP_INDICATION:             return "Dependent RAP indication";
     case SEI::MASTERING_DISPLAY_COLOUR_VOLUME:      return "Mastering display colour volume";

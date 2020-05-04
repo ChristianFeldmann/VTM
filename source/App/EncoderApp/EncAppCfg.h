@@ -39,6 +39,7 @@
 #define __ENCAPPCFG__
 
 #include "CommonLib/CommonDef.h"
+#include "EncoderLib/EncCfgParam.h"
 
 #include <map>
 template <class T1, class T2>
@@ -115,9 +116,7 @@ protected:
   int       m_framesToBeEncoded;                              ///< number of encoded frames
   int       m_aiPad[2];                                       ///< number of padded pixels for width and height
   bool      m_AccessUnitDelimiter;                            ///< add Access Unit Delimiter NAL units
-#if JVET_Q0775_PH_IN_SH
   bool      m_enablePictureHeaderInSliceHeader;               ///< Enable Picture Header in Slice Header
-#endif
   InputColourSpaceConversion m_inputColourSpaceConvert;       ///< colour space conversion to apply to input video
   bool      m_snrInternalColourSpace;                       ///< if true, then no colour space conversion is applied for snr calculation, otherwise inverse of input is applied.
   bool      m_outputInternalColourSpace;                    ///< if true, then no colour space conversion is applied for reconstructed video, otherwise inverse of input is applied.
@@ -140,9 +139,7 @@ protected:
   bool      m_noPartitionConstraintsOverrideConstraintFlag;
   bool      m_bNoSaoConstraintFlag;
   bool      m_bNoAlfConstraintFlag;
-#if JVET_Q0795_CCALF
   bool      m_noCCAlfConstraintFlag;
-#endif
   bool      m_bNoRefWraparoundConstraintFlag;
   bool      m_bNoTemporalMvpConstraintFlag;
   bool      m_bNoSbtmvpConstraintFlag;
@@ -157,11 +154,7 @@ protected:
   bool      m_noIbcConstraintFlag;
   bool      m_bNoCiipConstraintFlag;
   bool      m_noFPelMmvdConstraintFlag;
-#if !JVET_Q0806
-  bool      m_bNoTriangleConstraintFlag;
-#else
   bool      m_noGeoConstraintFlag;
-#endif
   bool      m_bNoLadfConstraintFlag;
   bool      m_noTransformSkipConstraintFlag;
   bool      m_noBDPCMConstraintFlag;
@@ -191,6 +184,11 @@ protected:
   bool          m_progressiveSourceFlag;
   bool          m_interlacedSourceFlag;
   bool          m_nonPackedConstraintFlag;
+  bool          m_nonProjectedConstraintFlag;
+  bool          m_noResChangeInClvsConstraintFlag;
+  bool          m_oneTilePerPicConstraintFlag;
+  bool          m_oneSlicePerPicConstraintFlag;
+  bool          m_oneSubpicPerPicConstraintFlag;
   bool          m_frameOnlyConstraintFlag;
 
   // coding structure
@@ -205,12 +203,10 @@ protected:
   GOPEntry  m_GOPList[MAX_GOP];                               ///< the coding structure entries from the config file
   int       m_numReorderPics[MAX_TLAYER];                     ///< total number of reorder pictures
   int       m_maxDecPicBuffering[MAX_TLAYER];                 ///< total number of pictures in the decoded picture buffer
-  bool      m_crossComponentPredictionEnabledFlag;            ///< flag enabling the use of cross-component prediction
   bool      m_reconBasedCrossCPredictionEstimate;             ///< causes the alpha calculation in encoder search to be based on the decoded residual rather than the pre-transform encoder-side residual
-  uint32_t      m_log2SaoOffsetScale[MAX_NUM_CHANNEL_TYPE];       ///< number of bits for the upward bit shift operation on the decoded SAO offsets
   bool      m_useTransformSkip;                               ///< flag for enabling intra transform skipping
   bool      m_useTransformSkipFast;                           ///< flag for enabling fast intra transform skipping
-  int       m_useBDPCM;
+  bool      m_useBDPCM;
   uint32_t      m_log2MaxTransformSkipBlockSize;                  ///< transform-skip maximum size (minimum of 2)
   bool      m_transformSkipRotationEnabledFlag;               ///< control flag for transform-skip/transquant-bypass residual rotation
   bool      m_transformSkipContextEnabledFlag;                ///< control flag for transform-skip/transquant-bypass single significance map context
@@ -269,23 +265,25 @@ protected:
 
   // coding unit (CU) definition
   unsigned  m_uiCTUSize;
-  bool m_subPicPresentFlag;
+  bool m_subPicInfoPresentFlag;
   unsigned m_numSubPics;
   std::vector<uint32_t> m_subPicCtuTopLeftX;
   std::vector<uint32_t> m_subPicCtuTopLeftY;
   std::vector<uint32_t> m_subPicWidth;
   std::vector<uint32_t> m_subPicHeight;
-  std::vector<uint32_t> m_subPicTreatedAsPicFlag;
-  std::vector<uint32_t> m_loopFilterAcrossSubpicEnabledFlag;
-  bool m_subPicIdPresentFlag;
-  bool m_subPicIdSignallingPresentFlag;
+  std::vector<bool>     m_subPicTreatedAsPicFlag;
+  std::vector<bool>     m_loopFilterAcrossSubpicEnabledFlag;
+  bool m_subPicIdMappingExplicitlySignalledFlag;
+  bool m_subPicIdMappingInSpsFlag;
   unsigned m_subPicIdLen;
-  std::vector<uint32_t> m_subPicId;
+  std::vector<uint16_t> m_subPicId;
   bool      m_SplitConsOverrideEnabledFlag;
   unsigned  m_uiMinQT[3]; // 0: I slice luma; 1: P/B slice; 2: I slice chroma
   unsigned  m_uiMaxMTTHierarchyDepth;
   unsigned  m_uiMaxMTTHierarchyDepthI;
   unsigned  m_uiMaxMTTHierarchyDepthIChroma;
+  unsigned  m_uiMaxBT[3];
+  unsigned  m_uiMaxTT[3];
   bool      m_dualTree;
   bool      m_LFNST;
   bool      m_useFastLFNST;
@@ -315,11 +313,7 @@ protected:
 #endif
 
   bool      m_ciip;
-#if !JVET_Q0806
-  bool      m_Triangle;
-#else
   bool      m_Geo;
-#endif
   bool      m_HashME;
   bool      m_allowDisFracMMVD;
   bool      m_AffineAmvr;
@@ -344,7 +338,8 @@ protected:
   unsigned  m_wrapAroundOffset;
 
   // ADD_NEW_TOOL : (encoder app) add tool enabling flags and associated parameters here
-  bool      m_loopFilterAcrossVirtualBoundariesDisabledFlag;
+  bool      m_virtualBoundariesEnabledFlag;
+  bool      m_virtualBoundariesPresentFlag;
   unsigned  m_numVerVirtualBoundaries;
   unsigned  m_numHorVirtualBoundaries;
   std::vector<unsigned> m_virtualBoundariesPosX;
@@ -360,9 +355,7 @@ protected:
   bool      m_encDbOpt;
   unsigned  m_uiMaxCUWidth;                                   ///< max. CU width in pixel
   unsigned  m_uiMaxCUHeight;                                  ///< max. CU height in pixel
-  unsigned  m_uiMaxCUDepth;                                   ///< max. CU depth (as specified by command line)
-  unsigned  m_uiMaxCodingDepth;                               ///< max. total CU depth - includes depth of transform-block structure
-  unsigned  m_uiLog2DiffMaxMinCodingBlockSize;                ///< difference between largest and smallest CU depth
+  unsigned m_log2MinCuSize;                                   ///< min. CU size log2
 
   bool      m_useFastLCTU;
   bool      m_usePbIntraFast;
@@ -411,12 +404,10 @@ protected:
   bool      m_loopFilterOffsetInPPS;                         ///< offset for deblocking filter in 0 = slice header, 1 = PPS
   int       m_loopFilterBetaOffsetDiv2;                     ///< beta offset for deblocking filter
   int       m_loopFilterTcOffsetDiv2;                       ///< tc offset for deblocking filter
-#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
   int       m_loopFilterCbBetaOffsetDiv2;                     ///< beta offset for Cb deblocking filter
   int       m_loopFilterCbTcOffsetDiv2;                       ///< tc offset for Cb deblocking filter
   int       m_loopFilterCrBetaOffsetDiv2;                     ///< beta offset for Cr deblocking filter
   int       m_loopFilterCrTcOffsetDiv2;                       ///< tc offset for Cr deblocking filter
-#endif
 #if W0038_DB_OPT
   int       m_deblockingFilterMetric;                         ///< blockiness metric in encoder
 #else
@@ -461,23 +452,20 @@ protected:
   std::vector<RectSlice> m_rectSlices;                        ///< derived list of rectangular slice signalling parameters
   uint32_t  m_numTileCols;                                    ///< derived number of tile columns
   uint32_t  m_numTileRows;                                    ///< derived number of tile rows
-  bool      m_subPicPartitionFlag;
   bool      m_singleSlicePerSubPicFlag;
   bool      m_entropyCodingSyncEnabledFlag;
-
+  bool      m_entropyCodingSyncEntryPointPresentFlag;         ///< flag for the presence of entry points for WPP
 
   bool      m_bFastUDIUseMPMEnabled;
   bool      m_bFastMEForGenBLowDelayEnabled;
   bool      m_bUseBLambdaForNonKeyLowDelayPictures;
 
   HashType  m_decodedPictureHashSEIType;                      ///< Checksum mode for decoded picture hash SEI message
-#if HEVC_SEI
-  bool      m_recoveryPointSEIEnabled;
-#endif
   bool      m_bufferingPeriodSEIEnabled;
   bool      m_pictureTimingSEIEnabled;
   bool      m_bpDeltasGOPStructure;
   bool      m_decodingUnitInfoSEIEnabled;
+  bool      m_scalableNestingSEIEnabled;
   bool      m_frameFieldInfoSEIEnabled;
   bool      m_framePackingSEIEnabled;
   int       m_framePackingSEIType;
@@ -582,10 +570,11 @@ protected:
   std::vector<double>  m_gcmpSEIFunctionCoeffV;
   std::vector<bool>    m_gcmpSEIFunctionVAffectedByUFlag;
   bool                 m_gcmpSEIGuardBandFlag;
-  bool                 m_gcmpSEIGuardBandBoundaryType;
+  uint32_t             m_gcmpSEIGuardBandType;
+  bool                 m_gcmpSEIGuardBandBoundaryExteriorFlag;
   uint32_t             m_gcmpSEIGuardBandSamplesMinus1;
 
-  bool m_subpicureLevelInfoSEIEnabled;
+  EncCfgParam::CfgSEISubpictureLevel m_cfgSubpictureLevelInfoSEI;
 
   bool                  m_sampleAspectRatioInfoSEIEnabled;
   bool                  m_sariCancelFlag;
@@ -601,36 +590,20 @@ protected:
   bool      m_useWeightedBiPred;                  ///< Use of bi-directional weighted prediction in B slices
   WeightedPredictionMethod m_weightedPredictionMethod;
 
-#if JVET_Q0297_MER
   uint32_t      m_log2ParallelMergeLevel;                         ///< Parallel merge estimation region
-#endif
   uint32_t      m_maxNumMergeCand;                                ///< Max number of merge candidates
   uint32_t      m_maxNumAffineMergeCand;                          ///< Max number of affine merge candidates
-#if !JVET_Q0806
-  uint32_t      m_maxNumTriangleCand;
-#else
   uint32_t      m_maxNumGeoCand;
-#endif
   uint32_t      m_maxNumIBCMergeCand;                             ///< Max number of IBC merge candidates
 
   bool      m_sliceLevelRpl;                                      ///< code reference picture lists in slice headers rather than picture header
   bool      m_sliceLevelDblk;                                     ///< code deblocking filter parameters in slice headers rather than picture header
   bool      m_sliceLevelSao;                                      ///< code SAO parameters in slice headers rather than picture header
   bool      m_sliceLevelAlf;                                      ///< code ALF parameters in slice headers rather than picture header
+  bool      m_sliceLevelWp;                                       ///< code weighted prediction parameters in slice headers rather than picture header
+  bool      m_sliceLevelDeltaQp;                                  ///< code delta in slice headers rather than picture header
+
   int       m_TMVPModeId;
-  int       m_PPSorSliceMode;
-  bool      m_constantSliceHeaderParamsEnabledFlag;
-  int       m_PPSDepQuantEnabledIdc;
-  int       m_PPSRefPicListSPSIdc0;
-  int       m_PPSRefPicListSPSIdc1;
-  int       m_PPSMvdL1ZeroIdc;
-  int       m_PPSCollocatedFromL0Idc;
-  uint32_t  m_PPSSixMinusMaxNumMergeCandPlus1;
-#if !JVET_Q0806
-  uint32_t  m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1;
-#else
-  uint32_t  m_PPSMaxNumMergeCandMinusMaxNumGeoCandPlus1;
-#endif
   bool      m_depQuantEnabledFlag;
   bool      m_signDataHidingEnabledFlag;
   bool      m_RCEnableRateControl;                ///< enable rate control or not
@@ -649,13 +622,13 @@ protected:
   std::string m_scalingListFileName;                          ///< quantization matrix file name
   bool      m_disableScalingMatrixForLfnstBlks;
   CostMode  m_costMode;                                       ///< Cost mode to use
+#if JVET_R0143_TSRCdisableLL
+  bool      m_TSRCdisableLL;                                  ///< disable TSRC for lossless
+#endif
 
   bool      m_recalculateQPAccordingToLambda;                 ///< recalculate QP value according to the lambda value
-#if HEVC_SEI
-  int       m_activeParameterSetsSEIEnabled;
-#endif
-  bool      m_decodingParameterSetEnabled;                   ///< enable decoding parameter set
 
+  bool      m_DCIEnabled;                                     ///< enable Decoding Capability Information (DCI)
   bool      m_hrdParametersPresentFlag;                       ///< enable generation of HRD parameters
   bool      m_vuiParametersPresentFlag;                       ///< enable generation of VUI parameters
   bool      m_aspectRatioInfoPresentFlag;                     ///< Signals whether aspect_ratio_idc is present
@@ -675,9 +648,6 @@ protected:
   bool      m_videoFullRangeFlag;                             ///< Indicates the black level and range of luma and chroma signals
   int       m_ImvMode;                                        ///< imv mode
   int       m_Imv4PelFast;                                    ///< imv 4-Pel fast mode
-#if HEVC_SEI
-  std::string m_colourRemapSEIFileRoot;
-#endif
 
   std::string m_summaryOutFilename;                           ///< filename to use for producing summary output file.
   std::string m_summaryPicFilenameBase;                       ///< Base filename to use for producing summary picture output files. The actual filenames used will have I.txt, P.txt and B.txt appended.
@@ -695,10 +665,8 @@ protected:
   bool        m_forceDecodeBitstream1;
 
   bool        m_alf;                                          ///< Adaptive Loop Filter
-#if JVET_Q0795_CCALF
   bool        m_ccalf;
   int         m_ccalfQpThreshold;
-#endif
 
   double      m_scalingRatioHor;
   double      m_scalingRatioVer;
@@ -712,6 +680,7 @@ protected:
   std::map<int, double> m_gopBasedTemporalFilterStrengths;             ///< Filter strength per frame for the GOP-based Temporal Filter
 
   int         m_maxLayers;
+  int         m_targetOlsIdx;
 
   int         m_layerId[MAX_VPS_LAYERS];
   int         m_layerIdx;
@@ -724,6 +693,10 @@ protected:
   int         m_olsModeIdc;
   int         m_numOutputLayerSets;
   std::string m_olsOutputLayerStr[MAX_VPS_LAYERS];
+
+  int         m_numPtlsInVps;
+  Level::Name m_levelPtl[MAX_NUM_OLSS];
+  int         m_olsPtlIdx[MAX_NUM_OLSS];
 
 #if EXTENSION_360_VIDEO
   TExt360AppEncCfg m_ext360;

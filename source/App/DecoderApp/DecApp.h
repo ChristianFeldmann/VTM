@@ -43,7 +43,6 @@
 #endif // _MSC_VER > 1000
 
 #include "Utilities/VideoIOYuv.h"
-#include "Utilities/ColourRemapping.h"
 #include "CommonLib/Picture.h"
 #include "DecoderLib/DecLib.h"
 #include "DecAppCfg.h"
@@ -66,9 +65,14 @@ private:
   // for output control
   int             m_iPOCLastDisplay;              ///< last POC in display order
   std::ofstream   m_seiMessageFileStream;         ///< Used for outputing SEI messages.
-#if HEVC_SEI
-  ColourRemapping m_cColourRemapping;             ///< colour remapping handler
-#endif
+
+  std::ofstream   m_oplFileStream;                ///< Used to output log file for confomance testing
+
+
+
+private:
+  bool  xIsNaluWithinTargetDecLayerIdSet( const InputNALUnit* nalu ) const; ///< check whether given Nalu is within targetDecLayerIdSet
+  bool  xIsNaluWithinTargetOutputLayerIdSet( const InputNALUnit* nalu ) const; ///< check whether given Nalu is within targetOutputLayerIdSet
 
 public:
   DecApp();
@@ -81,11 +85,11 @@ private:
   void  xDestroyDecLib    (); ///< destroy internal classes
   void  xWriteOutput      ( PicList* pcListPic , uint32_t tId); ///< write YUV to file
   void  xFlushOutput( PicList* pcListPic, const int layerId = NOT_VALID ); ///< flush all remaining decoded pictures to file
-  bool  isNaluWithinTargetDecLayerIdSet ( InputNALUnit* nalu ); ///< check whether given Nalu is within targetDecLayerIdSet
-  bool  isNaluWithinTargetOutputLayerIdSet(InputNALUnit* nalu); ///< check whether given Nalu is within targetOutputLayerIdSet
-  bool  deriveOutputLayerSet(); ///< derive OLS and layer sets
   bool  isNewPicture(ifstream *bitstreamFile, class InputByteStream *bytestream);  ///< check if next NAL unit will be the first NAL unit from a new picture
   bool  isNewAccessUnit(bool newPicture, ifstream *bitstreamFile, class InputByteStream *bytestream);  ///< check if next NAL unit will be the first NAL unit from a new access unit
+
+  void  writeLineToOutputLog(Picture * pcPic);
+
 };
 
 //! \}

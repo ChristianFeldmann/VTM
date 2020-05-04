@@ -52,10 +52,6 @@ public:
     :m_pcCfg(NULL)
     ,m_pcEncLib(NULL)
     ,m_pcEncGOP(NULL)
-#if HEVC_SEI
-    ,m_tl0Idx(0)
-    ,m_rapIdx(0)
-#endif
   ,m_isInitialized(false)
   {};
   virtual ~SEIEncoder(){};
@@ -75,12 +71,9 @@ public:
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
   void initSEIAlternativeTransferCharacteristics(SEIAlternativeTransferCharacteristics *sei);
 #endif
+  void initSEIScalableNesting(SEIScalableNesting *sei, SEIMessages &nestedSEIs);
   // trailing SEIs
   void initDecodedPictureHashSEI(SEIDecodedPictureHash *sei, PelUnitBuf& pic, std::string &rHashString, const BitDepths &bitDepths);
-#if HEVC_SEI
-  void initTemporalLevel0IndexSEI(SEITemporalLevel0Index *sei, Slice *slice);
-  void initSEIGreenMetadataInfo(SEIGreenMetadataInfo *sei, uint32_t u);
-#endif
   void initSEIErp(SEIEquirectangularProjection *sei);
   void initSEISphereRotation(SEISphereRotation *sei);
   void initSEIOmniViewport(SEIOmniViewport *sei);
@@ -98,11 +91,6 @@ private:
   EncLib* m_pcEncLib;
   EncGOP* m_pcEncGOP;
 
-#if HEVC_SEI
-  // for temporal level 0 index SEI
-  uint32_t m_tl0Idx;
-  uint32_t m_rapIdx;
-#endif
   bool m_isInitialized;
 };
 

@@ -354,7 +354,7 @@ public:
   uint32_t       getCpbSize()               { return m_cpbSize;        }
   uint32_t       getBufferingRate()         { return m_bufferingRate;  }
   int        updateCpbState(int actualBits);
-  void       initHrdParam(const HRDParameters* pcHrd, int iFrameRate, double fInitialCpbFullness);
+  void       initHrdParam(const GeneralHrdParams* generalHrd, const OlsHrdParams* olsHrd, int iFrameRate, double fInitialCpbFullness);
 #endif
 
 private:

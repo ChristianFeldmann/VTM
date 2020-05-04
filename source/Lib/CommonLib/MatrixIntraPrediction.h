@@ -50,10 +50,20 @@ class MatrixIntraPrediction
 public:
   MatrixIntraPrediction();
 
+#if JVET_R0350_MIP_CHROMA_444_SINGLETREE
+  void prepareInputForPred(const CPelBuf &pSrc, const Area &block, const int bitDepth, const ComponentID compId);
+  void predBlock(int *const result, const int modeIdx, const bool transpose, const int bitDepth,
+                 const ComponentID compId);
+#else
   void prepareInputForPred(const CPelBuf &pSrc, const Area& block, const int bitDepth);
   void predBlock(int* const result, const int modeIdx, const bool transpose, const int bitDepth);
+#endif
 
   private:
+#if JVET_R0350_MIP_CHROMA_444_SINGLETREE
+    ComponentID m_component;
+
+#endif
     static_vector<int, MIP_MAX_INPUT_SIZE> m_reducedBoundary;           // downsampled             boundary of a block
     static_vector<int, MIP_MAX_INPUT_SIZE> m_reducedBoundaryTransposed; // downsampled, transposed boundary of a block
     int                                    m_inputOffset;
@@ -80,19 +90,11 @@ public:
                                         const SizeType bndryStep,
                                         const unsigned int upsmpFactor );
 
-#if JVET_Q0446_MIP_CONST_SHIFT_OFFSET
     const uint8_t* getMatrixData(const int modeIdx) const;
-#else
-    void getMatrixData(const uint8_t*& matrix, int &shiftMatrix, int &offsetMatrix, const int modeIdx) const;
-#endif
 
 
-    void computeReducedPred( int*const result, const int* const input, 
-#if JVET_Q0446_MIP_CONST_SHIFT_OFFSET
+    void computeReducedPred( int*const result, const int* const input,
                              const uint8_t* matrix,
-#else
-                             const uint8_t*matrix, const int shiftMatrix, const int offsetMatrix,
-#endif
                              const bool transpose, const int bitDepth );
   };
 

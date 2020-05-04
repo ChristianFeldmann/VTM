@@ -167,8 +167,7 @@ int main(int argc, char* argv[])
       return 1;
     }
 
-    int layerId = layerIdx; //VS: layerIdx should be converted to layerId after VPS is implemented
-    pcEncApp[layerIdx]->createLib( layerId );
+    pcEncApp[layerIdx]->createLib( layerIdx );
 
     if( !resized )
     {
@@ -180,6 +179,27 @@ int main(int argc, char* argv[])
   } while( layerIdx < pcEncApp.size() );
 
   delete[] layerArgv;
+
+  if (layerIdx > 1)
+  {
+    VPS* vps = pcEncApp[0]->getVPS();
+    //check chroma format and bit-depth for dependent layers
+    for (uint32_t i = 0; i < layerIdx; i++)
+    {
+      int curLayerChromaFormatIdc = pcEncApp[i]->getChromaFormatIDC();
+      int curLayerBitDepth = pcEncApp[i]->getBitDepth();
+      for (uint32_t j = 0; j < layerIdx; j++)
+      {
+        if (vps->getDirectRefLayerFlag(i, j))
+        {
+          int refLayerChromaFormatIdcInVPS = pcEncApp[j]->getChromaFormatIDC();
+          CHECK(curLayerChromaFormatIdc != refLayerChromaFormatIdcInVPS, "The chroma formats of the current layer and the reference layer are different");
+          int refLayerBitDepthInVPS = pcEncApp[j]->getBitDepth();
+          CHECK(curLayerBitDepth != refLayerBitDepthInVPS, "The bit-depth of the current layer and the reference layer are different");
+        }
+      }
+    }
+  }
 
 #if PRINT_MACRO_VALUES
   printMacroSettings();

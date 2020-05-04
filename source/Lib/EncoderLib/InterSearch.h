@@ -97,7 +97,7 @@ typedef struct
 } EncAffineMotion;
 
 /// encoder search class
-class InterSearch : public InterPrediction, CrossComponentPrediction, AffineGradientSearch
+class InterSearch : public InterPrediction, AffineGradientSearch
 {
 private:
   EncModeCtrl     *m_modeCtrl;

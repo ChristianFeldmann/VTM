@@ -205,7 +205,7 @@ fontsize=\footnotesize}
 \maketitle
 \begin{abstract}
 This document is a user manual describing usage of the VTM reference software
-for the VVC project. It applies to version 7.1 of the software.
+for the VVC project. It applies to version 8.1 of the software.
 \end{abstract}
 
 \tableofcontents
@@ -992,10 +992,10 @@ NB: There is currently only limited validation that the encoder configuration co
 Indicates interoperability metadata registered as specified by X Recommendation ITU-T T.35.
 \\
 
-\Option{EnableDecodingParameterSet} &
+\Option{EnableDecodingCapabilityInformation} &
 %\ShortOption{\None} &
 \Default{false} &
-Enables writing of a decoding parameter set. If disabled, no parameter set will be written and the specical reserved ID zero will be used in the SPS indicating no constraint.
+Enables writing of a decoding capability information (DCI). If disabled, no DCI will be written.
 \\
 
 \Option{MaxBitDepthConstraint} &
@@ -1046,6 +1046,36 @@ Specifies the value of general_interlaced_source_flag
 Specifies the value of general_non_packed_constraint_flag
 \\
 
+\Option{NonProjectedConstraintFlag} &
+%\ShortOption{\None} &
+\Default{false} &
+Specifies the value of general_non_projected_constraint_flag
+\\
+
+\Option{NoResChangeInClvsConstraintFlag} &
+%\ShortOption{\None} &
+\Default{false} &
+Specifies the value of no_res_change_in_clvs_constraint_flag
+\\
+
+\Option{OneTilePerPicConstraintFlag} &
+%\ShortOption{\None} &
+\Default{false} &
+Specifies the value of one_tile_per_pic_constraint_flag
+\\
+
+\Option{OneSlicePerPicConstraintFlag} &
+%\ShortOption{\None} &
+\Default{false} &
+Specifies the value of one_slice_per_pic_constraint_flag
+\\
+
+\Option{OneSubpicPerPicConstraintFlag} &
+%\ShortOption{\None} &
+\Default{false} &
+Specifies the value of one_subpic_per_pic_constraint_flag
+\\
+
 \Option{FrameOnly} &
 %\ShortOption{\None} &
 \Default{false} &
@@ -1066,6 +1096,77 @@ Specifies the value of general_frame_only_constraint_flag
 Specifies the value to use to derive the vps_max_layers_minus1 for layered coding
 \\
 
+\Option{MaxSubLayers} &
+%\ShortOption{\None} &
+\Default{1} &
+Specifies the maximum number of temporal sublayers to signal in the VPS
+\\
+
+\Option{AllLayersSameNumSublayersFlag} &
+%\ShortOption{\None} &
+\Default{true} &
+Specifies the value of vps_all_layers_same_num_sublayers_flag in the VPS
+\\
+
+\Option{LayerId\emph{i}} &
+%\ShortOption{\None} &
+\Default{0} &
+Specifies the nuh_layer_id of the i-th layer (with i an integer greater than 0)
+\\
+
+\Option{NumRefLayers\emph{i}} &
+%\ShortOption{\None} &
+\Default{0} &
+Specifies the number of direct reference layers of the i-th layer (with i an integer greater than 0)
+\\
+
+\Option{RefLayerIdx\emph{i}} &
+%\ShortOption{\None} &
+\Default{""} &
+Specifies a list of indexes of the reference layers of the i-th layer (with i an integer greater than 0)
+\\
+
+\Option{EachLayerIsAnOlsFlag} &
+%\ShortOption{\None} &
+\Default{true} &
+Specifies the value of each_layer_is_an_ols_flag in the VPS
+\\
+
+\Option{OlsModeIdc} &
+%\ShortOption{\None} &
+\Default{0} &
+Specifies the value of ols_mode_idc in the VPS
+\\
+
+\Option{NumOutputLayerSets} &
+%\ShortOption{\None} &
+\Default{1} &
+Specifies the number of output layer sets (OLS) signalled in the VPS
+\\
+
+\Option{OlsOutputLayer\emph{i}} &
+%\ShortOption{\None} &
+\Default{""} &
+Specifies a list of indexes of the output layers of the i-th OLS (with i an integer greater than 0) 
+\\
+
+\Option{NumPTLsInVPS} &
+%\ShortOption{\None} &
+\Default{1} &
+Specifies the number of profile_tier_level (PTL) syntax structures signalled in the VPS 
+\\
+
+\Option{LevelPTL\emph{i}} &
+%\ShortOption{\None} &
+\Default{Level::NONE} &
+Specifies the level to signal in the i-th PTL of the VPS (with i an integer greater than 0) 
+\\
+
+\Option{OlsPTLIdx\emph{i}} &
+%\ShortOption{\None} &
+\Default{0} &
+Specifies the index of the PTL that applies to the i-th OLS (with i an integer greater than 0) 
+\\
 \end{OptionTableNoShorthand}
 
 
@@ -1074,6 +1175,12 @@ Specifies the value to use to derive the vps_max_layers_minus1 for layered codin
 %%
 
 \begin{OptionTableNoShorthand}{Unit definition parameters}{tab:unit}
+\Option{CTUSize} &
+%\ShortOption{\None} &
+\Default{128} &
+Defines the CTU size (width and height).
+\\
+
 \Option{MaxCUWidth} &
 %\ShortOption{\None} &
 \Default{64} &
@@ -1092,10 +1199,10 @@ Defines the maximum CU height.
 Defines the maximum CU size.
 \\
 
-\Option{MaxPartitionDepth (-h)} &
-%\ShortOption{-h} &
-\Default{4} &
-Defines the depth of the CU tree.
+\Option{Log2MinCuSize} &
+%\ShortOption{\None} &
+\Default{2} &
+Defines the minimum CU size in logarithm base 2.
 \\
 
 \Option{QuadtreeTULog2MaxSize} &
@@ -1125,49 +1232,90 @@ Defines the depth of the TU tree for inter CUs.
 \Option{MaxMTTHierarchyDepth} &
 %\ShortOption{\None} &
 \Default{3} &
-Defines the maximum depth of the multi-type tree for inter slices.
+Defines the initial maximum depth of the multi-type tree for inter slices.
 \\
 
 \Option{MaxMTTHierarchyDepthI} &
 %\ShortOption{\None} &
 \Default{3} &
-Defines the maximum depth of the multi-type tree for intra slices.
+Defines the initial maximum depth of the multi-type tree for intra slices.
 \\
 
 \Option{MaxMTTHierarchyDepthISliceC} &
 %\ShortOption{\None} &
 \Default{3} &
-Defines the maximum depth of the multi-type tree in dual tree for chroma components.
+Defines the initial maximum depth of the multi-type tree in dual tree for chroma components.
 \\
 
 \Option{MaxMTTHierarchyDepthISliceL} &
 %\ShortOption{\None} &
 \Default{3} &
-Defines the maximum depth of the multi-type tree in dual tree for luma component.
+Defines the initial maximum depth of the multi-type tree in dual tree for luma component.
 \\
 
-\Option{MinQTChromaISlice} &
+\Option{MinQTChromaISliceInChromaSamples} &
 %\ShortOption{\None} &
 \Default{4} &
-Defines the minimum size of the quad tree in dual tree for chroma components.
+Defines the initial minimum size of the quad tree in dual tree for chroma components.
+
+Note: this size is defined in chroma sample unit in configuration, and it is converted
+into luma sample unit according to the horizontal chroma subsampling ratio when applied
+in the software. In chroma format 4:2:2 case, this value shall be set to the value of
+the height of minimum chroma QT node in chroma samples.
 \\
 
 \Option{MinQTISlice} &
 %\ShortOption{\None} &
 \Default{8} &
-Defines the minimum size of the quad tree for intra slices.
+Defines the initial minimum size of the quad tree for intra slices.
 \\
 
 \Option{MinQTLumaISlice} &
 %\ShortOption{\None} &
 \Default{8} &
-Defines the minimum size of the quad tree in dual tree for luma component.
+Defines the initial minimum size of the quad tree in dual tree for luma component.
 \\
 
 \Option{MinQTNonISlice} &
 %\ShortOption{\None} &
 \Default{8} &
-Defines the minimum size of the quad tree for inter slices.
+Defines the initial minimum size of the quad tree for inter slices.
+\\
+
+\Option{MaxBTLumaISlice} &
+%\ShortOption{\None} &
+\Default{32} &
+Defines the initial maximum size of the binary tree in dual tree for luma component.
+\\
+
+\Option{MaxBTChromaISlice} &
+%\ShortOption{\None} &
+\Default{64} &
+Defines the initial maximum size of the binary tree in dual tree for chroma components.
+\\
+
+\Option{MaxBTNonISlice} &
+%\ShortOption{\None} &
+\Default{128} &
+Defines the initial maximum size of the binary tree for inter slices.
+\\
+
+\Option{MaxTTLumaISlice} &
+%\ShortOption{\None} &
+\Default{32} &
+Defines the initial maximum size of the tenary tree in dual tree for luma component.
+\\
+
+\Option{MaxTTChromaISlice} &
+%\ShortOption{\None} &
+\Default{32} &
+Defines the initial maximum size of the tenary tree in dual tree for chroma components.
+\\
+
+\Option{MaxTTNonISlice} &
+%\ShortOption{\None} &
+\Default{64} &
+Defines the initial maximum size of the tenary tree for inter slices.
 \\
 
 \end{OptionTableNoShorthand}
@@ -1305,12 +1453,6 @@ between the current and the reference pictures.
                                  \mathrm{RateGOPSize}}\right)
 $}
 \end{displaymath}
-\\
-
-\Option{Log2ParallelMergeLevel} &
-%\ShortOption{\None} &
-\Default{2} &
-Defines the SPS-derived Log2ParallelMergeLevel variable.
 \\
 
 \Option{MaxNumMergeCand} &
@@ -1831,6 +1973,12 @@ Tile row heights in units of CTUs. Last row height in list will be repeated unif
 Use raster-scan or rectangular slices (0: rectangular, 1: raster-scan).
 \\
 
+\Option{SingleSlicePerSubpic} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables slice layout derivation from subpicture layout. Requires more than one subpicture to be enabled. If enabled, all other slice layout parameters will be ignored.
+\\
+
 \Option{RectSlicePositions} &
 %\ShortOption{\None} &
 \Default{\NotSet} &
@@ -1881,19 +2029,93 @@ beginning of each line of CTBs in order to produce a bitstream that can
 be encoded or decoded using one or more cores.
 \\
 
+\Option{WaveFrontEntryPointsPresent} &
+%\ShortOption{\None} &
+\Default{false} &
+Allow signalling of entry points for WPP in slice header.
+Note that when a slice contains more than one tile, entry point offsets for tile are always present in the slice header.
+\\
 
 \end{OptionTableNoShorthand}
 
 %%
-%% Slice/Sub-Picture coding parameters
+%% Subpicture coding parameters
 %%
-\begin{OptionTableNoShorthand}{Slice and Sub-Picture coding parameters}{tab:subpicture-coding}
+\begin{OptionTableNoShorthand}{Subpicture coding parameters}{tab:subpicture-coding}
 
-\Option{EnableSubPicPartitioning} &
+\Option{SubPicInfoPresentFlag} &
 %\ShortOption{\None} &
-\Default{1} &
-Enable Sub Picture partitioning (0: single slice per sub-picture, 1: multiple slices per sub-picture can be used).
+\Default{false} &
+Enables conding of subpictures.
 \\
+
+\Option{NumSubPics} &
+%\ShortOption{\None} &
+\Default{0} &
+Number of subpictures. Must be greater that zero, if SubPicInfoPresentFlag is enabled.
+\\
+
+\Option{SubPicCtuTopLeftX} &
+%\ShortOption{\None} &
+\Default{\None} &
+Array of subpicture top left horizontal (x) coordinates. The number of entries must be equal to NumSubPics.
+\\
+
+\Option{SubPicCtuTopLeftY} &
+%\ShortOption{\None} &
+\Default{\None} &
+Array of subpicture top left vertical (y) coordinates. The number of entries must be equal to NumSubPics.
+\\
+
+\Option{SubPicWidth} &
+%\ShortOption{\None} &
+\Default{\None} &
+Array of subpicture widths. The number of entries must be equal to NumSubPics.
+\\
+
+\Option{SubPicHeight} &
+%\ShortOption{\None} &
+\Default{\None} &
+Array of subpicture heights. The number of entries must be equal to NumSubPics.
+\\
+
+\Option{SubPicTreatedAsPicFlag} &
+%\ShortOption{\None} &
+\Default{\None} &
+Setting of subpic_treated_as_pic_flag for each subpicture. If enabled subpicture boundaries will be treated as picture boundaries. The number of entries must be equal to NumSubPics.
+\\
+
+\Option{LoopFilterAcrossSubpicEnabledFlag} &
+%\ShortOption{\None} &
+\Default{\None} &
+Enables loop filtering across subpicture boundaries for each subpicture. The number of entries must be equal to NumSubPics.
+\\
+
+\Option{SubPicIdMappingExplicitlySignalledFlag} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables explicit signalling of a subpicture ID map. If disabled, a default map will be derived.
+\\
+
+\Option{SubPicIdMappingInSpsFlag} &
+%\ShortOption{\None} &
+\Default{false} &
+Specifies wheter to signal the subpicture ID map in SPS or PPS. If SubPicIdMappingInSpsFlag is enabled subpicture IDs are signalled in SPS, otherwise in PPS.
+\\
+
+\Option{SubPicIdLen} &
+%\ShortOption{\None} &
+\Default{0} &
+Length of the subpicture IDs in bits. (1<<SubPicIdLen) must be bigger than the number of subpictures and the highes subpicture ID specifid in SubPicId. 
+If the value "0" is used, the encoder tries to determine the number of required bits from the number of subpictures or the highest subpicture ID. This mode should not be used, if merging of bistreams is intended. 
+\\
+
+\Option{SubPicId} &
+%\ShortOption{\None} &
+\Default{\None} &
+Array of subpicture IDs. The number of entries must be equal to NumSubPics.
+\\
+
 
 \end{OptionTableNoShorthand}
 
@@ -1969,10 +2191,11 @@ Specifies the use of a deblocking filter metric to evaluate the suitability of d
 LoopFilterOffsetInPPS and LoopFilterDisable must be 0. Currently excepted values are 0, 1 and 2.
 \\
 
-\Option{LoopFilterAcrossVirtualBoundariesDisabledFlag}&
+\Option{VirtualBoundariesPresentInSPSFlag}&
 %\ShortOption{\None}&
 \Default{false}&
-Disables in-loop filtering operations across the virtual boundaries.
+In-loop filtering operations across the virtual boundaries information present in the SPS when VirtualBoundariesPresentFlagInSPS = 1, otherwise
+present in the Picture Header when VirtualBoundariesPresentFlagInSPS = 0.
 \\
 
 \Option{NumVerVirtualBoundaries}&
@@ -2021,6 +2244,12 @@ Enables or disables encoder-side deblocking optimization. When it is enabled, de
 \Default{false} &
 Enables or disables the use of multiple reference line intra prediction (MRL).
 \\
+
+\Option{DualITree} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables or disables the use of separate QTBT trees for intra slice luma and chroma channel types.
+\\ 
 
 \Option{MIP} &
 %\ShortOption{\None} &
@@ -2087,6 +2316,12 @@ for LCU bottom and right boundary areas.
 %\ShortOption{\None} &
 \Default{false} &
 When true, resets the encoder's SAO state after an IRAP (POC order).
+\\
+
+\Option{SAOGreedyEnc} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables or disables the SAO greedy merge encoding algorithm.
 \\
 
 \Option{FastUDIUseMPMEnabled} &
@@ -2198,34 +2433,6 @@ Controls the temporal motion vector prediction mode.
 \end{tabular}
 \\
 
-\Option{PPSorSliceMode} &
-%\ShortOption{\None} &
-\Default{0} &
-Enables signaling the below parameters either in PPS or for each slice according to the following preset modes:
-\par
-\begin{tabular}{cp{0.45\textwidth}}
-  0 & Always signaled per slice. \\
-  1 & RA settings. \\
-  2 & LDB settings. \\
-  3 & LDP settings. \\ 
-\end{tabular}
-\par
-\begin{tabular}{p{5cm}llll}
-  & & & & \\
-  Parameter & \multicolumn{3}{l}{Mode} \\
-  & 0 & 1 & 2 & 3 \\
-  dep_quant_enabled_flag & s & p & p & p \\
-  ref_pic_list_sps_flag0 & s & s & p & p \\
-  ref_pic_list_sps_flag1 & s & s & p & p \\
-  temporal_mvp_enabled_flag & s & s & p & p \\
-  mvd_l1_zero_flag & s & s & p & s \\
-  collocated_from_l0_flag & s & s & p & s \\
-  six_minus_max_num_merge_cand & s & p & p & p \\
-  five_minus_max_num_subblock_merge_cand & s & p & p & p \\
-  max_num_merge_cand_minus_max_num_geo_cand & s & p & p & s \\
-\end{tabular}
-\\
-
 \Option{SliceLevelRpl} &
 %\ShortOption{\None} &
 \Default{true} &
@@ -2242,6 +2449,18 @@ Code deblocking filter parameters in slice headers rather than picture header.
 %\ShortOption{\None} &
 \Default{true} &
 Code SAO parameters in slice headers rather than picture header.
+\\
+
+\Option{SliceLevelWeightedPrediction} &
+%\ShortOption{\None} &
+\Default{true} &
+Code Weighted Prediction paremeters in slice headers rather than picture header.
+\\
+
+\Option{SliceLevelDeltaQp} &
+%\ShortOption{\None} &
+\Default{true} &
+Code delta Qp in slice headers rather than picture header.
 \\
 
 \Option{TransformSkip} &
@@ -2329,14 +2548,8 @@ Enables or disables palette mode coding.
 
 \Option{BDPCM} &
 %\ShortOption{\None} &
-\Default{0} &
+\Default{false} &
 Enables or disables the use of intra block differential pulse code modulation mode.
-\par
-\begin{tabular}{cp{0.45\textwidth}}
-	0 & Disable BDPCM for luma and chroma.\\
-	1 & Enable BDPCM for luma.\\
-	2 & Enable BDPCM for luma and chroma. BDPCM for chroma is available for 444.\\
-\end{tabular}
 \\
 
 \Option{LFNST} &
@@ -2349,6 +2562,24 @@ Enables or disables the use of low frequency non-separable transform (LFNST).
 %\ShortOption{\None} &
 \Default{false} &
 Enables or disables the fast encoding of low frequency non-separable transform (LFNST).
+\\
+
+\Option{BCW} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables or disables the use of Bi-prediction with CU-level Weights (BCW).
+\\
+
+\Option{BcwFast} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables or disables the fast encoding of Bi-prediction with CU-level Weights (BCW).
+\\
+ 
+\Option{BDOF} &
+%\ShortOption{\None} &
+\Default{false} &
+Enables or disables the use of bi-directional optical flow (BDOF).
 \\
 
 \Option{LMCSEnable} &
@@ -2427,6 +2658,12 @@ Specifies location of a chroma sample relatively to the luma sample in vertical 
 	0 & vertically shifted by 0.5 units of luma samples (default).\\
 	1 & collocated. \\
 \end{tabular}
+\\
+
+\Option{TSRCdisableLL} &
+%\ShortOption{\None} &
+\Default{1} &
+Enables or disables the use of Transform Skip Residual Coding for lossless compression.
 \\
 
 \end{OptionTableNoShorthand}
@@ -2662,21 +2899,9 @@ This setting is only valid for the 16-bit RExt profiles.
 Specifies the value of high_precision_prediction_weighting_flag. This setting is only valid for the 16-bit or 4:4:4 RExt profiles.
 \\
 
-\Option{CrossComponentPrediction} &
-\Default{false} &
-When true, specifies the use of the cross component prediction tool (4:4:4 processing only). Version 1 and some Version 2 (RExt) profiles require this to be false.
-\\
-
 \Option{ReconBasedCrossCPredictionEstimate} &
 \Default{false} &
 If true, then when determining the alpha value for cross-component prediction, use the reconstructed residual rather than the pre-transform encoder-side residual
-\\
-
-\Option{SaoLumaOffsetBitShift}
-\Option{SaoChromaOffsetBitShift}&
-\Default{0}
-\Default{0} &
-Specifies the shift to apply to the SAO parameters. If negative, an estimate will be calculated based upon the initial QP. Version 1 and some Version 2 (RExt) profiles require this to be 0.
 \\
 
 \Option{TransformSkipLog2MaxSize} &
@@ -3540,7 +3765,18 @@ An array that specifies whether the cubemap mapping function of the v-axis refer
 \Default{false} &
 Indicates the existence of guard band areas in the picture.
 \\
-\Option{SEIGcmpGuardBandBoundaryType} &
+\Option{SEIGcmpGuardBandType} &
+\Default{0} &
+Indicates the type of the guard bands.
+\par
+\begin{tabular}{cp{0.35\textwidth}}
+ 0 & Unspecified \\
+ 1 & Suffice for interpolation of sample values at sub-pel sample fractional locations within the coded face. \\
+ 2 & Represent actual picture content that is spherically adjacent to the content in the coded face at quality that gradually changes from the picture quality of the coded face to that of the spherically adjacent region. \\
+ 3 & Represent actual picture content that is spherically adjacent to the content in the coded face at a similar picture quality as within the coded face. \\
+\end{tabular}
+\\
+\Option{SEIGcmpGuardBandBoundaryExteriorFlag} &
 \Default{false} &
 Enables (true) or disables (false) the boundary guard bands.
 \\
@@ -3762,11 +3998,27 @@ Enables (true) or disables (false) the insertion of Frame-Field Information SEI 
 \end{OptionTableNoShorthand}
 
 \begin{OptionTableNoShorthand}{Subpicture Level Information SEI message encoder parameters}{tab:sei-subpic-level}
-\Option{SEISubpictureLevelInfo} &
+\Option{SEISubpictLevelInfoEnabled} &
 \Default{false} &
 Enables (true) or disables (false) the insertion of Subpicture Level Information SEI message.
 Note, currently no other configuration options are available, because this depends on the number of subpictures,
 which are still not supported in the software. An example SEI with dummy values is generated, when the option is enabled.
+\\
+\Option{SEISubpicLevelInfoRefLevels} &
+\Default{none} &
+List of reference levels to be signalled.
+\\
+\Option{SEISubpicLevelInfoExplicitFraction} &
+\Default{false} &
+Enable signalling of explicit fraction for each level and subpicture
+\\
+\Option{SEISubpicLevelInfoNumSubpics} &
+\Default{1} &
+Number of subpictures in context of the SEI. Has to be equal to NumSubpics.
+\\
+\Option{SEISubpicLevelInfoRefLevelFractions} &
+\Default{none} &
+List of fractions of levels to be signalled. List is ordered by subpicture then level.
 \\
 \end{OptionTableNoShorthand}
 
@@ -3993,6 +4245,12 @@ Defines the input bit stream file name.
 %\ShortOption{-o} &
 \Default{\NotSet} &
 Defines the reconstructed video file name. If empty, no file is generated. If the bitstream contains multiple layer and no single target layer is specified (i.e. TargetLayer=-1), a reconstructed file is written for each layer and the layer index is added as suffix to ReconFile. If one or more dots exist in the file name, the layer id is added before the last dot, e.g. 'decoded.yuv' becomes 'decoded0.yuv' for layer id 0, 'decoded' becomes 'decoded0'.
+\\
+
+\Option{OplFile (-opl)} &
+%\ShortOption{-o} &
+\Default{\NotSet} &
+Defines the output log file name (*.opl file). If empty, no file is generated. Each output picture log file contains one row for each output picture in the bitstream, in output order. Each row contains the following information, as CSV:	PicOrderCntVal, pic\_width\_max\_in\_luma\_samples, pic\_height\_max\_in\_luma\_samples, MD5 checksum for the Y component, MD5 checksum for the U component, MD5 checksum for the V component. The format of output log file is specified in JVET-P2008. 
 \\
 
 \Option{SkipFrames (-s)} &

@@ -82,18 +82,12 @@ private:
           const ChromaFormat  chFmt,
           const int           dqp
         , const SPS           *sps
-#if JVET_Q0820_ACT
         , const bool          applyACTQpoffset
-#endif 
   );
 
 public:
 
-#if JVET_Q0820_ACT 
   QpParam(const TransformUnit& tu, const ComponentID &compID, const int QP = -MAX_INT, const bool allowACTQpoffset = true);
-#else
-  QpParam(const TransformUnit& tu, const ComponentID &compID, const int QP = -MAX_INT);
-#endif
 
   int Qp ( const bool ts ) const { return Qps [ts?1:0]; }
   int per( const bool ts ) const { return pers[ts?1:0]; }
@@ -136,8 +130,8 @@ public:
   int* getDequantCoeff           ( uint32_t list, int qp, uint32_t sizeX, uint32_t sizeY ) { return m_dequantCoef          [sizeX][sizeY][list][qp]; };  //!< get DeQuant Coefficent
 
   void setUseScalingList         ( bool bUseScalingList){ m_scalingListEnabledFlag = bUseScalingList; };
-  bool getUseScalingList(const uint32_t width, const uint32_t height, const bool isTransformSkip, const bool lfnstApplied, const bool disableScalingMatrixForLFNSTBlks) 
-  { 
+  bool getUseScalingList(const uint32_t width, const uint32_t height, const bool isTransformSkip, const bool lfnstApplied, const bool disableScalingMatrixForLFNSTBlks)
+  {
     return (m_scalingListEnabledFlag && !isTransformSkip && (!lfnstApplied || !disableScalingMatrixForLFNSTBlks));
   }
   void setScalingListDec         ( const ScalingList &scalingList);

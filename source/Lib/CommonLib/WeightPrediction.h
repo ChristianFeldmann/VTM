@@ -69,7 +69,7 @@ public:
                                 const WPScalingParam *const wp1,
                                       PelUnitBuf           &rpcYuvDst,
                                 const bool                  bRoundLuma = true,
-                                const ComponentID           maxNumComp = MAX_NUM_COMPONENT 
+                                const ComponentID           maxNumComp = MAX_NUM_COMPONENT
                                 , bool                      lumaOnly = false
                                 , bool                      chromaOnly = false
                                 );
@@ -106,7 +106,7 @@ public:
                                 const CPelUnitBuf          &pcYuvSrc0,
                                 const CPelUnitBuf          &pcYuvSrc1,
                                       PelUnitBuf           &pcYuvDst,
-                                const ComponentID           maxNumComp = MAX_NUM_COMPONENT 
+                                const ComponentID           maxNumComp = MAX_NUM_COMPONENT
                                 , bool                      lumaOnly = false
                                 , bool                      chromaOnly = false
                                 );

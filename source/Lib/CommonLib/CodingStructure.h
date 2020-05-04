@@ -143,6 +143,7 @@ public:
   CodingUnit&     addCU(const UnitArea &unit, const ChannelType _chType);
   PredictionUnit& addPU(const UnitArea &unit, const ChannelType _chType);
   TransformUnit&  addTU(const UnitArea &unit, const ChannelType _chType);
+  void            addEmptyTUs(Partitioner &partitioner);
 
   CUTraverser     traverseCUs(const UnitArea& _unit, const ChannelType _chType);
   PUTraverser     traversePUs(const UnitArea& _unit, const ChannelType _chType);
@@ -202,10 +203,8 @@ public:
   PLTBuf prevPLT;
   void resetPrevPLT(PLTBuf& prevPLT);
   void reorderPrevPLT(PLTBuf& prevPLT, uint8_t curPLTSize[MAX_NUM_CHANNEL_TYPE], Pel curPLT[MAX_NUM_COMPONENT][MAXPLTSIZE], bool reuseflag[MAX_NUM_CHANNEL_TYPE][MAXPLTPREDSIZE], uint32_t compBegin, uint32_t numComp, bool jointPLT);
-#if JVET_Q0501_PALETTE_WPP_INIT_ABOVECTU
   void setPrevPLT(PLTBuf predictor);
   void storePrevPLT(PLTBuf& predictor);
-#endif
 private:
 
   // needed for TU encoding

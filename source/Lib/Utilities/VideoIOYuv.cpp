@@ -915,7 +915,8 @@ bool VideoIOYuv::read ( PelUnitBuf& pic, PelUnitBuf& picOrg, const InputColourSp
     const bool b709Compliance=(bClipToRec709) && (m_bitdepthShift[chType] < 0 && desired_bitdepth >= 8);     /* ITU-R BT.709 compliant clipping for converting say 10b to 8b */
     const Pel minval = b709Compliance? ((   1 << (desired_bitdepth - 8))   ) : 0;
     const Pel maxval = b709Compliance? ((0xff << (desired_bitdepth - 8)) -1) : (1 << desired_bitdepth) - 1;
-    Pel* const dst = picOrg.get(compID).bufAt(0,0);
+    const bool processComponent = (size_t)compID < picOrg.bufs.size();
+    Pel* const dst = processComponent ? picOrg.get(compID).bufAt(0,0) : nullptr;
 #if EXTENSION_360_VIDEO
     const uint32_t stride444 = picOrg.get(compID).stride;
 #endif
@@ -924,13 +925,12 @@ bool VideoIOYuv::read ( PelUnitBuf& pic, PelUnitBuf& picOrg, const InputColourSp
       return false;
     }
 
-    if (! verifyPlane( dst, stride444, width444, height444, pad_h444, pad_v444, compID, format, m_fileBitdepth[chType]) )
+    if (processComponent)
     {
-       EXIT("Source image contains values outside the specified bit range!");
-    }
-
-    if( (size_t)compID < picOrg.bufs.size() )
-    {
+      if (! verifyPlane( dst, stride444, width444, height444, pad_h444, pad_v444, compID, format, m_fileBitdepth[chType]) )
+      {
+         EXIT("Source image contains values outside the specified bit range!");
+      }
       scalePlane( picOrg.get(compID), m_bitdepthShift[chType], minval, maxval);
     }
   }
@@ -964,7 +964,7 @@ bool VideoIOYuv::read ( PelUnitBuf& pic, PelUnitBuf& picOrg, const InputColourSp
 bool VideoIOYuv::write( uint32_t orgWidth, uint32_t orgHeight, const CPelUnitBuf& pic,
                         const InputColourSpaceConversion ipCSC,
                         const bool bPackedYUVOutputMode,
-                        int confLeft, int confRight, int confTop, int confBottom, ChromaFormat format, const bool bClipToRec709 )
+                        int confLeft, int confRight, int confTop, int confBottom, ChromaFormat format, const bool bClipToRec709, const bool subtractConfWindowOffsets )
 {
   PelStorage interm;
 
@@ -1021,6 +1021,12 @@ bool VideoIOYuv::write( uint32_t orgWidth, uint32_t orgHeight, const CPelUnitBuf
   const CPelBuf areaY     = picO.get(COMPONENT_Y);
   const uint32_t    width444  = areaY.width - confLeft - confRight;
   const uint32_t    height444 = areaY.height -  confTop  - confBottom;
+
+  if( subtractConfWindowOffsets )
+  {
+    orgWidth -= confLeft + confRight;
+    orgHeight -= confTop + confBottom;
+  }
 
   if ((width444 == 0) || (height444 == 0))
   {
@@ -1241,22 +1247,12 @@ bool VideoIOYuv::writeUpscaledPicture( const SPS& sps, const PPS& pps, const CPe
       PelStorage upscaledPic;
       upscaledPic.create( chromaFormatIDC, Area( Position(), Size( sps.getMaxPicWidthInLumaSamples(), sps.getMaxPicHeightInLumaSamples() ) ) );
 
-#if JVET_Q0487_SCALING_WINDOW_ISSUES
       int curPicWidth = sps.getMaxPicWidthInLumaSamples()   - SPS::getWinUnitX( sps.getChromaFormatIdc() ) * ( afterScaleWindowFullResolution.getWindowLeftOffset() + afterScaleWindowFullResolution.getWindowRightOffset() );
       int curPicHeight = sps.getMaxPicHeightInLumaSamples() - SPS::getWinUnitY( sps.getChromaFormatIdc() ) * ( afterScaleWindowFullResolution.getWindowTopOffset()  + afterScaleWindowFullResolution.getWindowBottomOffset() );
-#else
-      int curPicWidth = sps.getMaxPicWidthInLumaSamples() - afterScaleWindowFullResolution.getWindowLeftOffset() - afterScaleWindowFullResolution.getWindowRightOffset();
-      int curPicHeight = sps.getMaxPicHeightInLumaSamples() - afterScaleWindowFullResolution.getWindowTopOffset() - afterScaleWindowFullResolution.getWindowBottomOffset();
-#endif
 
       const Window& beforeScalingWindow = pps.getScalingWindow();
-#if JVET_Q0487_SCALING_WINDOW_ISSUES
       int refPicWidth = pps.getPicWidthInLumaSamples()   - SPS::getWinUnitX( sps.getChromaFormatIdc() ) * ( beforeScalingWindow.getWindowLeftOffset() + beforeScalingWindow.getWindowRightOffset() );
       int refPicHeight = pps.getPicHeightInLumaSamples() - SPS::getWinUnitY( sps.getChromaFormatIdc() ) * ( beforeScalingWindow.getWindowTopOffset()  + beforeScalingWindow.getWindowBottomOffset() );
-#else
-      int refPicWidth = pps.getPicWidthInLumaSamples() - beforeScalingWindow.getWindowLeftOffset() - beforeScalingWindow.getWindowRightOffset();
-      int refPicHeight = pps.getPicHeightInLumaSamples() - beforeScalingWindow.getWindowTopOffset() - beforeScalingWindow.getWindowBottomOffset();
-#endif
 
       int xScale = ( ( refPicWidth << SCALE_RATIO_BITS ) + ( curPicWidth >> 1 ) ) / curPicWidth;
       int yScale = ( ( refPicHeight << SCALE_RATIO_BITS ) + ( curPicHeight >> 1 ) ) / curPicHeight;
@@ -1270,7 +1266,7 @@ bool VideoIOYuv::writeUpscaledPicture( const SPS& sps, const PPS& pps, const CPe
         confFullResolution.getWindowRightOffset() * SPS::getWinUnitX( chromaFormatIDC ),
         confFullResolution.getWindowTopOffset() * SPS::getWinUnitY( chromaFormatIDC ),
         confFullResolution.getWindowBottomOffset() * SPS::getWinUnitY( chromaFormatIDC ),
-        NUM_CHROMA_FORMAT, bClipToRec709 );
+        NUM_CHROMA_FORMAT, bClipToRec709, false );
     }
     else
     {
@@ -1283,7 +1279,7 @@ bool VideoIOYuv::writeUpscaledPicture( const SPS& sps, const PPS& pps, const CPe
         conf.getWindowRightOffset() * SPS::getWinUnitX( chromaFormatIDC ),
         conf.getWindowTopOffset() * SPS::getWinUnitY( chromaFormatIDC ),
         conf.getWindowBottomOffset() * SPS::getWinUnitY( chromaFormatIDC ),
-        NUM_CHROMA_FORMAT, bClipToRec709 );
+        NUM_CHROMA_FORMAT, bClipToRec709, false );
     }
   }
   else

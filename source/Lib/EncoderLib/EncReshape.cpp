@@ -366,13 +366,8 @@ void EncReshape::calcSeqStats(Picture *pcPic, SeqInfo &stats)
   }
 
   picY = pcPic->getOrigBuf(COMPONENT_Y);
-  PelBuf picU = pcPic->getOrigBuf(COMPONENT_Cb);
-  PelBuf picV = pcPic->getOrigBuf(COMPONENT_Cr);
-  const int widthC = picU.width;
-  const int heightC = picU.height;
-  const int strideC = picU.stride;
-  double avgY = 0.0, avgU = 0.0, avgV = 0.0;
-  double varY = 0.0, varU = 0.0, varV = 0.0;
+  double avgY = 0.0;
+  double varY = 0.0;
   for (int y = 0; y < height; y++)
   {
     for (int x = 0; x < width; x++)
@@ -382,6 +377,18 @@ void EncReshape::calcSeqStats(Picture *pcPic, SeqInfo &stats)
     }
     picY.buf += stride;
   }
+  avgY = avgY / (width * height);
+  varY = varY / (width * height) - avgY * avgY;
+
+  if (isChromaEnabled(pcPic->chromaFormat))
+  {
+    PelBuf picU = pcPic->getOrigBuf(COMPONENT_Cb);
+    PelBuf picV = pcPic->getOrigBuf(COMPONENT_Cr);
+    const int widthC = picU.width;
+    const int heightC = picU.height;
+    const int strideC = picU.stride;
+    double avgU = 0.0, avgV = 0.0;
+    double varU = 0.0, varV = 0.0;
   for (int y = 0; y < heightC; y++)
   {
     for (int x = 0; x < widthC; x++)
@@ -394,16 +401,15 @@ void EncReshape::calcSeqStats(Picture *pcPic, SeqInfo &stats)
     picU.buf += strideC;
     picV.buf += strideC;
   }
-  avgY = avgY / (width * height);
   avgU = avgU / (widthC * heightC);
   avgV = avgV / (widthC * heightC);
-  varY = varY / (width * height) - avgY * avgY;
   varU = varU / (widthC * heightC) - avgU * avgU;
   varV = varV / (widthC * heightC) - avgV * avgV;
   if (varY > 0)
   {
     stats.ratioStdU = sqrt(varU) / sqrt(varY);
     stats.ratioStdV = sqrt(varV) / sqrt(varY);
+  }
   }
 }
 void EncReshape::preAnalyzerLMCS(Picture *pcPic, const uint32_t signalType, const SliceType sliceType, const ReshapeCW& reshapeCW)
@@ -436,6 +442,13 @@ void EncReshape::preAnalyzerLMCS(Picture *pcPic, const uint32_t signalType, cons
       bool intraAdp = true, interAdp = true;
 
       calcSeqStats(pcPic, m_srcSeqStats);
+
+      bool isFlat = true;
+      for (int b = 0; b < m_binNum; b++)
+      {
+        if (m_srcSeqStats.binVar[b] > 0) { isFlat = false; }
+      }
+      if (isFlat) { intraAdp = false;  interAdp = false; }
       if (m_binNum == PIC_CODE_CW_BINS)
       {
         if ((m_srcSeqStats.binHist[0] + m_srcSeqStats.binHist[m_binNum - 1]) > 0.005) { m_exceedSTD = true; }

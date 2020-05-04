@@ -95,6 +95,15 @@ uint32_t DecApp::decode()
     }
   }
 
+  if (!m_oplFilename.empty() && m_oplFilename!="-")
+  {
+    m_oplFileStream.open(m_oplFilename.c_str(), std::ios::out);
+    if (!m_oplFileStream.is_open() || !m_oplFileStream.good())
+    {
+      EXIT( "Unable to open file "<< m_oplFilename.c_str() << " to write an opl-file for conformance testing (see JVET-P2008 for details)");
+    }
+  }
+
   // create & initialize internal classes
   xCreateDecLib();
 
@@ -111,7 +120,7 @@ uint32_t DecApp::decode()
   }
 
   // main decoder loop
-  bool loopFiltered = false;
+  bool loopFiltered[MAX_VPS_LAYERS] = { false };
 
   bool bPicSkipped = false;
 
@@ -123,8 +132,8 @@ uint32_t DecApp::decode()
     // determine if next NAL unit will be the first one from a new picture
     bool bNewPicture = isNewPicture(&bitstreamFile, &bytestream);
     bool bNewAccessUnit = bNewPicture && isNewAccessUnit( bNewPicture, &bitstreamFile, &bytestream );
-    if(!bNewPicture) 
-    { 
+    if(!bNewPicture)
+    {
       AnnexBStats stats = AnnexBStats();
 
       // find next NAL unit in stream
@@ -152,8 +161,13 @@ uint32_t DecApp::decode()
         }
 
         // parse NAL unit syntax if within target decoding layer
-        if ((m_iMaxTemporalLayer < 0 || nalu.m_temporalId <= m_iMaxTemporalLayer) && isNaluWithinTargetDecLayerIdSet(&nalu))
+        if( ( m_iMaxTemporalLayer < 0 || nalu.m_temporalId <= m_iMaxTemporalLayer ) && xIsNaluWithinTargetDecLayerIdSet( &nalu ) )
         {
+          CHECK(nalu.m_temporalId > m_iMaxTemporalLayer, "bitstream shall not include any NAL unit with TemporalId greater than HighestTid");
+          if (m_targetDecLayerIdSet.size())
+          {
+            CHECK(std::find(m_targetDecLayerIdSet.begin(), m_targetDecLayerIdSet.end(), nalu.m_nuhLayerId) == m_targetDecLayerIdSet.end(), "bitstream shall not contain any other layers than included in the OLS with OlsIdx");
+          }
           if (bPicSkipped)
           {
             if ((nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_TRAIL) || (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_STSA) || (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_RASL) || (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_RADL) || (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL) || (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP) || (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_CRA) || (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_GDR))
@@ -162,14 +176,17 @@ uint32_t DecApp::decode()
               {
                 m_cDecLib.resetAccessUnitNals();
                 m_cDecLib.resetAccessUnitApsNals();
+                m_cDecLib.resetAccessUnitPicInfo();
               }
               bPicSkipped = false;
             }
           }
-          m_cDecLib.decode(nalu, m_iSkipFrame, m_iPOCLastDisplay);
+          m_cDecLib.decode(nalu, m_iSkipFrame, m_iPOCLastDisplay, m_targetOlsIdx);
           if (nalu.m_nalUnitType == NAL_UNIT_VPS)
           {
-            deriveOutputLayerSet();
+            m_cDecLib.deriveTargetOutputLayerSet( m_targetOlsIdx );
+            m_targetDecLayerIdSet = m_cDecLib.getVPS()->m_targetLayerIdSet;
+            m_targetOutputLayerIdSet = m_cDecLib.getVPS()->m_targetOutputLayerIdSet;
           }
         }
         else
@@ -179,23 +196,23 @@ uint32_t DecApp::decode()
       }
     }
 
-
-    if ((bNewPicture || !bitstreamFile || nalu.m_nalUnitType == NAL_UNIT_EOS) && !m_cDecLib.getFirstSliceInSequence() && !bPicSkipped)
+    if ((bNewPicture || !bitstreamFile || nalu.m_nalUnitType == NAL_UNIT_EOS) && !m_cDecLib.getFirstSliceInSequence(nalu.m_nuhLayerId) && !bPicSkipped)
     {
-      if (!loopFiltered || bitstreamFile)
+      if (!loopFiltered[nalu.m_nuhLayerId] || bitstreamFile)
       {
         m_cDecLib.executeLoopFilters();
         m_cDecLib.finishPicture( poc, pcListPic );
       }
-      loopFiltered = (nalu.m_nalUnitType == NAL_UNIT_EOS);
+      loopFiltered[nalu.m_nuhLayerId] = (nalu.m_nalUnitType == NAL_UNIT_EOS);
       if (nalu.m_nalUnitType == NAL_UNIT_EOS)
       {
-        m_cDecLib.setFirstSliceInSequence(true);
+        m_cDecLib.setFirstSliceInSequence(true, nalu.m_nuhLayerId);
       }
 
+      m_cDecLib.updateAssociatedIRAP();
     }
     else if ( (bNewPicture || !bitstreamFile || nalu.m_nalUnitType == NAL_UNIT_EOS ) &&
-              m_cDecLib.getFirstSliceInSequence () )
+      m_cDecLib.getFirstSliceInSequence(nalu.m_nuhLayerId))
     {
       m_cDecLib.setFirstSliceInPicture (true);
     }
@@ -219,7 +236,7 @@ uint32_t DecApp::decode()
         }
 
         std::string reconFileName = m_reconFileName;
-        if (m_reconFileName.compare("/dev/null") && (m_cDecLib.getVPS() != nullptr) && (m_cDecLib.getVPS()->getMaxLayers() > 1) && (isNaluWithinTargetOutputLayerIdSet(&nalu)))
+        if( m_reconFileName.compare( "/dev/null" ) && m_cDecLib.getVPS() != nullptr && m_cDecLib.getVPS()->getMaxLayers() > 1 && xIsNaluWithinTargetOutputLayerIdSet( &nalu ) )
         {
           size_t pos = reconFileName.find_last_of('.');
           if (pos != string::npos)
@@ -231,10 +248,10 @@ uint32_t DecApp::decode()
             reconFileName.append( std::to_string( nalu.m_nuhLayerId ) );
           }
         }
-        if(((m_cDecLib.getVPS() != nullptr) &&
-              ((m_cDecLib.getVPS()->getMaxLayers() == 1) || (isNaluWithinTargetOutputLayerIdSet(&nalu)))) ||
-            (m_cDecLib.getVPS() == nullptr))
-        m_cVideoIOYuvReconFile[nalu.m_nuhLayerId].open(reconFileName, true, m_outputBitDepth, m_outputBitDepth, bitDepths.recon); // write mode
+        if( ( m_cDecLib.getVPS() != nullptr && ( m_cDecLib.getVPS()->getMaxLayers() == 1 || xIsNaluWithinTargetOutputLayerIdSet( &nalu ) ) ) || m_cDecLib.getVPS() == nullptr )
+        {
+          m_cVideoIOYuvReconFile[nalu.m_nuhLayerId].open( reconFileName, true, m_outputBitDepth, m_outputBitDepth, bitDepths.recon ); // write mode
+        }
       }
       // write reconstruction to file
       if( bNewPicture )
@@ -253,10 +270,15 @@ uint32_t DecApp::decode()
         xWriteOutput( pcListPic, nalu.m_temporalId );
       }
     }
-    if(bNewAccessUnit) 
+    if(bNewAccessUnit)
     {
+      m_cDecLib.checkTidLayerIdInAccessUnit();
+      m_cDecLib.resetAccessUnitSeiTids();
+      m_cDecLib.checkSEIInAccessUnit();
+      m_cDecLib.resetAccessUnitSeiPayLoadTypes();
         m_cDecLib.resetAccessUnitNals();
         m_cDecLib.resetAccessUnitApsNals();
+        m_cDecLib.resetAccessUnitPicInfo();
     }
   }
 
@@ -279,176 +301,6 @@ uint32_t DecApp::decode()
   return nRet;
 }
 
-bool DecApp::deriveOutputLayerSet()
-{
-  int vps_max_layers_minus1 = m_cDecLib.getVPS()->getMaxLayers() - 1;
-  if(m_iTargetOLS == - 1 || vps_max_layers_minus1 == 0)
-  {
-    m_targetDecLayerIdSet.clear();
-    return true;
-  }
-
-  int TotalNumOlss = 0;
-  int each_layer_is_an_ols_flag = m_cDecLib.getVPS()->getEachLayerIsAnOlsFlag();
-  int ols_mode_idc = m_cDecLib.getVPS()->getOlsModeIdc();
-  int num_output_layer_sets_minus1 = m_cDecLib.getVPS()->getNumOutputLayerSets() - 1;
-  int i = 0, j = 0, k = 0, r = 0;
-  int*  NumOutputLayersInOls;
-  int*  NumLayersInOls;
-  int** OutputLayerIdInOls;
-  int** OutputLayerIdx;
-  int** layerIncludedInOlsFlag;
-  int** LayerIdInOls;
-  int** dependencyFlag;
-  int** RefLayerIdx;
-  int*  NumRefLayers;
-
-  if (vps_max_layers_minus1 == 0)
-    TotalNumOlss = 1;
-  else if (each_layer_is_an_ols_flag || ols_mode_idc == 0 || ols_mode_idc == 1)
-    TotalNumOlss = vps_max_layers_minus1 + 1;
-  else if (ols_mode_idc == 2)
-    TotalNumOlss = num_output_layer_sets_minus1 + 1;
-
-  NumOutputLayersInOls = new int[m_cDecLib.getVPS()->getNumOutputLayerSets()];
-  NumLayersInOls = new int[m_cDecLib.getVPS()->getNumOutputLayerSets()];
-  OutputLayerIdInOls = new int*[TotalNumOlss];
-  OutputLayerIdx = new int*[TotalNumOlss];
-  layerIncludedInOlsFlag = new int*[TotalNumOlss];
-  LayerIdInOls = new int*[TotalNumOlss];
-
-  for (i = 0; i < TotalNumOlss; i++)
-  {
-    OutputLayerIdInOls[i] = new int[vps_max_layers_minus1 + 1];
-    OutputLayerIdx[i] = new int[vps_max_layers_minus1 + 1];
-    layerIncludedInOlsFlag[i] = new int[vps_max_layers_minus1 + 1];
-    LayerIdInOls[i] = new int[vps_max_layers_minus1 + 1];
-  }
-
-  dependencyFlag = new int*[vps_max_layers_minus1 + 1];
-  RefLayerIdx = new int*[vps_max_layers_minus1 + 1];
-  NumRefLayers = new int[vps_max_layers_minus1 + 1];
-
-  for (i = 0; i <= vps_max_layers_minus1; i++)
-  {
-    dependencyFlag[i] = new int[vps_max_layers_minus1 + 1];
-    RefLayerIdx[i] = new int[vps_max_layers_minus1 + 1];
-  }
-
-  for (i = 0; i <= vps_max_layers_minus1; i++) {
-    for (j = 0; j <= vps_max_layers_minus1; j++) {
-      dependencyFlag[i][j] = m_cDecLib.getVPS()->getDirectRefLayerFlag(i, j);
-      for (k = 0; k < i; k++)
-        if (m_cDecLib.getVPS()->getDirectRefLayerFlag(i, k) && dependencyFlag[k][j])
-          dependencyFlag[i][j] = 1;
-    }
-  }
-  for (i = 0; i <= vps_max_layers_minus1; i++)
-  {
-    for (j = 0, r = 0; j <= vps_max_layers_minus1; j++)
-    {
-      if (dependencyFlag[i][j])
-        RefLayerIdx[i][r++] = j;
-    }
-    NumRefLayers[i] = r;
-  }
-
-  NumOutputLayersInOls[0] = 1;
-  OutputLayerIdInOls[0][0] = m_cDecLib.getVPS()->getLayerId(0);
-  for (i = 1; i < TotalNumOlss; i++)
-  {
-    if (each_layer_is_an_ols_flag || ols_mode_idc == 0)
-    {
-      NumOutputLayersInOls[i] = 1;
-      OutputLayerIdInOls[i][0] = m_cDecLib.getVPS()->getLayerId(i);
-    }
-    else if (ols_mode_idc == 1) {
-      NumOutputLayersInOls[i] = i + 1;
-      for (j = 0; j < NumOutputLayersInOls[i]; j++)
-        OutputLayerIdInOls[i][j] = m_cDecLib.getVPS()->getLayerId(j);
-    }
-    else if (ols_mode_idc == 2) {
-      for (j = 0; j <= vps_max_layers_minus1; j++)
-      {
-        layerIncludedInOlsFlag[i][j] = 0;
-      }
-      for (k = 0, j = 0; k <= vps_max_layers_minus1; k++)
-      {
-        if (m_cDecLib.getVPS()->getOlsOutputLayerFlag(i, k))
-        {
-          layerIncludedInOlsFlag[i][k] = 1;
-          OutputLayerIdx[i][j] = k;
-          OutputLayerIdInOls[i][j++] = m_cDecLib.getVPS()->getLayerId(k);
-        }
-      }
-      NumOutputLayersInOls[i] = j;
-      for (j = 0; j < NumOutputLayersInOls[i]; j++)
-      {
-        int idx = OutputLayerIdx[i][j];
-        for (k = 0; k < NumRefLayers[idx]; k++)
-          layerIncludedInOlsFlag[i][RefLayerIdx[idx][k]] = 1;
-      }
-    }
-  }
-
-  m_targetOutputLayerIdSet.clear();
-  for (i = 0; i < NumOutputLayersInOls[m_iTargetOLS]; i++)
-    m_targetOutputLayerIdSet.push_back(OutputLayerIdInOls[m_iTargetOLS][i]);
-
-  NumLayersInOls[0] = 1;
-  LayerIdInOls[0][0] = m_cDecLib.getVPS()->getLayerId(0);
-  for (i = 1; i < TotalNumOlss; i++)
-  {
-    if (each_layer_is_an_ols_flag)
-    {
-      NumLayersInOls[i] = 1;
-      LayerIdInOls[i][0] = m_cDecLib.getVPS()->getLayerId(i);
-    }
-    else if (ols_mode_idc == 0 || ols_mode_idc == 1)
-    {
-      NumLayersInOls[i] = i + 1;
-      for (j = 0; j < NumLayersInOls[i]; j++)
-        LayerIdInOls[i][j] = m_cDecLib.getVPS()->getLayerId(j);
-    }
-    else if (ols_mode_idc == 2)
-    {
-      for (k = 0, j = 0; k <= vps_max_layers_minus1; k++)
-        if (layerIncludedInOlsFlag[i][k])
-          LayerIdInOls[i][j++] = m_cDecLib.getVPS()->getLayerId(k);
-      NumLayersInOls[i] = j;
-    }
-  }
-
-  m_targetDecLayerIdSet.clear();
-  for (i = 0; i < NumLayersInOls[m_iTargetOLS]; i++)
-    m_targetDecLayerIdSet.push_back(LayerIdInOls[m_iTargetOLS][i]);
-
-  delete[] NumOutputLayersInOls;
-  delete[] NumLayersInOls;
-  delete[] NumRefLayers;
-
-  for (i = 0; i < TotalNumOlss; i++)
-  {
-    delete[] OutputLayerIdInOls[i];
-    delete[] OutputLayerIdx[i];
-    delete[] layerIncludedInOlsFlag[i];
-    delete[] LayerIdInOls[i];
-  }
-  delete[] OutputLayerIdInOls;
-  delete[] OutputLayerIdx;
-  delete[] layerIncludedInOlsFlag;
-  delete[] LayerIdInOls;
-
-  for (i = 0; i <= vps_max_layers_minus1; i++)
-  {
-    delete[] dependencyFlag[i];
-    delete[] RefLayerIdx[i];
-  }
-  delete[] dependencyFlag;
-  delete[] RefLayerIdx;
-
-  return true;
-}
 
 /**
  - lookahead through next NAL units to determine if current NAL unit is the first NAL unit in a new picture
@@ -490,7 +342,7 @@ bool DecApp::isNewPicture(ifstream *bitstreamFile, class InputByteStream *bytest
 
         // NUT that indicate the start of a new picture
         case NAL_UNIT_ACCESS_UNIT_DELIMITER:
-        case NAL_UNIT_DPS:
+        case NAL_UNIT_DCI:
         case NAL_UNIT_VPS:
         case NAL_UNIT_SPS:
         case NAL_UNIT_PPS:
@@ -499,11 +351,7 @@ bool DecApp::isNewPicture(ifstream *bitstreamFile, class InputByteStream *bytest
           finished = true;
           break;
 
-#if JVET_Q0775_PH_IN_SH
         // NUT that may be the start of a new picture - check first bit in slice header
-#else
-        // NUT that are not the start of a new picture
-#endif
         case NAL_UNIT_CODED_SLICE_TRAIL:
         case NAL_UNIT_CODED_SLICE_STSA:
         case NAL_UNIT_CODED_SLICE_RASL:
@@ -517,13 +365,11 @@ bool DecApp::isNewPicture(ifstream *bitstreamFile, class InputByteStream *bytest
         case NAL_UNIT_CODED_SLICE_GDR:
         case NAL_UNIT_RESERVED_IRAP_VCL_11:
         case NAL_UNIT_RESERVED_IRAP_VCL_12:
-#if JVET_Q0775_PH_IN_SH
           ret = checkPictureHeaderInSliceHeaderFlag(nalu);
           finished = true;
           break;
 
         // NUT that are not the start of a new picture
-#endif
         case NAL_UNIT_EOS:
         case NAL_UNIT_EOB:
         case NAL_UNIT_SUFFIX_APS:
@@ -532,7 +378,7 @@ bool DecApp::isNewPicture(ifstream *bitstreamFile, class InputByteStream *bytest
           ret = false;
           finished = true;
           break;
-        
+
         // NUT that might indicate the start of a new picture - keep looking
         case NAL_UNIT_PREFIX_APS:
         case NAL_UNIT_PREFIX_SEI:
@@ -547,7 +393,7 @@ bool DecApp::isNewPicture(ifstream *bitstreamFile, class InputByteStream *bytest
       }
     }
   }
-  
+
   // restore previous stream location - minus 3 due to the need for the annexB parser to read three extra bytes
 #if RExt__DECODER_DEBUG_BIT_STATISTICS
   bitstreamFile->clear();
@@ -572,7 +418,7 @@ bool DecApp::isNewAccessUnit( bool newPicture, ifstream *bitstreamFile, class In
 {
   bool ret = false;
   bool finished = false;
-  
+
   // can only be the start of an AU if this is the start of a new picture
   if( newPicture == false )
   {
@@ -602,7 +448,7 @@ bool DecApp::isNewAccessUnit( bool newPicture, ifstream *bitstreamFile, class In
       // get next NAL unit type
       read(nalu);
       switch( nalu.m_nalUnitType ) {
-        
+
         // AUD always indicates the start of a new access unit
         case NAL_UNIT_ACCESS_UNIT_DELIMITER:
           ret = true;
@@ -618,10 +464,10 @@ bool DecApp::isNewAccessUnit( bool newPicture, ifstream *bitstreamFile, class In
         case NAL_UNIT_CODED_SLICE_IDR_N_LP:
         case NAL_UNIT_CODED_SLICE_CRA:
         case NAL_UNIT_CODED_SLICE_GDR:
-          ret = m_cDecLib.isSliceNaluFirstInAU( newPicture, nalu );          
+          ret = m_cDecLib.isSliceNaluFirstInAU( newPicture, nalu );
           finished = true;
           break;
-          
+
         // NUT that are not the start of a new access unit
         case NAL_UNIT_EOS:
         case NAL_UNIT_EOB:
@@ -631,14 +477,14 @@ bool DecApp::isNewAccessUnit( bool newPicture, ifstream *bitstreamFile, class In
           ret = false;
           finished = true;
           break;
-        
+
         // all other NUT - keep looking to find first VCL
         default:
           break;
       }
     }
   }
-  
+
   // restore previous stream location
 #if RExt__DECODER_DEBUG_BIT_STATISTICS
   bitstreamFile->clear();
@@ -654,6 +500,19 @@ bool DecApp::isNewAccessUnit( bool newPicture, ifstream *bitstreamFile, class In
 
   // return TRUE if next NAL unit is the start of a new picture
   return ret;
+}
+
+void DecApp::writeLineToOutputLog(Picture * pcPic)
+{
+  if (m_oplFileStream.is_open() && m_oplFileStream.good())
+  {
+    const SPS* sps = pcPic->cs->sps;
+    PictureHash recon_digest;
+    auto numChar = calcMD5(((const Picture*)pcPic)->getRecoBuf(), recon_digest, sps->getBitDepths());
+
+
+    m_oplFileStream << std::setw(8) << pcPic->getPOC() << "," << std::setw(5) << pcPic->Y().width << "," << std::setw(5) << pcPic->Y().height << "," << hashToString(recon_digest, numChar) << "\n";
+  }
 }
 
 // ====================================================================================================================
@@ -681,9 +540,7 @@ void DecApp::xCreateDecLib()
     std::ostream &os=m_seiMessageFileStream.is_open() ? m_seiMessageFileStream : std::cout;
     m_cDecLib.setDecodedSEIMessageOutputStream(&os);
   }
-#if SUBPIC_DECCHECK
   m_cDecLib.m_targetSubPicIdx = this->m_targetSubPicIdx;
-#endif
   m_cDecLib.initScalingList();
 }
 
@@ -720,15 +577,18 @@ void DecApp::xWriteOutput( PicList* pcListPic, uint32_t tId )
   uint32_t maxDecPicBufferingHighestTid;
   uint32_t maxNrSublayers = activeSPS->getMaxTLayers();
 
-  if(m_iMaxTemporalLayer == -1 || m_iMaxTemporalLayer >= maxNrSublayers)
+  const VPS* referredVPS = pcListPic->front()->cs->vps;
+  const int temporalId = ( m_iMaxTemporalLayer == -1 || m_iMaxTemporalLayer >= maxNrSublayers ) ? maxNrSublayers - 1 : m_iMaxTemporalLayer;
+
+  if( referredVPS == nullptr || referredVPS->m_numLayersInOls[referredVPS->m_targetOlsIdx] == 1 )
   {
-    numReorderPicsHighestTid = activeSPS->getNumReorderPics(maxNrSublayers-1);
-    maxDecPicBufferingHighestTid =  activeSPS->getMaxDecPicBuffering(maxNrSublayers-1);
+    numReorderPicsHighestTid = activeSPS->getNumReorderPics( temporalId );
+    maxDecPicBufferingHighestTid = activeSPS->getMaxDecPicBuffering( temporalId );
   }
   else
   {
-    numReorderPicsHighestTid = activeSPS->getNumReorderPics(m_iMaxTemporalLayer);
-    maxDecPicBufferingHighestTid = activeSPS->getMaxDecPicBuffering(m_iMaxTemporalLayer);
+    numReorderPicsHighestTid = referredVPS->getNumReorderPics( temporalId );
+    maxDecPicBufferingHighestTid = referredVPS->getMaxDecPicBuffering( temporalId );
   }
 
   while (iterPic != pcListPic->end())
@@ -778,17 +638,6 @@ void DecApp::xWriteOutput( PicList* pcListPic, uint32_t tId )
           const bool isTff = pcPicTop->topField;
 
           bool display = true;
-#if HEVC_SEI
-          if( m_decodedNoDisplaySEIEnabled )
-          {
-            SEIMessages noDisplay = getSeisByType( pcPic->SEIs, SEI::NO_DISPLAY );
-            const SEINoDisplay *nd = ( noDisplay.size() > 0 ) ? (SEINoDisplay*) *(noDisplay.begin()) : NULL;
-            if( (nd != NULL) && nd->m_noDisplay )
-            {
-              display = false;
-            }
-          }
-#endif
 
           if (display)
           {
@@ -802,6 +651,8 @@ void DecApp::xWriteOutput( PicList* pcListPic, uint32_t tId )
                                           NUM_CHROMA_FORMAT, isTff );
           }
         }
+        writeLineToOutputLog(pcPicTop);
+        writeLineToOutputLog(pcPicBottom);
 
         // update POC of display order
         m_iPOCLastDisplay = pcPicBottom->getPOC();
@@ -860,13 +711,8 @@ void DecApp::xWriteOutput( PicList* pcListPic, uint32_t tId )
                                         NUM_CHROMA_FORMAT, m_bClipOutputVideoToRec709Range );
             }
         }
+        writeLineToOutputLog(pcPic);
 
-#if HEVC_SEI
-        if (m_seiMessageFileStream.is_open())
-        {
-          m_cColourRemapping.outputColourRemapPic (pcPic, m_seiMessageFileStream);
-        }
-#endif
         // update POC of display order
         m_iPOCLastDisplay = pcPic->getPOC();
 
@@ -929,7 +775,8 @@ void DecApp::xFlushOutput( PicList* pcListPic, const int layerId )
                                         conf.getWindowBottomOffset() * SPS::getWinUnitY( pcPicTop->cs->sps->getChromaFormatIdc() ),
                                         NUM_CHROMA_FORMAT, isTff );
         }
-
+        writeLineToOutputLog(pcPicTop);
+        writeLineToOutputLog(pcPicBottom);
         // update POC of display order
         m_iPOCLastDisplay = pcPicBottom->getPOC();
 
@@ -997,13 +844,7 @@ void DecApp::xFlushOutput( PicList* pcListPic, const int layerId )
                                         NUM_CHROMA_FORMAT, m_bClipOutputVideoToRec709Range );
             }
         }
-
-#if HEVC_SEI
-        if (m_seiMessageFileStream.is_open())
-        {
-          m_cColourRemapping.outputColourRemapPic (pcPic, m_seiMessageFileStream);
-        }
-#endif
+        writeLineToOutputLog(pcPic);
 
         // update POC of display order
         m_iPOCLastDisplay = pcPic->getPOC();
@@ -1037,39 +878,26 @@ void DecApp::xFlushOutput( PicList* pcListPic, const int layerId )
 
 /** \param nalu Input nalu to check whether its LayerId is within targetDecLayerIdSet
  */
-bool DecApp::isNaluWithinTargetDecLayerIdSet( InputNALUnit* nalu )
+bool DecApp::xIsNaluWithinTargetDecLayerIdSet( const InputNALUnit* nalu ) const
 {
-  if ( m_targetDecLayerIdSet.size() == 0 ) // By default, the set is empty, meaning all LayerIds are allowed
+  if( !m_targetDecLayerIdSet.size() ) // By default, the set is empty, meaning all LayerIds are allowed
   {
     return true;
   }
-  for (std::vector<int>::iterator it = m_targetDecLayerIdSet.begin(); it != m_targetDecLayerIdSet.end(); it++)
-  {
-    if ( nalu->m_nuhLayerId == (*it) )
-    {
-      return true;
-    }
-  }
-  return false;
+
+  return std::find( m_targetDecLayerIdSet.begin(), m_targetDecLayerIdSet.end(), nalu->m_nuhLayerId ) != m_targetDecLayerIdSet.end();
 }
 
 /** \param nalu Input nalu to check whether its LayerId is within targetOutputLayerIdSet
  */
-bool DecApp::isNaluWithinTargetOutputLayerIdSet(InputNALUnit* nalu)
+bool DecApp::xIsNaluWithinTargetOutputLayerIdSet( const InputNALUnit* nalu ) const
 {
-  if (m_targetOutputLayerIdSet.size() == 0) // By default, the set is empty, meaning all LayerIds are allowed
+  if( !m_targetOutputLayerIdSet.size() ) // By default, the set is empty, meaning all LayerIds are allowed
   {
     return true;
   }
-  for (std::vector<int>::iterator it = m_targetOutputLayerIdSet.begin(); it != m_targetOutputLayerIdSet.end(); it++)
-  {
-    if (nalu->m_nuhLayerId == (*it))
-    {
-      return true;
-    }
-  }
-  return false;
-}
 
+  return std::find( m_targetOutputLayerIdSet.begin(), m_targetOutputLayerIdSet.end(), nalu->m_nuhLayerId ) != m_targetOutputLayerIdSet.end();
+}
 
 //! \}

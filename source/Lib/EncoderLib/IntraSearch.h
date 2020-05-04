@@ -72,17 +72,20 @@ public:
     return cnt > other.cnt;
   }
   SortingElement() {
-    cnt = shift = lastCnt = 0;
+    cnt[0] = cnt[1] = cnt[2] = cnt[3] = 0;
+    shift[0] = shift[1] = shift[2] = 0;
+    lastCnt[0] = lastCnt[1] = lastCnt[2] = 0;
     data[0] = data[1] = data[2] = 0;
     sumData[0] = sumData[1] = sumData[2] = 0;
   }
-  uint32_t  getCnt() const        { return cnt; }
-  void      setCnt(uint32_t val)  { cnt = val; }
+  uint32_t  getCnt(int idx) const         { return cnt[idx]; }
+  void      setCnt(uint32_t val, int idx) { cnt[idx] = val; }
   int       getSumData (int id) const   { return sumData[id]; }
 
   void resetAll(ComponentID compBegin, uint32_t numComp)
   {
-    shift = lastCnt = 0;
+    shift[0] = shift[1] = shift[2] = 0;
+    lastCnt[0] = lastCnt[1] = lastCnt[2] = 0;
     for (int ch = compBegin; ch < (compBegin + numComp); ch++)
     {
       data[ch] = 0;
@@ -96,11 +99,21 @@ public:
       data[ch] = ui[ch];
     }
   }
-  bool almostEqualData(SortingElement element, int errorLimit, const BitDepths& bitDepths, ComponentID compBegin, uint32_t numComp)
+  bool almostEqualData(SortingElement element, int errorLimit, const BitDepths& bitDepths, ComponentID compBegin, uint32_t numComp, bool lossless)
   {
     bool almostEqual = true;
     for (int comp = compBegin; comp < (compBegin + numComp); comp++)
     {
+      if (lossless)
+      {
+        if ((std::abs(data[comp] - element.data[comp])) > errorLimit)
+        {
+          almostEqual = false;
+          break;
+        }
+      }
+      else
+      {
       uint32_t absError = 0;
       if (isChroma((ComponentID) comp))
       {
@@ -115,16 +128,24 @@ public:
         almostEqual = false;
         break;
       }
+      }
     }
     return almostEqual;
   }
-  uint32_t getSAD(SortingElement element, const BitDepths& bitDepths, ComponentID compBegin, uint32_t numComp)
+  uint32_t getSAD(SortingElement element, const BitDepths &bitDepths, ComponentID compBegin, uint32_t numComp, bool lossless)
   {
     uint32_t sumAd = 0;
     for (int comp = compBegin; comp < (compBegin + numComp); comp++)
     {
       ChannelType chType = (comp > 0) ? CHANNEL_TYPE_CHROMA : CHANNEL_TYPE_LUMA;
+      if (lossless)
+      {
+        sumAd += (std::abs(data[comp] - element.data[comp]));
+      }
+      else
+      {
       sumAd += (std::abs(data[comp] - element.data[comp]) >> (bitDepths.recon[chType] - PLT_ENCBITDEPTH));
+      }
     }
     return sumAd;
   }
@@ -134,43 +155,43 @@ public:
     {
       data[comp] = element.data[comp];
       sumData[comp] = data[comp];
+      shift[comp] = 0;
+      lastCnt[comp] = 1;
     }
-    shift = 0; lastCnt = 1;
   }
   void copyAllFrom(SortingElement element, ComponentID compBegin, uint32_t numComp)
   {
     copyDataFrom(element, compBegin, numComp);
-    cnt = element.cnt;
     for (int comp = compBegin; comp < (compBegin + numComp); comp++)
     {
       sumData[comp] = element.sumData[comp];
+      cnt[comp]     = element.cnt[comp];
+      shift[comp]   = element.shift[comp];
+      lastCnt[comp] = element.lastCnt[comp];
     }
-    lastCnt = element.lastCnt; shift = element.shift;
+    cnt[MAX_NUM_COMPONENT] = element.cnt[MAX_NUM_COMPONENT];
   }
   void addElement(const SortingElement& element, ComponentID compBegin, uint32_t numComp)
   {
-    cnt++;
     for (int i = compBegin; i<(compBegin + numComp); i++)
     {
       sumData[i] += element.data[i];
-    }
-    if (cnt>1 && cnt == 2 * lastCnt)
-    {
-      uint32_t rnd = 1 << shift;
-      shift++;
-      for (int i = compBegin; i<(compBegin + numComp); i++)
+      cnt[i]++;
+      if( cnt[i] > 1 && cnt[i] == 2 * lastCnt[i] )
       {
-        data[i] = (sumData[i] + rnd) >> shift;
+        uint32_t rnd = 1 << shift[i];
+        shift[i]++;
+        data[i] = (sumData[i] + rnd) >> shift[i];
+        lastCnt[i] = cnt[i];
       }
-      lastCnt = cnt;
     }
   }
 private:
-  uint32_t cnt;
-  int shift, lastCnt, data[3], sumData[3];
+  uint32_t cnt[MAX_NUM_COMPONENT+1];
+  int shift[3], lastCnt[3], data[3], sumData[3];
 };
 /// encoder search class
-class IntraSearch : public IntraPrediction, CrossComponentPrediction
+class IntraSearch : public IntraPrediction
 {
 private:
   EncModeCtrl    *m_modeCtrl;
@@ -370,7 +391,7 @@ protected:
   uint16_t*       m_escapeNumBins;
   bool            m_bestEscape;
   double*         m_indexError[MAXPLTSIZE + 1];
-  uint8_t*        m_minErrorIndexMap; // store the best index in terms of distortion for each pixel 
+  uint8_t*        m_minErrorIndexMap; // store the best index in terms of distortion for each pixel
   uint8_t         m_indexMapRDOQ   [2][NUM_TRELLIS_STATE][2 * MAX_CU_BLKSIZE_PLT];
   bool            m_runMapRDOQ     [2][NUM_TRELLIS_STATE][2 * MAX_CU_BLKSIZE_PLT];
   uint8_t*        m_statePtRDOQ    [NUM_TRELLIS_STATE];
@@ -439,7 +460,7 @@ protected:
   uint64_t xGetIntraFracBitsQTChroma(TransformUnit& tu, const ComponentID &compID);
   void xEncCoeffQT                                 ( CodingStructure &cs, Partitioner& pm, const ComponentID compID, const int subTuIdx = -1, const PartSplit ispType = TU_NO_ISP, CUCtx * cuCtx = nullptr );
 
-  void xIntraCodingTUBlock        (TransformUnit &tu, const ComponentID &compID, const bool &checkCrossCPrediction, Distortion& ruiDist, const int &default0Save1Load2 = 0, uint32_t* numSig = nullptr, std::vector<TrMode>* trModes=nullptr, const bool loadTr=false );
+  void xIntraCodingTUBlock        (TransformUnit &tu, const ComponentID &compID, Distortion& ruiDist, const int &default0Save1Load2 = 0, uint32_t* numSig = nullptr, std::vector<TrMode>* trModes=nullptr, const bool loadTr=false );
   void xIntraCodingACTTUBlock(TransformUnit &tu, const ComponentID &compID, Distortion& ruiDist, std::vector<TrMode>* trModes = nullptr, const bool loadTr = false);
 
   ChromaCbfs xRecurIntraChromaCodingQT( CodingStructure &cs, Partitioner& pm, const double bestCostSoFar = MAX_DOUBLE,                          const PartSplit ispType = TU_NO_ISP );
@@ -453,11 +474,7 @@ protected:
   void   calcPixelPred   (      CodingStructure& cs, Partitioner& partitioner, uint32_t    yPos,      uint32_t xPos,             ComponentID compBegin, uint32_t  numComp);
   void     preCalcPLTIndexRD      (CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp);
   void     calcPixelPredRD        (CodingStructure& cs, Partitioner& partitioner, Pel* orgBuf, Pel* pixelValue, Pel* recoValue, ComponentID compBegin, uint32_t numComp);
-#if JVET_Q0503_Q0712_PLT_ENCODER_IMPROV_BUGFIX
   void     deriveIndexMap         (CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp, PLTScanMode pltScanMode, double& dCost, bool* idxExist);
-#else
-  void     deriveIndexMap         (CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, uint32_t numComp, PLTScanMode pltScanMode, double& dCost);
-#endif
   bool     deriveSubblockIndexMap(CodingStructure& cs, Partitioner& partitioner, ComponentID compBegin, PLTScanMode pltScanMode, int minSubPos, int maxSubPos, const BinFracBits& fracBitsPltRunType, const BinFracBits* fracBitsPltIndexINDEX, const BinFracBits* fracBitsPltIndexCOPY, const double minCost, bool useRotate);
   double   rateDistOptPLT         (bool RunType, uint8_t RunIndex, bool prevRunType, uint8_t prevRunIndex, uint8_t aboveRunIndex, bool& prevCodedRunType, int& prevCodedRunPos, int scanPos, uint32_t width, int dist, int indexMaxValue, const BinFracBits* IndexfracBits, const BinFracBits& TypefracBits);
   void     initTBCTable           (int bitDepth);

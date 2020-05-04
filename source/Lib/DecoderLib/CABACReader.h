@@ -70,10 +70,8 @@ public:
 
   void        readAlfCtuFilterIndex(CodingStructure&              cs, unsigned        ctuRsAddr);
 
-#if JVET_Q0795_CCALF
   void ccAlfFilterControlIdc(CodingStructure &cs, const ComponentID compID, const int curIdx, uint8_t *filterControlIdc,
                              Position lumaPos, int filterCount);
-#endif
 
   // coding (quad)tree (clause 7.3.8.4)
   void        coding_tree               ( CodingStructure&              cs,     Partitioner&    pm,       CUCtx& cuCtx, Partitioner* pPartitionerChroma = nullptr, CUCtx* pCuCtxChroma = nullptr);
@@ -144,8 +142,6 @@ public:
   void        residual_coding_subblockTS( CoeffCodingContext&           cctx,   TCoeff*         coeff  );
   void        joint_cb_cr               ( TransformUnit&                tu,     const int cbfMask );
 
-  // cross component prediction (clause 7.3.8.12)
-  void        cross_comp_pred           ( TransformUnit&                tu,     ComponentID     compID );
 
 private:
   unsigned    unary_max_symbol          ( unsigned ctxId0, unsigned ctxIdN, unsigned maxSymbol );

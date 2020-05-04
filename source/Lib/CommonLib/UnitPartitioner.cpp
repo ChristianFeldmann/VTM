@@ -253,7 +253,7 @@ void QTBTPartitioner::initCtu( const UnitArea& ctuArea, const ChannelType _chTyp
   currQtDepth = 0;
   currSubdiv  = 0;
   currQgPos   = ctuArea.lumaPos();
-  currQgChromaPos = ctuArea.chromaPos();
+  currQgChromaPos = ctuArea.chromaFormat != CHROMA_400 ? ctuArea.chromaPos() : Position();
   currImplicitBtDepth = 0;
   chType      = _chType;
 
@@ -374,7 +374,7 @@ void QTBTPartitioner::canSplit( const CodingStructure &cs, bool& canNo, bool& ca
 
   // the minimal and maximal sizes are given in luma samples
   const CompArea&  area  = currArea().Y();
-  const CompArea&  areaC = currArea().Cb();
+  const CompArea  *areaC = (chType == CHANNEL_TYPE_CHROMA) ? &(currArea().Cb()) : nullptr;
         PartLevel& level = m_partStack.back();
 
   const PartSplit lastSplit = level.split;
@@ -382,8 +382,15 @@ void QTBTPartitioner::canSplit( const CodingStructure &cs, bool& canNo, bool& ca
 
   // don't allow QT-splitting below a BT split
   if( lastSplit != CTU_LEVEL && lastSplit != CU_QUAD_SPLIT ) canQt = false;
+#if JVET_Q0471_CHROMA_QT_SPLIT
+  // minQtSize is in luma samples unit
+  const unsigned minQTThreshold = minQtSize >> ((area.chromaFormat == CHROMA_400) ? 0 : ((int) getChannelTypeScaleX(CHANNEL_TYPE_CHROMA, area.chromaFormat) - (int) getChannelTypeScaleY(CHANNEL_TYPE_CHROMA, area.chromaFormat)));
+  if( area.width <= minQTThreshold )                         canQt = false;
+#else
   if( area.width <= minQtSize )                              canQt = false;
-  if( chType == CHANNEL_TYPE_CHROMA && areaC.width <= MIN_DUALTREE_CHROMA_WIDTH ) canQt = false;
+#endif
+
+  if( areaC && areaC->width <= MIN_DUALTREE_CHROMA_WIDTH ) canQt = false;
   if( treeType == TREE_C )
   {
     canQt = canBh = canTh = canBv = canTv = false;
@@ -395,7 +402,8 @@ void QTBTPartitioner::canSplit( const CodingStructure &cs, bool& canNo, bool& ca
 
     canBh = implicitSplit == CU_HORZ_SPLIT;
     canBv = implicitSplit == CU_VERT_SPLIT;
-    if (chType == CHANNEL_TYPE_CHROMA && areaC.width == 4) canBv = false;
+    if (areaC && areaC->width == 4) canBv = false;
+    if( !canBh && !canBv && !canQt ) canQt = true;
     return;
   }
 
@@ -431,20 +439,21 @@ void QTBTPartitioner::canSplit( const CodingStructure &cs, bool& canNo, bool& ca
   // specific check for BT splits
   if( area.height <= minBtSize )                            canBh = false;
   if( area.width > MAX_TB_SIZEY && area.height <= MAX_TB_SIZEY ) canBh = false;
-  if( chType == CHANNEL_TYPE_CHROMA && areaC.width * areaC.height <= MIN_DUALTREE_CHROMA_SIZE )     canBh = false;
+  if( areaC && areaC->width * areaC->height <= MIN_DUALTREE_CHROMA_SIZE )     canBh = false;
   if( area.width <= minBtSize )                              canBv = false;
   if( area.width <= MAX_TB_SIZEY && area.height > MAX_TB_SIZEY ) canBv = false;
-  if (chType == CHANNEL_TYPE_CHROMA && (areaC.width * areaC.height <= MIN_DUALTREE_CHROMA_SIZE || areaC.width == 4))     canBv = false;
+  if (areaC && (areaC->width * areaC->height <= MIN_DUALTREE_CHROMA_SIZE || areaC->width == 4))     canBv = false;
   if( modeType == MODE_TYPE_INTER && area.width * area.height == 32 )  canBv = canBh = false;
   if( area.height <= 2 * minTtSize || area.height > maxTtSize || area.width > maxTtSize )
                                                                                        canTh = false;
   if( area.width > MAX_TB_SIZEY || area.height > MAX_TB_SIZEY )  canTh = false;
-  if( chType == CHANNEL_TYPE_CHROMA && areaC.width * areaC.height <= MIN_DUALTREE_CHROMA_SIZE*2 )     canTh = false;
+  if( areaC && areaC->width * areaC->height <= MIN_DUALTREE_CHROMA_SIZE*2 )     canTh = false;
   if( area.width <= 2 * minTtSize || area.width > maxTtSize || area.height > maxTtSize )
                                                                                        canTv = false;
   if( area.width > MAX_TB_SIZEY || area.height > MAX_TB_SIZEY )  canTv = false;
-  if (chType == CHANNEL_TYPE_CHROMA && (areaC.width * areaC.height <= MIN_DUALTREE_CHROMA_SIZE * 2 || areaC.width == 8))     canTv = false;
+  if (areaC && (areaC->width * areaC->height <= MIN_DUALTREE_CHROMA_SIZE * 2 || areaC->width == 8))     canTv = false;
   if( modeType == MODE_TYPE_INTER && area.width * area.height == 64 )  canTv = canTh = false;
+
 }
 
 bool QTBTPartitioner::canSplit( const PartSplit split, const CodingStructure &cs )
@@ -521,19 +530,25 @@ PartSplit QTBTPartitioner::getImplicitSplit( const CodingStructure &cs )
 
     const CompArea& area      = currArea().Y();
     const unsigned maxBtSize  = cs.pcv->getMaxBtSize( *cs.slice, chType );
-    const bool isBtAllowed    = area.width <= maxBtSize && area.height <= maxBtSize;
+    const bool isBtAllowed    = area.width <= maxBtSize && area.height <= maxBtSize && currMtDepth < (cs.pcv->getMaxBtDepth(*cs.slice, chType) + currImplicitBtDepth);
     const unsigned minQtSize  = cs.pcv->getMinQtSize( *cs.slice, chType );
+#if JVET_Q0471_CHROMA_QT_SPLIT
+    // minQtSize is in luma samples unit
+    const unsigned minQTThreshold = minQtSize >> ((area.chromaFormat == CHROMA_400) ? 0 : ((int) getChannelTypeScaleX(CHANNEL_TYPE_CHROMA, area.chromaFormat) - (int) getChannelTypeScaleY(CHANNEL_TYPE_CHROMA, area.chromaFormat)));
+    const bool isQtAllowed    = area.width > minQTThreshold && currBtDepth == 0;
+#else
     const bool isQtAllowed    = area.width >  minQtSize && area.height >  minQtSize && currBtDepth == 0;
+#endif
 
     if( !isBlInPic && !isTrInPic && isQtAllowed )
     {
       split = CU_QUAD_SPLIT;
     }
-    else if( !isBlInPic && isBtAllowed )
+    else if( !isBlInPic && isBtAllowed && area.width <= MAX_TB_SIZEY )
     {
       split = CU_HORZ_SPLIT;
     }
-    else if( !isTrInPic && isBtAllowed )
+    else if( !isTrInPic && isBtAllowed && area.height <= MAX_TB_SIZEY )
     {
       split = CU_VERT_SPLIT;
     }
@@ -545,7 +560,7 @@ PartSplit QTBTPartitioner::getImplicitSplit( const CodingStructure &cs )
     {
       split = CU_QUAD_SPLIT;
     }
-    if ((!isBlInPic || !isTrInPic) && (currArea().Y().width > MAX_TB_SIZEY || currArea().Y().height > MAX_TB_SIZEY))
+    if( (!isBlInPic || !isTrInPic) && split == CU_DONT_SPLIT )
     {
       split = CU_QUAD_SPLIT;
     }
@@ -570,7 +585,7 @@ void QTBTPartitioner::exitCurrSplit()
   currSubdiv--;
   if( currQgEnable() )
     currQgPos = currArea().lumaPos();
-  if( currQgChromaEnable() )
+  if( currArea().chromaFormat != CHROMA_400 && currQgChromaEnable() )
     currQgChromaPos = currArea().chromaPos();
 #if _DEBUG
   m_currArea = m_partStack.back().parts[m_partStack.back().idx];
@@ -789,16 +804,12 @@ Partitioning PartitionerImpl::getCUSubPartitions( const UnitArea &cuArea, const 
     }
     else
     {
-      const uint32_t minCUSize = ( cs.sps->getMaxCUWidth() >> cs.sps->getMaxCodingDepth() );
+      const uint32_t minCUSize = 1 << cs.sps->getLog2MinCodingBlockSize();
 
       bool canSplit = cuArea.lumaSize().width > minCUSize && cuArea.lumaSize().height > minCUSize;
 
       Partitioning ret;
 
-      if( cs.slice->getSliceType() == I_SLICE )
-      {
-        canSplit &= cuArea.lumaSize().width > cs.pcv->minCUWidth && cuArea.lumaSize().height > cs.pcv->minCUHeight;
-      }
 
       if( canSplit )
       {
@@ -998,7 +1009,7 @@ void PartitionerImpl::getTUIntraSubPartitions( Partitioning &sub, const UnitArea
     THROW( "Unknown TU sub-partitioning" );
   }
   //we only partition luma, so there is going to be only one chroma tu at the end (unless it is dual tree, in which case there won't be any chroma components)
-  uint32_t partitionsWithoutChroma = isDualTree ? nPartitions : nPartitions - 1;
+  uint32_t partitionsWithoutChroma = (cs.area.chromaFormat == CHROMA_400) ? 0 : (isDualTree ? nPartitions : nPartitions - 1);
   for( uint32_t i = 0; i < partitionsWithoutChroma; i++ )
   {
     CompArea& blkCb = sub[i].blocks[COMPONENT_Cb];

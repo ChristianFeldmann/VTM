@@ -657,6 +657,39 @@ TransformUnit& CodingStructure::addTU( const UnitArea &unit, const ChannelType c
   return *tu;
 }
 
+void CodingStructure::addEmptyTUs( Partitioner &partitioner )
+{
+  const UnitArea& area    = partitioner.currArea();
+  bool            split   = partitioner.canSplit(TU_MAX_TR_SPLIT, *this);
+  const unsigned  trDepth = partitioner.currTrDepth;
+
+  if( split )
+  {
+    partitioner.splitCurrArea( TU_MAX_TR_SPLIT, *this );
+    do
+    {
+      addEmptyTUs( partitioner );
+    } while( partitioner.nextPart( *this ) );
+
+    partitioner.exitCurrSplit();
+  }
+  else
+  {
+    TransformUnit &tu = this->addTU( CS::getArea( *this, area, partitioner.chType ), partitioner.chType );
+    unsigned numBlocks = ::getNumberValidTBlocks( *this->pcv );
+    for( unsigned compID = COMPONENT_Y; compID < numBlocks; compID++ )
+    {
+      if( tu.blocks[compID].valid() )
+      {
+        tu.getCoeffs( ComponentID( compID ) ).fill( 0 );
+        tu.getPcmbuf( ComponentID( compID ) ).fill( 0 );
+        tu.rdpcm[compID] = RDPCM_OFF;
+      }
+    }
+    tu.depth = trDepth;
+  }
+}
+
 CUTraverser CodingStructure::traverseCUs( const UnitArea& unit, const ChannelType effChType )
 {
   CodingUnit* firstCU = getCU( isLuma( effChType ) ? unit.lumaPos() : unit.chromaPos(), effChType );
@@ -867,6 +900,8 @@ void CodingStructure::reorderPrevPLT(PLTBuf& prevPLT, uint8_t curPLTSize[MAX_NUM
   uint8_t tempCurPLTsize[MAX_NUM_CHANNEL_TYPE];
   uint8_t stuffPLTsize[MAX_NUM_COMPONENT];
 
+  uint32_t maxPredPltSize = jointPLT ? MAXPLTPREDSIZE : MAXPLTPREDSIZE_DUALTREE;
+
   for (int i = compBegin; i < (compBegin + numComp); i++)
   {
     ComponentID comID = jointPLT ? (ComponentID)compBegin : ((i > 0) ? COMPONENT_Cb : COMPONENT_Y);
@@ -881,7 +916,7 @@ void CodingStructure::reorderPrevPLT(PLTBuf& prevPLT, uint8_t curPLTSize[MAX_NUM
     if (ch > 1) break;
     for (int i = 0; i < prevPLT.curPLTSize[comID]; i++)
     {
-      if (tempCurPLTsize[comID] + stuffPLTsize[ch] >= MAXPLTPREDSIZE)
+      if (tempCurPLTsize[comID] + stuffPLTsize[ch] >= maxPredPltSize)
         break;
 
       if (!reuseflag[comID][i])
@@ -905,10 +940,10 @@ void CodingStructure::reorderPrevPLT(PLTBuf& prevPLT, uint8_t curPLTSize[MAX_NUM
     ComponentID comID = jointPLT ? (ComponentID)compBegin : ((i > 0) ? COMPONENT_Cb : COMPONENT_Y);
     prevPLT.curPLTSize[comID] = curPLTSize[comID] + stuffPLTsize[comID];
     memcpy(prevPLT.curPLT[i], stuffedPLT[i], prevPLT.curPLTSize[comID] * sizeof(Pel));
+    CHECK(prevPLT.curPLTSize[comID] > maxPredPltSize, " Maximum palette predictor size exceed limit");
   }
 }
 
-#if JVET_Q0501_PALETTE_WPP_INIT_ABOVECTU
 void CodingStructure::setPrevPLT(PLTBuf predictor)
 {
   for (int comp = 0; comp < MAX_NUM_CHANNEL_TYPE; comp++)
@@ -931,7 +966,6 @@ void CodingStructure::storePrevPLT(PLTBuf& predictor)
     memcpy(predictor.curPLT[comp], prevPLT.curPLT[comp], MAXPLTPREDSIZE * sizeof(Pel));
   }
 }
-#endif
 
 void CodingStructure::rebindPicBufs()
 {
@@ -964,7 +998,7 @@ void CodingStructure::createCoeffs(const bool isPLTused)
 
   if (isPLTused)
   {
-    for (unsigned i = 0; i < numCh - 1; i++)
+    for (unsigned i = 0; i < (isChromaEnabled(area.chromaFormat) ? 2 : 1); i++)
     {
       unsigned _area = area.blocks[i].area();
 
@@ -1521,7 +1555,7 @@ const CodingUnit* CodingStructure::getCURestricted( const Position &pos, const C
   const CodingUnit* cu = getCU( pos, _chType );
   // exists       same slice and tile                  cu precedes curCu in encoding order
   //                                                  (thus, is either from parent CS in RD-search or its index is lower)
-  const bool wavefrontsEnabled = curCu.slice->getPPS()->getEntropyCodingSyncEnabledFlag();
+  const bool wavefrontsEnabled = curCu.slice->getSPS()->getEntropyCodingSyncEnabledFlag();
   int ctuSizeBit = floorLog2(curCu.cs->sps->getMaxCUWidth());
   int xNbY  = pos.x << getChannelTypeScaleX( _chType, curCu.chromaFormat );
   int xCurr = curCu.blocks[_chType].x << getChannelTypeScaleX( _chType, curCu.chromaFormat );
@@ -1539,7 +1573,7 @@ const CodingUnit* CodingStructure::getCURestricted( const Position &pos, const C
 const CodingUnit* CodingStructure::getCURestricted( const Position &pos, const Position curPos, const unsigned curSliceIdx, const unsigned curTileIdx, const ChannelType _chType ) const
 {
   const CodingUnit* cu = getCU( pos, _chType );
-  const bool wavefrontsEnabled = this->slice->getPPS()->getEntropyCodingSyncEnabledFlag();
+  const bool wavefrontsEnabled = this->slice->getSPS()->getEntropyCodingSyncEnabledFlag();
   int ctuSizeBit = floorLog2(this->sps->getMaxCUWidth());
   int xNbY  = pos.x << getChannelTypeScaleX( _chType, this->area.chromaFormat );
   int xCurr = curPos.x << getChannelTypeScaleX( _chType, this->area.chromaFormat );
@@ -1552,7 +1586,7 @@ const PredictionUnit* CodingStructure::getPURestricted( const Position &pos, con
   const PredictionUnit* pu = getPU( pos, _chType );
   // exists       same slice and tile                  pu precedes curPu in encoding order
   //                                                  (thus, is either from parent CS in RD-search or its index is lower)
-  const bool wavefrontsEnabled = curPu.cu->slice->getPPS()->getEntropyCodingSyncEnabledFlag();
+  const bool wavefrontsEnabled = curPu.cu->slice->getSPS()->getEntropyCodingSyncEnabledFlag();
   int ctuSizeBit = floorLog2(curPu.cs->sps->getMaxCUWidth());
   int xNbY  = pos.x << getChannelTypeScaleX( _chType, curPu.chromaFormat );
   int xCurr = curPu.blocks[_chType].x << getChannelTypeScaleX( _chType, curPu.chromaFormat );
@@ -1572,7 +1606,7 @@ const TransformUnit* CodingStructure::getTURestricted( const Position &pos, cons
   const TransformUnit* tu = getTU( pos, _chType );
   // exists       same slice and tile                  tu precedes curTu in encoding order
   //                                                  (thus, is either from parent CS in RD-search or its index is lower)
-  const bool wavefrontsEnabled = curTu.cu->slice->getPPS()->getEntropyCodingSyncEnabledFlag();
+  const bool wavefrontsEnabled = curTu.cu->slice->getSPS()->getEntropyCodingSyncEnabledFlag();
   int ctuSizeBit = floorLog2(curTu.cs->sps->getMaxCUWidth());
   int xNbY  = pos.x << getChannelTypeScaleX( _chType, curTu.chromaFormat );
   int xCurr = curTu.blocks[_chType].x << getChannelTypeScaleX( _chType, curTu.chromaFormat );

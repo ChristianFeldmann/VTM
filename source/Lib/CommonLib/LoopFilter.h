@@ -72,7 +72,7 @@ private:
 
   // filtering functions
   unsigned
-  xGetBoundaryStrengthSingle      ( const CodingUnit& cu, const DeblockEdgeDir edgeDir, const Position& localPos ) const;
+  xGetBoundaryStrengthSingle      ( const CodingUnit& cu, const DeblockEdgeDir edgeDir, const Position& localPos, const ChannelType chType  ) const;
 
   void xSetEdgefilterMultiple     ( const CodingUnit&     cu,
                                     const DeblockEdgeDir  edgeDir,
@@ -111,7 +111,7 @@ public:
 
   /// CU-level deblocking function
   void xDeblockCU(CodingUnit& cu, const DeblockEdgeDir edgeDir);
-  void  initEncPicYuvBuffer(ChromaFormat chromaFormat, int lumaWidth, int lumaHeight);
+  void  initEncPicYuvBuffer(ChromaFormat chromaFormat, const Size &size, const unsigned maxCUSize);
   PelStorage& getDbEncPicYuvBuffer() { return m_encPicYuvBuffer; }
   void  setEnc(bool b) { m_enc = b; }
 
@@ -127,6 +127,8 @@ public:
     const int indexB = Clip3( 0, MAX_QP, qp );
     return sm_betaTable[ indexB ];
   }
+
+  void resetFilterLengths();
 };
 
 //! \}

@@ -83,7 +83,7 @@ public:
   bool  write( uint32_t orgWidth, uint32_t orgHeight, const CPelUnitBuf& pic,
                const InputColourSpaceConversion ipCSC,
                const bool bPackedYUVOutputMode,
-               int confLeft = 0, int confRight = 0, int confTop = 0, int confBottom = 0, ChromaFormat format = NUM_CHROMA_FORMAT, const bool bClipToRec709 = false ); ///< write one YUV frame with padding parameter
+               int confLeft = 0, int confRight = 0, int confTop = 0, int confBottom = 0, ChromaFormat format = NUM_CHROMA_FORMAT, const bool bClipToRec709 = false, const bool subtractConfWindowOffsets = true ); ///< write one YUV frame with padding parameter
 
   // If fileFormat=NUM_CHROMA_FORMAT, use the format defined by pPicYuvTop and pPicYuvBottom
   bool  write( const CPelUnitBuf& picTop, const CPelUnitBuf& picBot,

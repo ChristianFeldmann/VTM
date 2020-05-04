@@ -377,9 +377,11 @@ void TComHash::getPixelsIn1DCharArrayByBlock2x2(const PelUnitBuf &curPicBuf, uns
 
   if (bitDepths.recon[CHANNEL_TYPE_LUMA] == 8 && bitDepths.recon[CHANNEL_TYPE_CHROMA] == 8)
   {
-    Pel* curPel[3];
-    int stride[3];
-    for (int id = 0; id < 3; id++)
+    Pel* curPel[MAX_NUM_COMPONENT]={nullptr};
+    int stride[MAX_NUM_COMPONENT]={0};
+    const int maxComponent=includeAllComponent?MAX_NUM_COMPONENT:1;
+
+    for (int id = 0; id < maxComponent; id++)
     {
       ComponentID compID = ComponentID(id);
       stride[id] = (curPicBuf).get(compID).stride;
@@ -410,10 +412,12 @@ void TComHash::getPixelsIn1DCharArrayByBlock2x2(const PelUnitBuf &curPicBuf, uns
   else
   {
     int shift = bitDepths.recon[CHANNEL_TYPE_LUMA] - 8;
-    int shiftc = bitDepths.recon[CHANNEL_TYPE_CHROMA] - 8;
-    Pel* curPel[3];
-    int stride[3];
-    for (int id = 0; id < 3; id++)
+    int shiftc = includeAllComponent ? (bitDepths.recon[CHANNEL_TYPE_CHROMA] - 8) : 0;
+    Pel* curPel[MAX_NUM_COMPONENT]={nullptr};
+    int stride[MAX_NUM_COMPONENT]={0};
+    const int maxComponent=includeAllComponent?MAX_NUM_COMPONENT:1;
+
+    for (int id = 0; id < maxComponent; id++)
     {
       ComponentID compID = ComponentID(id);
       stride[id] = (curPicBuf).get(compID).stride;

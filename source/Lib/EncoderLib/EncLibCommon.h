@@ -39,6 +39,7 @@
 #include <list>
 #include <fstream>
 #include "CommonLib/Slice.h"
+#include "CommonLib/ParameterSetManager.h"
 
 class EncLibCommon
 {
@@ -48,6 +49,7 @@ private:
   ParameterSetMap<PPS>      m_ppsMap;             ///< PPS, it is shared across all layers
   ParameterSetMap<APS>      m_apsMap;             ///< APS, it is shared across all layers
   PicList                   m_cListPic;           ///< DPB, it is shared across all layers
+  VPS                       m_vps;
 
 public:
   EncLibCommon();
@@ -58,6 +60,6 @@ public:
   ParameterSetMap<SPS>&    getSpsMap()             { return m_spsMap;     }
   ParameterSetMap<PPS>&    getPpsMap()             { return m_ppsMap;     }
   ParameterSetMap<APS>&    getApsMap()             { return m_apsMap;     }
-
+  VPS*                     getVPS()                { return &m_vps;       }
 };
 

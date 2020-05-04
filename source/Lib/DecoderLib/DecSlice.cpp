@@ -114,7 +114,8 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
   }
 
   const unsigned  widthInCtus             = cs.pcv->widthInCtus;
-  const bool      wavefrontsEnabled       = cs.pps->getEntropyCodingSyncEnabledFlag();
+  const bool     wavefrontsEnabled           = cs.sps->getEntropyCodingSyncEnabledFlag();
+  const bool     wavefrontsEntryPointPresent = cs.sps->getEntropyCodingSyncEntryPointsPresentFlag();
 
   cabacReader.initBitstream( ppcSubstreams[0] );
   cabacReader.initCtxModels( *slice );
@@ -132,7 +133,7 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
   {
     const unsigned  ctuRsAddr       = slice->getCtuAddrInSlice(ctuIdx);
     const unsigned  ctuXPosInCtus   = ctuRsAddr % widthInCtus;
-    const unsigned  ctuYPosInCtus   = ctuRsAddr / widthInCtus;    
+    const unsigned  ctuYPosInCtus   = ctuRsAddr / widthInCtus;
     const unsigned  tileColIdx      = slice->getPPS()->ctuToTileCol( ctuXPosInCtus );
     const unsigned  tileRowIdx      = slice->getPPS()->ctuToTileRow( ctuYPosInCtus );
     const unsigned  tileXPosInCtus  = slice->getPPS()->getTileColumnBd( tileColIdx );
@@ -143,6 +144,29 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
     const unsigned  maxCUSize             = sps->getMaxCUWidth();
     Position pos( ctuXPosInCtus*maxCUSize, ctuYPosInCtus*maxCUSize) ;
     UnitArea ctuArea(cs.area.chromaFormat, Area( pos.x, pos.y, maxCUSize, maxCUSize ) );
+    const SubPic &curSubPic = slice->getPPS()->getSubPicFromPos(pos);
+    // padding/restore at slice level
+    if (slice->getPPS()->getNumSubPics()>=2 && curSubPic.getTreatedAsPicFlag() && ctuIdx==0)
+    {
+      int subPicX      = (int)curSubPic.getSubPicLeft();
+      int subPicY      = (int)curSubPic.getSubPicTop();
+      int subPicWidth  = (int)curSubPic.getSubPicWidthInLumaSample();
+      int subPicHeight = (int)curSubPic.getSubPicHeightInLumaSample();
+      for (int rlist = REF_PIC_LIST_0; rlist < NUM_REF_PIC_LIST_01; rlist++)
+      {
+        int n = slice->getNumRefIdx((RefPicList)rlist);
+        for (int idx = 0; idx < n; idx++)
+        {
+          Picture *refPic = slice->getRefPic((RefPicList)rlist, idx);
+          if (!refPic->getSubPicSaved())
+          {
+            refPic->saveSubPicBorder(refPic->getPOC(), subPicX, subPicY, subPicWidth, subPicHeight);
+            refPic->extendSubPicBorder(refPic->getPOC(), subPicX, subPicY, subPicWidth, subPicHeight);
+            refPic->setSubPicSaved(true);
+          }
+        }
+      }
+    }
 
     DTRACE_UPDATE( g_trace_ctx, std::make_pair( "ctu", ctuRsAddr ) );
 
@@ -170,9 +194,7 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
       {
         // Top is available, so use it.
         cabacReader.getCtx() = m_entropyCodingSyncContextState;
-#if JVET_Q0501_PALETTE_WPP_INIT_ABOVECTU
         cs.setPrevPLT(m_palettePredictorSyncState);
-#endif
       }
       pic->m_prevQP[0] = pic->m_prevQP[1] = slice->getSliceQp();
     }
@@ -206,9 +228,7 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
     if( ctuXPosInCtus == tileXPosInCtus && wavefrontsEnabled )
     {
       m_entropyCodingSyncContextState = cabacReader.getCtx();
-#if JVET_Q0501_PALETTE_WPP_INIT_ABOVECTU
       cs.storePrevPLT(m_palettePredictorSyncState);
-#endif
     }
 
 
@@ -227,10 +247,35 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
       // (end of slice-segment, end of tile, end of wavefront-CTU-row)
       unsigned binVal = cabacReader.terminating_bit();
       CHECK( !binVal, "Expecting a terminating bit" );
+      bool isLastTileCtu = (ctuXPosInCtus + 1 == tileXPosInCtus + tileColWidth) && (ctuYPosInCtus + 1 == tileYPosInCtus + tileRowHeight);
+      if( isLastTileCtu || wavefrontsEntryPointPresent )
+      {
 #if DECODER_CHECK_SUBSTREAM_AND_SLICE_TRAILING_BYTES
-      cabacReader.remaining_bytes( true );
+        cabacReader.remaining_bytes( true );
 #endif
-      subStrmId++;
+        subStrmId++;
+      }
+    }
+    if (slice->getPPS()->getNumSubPics() >= 2 && curSubPic.getTreatedAsPicFlag() && ctuIdx == (slice->getNumCtuInSlice() - 1))
+    // for last Ctu in the slice
+    {
+      int subPicX = (int)curSubPic.getSubPicLeft();
+      int subPicY = (int)curSubPic.getSubPicTop();
+      int subPicWidth = (int)curSubPic.getSubPicWidthInLumaSample();
+      int subPicHeight = (int)curSubPic.getSubPicHeightInLumaSample();
+      for (int rlist = REF_PIC_LIST_0; rlist < NUM_REF_PIC_LIST_01; rlist++)
+      {
+        int n = slice->getNumRefIdx((RefPicList)rlist);
+        for (int idx = 0; idx < n; idx++)
+        {
+          Picture *refPic = slice->getRefPic((RefPicList)rlist, idx);
+          if (refPic->getSubPicSaved())
+          {
+            refPic->restoreSubPicBorder(refPic->getPOC(), subPicX, subPicY, subPicWidth, subPicHeight);
+            refPic->setSubPicSaved(false);
+          }
+        }
+      }
     }
   }
 

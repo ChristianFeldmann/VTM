@@ -47,6 +47,7 @@
 #include <omp.h>
 #endif
 #include "EncLibCommon.h"
+#include "CommonLib/ProfileLevelTier.h"
 
 //! \ingroup EncoderLib
 //! \{
@@ -68,6 +69,7 @@ EncLib::EncLib( EncLibCommon* encLibCommon )
   , m_lmcsAPS(nullptr)
   , m_scalinglistAPS( nullptr )
   , m_doPlt( true )
+  , m_vps( encLibCommon->getVPS() )
 {
   m_iPOCLast          = -1;
   m_iNumPicRcvd       =  0;
@@ -125,7 +127,12 @@ void EncLib::create( const int layerId )
   m_cInterSearch.cacheAssign( &m_cacheModel );
 #endif
 
-  m_cLoopFilter.create( m_maxTotalCUDepth );
+  m_cLoopFilter.create(floorLog2(m_maxCUWidth) - MIN_CU_LOG2);
+
+  if (!m_bLoopFilterDisable && m_encDbOpt)
+  {
+    m_cLoopFilter.initEncPicYuvBuffer(m_chromaFormatIDC, Size(getSourceWidth(), getSourceHeight()), getMaxCUWidth());
+  }
 
 #if ENABLE_SPLIT_PARALLELISM
   m_cReshaper = new EncReshape[m_numCuEncStacks];
@@ -206,20 +213,17 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 {
   m_AUWriterIf = auWriterIf;
 
-  SPS &sps0=*(m_spsMap.allocatePS(0)); // NOTE: implementations that use more than 1 SPS need to be aware of activation issues.
-  PPS &pps0 = *( m_ppsMap.allocatePS( m_layerId ) );
+  SPS &sps0 = *(m_spsMap.allocatePS( m_vps->getGeneralLayerIdx( m_layerId ) )); // NOTE: implementations that use more than 1 SPS need to be aware of activation issues.
+  PPS &pps0 = *( m_ppsMap.allocatePS( m_vps->getGeneralLayerIdx( m_layerId ) ) );
   APS &aps0 = *( m_apsMap.allocatePS( SCALING_LIST_APS ) );
   aps0.setAPSId( 0 );
   aps0.setAPSType( SCALING_LIST_APS );
 
   // initialize SPS
-  xInitSPS( sps0, m_cVPS );
-  xInitVPS(m_cVPS, sps0);
+  xInitSPS( sps0 );
+  xInitVPS( sps0 );
 
-  int dpsId = getDecodingParameterSetEnabled() ? 1 : 0;
-  xInitDPS(m_dps, sps0, dpsId);
-  sps0.setDecodingParameterSetId(m_dps.getDecodingParameterSetId());
-
+  xInitDCI(m_dci, sps0);
 #if ENABLE_SPLIT_PARALLELISM
   if( omp_get_dynamic() )
   {
@@ -236,7 +240,7 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
 #if U0132_TARGET_BITS_SATURATION
   if (m_RCCpbSaturationEnabled)
   {
-    m_cRateCtrl.initHrdParam(sps0.getHrdParameters(), m_iFrameRate, m_RCInitialCpbFullness);
+    m_cRateCtrl.initHrdParam(sps0.getGeneralHrdParameters(), sps0.getOlsHrdParameters(), m_iFrameRate, m_RCInitialCpbFullness);
   }
 #endif
 #if ENABLE_SPLIT_PARALLELISM
@@ -260,20 +264,12 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
   {
     PPS &pps = *( m_ppsMap.allocatePS( ENC_PPS_ID_RPR ) );
     Window& inputScalingWindow = pps0.getScalingWindow();
-#if JVET_Q0487_SCALING_WINDOW_ISSUES
     int scaledWidth = int( ( pps0.getPicWidthInLumaSamples() - SPS::getWinUnitX( sps0.getChromaFormatIdc() ) * ( inputScalingWindow.getWindowLeftOffset() + inputScalingWindow.getWindowRightOffset() ) ) / m_scalingRatioHor );
-#else
-    int scaledWidth = int( ( pps0.getPicWidthInLumaSamples() - inputScalingWindow.getWindowLeftOffset() - inputScalingWindow.getWindowRightOffset() ) / m_scalingRatioHor );
-#endif
-    int minSizeUnit = std::max(8, (int)(sps0.getMaxCUHeight() >> (sps0.getMaxCodingDepth() - 1)));
+    int minSizeUnit = std::max(8, 1 << sps0.getLog2MinCodingBlockSize());
     int temp = scaledWidth / minSizeUnit;
     int width = ( scaledWidth - ( temp * minSizeUnit) > 0 ? temp + 1 : temp ) * minSizeUnit;
 
-#if JVET_Q0487_SCALING_WINDOW_ISSUES
     int scaledHeight = int( ( pps0.getPicHeightInLumaSamples() - SPS::getWinUnitY( sps0.getChromaFormatIdc() ) * ( inputScalingWindow.getWindowTopOffset() + inputScalingWindow.getWindowBottomOffset() ) ) / m_scalingRatioVer );
-#else
-    int scaledHeight = int( ( pps0.getPicHeightInLumaSamples() - inputScalingWindow.getWindowTopOffset() - inputScalingWindow.getWindowBottomOffset() ) / m_scalingRatioVer );
-#endif
     temp = scaledHeight / minSizeUnit;
     int height = ( scaledHeight - ( temp * minSizeUnit) > 0 ? temp + 1 : temp ) * minSizeUnit;
 
@@ -285,8 +281,31 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
     pps.setConformanceWindow( conformanceWindow );
 
     Window scalingWindow;
-    scalingWindow.setWindow( 0, width - scaledWidth, 0, height - scaledHeight );
+    scalingWindow.setWindow( 0, ( width - scaledWidth ) / SPS::getWinUnitX( sps0.getChromaFormatIdc() ), 0, ( height - scaledHeight ) / SPS::getWinUnitY( sps0.getChromaFormatIdc() ) );
     pps.setScalingWindow( scalingWindow );
+
+    //register the width/height of the current pic into reference SPS
+    if (!sps0.getPPSValidFlag(pps.getPPSId()))
+    {
+      sps0.setPPSValidFlag(pps.getPPSId(), true);
+      sps0.setScalingWindowSizeInPPS(pps.getPPSId(), scaledWidth, scaledHeight);
+    }
+    int curSeqMaxPicWidthY = sps0.getMaxPicWidthInLumaSamples();    // pic_width_max_in_luma_samples
+    int curSeqMaxPicHeightY = sps0.getMaxPicHeightInLumaSamples();  // pic_height_max_in_luma_samples
+    int curPicWidthY = width;                                       // pic_width_in_luma_samples
+    int curPicHeightY = height;                                     // pic_height_in_luma_samples
+    int max8MinCbSizeY = std::max((int)8, (1 << sps0.getLog2MinCodingBlockSize())); // Max(8, MinCbSizeY)
+    //Warning message of potential scaling window size violation
+    for (int i = 0; i < 64; i++)
+    {
+      if (sps0.getPPSValidFlag(i))
+      {
+        if ((scaledWidth * curSeqMaxPicWidthY) < sps0.getScalingWindowSizeInPPS(i).width * (curPicWidthY - max8MinCbSizeY))
+          printf("Potential violation: (curScaledWIdth * curSeqMaxPicWidthY) should be greater than or equal to refScaledWidth * (curPicWidthY - max(8, MinCbSizeY)\n");
+        if ((scaledHeight * curSeqMaxPicHeightY) < sps0.getScalingWindowSizeInPPS(i).height * (curPicHeightY - max8MinCbSizeY))
+          printf("Potential violation: (curScaledHeight * curSeqMaxPicHeightY) should be greater than or equal to refScaledHeight * (curPicHeightY - max(8, MinCbSizeY)\n");
+      }
+    }
 
     // disable picture partitioning for scaled RPR pictures (slice/tile config only provided for the original resolution)
     m_noPicPartitionFlag = true;
@@ -342,7 +361,7 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
                               &m_cTrQuant[jId],
                               &m_cRdCost[jId],
                               cabacEstimator,
-                              getCtxCache( jId ), m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth
+                              getCtxCache( jId ), m_maxCUWidth, m_maxCUHeight, floorLog2(m_maxCUWidth) - m_log2MinCUSize
                             , &m_cReshaper[jId]
                             , sps0.getBitDepth(CHANNEL_TYPE_LUMA)
     );
@@ -352,7 +371,7 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
                               m_bipredSearchRange,
                               m_motionEstimationSearchMethod,
                               getUseCompositeRef(),
-                              m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth, &m_cRdCost[jId], cabacEstimator, getCtxCache( jId )
+                              m_maxCUWidth, m_maxCUHeight, floorLog2(m_maxCUWidth) - m_log2MinCUSize, &m_cRdCost[jId], cabacEstimator, getCtxCache( jId )
                            , &m_cReshaper[jId]
     );
 
@@ -379,7 +398,7 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
                        &m_cTrQuant,
                        &m_cRdCost,
                        cabacEstimator,
-                       getCtxCache(), m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth
+                       getCtxCache(), m_maxCUWidth, m_maxCUHeight, floorLog2(m_maxCUWidth) - m_log2MinCUSize
                      , &m_cReshaper
                      , sps0.getBitDepth(CHANNEL_TYPE_LUMA)
   );
@@ -389,7 +408,7 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
                        m_bipredSearchRange,
                        m_motionEstimationSearchMethod,
                        getUseCompositeRef(),
-    m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth, &m_cRdCost, cabacEstimator, getCtxCache()
+    m_maxCUWidth, m_maxCUHeight, floorLog2(m_maxCUWidth) - m_log2MinCUSize, &m_cRdCost, cabacEstimator, getCtxCache()
                      , &m_cReshaper
   );
 
@@ -419,7 +438,7 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
     Picture *picBg = new Picture;
     picBg->create( sps0.getChromaFormatIdc(), Size( pps0.getPicWidthInLumaSamples(), pps0.getPicHeightInLumaSamples() ), sps0.getMaxCUWidth(), sps0.getMaxCUWidth() + 16, false, m_layerId );
     picBg->getRecoBuf().fill(0);
-    picBg->finalInit( &m_cVPS, sps0, pps0, &m_picHeader, m_apss, m_lmcsAPS, m_scalinglistAPS );
+    picBg->finalInit( m_vps, sps0, pps0, &m_picHeader, m_apss, m_lmcsAPS, m_scalinglistAPS );
     picBg->allocateNewSlice();
     picBg->createSpliceIdx(pps0.pcv->sizeInCtus);
     m_cGOPEncoder.setPicBg(picBg);
@@ -476,6 +495,7 @@ void EncLib::xInitScalingLists( SPS &sps, APS &aps )
     {
       setUseScalingListId( SCALING_LIST_DEFAULT );
     }
+    aps.getScalingList().setChromaScalingListPresentFlag((sps.getChromaFormatIdc()!=CHROMA_400));
     quant->setScalingList( &( aps.getScalingList() ), maxLog2TrDynamicRange, sps.getBitDepths() );
     quant->setUseScalingList(true);
 #if ENABLE_SPLIT_PARALLELISM
@@ -496,7 +516,10 @@ void EncLib::xInitScalingLists( SPS &sps, APS &aps )
     // Prepare delta's:
     for (uint32_t scalingListId = 0; scalingListId < 28; scalingListId++)
     {
+      if (aps.getScalingList().getChromaScalingListPresentFlag()||aps.getScalingList().isLumaScalingList(scalingListId))
+      {
         aps.getScalingList().checkPredMode(scalingListId);
+      }
     }
   }
 }
@@ -546,7 +569,7 @@ bool EncLib::encodePrep( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYu
     const SPS *sps = m_spsMap.getPS( pps->getSPSId() );
 
     picCurr->M_BUFS( 0, PIC_ORIGINAL ).copyFrom( m_cGOPEncoder.getPicBg()->getRecoBuf() );
-    picCurr->finalInit( &m_cVPS, *sps, *pps, &m_picHeader, m_apss, m_lmcsAPS, m_scalinglistAPS );
+    picCurr->finalInit( m_vps, *sps, *pps, &m_picHeader, m_apss, m_lmcsAPS, m_scalinglistAPS );
     picCurr->poc = m_iPOCLast - 1;
     m_iPOCLast -= 2;
     if( getUseAdaptiveQP() )
@@ -588,7 +611,7 @@ bool EncLib::encodePrep( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYu
     }
 #endif
 
-    if( m_rprEnabled && m_uiIntraPeriod == -1 )
+    if( m_rprEnabled && m_intraPeriod == -1 )
     {
       const int poc = m_iPOCLast + ( m_compositeRefEnabled ? 2 : 1 );
 
@@ -602,9 +625,9 @@ bool EncLib::encodePrep( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYu
       }
     }
 
-    if( m_cVPS.getMaxLayers() > 1 )
+    if( m_vps->getMaxLayers() > 1 )
     {
-      ppsID = m_layerId;
+      ppsID = m_vps->getGeneralLayerIdx( m_layerId );
     }
 
     xGetNewPicBuffer( rcListPicYuvRecOut, pcPicCurr, ppsID );
@@ -626,22 +649,12 @@ bool EncLib::encodePrep( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYu
 
       const PPS *refPPS = m_ppsMap.getPS( 0 );
       const Window& curScalingWindow = pPPS->getScalingWindow();
-#if JVET_Q0487_SCALING_WINDOW_ISSUES
       int curPicWidth = pPPS->getPicWidthInLumaSamples()   - SPS::getWinUnitX( pSPS->getChromaFormatIdc() ) * ( curScalingWindow.getWindowLeftOffset() + curScalingWindow.getWindowRightOffset() );
       int curPicHeight = pPPS->getPicHeightInLumaSamples() - SPS::getWinUnitY( pSPS->getChromaFormatIdc() ) * ( curScalingWindow.getWindowTopOffset()  + curScalingWindow.getWindowBottomOffset() );
-#else
-      int curPicWidth = pPPS->getPicWidthInLumaSamples() - curScalingWindow.getWindowLeftOffset() - curScalingWindow.getWindowRightOffset();
-      int curPicHeight = pPPS->getPicHeightInLumaSamples() - curScalingWindow.getWindowTopOffset() - curScalingWindow.getWindowBottomOffset();
-#endif
 
       const Window& refScalingWindow = refPPS->getScalingWindow();
-#if JVET_Q0487_SCALING_WINDOW_ISSUES
       int refPicWidth = refPPS->getPicWidthInLumaSamples()   - SPS::getWinUnitX( pSPS->getChromaFormatIdc() ) * ( refScalingWindow.getWindowLeftOffset() + refScalingWindow.getWindowRightOffset() );
       int refPicHeight = refPPS->getPicHeightInLumaSamples() - SPS::getWinUnitY( pSPS->getChromaFormatIdc() ) * ( refScalingWindow.getWindowTopOffset()  + refScalingWindow.getWindowBottomOffset() );
-#else
-      int refPicWidth = refPPS->getPicWidthInLumaSamples() - refScalingWindow.getWindowLeftOffset() - refScalingWindow.getWindowRightOffset();
-      int refPicHeight = refPPS->getPicHeightInLumaSamples() - refScalingWindow.getWindowTopOffset() - refScalingWindow.getWindowBottomOffset();
-#endif
 
       int xScale = ( ( refPicWidth << SCALE_RATIO_BITS ) + ( curPicWidth >> 1 ) ) / curPicWidth;
       int yScale = ( ( refPicHeight << SCALE_RATIO_BITS ) + ( curPicHeight >> 1 ) ) / curPicHeight;
@@ -657,7 +670,8 @@ bool EncLib::encodePrep( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYu
       pcPicCurr->M_BUFS( 0, PIC_ORIGINAL ).swap( *pcPicYuvOrg );
       pcPicCurr->M_BUFS( 0, PIC_TRUE_ORIGINAL ).swap( *cPicYuvTrueOrg );
     }
-    pcPicCurr->finalInit( &m_cVPS, *pSPS, *pPPS, &m_picHeader, m_apss, m_lmcsAPS, m_scalinglistAPS );
+
+    pcPicCurr->finalInit( m_vps, *pSPS, *pPPS, &m_picHeader, m_apss, m_lmcsAPS, m_scalinglistAPS );
 
     pcPicCurr->poc = m_iPOCLast;
 
@@ -699,7 +713,7 @@ bool EncLib::encodePrep( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYu
  */
 
 bool EncLib::encode( const InputColourSpaceConversion snrCSC, std::list<PelUnitBuf*>& rcListPicYuvRecOut, int& iNumEncoded )
-{ 
+{
   // compress GOP
   m_cGOPEncoder.compressGOP( m_iPOCLast, m_iNumPicRcvd, m_cListPic, rcListPicYuvRecOut,
     false, false, snrCSC, m_printFrameMSE, false, m_picIdInGOP );
@@ -788,12 +802,11 @@ bool EncLib::encodePrep( bool flush, PelStorage* pcPicYuvOrg, PelStorage* pcPicY
         }
       }
 
-      {
-        int ppsID = -1; // Use default PPS ID
-        const PPS *pPPS = ( ppsID < 0 ) ? m_ppsMap.getFirstPS() : m_ppsMap.getPS( ppsID );
-        const SPS *pSPS = m_spsMap.getPS( pPPS->getSPSId() );
-        pcField->finalInit( &m_cVPS, *pSPS, *pPPS, &m_picHeader, m_apss, m_lmcsAPS, m_scalinglistAPS );
-      }
+      int ppsID = -1; // Use default PPS ID
+      const PPS *pPPS = ( ppsID < 0 ) ? m_ppsMap.getFirstPS() : m_ppsMap.getPS( ppsID );
+      const SPS *pSPS = m_spsMap.getPS( pPPS->getSPSId() );
+
+      pcField->finalInit( m_vps, *pSPS, *pPPS, &m_picHeader, m_apss, m_lmcsAPS, m_scalinglistAPS );
 
       pcField->poc = m_iPOCLast;
       pcField->reconstructed = false;
@@ -837,7 +850,7 @@ bool EncLib::encode( const InputColourSpaceConversion snrCSC, std::list<PelUnitB
 
     m_picIdInGOP++;
   }
-   
+
   // go over all pictures in a GOP excluding first top field and first bottom field
   if( m_picIdInGOP != m_iGOPSize && m_iPOCLast > 1 )
   {
@@ -847,7 +860,7 @@ bool EncLib::encode( const InputColourSpaceConversion snrCSC, std::list<PelUnitB
   iNumEncoded += m_iNumPicRcvd;
   m_uiNumAllPicCoded += m_iNumPicRcvd;
   m_iNumPicRcvd = 0;
-  
+
   return false;
 }
 
@@ -881,7 +894,9 @@ void EncLib::xGetNewPicBuffer ( std::list<PelUnitBuf*>& rcListPicYuvRecOut, Pict
   Slice::sortPicList(m_cListPic);
 
   // use an entry in the buffered list if the maximum number that need buffering has been reached:
-  if( m_cListPic.size() >= (uint32_t)( m_iGOPSize + getMaxDecPicBuffering( MAX_TLAYER - 1 ) + 2 ) )
+  int maxDecPicBuffering = ( m_vps == nullptr || m_vps->m_numLayersInOls[m_vps->m_targetOlsIdx] == 1 ) ? sps.getMaxDecPicBuffering( MAX_TLAYER - 1 ) : m_vps->getMaxDecPicBuffering( MAX_TLAYER - 1 );
+
+  if( m_cListPic.size() >= (uint32_t)( m_iGOPSize + maxDecPicBuffering + 2 ) )
   {
     PicList::iterator iterPic = m_cListPic.begin();
     int iSize = int( m_cListPic.size() );
@@ -917,8 +932,9 @@ void EncLib::xGetNewPicBuffer ( std::list<PelUnitBuf*>& rcListPicYuvRecOut, Pict
     rpcPic->create( sps.getChromaFormatIdc(), Size( pps.getPicWidthInLumaSamples(), pps.getPicHeightInLumaSamples() ), sps.getMaxCUWidth(), sps.getMaxCUWidth() + 16, false, m_layerId );
     if( m_rprEnabled )
     {
-      rpcPic->M_BUFS( 0, PIC_ORIGINAL_INPUT ).create( sps.getChromaFormatIdc(), Area( Position(), Size( sps.getMaxPicWidthInLumaSamples(), sps.getMaxPicHeightInLumaSamples() ) ) );
-      rpcPic->M_BUFS( 0, PIC_TRUE_ORIGINAL_INPUT ).create( sps.getChromaFormatIdc(), Area( Position(), Size( sps.getMaxPicWidthInLumaSamples(), sps.getMaxPicHeightInLumaSamples() ) ) );
+      const PPS &pps0 = *m_ppsMap.getPS(0);
+      rpcPic->M_BUFS(0, PIC_ORIGINAL_INPUT).create(sps.getChromaFormatIdc(), Area(Position(), Size(pps0.getPicWidthInLumaSamples(), pps0.getPicHeightInLumaSamples())));
+      rpcPic->M_BUFS(0, PIC_TRUE_ORIGINAL_INPUT).create(sps.getChromaFormatIdc(), Area(Position(), Size(pps0.getPicWidthInLumaSamples(), pps0.getPicHeightInLumaSamples())));
     }
     if ( getUseAdaptiveQP() )
     {
@@ -942,32 +958,110 @@ void EncLib::xGetNewPicBuffer ( std::list<PelUnitBuf*>& rcListPicYuvRecOut, Pict
   m_iNumPicRcvd++;
 }
 
-void EncLib::xInitVPS(VPS& vps, const SPS& sps)
+void EncLib::xInitVPS( const SPS& sps )
 {
   // The SPS must have already been set up.
   // set the VPS profile information.
-  vps.setMaxSubLayers(sps.getMaxTLayers());
+
+  m_vps->m_olsHrdParams.clear();
+  m_vps->m_olsHrdParams.resize(m_vps->getNumOlsHrdParamsMinus1(), std::vector<OlsHrdParams>(m_vps->getMaxSubLayers()));
+  ProfileLevelTierFeatures profileLevelTierFeatures;
+  profileLevelTierFeatures.extractPTLInformation( sps );
+
+  m_vps->deriveOutputLayerSets();
+  m_vps->deriveTargetOutputLayerSet( m_vps->m_targetOlsIdx );
+
+  // number of the DPB parameters is set equal to the number of OLS
+  if( !m_vps->getAllIndependentLayersFlag() )
+  {
+    m_vps->m_numDpbParams = m_vps->m_totalNumOLSs;
+  }
+
+  if( m_vps->m_dpbParameters.size() != m_vps->m_numDpbParams )
+  {
+    m_vps->m_dpbParameters.resize( m_vps->m_numDpbParams );
+  }
+
+  if( m_vps->m_dpbMaxTemporalId.size() != m_vps->m_numDpbParams )
+  {
+    m_vps->m_dpbMaxTemporalId.resize( m_vps->m_numDpbParams );
+  }
+
+  for( int olsIdx = 0; olsIdx < m_vps->m_numOutputLayersInOls.size(); olsIdx++ )
+  {
+    if( std::find( m_vps->m_layerIdInOls[olsIdx].begin(), m_vps->m_layerIdInOls[olsIdx].end(), m_layerId ) != m_vps->m_layerIdInOls[olsIdx].end() )
+    {
+      m_vps->setOlsDpbPicWidth( olsIdx, std::max<int>( sps.getMaxPicWidthInLumaSamples(), m_vps->getOlsDpbPicSize( olsIdx ).width ) );
+      m_vps->setOlsDpbPicHeight( olsIdx, std::max<int>( sps.getMaxPicHeightInLumaSamples(), m_vps->getOlsDpbPicSize( olsIdx ).height ) );
+    }
+
+    m_vps->setOlsDpbParamsIdx( olsIdx, olsIdx );
+  }
+
+  for( int i = 0; i < m_vps->m_numDpbParams; i++ )
+  {
+    int olsIdx = i;
+
+    if( m_vps->getMaxSubLayers() == 1 )
+    {
+      // When vps_max_sublayers_minus1 is equal to 0, the value of dpb_max_temporal_id[ i ] is inferred to be equal to 0.
+      m_vps->m_dpbMaxTemporalId[i] = 0;
+    }
+    else
+    {
+      if( m_vps->getAllLayersSameNumSublayersFlag() )
+      {
+        // When vps_max_sublayers_minus1 is greater than 0 and vps_all_layers_same_num_sublayers_flag is equal to 1, the value of dpb_max_temporal_id[ i ] is inferred to be equal to vps_max_sublayers_minus1.
+        m_vps->m_dpbMaxTemporalId[i] = m_vps->getMaxSubLayers() - 1;
+      }
+      else
+      {
+        m_vps->m_dpbMaxTemporalId[i] = m_maxTempLayer;
+      }
+    }
+
+    for( int j = ( m_vps->m_sublayerDpbParamsPresentFlag ? 0 : m_vps->m_dpbMaxTemporalId[i] ); j <= m_vps->m_dpbMaxTemporalId[i]; j++ )
+    {
+      m_vps->m_dpbParameters[i].m_maxDecPicBuffering[j] = profileLevelTierFeatures.getMaxDpbSize( m_vps->getOlsDpbPicSize( olsIdx ).width * m_vps->getOlsDpbPicSize( olsIdx ).height );
+      m_vps->m_dpbParameters[i].m_numReorderPics[j] = m_vps->m_dpbParameters[i].m_maxDecPicBuffering[j];
+      m_vps->m_dpbParameters[i].m_maxLatencyIncreasePlus1[j] = 0;
+    }
+
+    for( int j = ( m_vps->m_sublayerDpbParamsPresentFlag ? m_vps->m_dpbMaxTemporalId[i] : 0 ); j < m_vps->m_dpbMaxTemporalId[i]; j++ )
+    {
+      // When max_dec_pic_buffering_minus1[ i ] is not present for i in the range of 0 to maxSubLayersMinus1 - 1, inclusive, due to subLayerInfoFlag being equal to 0, it is inferred to be equal to max_dec_pic_buffering_minus1[ maxSubLayersMinus1 ].
+      m_vps->m_dpbParameters[i].m_maxDecPicBuffering[j] = m_vps->m_dpbParameters[i].m_maxDecPicBuffering[m_vps->m_dpbMaxTemporalId[i]];
+
+      // When max_num_reorder_pics[ i ] is not present for i in the range of 0 to maxSubLayersMinus1 - 1, inclusive, due to subLayerInfoFlag being equal to 0, it is inferred to be equal to max_num_reorder_pics[ maxSubLayersMinus1 ].
+      m_vps->m_dpbParameters[i].m_numReorderPics[j] = m_vps->m_dpbParameters[i].m_numReorderPics[m_vps->m_dpbMaxTemporalId[i]];
+
+      // When max_latency_increase_plus1[ i ] is not present for i in the range of 0 to maxSubLayersMinus1 - 1, inclusive, due to subLayerInfoFlag being equal to 0, it is inferred to be equal to max_latency_increase_plus1[ maxSubLayersMinus1 ].
+      m_vps->m_dpbParameters[i].m_maxLatencyIncreasePlus1[j] = m_vps->m_dpbParameters[i].m_maxLatencyIncreasePlus1[m_vps->m_dpbMaxTemporalId[i]];
+    }
+  }
 }
 
-void EncLib::xInitDPS(DPS &dps, const SPS &sps, const int dpsId)
+void EncLib::xInitDCI(DCI& dci, const SPS& sps)
 {
-  // The SPS must have already been set up.
-  // set the DPS profile information.
-  dps.setDecodingParameterSetId(dpsId);
-  dps.setMaxSubLayersMinus1(sps.getMaxTLayers()-1);
+  dci.setMaxSubLayersMinus1(sps.getMaxTLayers() - 1);
   std::vector<ProfileTierLevel> ptls;
   ptls.resize(1);
   ptls[0] = *sps.getProfileTierLevel();
-  dps.setProfileTierLevel(ptls);
+  dci.setProfileTierLevel(ptls);
 }
 
-void EncLib::xInitSPS( SPS& sps, VPS& vps )
+void EncLib::xInitSPS( SPS& sps )
 {
   ProfileTierLevel* profileTierLevel = sps.getProfileTierLevel();
   ConstraintInfo* cinfo = profileTierLevel->getConstraintInfo();
   cinfo->setProgressiveSourceFlag       (m_progressiveSourceFlag);
   cinfo->setInterlacedSourceFlag        (m_interlacedSourceFlag);
   cinfo->setNonPackedConstraintFlag     (m_nonPackedConstraintFlag);
+  cinfo->setNonProjectedConstraintFlag(m_nonProjectedConstraintFlag);
+  cinfo->setNoResChangeInClvsConstraintFlag(m_noResChangeInClvsConstraintFlag);
+  cinfo->setOneTilePerPicConstraintFlag(m_oneTilePerPicConstraintFlag);
+  cinfo->setOneSlicePerPicConstraintFlag(m_oneSlicePerPicConstraintFlag);
+  cinfo->setOneSubpicPerPicConstraintFlag(m_oneSubpicPerPicConstraintFlag);
   cinfo->setFrameOnlyConstraintFlag     (m_frameOnlyConstraintFlag);
   cinfo->setIntraOnlyConstraintFlag         (m_intraConstraintFlag);
   cinfo->setMaxBitDepthConstraintIdc    (m_maxBitDepthConstraintIdc);
@@ -976,9 +1070,7 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
   cinfo->setNoPartitionConstraintsOverrideConstraintFlag(m_noPartitionConstraintsOverrideConstraintFlag);
   cinfo->setNoSaoConstraintFlag(m_bNoSaoConstraintFlag);
   cinfo->setNoAlfConstraintFlag(m_bNoAlfConstraintFlag);
-#if JVET_Q0795_CCALF
   cinfo->setNoCCAlfConstraintFlag(m_noCCAlfConstraintFlag);
-#endif
   cinfo->setNoRefWraparoundConstraintFlag(m_bNoRefWraparoundConstraintFlag);
   cinfo->setNoTemporalMvpConstraintFlag(m_bNoTemporalMvpConstraintFlag);
   cinfo->setNoSbtmvpConstraintFlag(m_bNoSbtmvpConstraintFlag);
@@ -993,11 +1085,7 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
   cinfo->setNoIbcConstraintFlag(m_noIbcConstraintFlag);
   cinfo->setNoCiipConstraintFlag(m_bNoCiipConstraintFlag);
   cinfo->setNoFPelMmvdConstraintFlag(m_noFPelMmvdConstraintFlag);
-#if !JVET_Q0806
-  cinfo->setNoTriangleConstraintFlag(m_bNoTriangleConstraintFlag);
-#else
   cinfo->setNoGeoConstraintFlag(m_noGeoConstraintFlag);
-#endif
   cinfo->setNoLadfConstraintFlag(m_bNoLadfConstraintFlag);
   cinfo->setNoTransformSkipConstraintFlag(m_noTransformSkipConstraintFlag);
   cinfo->setNoBDPCMConstraintFlag(m_noBDPCMConstraintFlag);
@@ -1025,45 +1113,50 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
   /* XXX: should Main be marked as compatible with still picture? */
   /* XXX: may be a good idea to refactor the above into a function
    * that chooses the actual compatibility based upon options */
-  sps.setVPSId(m_cVPS.getVPSId());
+  sps.setVPSId( m_vps->getVPSId() );
   sps.setMaxPicWidthInLumaSamples( m_iSourceWidth );
   sps.setMaxPicHeightInLumaSamples( m_iSourceHeight );
+  if (m_rprEnabled)
+  {
+    int maxPicWidth = std::max(m_iSourceWidth, (int)((double)m_iSourceWidth / m_scalingRatioHor + 0.5));
+    int maxPicHeight = std::max(m_iSourceHeight, (int)((double)m_iSourceHeight / m_scalingRatioVer + 0.5));
+    const int minCuSize = std::max(8, 1 << m_log2MinCUSize);
+    if (maxPicWidth % minCuSize)
+    {
+      maxPicWidth += ((maxPicWidth / minCuSize) + 1) * minCuSize - maxPicWidth;
+    }
+    if (maxPicHeight % minCuSize)
+    {
+      maxPicHeight += ((maxPicHeight / minCuSize) + 1) * minCuSize - maxPicHeight;
+    }
+    sps.setMaxPicWidthInLumaSamples( maxPicWidth );
+    sps.setMaxPicHeightInLumaSamples( maxPicHeight );
+  }
+  sps.setConformanceWindow( m_conformanceWindow );
+
   sps.setMaxCUWidth             ( m_maxCUWidth        );
   sps.setMaxCUHeight            ( m_maxCUHeight       );
-  sps.setMaxCodingDepth         ( m_maxTotalCUDepth   );
+  sps.setLog2MinCodingBlockSize ( m_log2MinCUSize );
   sps.setChromaFormatIdc        ( m_chromaFormatIDC   );
-  sps.setLog2DiffMaxMinCodingBlockSize(m_log2DiffMaxMinCodingBlockSize);
 
   sps.setCTUSize                             ( m_CTUSize );
   sps.setSplitConsOverrideEnabledFlag        ( m_useSplitConsOverride );
+  // convert the Intra Chroma minQT setting from chroma unit to luma unit
+  m_uiMinQT[2] <<= getChannelTypeScaleX(CHANNEL_TYPE_CHROMA, m_chromaFormatIDC);
   sps.setMinQTSizes                          ( m_uiMinQT );
   sps.setMaxMTTHierarchyDepth                ( m_uiMaxMTTHierarchyDepth, m_uiMaxMTTHierarchyDepthI, m_uiMaxMTTHierarchyDepthIChroma );
-  unsigned maxBtSize[3], maxTtSize[3];
-  memcpy(maxBtSize, m_uiMinQT, sizeof(maxBtSize));
-  memcpy(maxTtSize, m_uiMinQT, sizeof(maxTtSize));
-  if (m_uiMaxMTTHierarchyDepth)
-  {
-    maxBtSize[1] = std::min(m_CTUSize, (unsigned)MAX_BT_SIZE_INTER);
-    maxTtSize[1] = std::min(m_CTUSize, (unsigned)MAX_TT_SIZE_INTER);
-  }
-  if (m_uiMaxMTTHierarchyDepthI)
-  {
-    maxBtSize[0] = std::min(m_CTUSize, (unsigned)MAX_BT_SIZE);
-    maxTtSize[0] = std::min(m_CTUSize, (unsigned)MAX_TT_SIZE);
-  }
-  if (m_uiMaxMTTHierarchyDepthIChroma)
-  {
-    maxBtSize[2] = std::min(m_CTUSize, (unsigned)MAX_BT_SIZE_C);
-    maxTtSize[2] = std::min(m_CTUSize, (unsigned)MAX_TT_SIZE_C);
-  }
-  sps.setMaxBTSize                           ( maxBtSize[1], maxBtSize[0], maxBtSize[2] );
-  sps.setMaxTTSize                           ( maxTtSize[1], maxTtSize[0], maxTtSize[2] );
+  sps.setMaxBTSize( m_uiMaxBT[1], m_uiMaxBT[0], m_uiMaxBT[2] );
+  sps.setMaxTTSize( m_uiMaxTT[1], m_uiMaxTT[0], m_uiMaxTT[2] );
   sps.setIDRRefParamListPresent              ( m_idrRefParamList );
   sps.setUseDualITree                        ( m_dualITree );
   sps.setUseLFNST                            ( m_LFNST );
   sps.setSBTMVPEnabledFlag                  ( m_SubPuMvpMode );
   sps.setAMVREnabledFlag                ( m_ImvMode != IMV_OFF );
   sps.setBDOFEnabledFlag                    ( m_BIO );
+  sps.setMaxNumMergeCand(getMaxNumMergeCand());
+  sps.setMaxNumAffineMergeCand(getMaxNumAffineMergeCand());
+  sps.setMaxNumIBCMergeCand(getMaxNumIBCMergeCand());
+  sps.setMaxNumGeoCand(getMaxNumGeoCand());
   sps.setUseAffine             ( m_Affine );
   sps.setUseAffineType         ( m_AffineType );
   sps.setUsePROF               ( m_PROF );
@@ -1091,11 +1184,7 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
 #endif
 
   sps.setUseCiip            ( m_ciip );
-#if !JVET_Q0806
-  sps.setUseTriangle           ( m_Triangle );
-#else
   sps.setUseGeo                ( m_Geo );
-#endif
   sps.setUseMMVD               ( m_MMVD );
   sps.setFpelMmvdEnabledFlag   (( m_MMVD ) ? m_allowDisFracMMVD : false);
   sps.setBdofControlPresentFlag(m_BIO);
@@ -1113,22 +1202,14 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
   sps.setUseLmcs                            ( m_lmcsEnabled );
   sps.setUseMRL                ( m_MRL );
   sps.setUseMIP                ( m_MIP );
-  int minCUSize =  sps.getMaxCUWidth() >> sps.getLog2DiffMaxMinCodingBlockSize();
-  int log2MinCUSize = 0;
-  while(minCUSize > 1)
-  {
-    minCUSize >>= 1;
-    log2MinCUSize++;
-  }
-
-  sps.setLog2MinCodingBlockSize(log2MinCUSize);
-  CHECK(log2MinCUSize > std::min(6, floorLog2(sps.getMaxCUWidth())), "log2_min_luma_coding_block_size_minus2 shall be in the range of 0 to min (4, log2_ctu_size - 2)");
+  CHECK(m_log2MinCUSize > std::min(6, floorLog2(sps.getMaxCUWidth())), "log2_min_luma_coding_block_size_minus2 shall be in the range of 0 to min (4, log2_ctu_size - 2)");
   CHECK(m_uiMaxMTTHierarchyDepth > 2 * (floorLog2(sps.getCTUSize()) - sps.getLog2MinCodingBlockSize()), "sps_max_mtt_hierarchy_depth_inter_slice shall be in the range 0 to 2*(ctbLog2SizeY - log2MinCUSize)");
   CHECK(m_uiMaxMTTHierarchyDepthI > 2 * (floorLog2(sps.getCTUSize()) - sps.getLog2MinCodingBlockSize()), "sps_max_mtt_hierarchy_depth_intra_slice_luma shall be in the range 0 to 2*(ctbLog2SizeY - log2MinCUSize)");
   CHECK(m_uiMaxMTTHierarchyDepthIChroma > 2 * (floorLog2(sps.getCTUSize()) - sps.getLog2MinCodingBlockSize()), "sps_max_mtt_hierarchy_depth_intra_slice_chroma shall be in the range 0 to 2*(ctbLog2SizeY - log2MinCUSize)");
 
   sps.setTransformSkipEnabledFlag(m_useTransformSkip);
-  sps.setBDPCMEnabled(m_useBDPCM);
+  sps.setLog2MaxTransformSkipBlockSize(m_log2MaxTransformSkipBlockSize);
+  sps.setBDPCMEnabledFlag(m_useBDPCM);
 
   sps.setSPSTemporalMVPEnabledFlag((getTMVPModeId() == 2 || getTMVPModeId() == 1));
 
@@ -1138,8 +1219,11 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
   {
     sps.setBitDepth      (ChannelType(channelType), m_bitDepth[channelType] );
     sps.setQpBDOffset  (ChannelType(channelType), (6 * (m_bitDepth[channelType] - 8)));
-    sps.setMinQpPrimeTsMinus4(ChannelType(channelType), (6 * (m_bitDepth[channelType] - m_inputBitDepth[channelType])));
+    sps.setMinQpPrimeTsMinus4(ChannelType(channelType), max(0, 6 * (m_bitDepth[channelType] - m_inputBitDepth[channelType])));
   }
+
+  sps.setEntropyCodingSyncEnabledFlag( m_entropyCodingSyncEnabledFlag );
+  sps.setEntropyCodingSyncEntryPointsPresentFlag( m_entropyCodingSyncEntryPointPresentFlag );
 
   sps.setUseWP( m_useWeightedPred );
   sps.setUseWPBiPred( m_useWeightedBiPred );
@@ -1157,9 +1241,8 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
 
   sps.setScalingListFlag ( (m_useScalingListId == SCALING_LIST_OFF) ? 0 : 1 );
   sps.setALFEnabledFlag( m_alf );
-#if JVET_Q0795_CCALF
   sps.setCCALFEnabledFlag( m_ccalf );
-#endif
+  sps.setFieldSeqFlag(false);
   sps.setVuiParametersPresentFlag(getVuiParametersPresentFlag());
 
   if (sps.getVuiParametersPresentFlag())
@@ -1174,7 +1257,6 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
     pcVUI->setColourPrimaries(getColourPrimaries());
     pcVUI->setTransferCharacteristics(getTransferCharacteristics());
     pcVUI->setMatrixCoefficients(getMatrixCoefficients());
-    pcVUI->setFieldSeqFlag(false);
     pcVUI->setChromaLocInfoPresentFlag(getChromaLocInfoPresentFlag());
     pcVUI->setChromaSampleLocTypeTopField(getChromaSampleLocTypeTopField());
     pcVUI->setChromaSampleLocTypeBottomField(getChromaSampleLocTypeBottomField());
@@ -1206,7 +1288,7 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
   }
   if( getBufferingPeriodSEIEnabled() || getPictureTimingSEIEnabled() || getDecodingUnitInfoSEIEnabled() )
   {
-    sps.setHrdParametersPresentFlag( true );
+    sps.setGeneralHrdParametersPresentFlag(true);
   }
 
   // Set up SPS range extension settings
@@ -1222,73 +1304,84 @@ void EncLib::xInitSPS( SPS& sps, VPS& vps )
   sps.getSpsRangeExtension().setPersistentRiceAdaptationEnabledFlag(m_persistentRiceAdaptationEnabledFlag);
   sps.getSpsRangeExtension().setCabacBypassAlignmentEnabledFlag(m_cabacBypassAlignmentEnabledFlag);
 
-  if( m_uiIntraPeriod < 0 )
-  {
-    sps.setRPL1CopyFromRPL0Flag( true );
-  }
-
-  sps.setSubPicPresentFlag(m_subPicPresentFlag);
-  if (m_subPicPresentFlag) 
+  sps.setSubPicInfoPresentFlag(m_subPicInfoPresentFlag);
+  if (m_subPicInfoPresentFlag)
   {
     sps.setNumSubPics(m_numSubPics);
-    for (int i = 0; i < m_numSubPics; i++) 
+    sps.setSubPicCtuTopLeftX(m_subPicCtuTopLeftX);
+    sps.setSubPicCtuTopLeftY(m_subPicCtuTopLeftY);
+    sps.setSubPicWidth(m_subPicWidth);
+    sps.setSubPicHeight(m_subPicHeight);
+    sps.setSubPicTreatedAsPicFlag(m_subPicTreatedAsPicFlag);
+    sps.setLoopFilterAcrossSubpicEnabledFlag(m_loopFilterAcrossSubpicEnabledFlag);
+    sps.setSubPicIdLen(m_subPicIdLen);
+    sps.setSubPicIdMappingExplicitlySignalledFlag(m_subPicIdMappingExplicitlySignalledFlag);
+    if (m_subPicIdMappingExplicitlySignalledFlag)
     {
-      sps.setSubPicCtuTopLeftX(i, m_subPicCtuTopLeftX[i] );
-      sps.setSubPicCtuTopLeftY(i, m_subPicCtuTopLeftY[i]);
-      sps.setSubPicWidth(i, m_subPicWidth[i]);
-      sps.setSubPicHeight(i, m_subPicHeight[i]);
-      sps.setSubPicTreatedAsPicFlag(i, m_subPicTreatedAsPicFlag[i]);
-      sps.setLoopFilterAcrossSubpicEnabledFlag(i, m_loopFilterAcrossSubpicEnabledFlag[i]);
-    }
-  }
-  sps.setSubPicIdPresentFlag(m_subPicIdPresentFlag);
-  if (m_subPicIdPresentFlag) 
-  {
-    sps.setSubPicIdSignallingPresentFlag(m_subPicIdSignallingPresentFlag);
-    if (m_subPicIdSignallingPresentFlag)
-    {
-      sps.setSubPicIdLen(m_subPicIdLen);
-      for (int i = 0; i < m_numSubPics; i++)
-  {
-        sps.setSubPicId(i, m_subPicId[i]);
+      sps.setSubPicIdMappingInSpsFlag(m_subPicIdMappingInSpsFlag);
+      if (m_subPicIdMappingInSpsFlag)
+      {
+        sps.setSubPicId(m_subPicId);
       }
     }
   }
+  else   //In that case, there is only one subpicture that contains the whole picture
+  {
+    sps.setNumSubPics(1);
+    sps.setSubPicCtuTopLeftX(0, 0);
+    sps.setSubPicCtuTopLeftY(0, 0);
+    sps.setSubPicWidth(0, m_iSourceWidth);
+    sps.setSubPicHeight(0, m_iSourceHeight);
+    sps.setSubPicTreatedAsPicFlag(0, 1);
+    sps.setLoopFilterAcrossSubpicEnabledFlag(0, 0);
+    sps.setSubPicIdLen(0);
+    sps.setSubPicIdMappingExplicitlySignalledFlag(false);
+  }
+  sps.setDepQuantEnabledFlag( m_DepQuantEnabledFlag );
+  if (!sps.getDepQuantEnabledFlag())
+  {
+    sps.setSignDataHidingEnabledFlag( m_SignDataHidingEnabledFlag );
+  }
+  else
+  {
+    sps.setSignDataHidingEnabledFlag(false);
+  }
+  sps.setVirtualBoundariesEnabledFlag( m_virtualBoundariesEnabledFlag );
+  if( sps.getVirtualBoundariesEnabledFlag() )
+  {
+    sps.setVirtualBoundariesPresentFlag( m_virtualBoundariesPresentFlag );
+    CHECK( sps.getSubPicInfoPresentFlag() && sps.getVirtualBoundariesPresentFlag() != 1, "When subpicture signalling if present, the signalling of virtual boundaries, is present, shall be in the SPS" );
+    sps.setNumVerVirtualBoundaries            ( m_numVerVirtualBoundaries );
+    sps.setNumHorVirtualBoundaries            ( m_numHorVirtualBoundaries );
+    for( unsigned int i = 0; i < m_numVerVirtualBoundaries; i++ )
+    {
+      sps.setVirtualBoundariesPosX            ( m_virtualBoundariesPosX[i], i );
+    }
+    for( unsigned int i = 0; i < m_numHorVirtualBoundaries; i++ )
+    {
+      sps.setVirtualBoundariesPosY            ( m_virtualBoundariesPosY[i], i );
+    }
+  }
 
-  sps.setLoopFilterAcrossVirtualBoundariesDisabledFlag( m_loopFilterAcrossVirtualBoundariesDisabledFlag );
-  sps.setNumVerVirtualBoundaries            ( m_numVerVirtualBoundaries );
-  sps.setNumHorVirtualBoundaries            ( m_numHorVirtualBoundaries );
-  for( unsigned int i = 0; i < m_numVerVirtualBoundaries; i++ )
-  {
-    sps.setVirtualBoundariesPosX            ( m_virtualBoundariesPosX[i], i );
-  }
-  for( unsigned int i = 0; i < m_numHorVirtualBoundaries; i++ )
-  {
-    sps.setVirtualBoundariesPosY            ( m_virtualBoundariesPosY[i], i );
-  }
-
-  sps.setInterLayerPresentFlag( vps.getMaxLayers() > 1 && !vps.getAllIndependentLayersFlag() );
-  for (unsigned int i = 0; i < vps.getMaxLayers(); ++i)
-  {
-    CHECK((vps.getIndependentLayerFlag(i) == 1) && (sps.getInterLayerPresentFlag() != 0), " When vps_independent_layer_flag[GeneralLayerIdx[nuh_layer_id ]]  is equal to 1, the value of inter_layer_ref_pics_present_flag shall be equal to 0.");
-  }
+  sps.setInterLayerPresentFlag( m_layerId > 0 && m_vps->getMaxLayers() > 1 && !m_vps->getAllIndependentLayersFlag() && !m_vps->getIndependentLayerFlag( m_vps->getGeneralLayerIdx( m_layerId ) ) );
+  CHECK( m_vps->getIndependentLayerFlag( m_vps->getGeneralLayerIdx( m_layerId ) ) && sps.getInterLayerPresentFlag(), " When vps_independent_layer_flag[GeneralLayerIdx[nuh_layer_id ]]  is equal to 1, the value of inter_layer_ref_pics_present_flag shall be equal to 0." );
 
   sps.setRprEnabledFlag( m_rprEnabled || sps.getInterLayerPresentFlag() );
 
-#if JVET_Q0297_MER
   sps.setLog2ParallelMergeLevelMinus2( m_log2ParallelMergeLevelMinus2 );
-#endif
+
+  CHECK( sps.getRprEnabledFlag() && sps.getVirtualBoundariesEnabledFlag(), "when the value of res_change_in_clvs_allowed_flag is equal to 1, the value of sps_virtual_boundaries_present_flag shall be equal to 0" );
 }
 
 void EncLib::xInitHrdParameters(SPS &sps)
 {
   m_encHRD.initHRDParameters((EncCfg*) this);
 
-  HRDParameters *hrdParams = sps.getHrdParameters();
-  *hrdParams = m_encHRD.getHRDParameters();
+  GeneralHrdParams *generalHrdParams = sps.getGeneralHrdParameters();
+  *generalHrdParams = m_encHRD.getGeneralHrdParameters();
 
-  TimingInfo *timingInfo = sps.getTimingInfo();
-  *timingInfo = m_encHRD.getTimingInfo();
+  OlsHrdParams *olsHrdParams = sps.getOlsHrdParameters();
+  *olsHrdParams = m_encHRD.getOlsHrdParameters();
 }
 
 void EncLib::xInitPPS(PPS &pps, const SPS &sps)
@@ -1296,21 +1389,8 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
   // pps ID already initialised.
   pps.setSPSId(sps.getSPSId());
 
-  pps.setConstantSliceHeaderParamsEnabledFlag(getConstantSliceHeaderParamsEnabledFlag());
-  pps.setPPSDepQuantEnabledIdc(getPPSDepQuantEnabledIdc());
-  pps.setPPSRefPicListSPSIdc0(getPPSRefPicListSPSIdc0());
-  pps.setPPSRefPicListSPSIdc1(getPPSRefPicListSPSIdc1());
-  pps.setPPSMvdL1ZeroIdc(getPPSMvdL1ZeroIdc());
-  pps.setPPSCollocatedFromL0Idc(getPPSCollocatedFromL0Idc());
-  pps.setPPSSixMinusMaxNumMergeCandPlus1(getPPSSixMinusMaxNumMergeCandPlus1());
-#if !JVET_Q0806
-  pps.setPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1(getPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1());
-#else
-  pps.setPPSMaxNumMergeCandMinusMaxNumGeoCandPlus1(getPPSMaxNumMergeCandMinusMaxNumGeoCandPlus1());
-#endif
-
   pps.setNumSubPics(sps.getNumSubPics());
-  pps.setSubPicIdSignallingPresentFlag(false);
+  pps.setSubPicIdMappingInPpsFlag(false);
   pps.setSubPicIdLen(sps.getSubPicIdLen());
   for(int picIdx=0; picIdx<pps.getNumSubPics(); picIdx++)
   {
@@ -1329,6 +1409,10 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
     bUseDQP = true;
   }
 #endif
+  if (sps.getChromaFormatIdc() != CHROMA_400)
+  {
+    pps.setPPSChromaToolFlag (true);
+  }
 #if ENABLE_QPA
   if (getUsePerceptQPA() && !bUseDQP)
   {
@@ -1366,10 +1450,6 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
   {
     pps.clearChromaQpOffsetList();
   }
-  pps.getPpsRangeExtension().setCrossComponentPredictionEnabledFlag(m_crossComponentPredictionEnabledFlag);
-  pps.getPpsRangeExtension().setLog2SaoOffsetScale(CHANNEL_TYPE_LUMA,   m_log2SaoOffsetScale[CHANNEL_TYPE_LUMA  ]);
-  pps.getPpsRangeExtension().setLog2SaoOffsetScale(CHANNEL_TYPE_CHROMA, m_log2SaoOffsetScale[CHANNEL_TYPE_CHROMA]);
-
   {
     int baseQp = 26;
     if( 16 == getGOPSize() )
@@ -1454,7 +1534,6 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
     pps.setSliceChromaQpFlag(m_chromaCbQpOffsetDualTree != 0 || m_chromaCrQpOffsetDualTree != 0 || m_chromaCbCrQpOffsetDualTree != 0);
   }
 
-  pps.setEntropyCodingSyncEnabledFlag( m_entropyCodingSyncEnabledFlag );
 
   pps.setNoPicPartitionFlag( m_noPicPartitionFlag );
   if( m_noPicPartitionFlag == false )
@@ -1466,20 +1545,19 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
     pps.setTileRowHeights( m_tileRowHeight );
     pps.initTiles();
     pps.setRectSliceFlag( m_rectSliceFlag );
-    if( m_rectSliceFlag ) 
+    if( m_rectSliceFlag )
     {
+      pps.setSingleSlicePerSubPicFlag(m_singleSlicePerSubPicFlag);
       pps.setNumSlicesInPic( m_numSlicesInPic );
       pps.setTileIdxDeltaPresentFlag( m_tileIdxDeltaPresentFlag );
       pps.setRectSlices( m_rectSlices );
-      pps.initRectSliceMap( );
-#if JVET_O1143_SUBPIC_BOUNDARY
-      pps.initSubPic(sps);
-#endif
+      pps.initRectSliceMap(&sps);
     }
     else
     {
       pps.initRasterSliceMap( m_rasterSliceSize );
     }
+    pps.initSubPic(sps);
     pps.setLoopFilterAcrossTilesEnabledFlag( m_bLFCrossTileBoundaryFlag );
     pps.setLoopFilterAcrossSlicesEnabledFlag( m_bLFCrossSliceBoundaryFlag );
   }
@@ -1496,10 +1574,8 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
     pps.initRectSlices( );
     pps.setTileIdxDeltaPresentFlag( 0 );
     pps.setSliceTileIdx( 0, 0 );
-    pps.initRectSliceMap( );
-#if JVET_O1143_SUBPIC_BOUNDARY
+    pps.initRectSliceMap( &sps );
     pps.initSubPic(sps);
-#endif
     pps.setLoopFilterAcrossTilesEnabledFlag( true );
     pps.setLoopFilterAcrossSlicesEnabledFlag( true );
   }
@@ -1523,27 +1599,22 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
   {
     pps.setDeblockingFilterBetaOffsetDiv2( getLoopFilterBetaOffset() );
     pps.setDeblockingFilterTcOffsetDiv2( getLoopFilterTcOffset() );
-#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
     pps.setDeblockingFilterCbBetaOffsetDiv2( getLoopFilterCbBetaOffset() );
     pps.setDeblockingFilterCbTcOffsetDiv2( getLoopFilterCbTcOffset() );
     pps.setDeblockingFilterCrBetaOffsetDiv2( getLoopFilterCrBetaOffset() );
     pps.setDeblockingFilterCrTcOffsetDiv2( getLoopFilterCrTcOffset() );
-#endif
   }
   else
   {
     pps.setDeblockingFilterBetaOffsetDiv2(0);
     pps.setDeblockingFilterTcOffsetDiv2(0);
-#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
     pps.setDeblockingFilterCbBetaOffsetDiv2(0);
     pps.setDeblockingFilterCbTcOffsetDiv2(0);
     pps.setDeblockingFilterCrBetaOffsetDiv2(0);
     pps.setDeblockingFilterCrTcOffsetDiv2(0);
-#endif
   }
 
   // deblockingFilterControlPresentFlag is true if any of the settings differ from the inferred values:
-#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
   const bool deblockingFilterControlPresentFlag = pps.getDeblockingFilterOverrideEnabledFlag()   ||
                                                   pps.getPPSDeblockingFilterDisabledFlag()       ||
                                                   pps.getDeblockingFilterBetaOffsetDiv2() != 0   ||
@@ -1552,12 +1623,6 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
                                                   pps.getDeblockingFilterCbTcOffsetDiv2() != 0   ||
                                                   pps.getDeblockingFilterCrBetaOffsetDiv2() != 0 ||
                                                   pps.getDeblockingFilterCrTcOffsetDiv2() != 0;
-#else
-  const bool deblockingFilterControlPresentFlag = pps.getDeblockingFilterOverrideEnabledFlag() ||
-                                                  pps.getPPSDeblockingFilterDisabledFlag()     ||
-                                                  pps.getDeblockingFilterBetaOffsetDiv2() != 0 ||
-                                                  pps.getDeblockingFilterTcOffsetDiv2() != 0;
-#endif
 
   pps.setDeblockingFilterControlPresentFlag(deblockingFilterControlPresentFlag);
 
@@ -1589,8 +1654,14 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
   CHECK(!(bestPos <= 15), "Unspecified error");
     pps.setNumRefIdxL0DefaultActive(bestPos);
   pps.setNumRefIdxL1DefaultActive(bestPos);
-  pps.setLog2MaxTransformSkipBlockSize(m_log2MaxTransformSkipBlockSize);
   pps.setPictureHeaderExtensionPresentFlag(false);
+
+  pps.setRplInfoInPhFlag(getSliceLevelRpl() ? false : true);
+  pps.setDbfInfoInPhFlag(getSliceLevelDblk() ? false : true);
+  pps.setSaoInfoInPhFlag(getSliceLevelSao() ? false : true);
+  pps.setAlfInfoInPhFlag(getSliceLevelAlf() ? false : true);
+  pps.setWpInfoInPhFlag(getSliceLevelWp() ? false : true);
+  pps.setQpDeltaInfoInPhFlag(getSliceLevelDeltaQp() ? false : true);
 
   pps.pcv = new PreCalcValues( sps, pps, true );
   pps.setRpl1IdxPresentFlag(sps.getRPL1IdxPresentFlag());
@@ -1603,18 +1674,10 @@ void EncLib::xInitPicHeader(PicHeader &picHeader, const SPS &sps, const PPS &pps
 
   // parameter sets
   picHeader.setSPSId( sps.getSPSId() );
-  picHeader.setPPSId( pps.getPPSId() );  
-  
+  picHeader.setPPSId( pps.getPPSId() );
+
   // merge list sizes
-  picHeader.setMaxNumMergeCand      ( getMaxNumMergeCand()       );
-  picHeader.setMaxNumAffineMergeCand( getMaxNumAffineMergeCand() );
-#if !JVET_Q0806
-  picHeader.setMaxNumTriangleCand   ( getMaxNumTriangleCand()    );
-#else
-  picHeader.setMaxNumGeoCand        ( getMaxNumGeoCand()         );
-#endif
-  picHeader.setMaxNumIBCMergeCand   ( getMaxNumIBCMergeCand()    );
-  
+  picHeader.setMaxNumAffineMergeCand(getMaxNumAffineMergeCand());
   // copy partitioning constraints from SPS
   picHeader.setSplitConsOverrideFlag(false);
   picHeader.setMinQTSizes( sps.getMinQTSizes() );
@@ -1622,10 +1685,11 @@ void EncLib::xInitPicHeader(PicHeader &picHeader, const SPS &sps, const PPS &pps
   picHeader.setMaxBTSizes( sps.getMaxBTSizes() );
   picHeader.setMaxTTSizes( sps.getMaxTTSizes() );
 
+#if !JVET_R0271_SLICE_LEVEL_DQ_SDH_RRC
   // quantization
-  picHeader.setDepQuantEnabledFlag( getDepQuantEnabledFlag() );
-  picHeader.setSignDataHidingEnabledFlag( getSignDataHidingEnabledFlag() );
-  
+  picHeader.setDepQuantEnabledFlag( sps.getDepQuantEnabledFlag() );
+  picHeader.setSignDataHidingEnabledFlag( sps.getSignDataHidingEnabledFlag() );
+#endif
   bool bUseDQP = (getCuQpDeltaSubdiv() > 0)? true : false;
 
   if( (getMaxDeltaQP() != 0 )|| getUseAdaptiveQP() )
@@ -1678,26 +1742,23 @@ void EncLib::xInitPicHeader(PicHeader &picHeader, const SPS &sps, const PPS &pps
     picHeader.setCuChromaQpOffsetSubdivIntra(0);
     picHeader.setCuChromaQpOffsetSubdivInter(0);
   }
-  
-  // sub-pictures
-  picHeader.setSubPicIdSignallingPresentFlag(sps.getSubPicIdSignallingPresentFlag());
-  picHeader.setSubPicIdLen(sps.getSubPicIdLen());
-  for(i=0; i<sps.getNumSubPics(); i++) {
-    picHeader.setSubPicId(i, sps.getSubPicId(i));
-  }
+
 
   // virtual boundaries
-  picHeader.setLoopFilterAcrossVirtualBoundariesDisabledFlag(sps.getLoopFilterAcrossVirtualBoundariesDisabledFlag());
-  picHeader.setNumVerVirtualBoundaries(sps.getNumVerVirtualBoundaries());
-  picHeader.setNumHorVirtualBoundaries(sps.getNumHorVirtualBoundaries());
-  for(i=0; i<3; i++) {
-    picHeader.setVirtualBoundariesPosX(sps.getVirtualBoundariesPosX(i), i);
-    picHeader.setVirtualBoundariesPosY(sps.getVirtualBoundariesPosY(i), i);
+  if( sps.getVirtualBoundariesEnabledFlag() )
+  {
+    picHeader.setVirtualBoundariesPresentFlag( sps.getVirtualBoundariesPresentFlag() );
+    picHeader.setNumVerVirtualBoundaries(sps.getNumVerVirtualBoundaries());
+    picHeader.setNumHorVirtualBoundaries(sps.getNumHorVirtualBoundaries());
+    for(i=0; i<3; i++) {
+      picHeader.setVirtualBoundariesPosX(sps.getVirtualBoundariesPosX(i), i);
+      picHeader.setVirtualBoundariesPosY(sps.getVirtualBoundariesPosY(i), i);
+    }
   }
 
   // gradual decoder refresh flag
   picHeader.setGdrPicFlag(false);
-  
+
   // BDOF / DMVR / PROF
   picHeader.setDisBdofFlag(false);
   picHeader.setDisDmvrFlag(false);
@@ -1757,6 +1818,26 @@ void EncLib::xInitRPL(SPS &sps, bool isFieldCoding)
     }
   }
 
+  bool isRpl1CopiedFromRpl0 = true;
+  for( int i = 0; isRpl1CopiedFromRpl0 && i < numRPLCandidates; i++)
+  {
+    if( sps.getRPLList0()->getReferencePictureList(i)->getNumRefEntries() == sps.getRPLList1()->getReferencePictureList(i)->getNumRefEntries() )
+    {
+      for( int j = 0; isRpl1CopiedFromRpl0 && j < sps.getRPLList0()->getReferencePictureList(i)->getNumRefEntries(); j++ )
+      {
+        if( sps.getRPLList0()->getReferencePictureList(i)->getRefPicIdentifier(j) != sps.getRPLList1()->getReferencePictureList(i)->getRefPicIdentifier(j) )
+        {
+          isRpl1CopiedFromRpl0 = false;
+        }
+      }
+    }
+    else
+    {
+      isRpl1CopiedFromRpl0 = false;
+    }
+  }
+  sps.setRPL1CopyFromRPL0Flag(isRpl1CopiedFromRpl0);
+
   //Check if all delta POC of STRP in each RPL has the same sign
   //Check RPLL0 first
   const RPLList* rplList0 = sps.getRPLList0();
@@ -1808,7 +1889,7 @@ void EncLib::xInitRPL(SPS &sps, bool isFieldCoding)
 
 void EncLib::getActiveRefPicListNumForPOC(const SPS *sps, int POCCurr, int GOPid, uint32_t *activeL0, uint32_t *activeL1)
 {
-  if (m_uiIntraPeriod < 0)  //Only for RA
+  if (m_intraPeriod < 0)  //Only for RA
   {
     *activeL0 = *activeL1 = 0;
     return;
@@ -1819,12 +1900,13 @@ void EncLib::getActiveRefPicListNumForPOC(const SPS *sps, int POCCurr, int GOPid
   int fullListNum = m_iGOPSize;
   int partialListNum = getRPLCandidateSize(0) - m_iGOPSize;
   int extraNum = fullListNum;
-  if (m_uiIntraPeriod < 0)
+  if (m_intraPeriod < 0)
   {
     if (POCCurr < (2 * m_iGOPSize + 2))
     {
-      rpl0Idx = POCCurr + m_iGOPSize - 1;
-      rpl1Idx = POCCurr + m_iGOPSize - 1;
+      int candidateIdx = (POCCurr + m_iGOPSize - 1 >= fullListNum + partialListNum) ? GOPid : POCCurr + m_iGOPSize - 1;
+      rpl0Idx = candidateIdx;
+      rpl1Idx = candidateIdx;
     }
     else
     {
@@ -1835,11 +1917,13 @@ void EncLib::getActiveRefPicListNumForPOC(const SPS *sps, int POCCurr, int GOPid
   }
   for (; extraNum<fullListNum + partialListNum; extraNum++)
   {
-    if (m_uiIntraPeriod > 0 && getDecodingRefreshType() > 0)
+    if (m_intraPeriod > 0 && getDecodingRefreshType() > 0)
     {
-      int POCIndex = POCCurr%m_uiIntraPeriod;
+      int POCIndex = POCCurr % m_intraPeriod;
       if (POCIndex == 0)
-        POCIndex = m_uiIntraPeriod;
+      {
+        POCIndex = m_intraPeriod;
+      }
       if (POCIndex == m_RPLList0[extraNum].m_POC)
       {
         rpl0Idx = extraNum;
@@ -1869,12 +1953,23 @@ void EncLib::selectReferencePictureList(Slice* slice, int POCCurr, int GOPid, in
   int fullListNum = m_iGOPSize;
   int partialListNum = getRPLCandidateSize(0) - m_iGOPSize;
   int extraNum = fullListNum;
-  if (m_uiIntraPeriod < 0)
+
+  int rplPeriod = m_intraPeriod;
+  if( rplPeriod < 0 )  //Need to check if it is low delay or RA but with no RAP
+  {
+    if( slice->getSPS()->getRPLList0()->getReferencePictureList(1)->getRefPicIdentifier(0) * slice->getSPS()->getRPLList1()->getReferencePictureList(1)->getRefPicIdentifier(0) < 0)
+    {
+      rplPeriod = m_iGOPSize * 2;
+    }
+  }
+
+  if (rplPeriod < 0)
   {
     if (POCCurr < (2 * m_iGOPSize + 2))
     {
-      slice->setRPL0idx(POCCurr + m_iGOPSize - 1);
-      slice->setRPL1idx(POCCurr + m_iGOPSize - 1);
+      int candidateIdx = (POCCurr + m_iGOPSize - 1 >= fullListNum + partialListNum) ? GOPid : POCCurr + m_iGOPSize - 1;
+      slice->setRPL0idx(candidateIdx);
+      slice->setRPL1idx(candidateIdx);
     }
     else
     {
@@ -1885,11 +1980,13 @@ void EncLib::selectReferencePictureList(Slice* slice, int POCCurr, int GOPid, in
   }
   for (; extraNum < fullListNum + partialListNum; extraNum++)
   {
-    if (m_uiIntraPeriod > 0 && getDecodingRefreshType() > 0)
+    if( rplPeriod > 0 )
     {
-      int POCIndex = POCCurr%m_uiIntraPeriod;
+      int POCIndex = POCCurr % rplPeriod;
       if (POCIndex == 0)
-        POCIndex = m_uiIntraPeriod;
+      {
+        POCIndex = rplPeriod;
+      }
       if (POCIndex == m_RPLList0[extraNum].m_POC)
       {
         slice->setRPL0idx(extraNum);
@@ -1907,7 +2004,7 @@ void EncLib::selectReferencePictureList(Slice* slice, int POCCurr, int GOPid, in
       slice->setRPL0idx(getRPLCandidateSize(0));
       slice->setRPL1idx(getRPLCandidateSize(0));
     }
-    else if (m_uiIntraPeriod < 0)
+    else if( rplPeriod < 0 )
     {
       // To set RPL indexes for LD
       int numRPLCandidates = getRPLCandidateSize(0);
@@ -2009,15 +2106,7 @@ int EncCfg::getQPForPicture(const uint32_t gopIndex, const Slice *pSlice) const
 
   if (getCostMode()==COST_LOSSLESS_CODING)
   {
-#if JVET_AHG14_LOSSLESS
-#if JVET_AHG14_LOSSLESS_ENC_QP_FIX
     qp = getBaseQP();
-#else
-    qp = LOSSLESS_AND_MIXED_LOSSLESS_RD_COST_TEST_QP - ( ( pSlice->getSPS()->getBitDepth( CHANNEL_TYPE_LUMA ) - 8 ) * 6 );
-#endif
-#else
-    qp=LOSSLESS_AND_MIXED_LOSSLESS_RD_COST_TEST_QP;
-#endif
   }
   else
   {

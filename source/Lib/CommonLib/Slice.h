@@ -1267,7 +1267,7 @@ private:
   bool              m_entropyCodingSyncEntryPointPresentFlag;          //!< Flag for indicating the presence of WPP entry points
   int               m_qpBDOffset[MAX_NUM_CHANNEL_TYPE];
 #if JVET_R0045_TS_MIN_QP_CLEANUP
-  int               m_internalMinusInputBitDepth[MAX_NUM_CHANNEL_TYPE]; //  QP_internal - QP_input;                                          }
+  int               m_internalMinusInputBitDepth[MAX_NUM_CHANNEL_TYPE]; //  max(0, internal bitdepth - input bitdepth);                                          }
 #else
   int               m_minQpMinus4[MAX_NUM_CHANNEL_TYPE]; //  QP_internal - QP_input;
 #endif

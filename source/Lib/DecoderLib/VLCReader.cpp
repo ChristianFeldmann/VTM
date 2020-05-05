@@ -858,41 +858,24 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
   if (!pcPPS->getNoPicPartitionFlag())
   {
     READ_FLAG(uiCode, "pps_rpl_info_in_ph_flag");                    pcPPS->setRplInfoInPhFlag(uiCode ? true : false);
+    READ_FLAG(uiCode, "pps_sao_info_in_ph_flag");                    pcPPS->setSaoInfoInPhFlag(uiCode ? true : false);
+    READ_FLAG(uiCode, "pps_alf_info_in_ph_flag");                    pcPPS->setAlfInfoInPhFlag(uiCode ? true : false);
+    if ((pcPPS->getUseWP() || pcPPS->getWPBiPred()) && pcPPS->getRplInfoInPhFlag())
+    {
+      READ_FLAG(uiCode, "pps_wp_info_in_ph_flag");                   pcPPS->setWpInfoInPhFlag(uiCode ? true : false);
+    }
+    else
+    {
+      pcPPS->setWpInfoInPhFlag(false);
+    }
+    READ_FLAG(uiCode, "pps_qp_delta_info_in_ph_flag");               pcPPS->setQpDeltaInfoInPhFlag(uiCode ? true : false);
   }
   else
   {
     pcPPS->setRplInfoInPhFlag(false);
-  }
-  if (!pcPPS->getNoPicPartitionFlag())
-  {
-    READ_FLAG(uiCode, "pps_sao_info_in_ph_flag");                    pcPPS->setSaoInfoInPhFlag(uiCode ? true : false);
-  }
-  else
-  {
     pcPPS->setSaoInfoInPhFlag(false);
-  }
-  if (!pcPPS->getNoPicPartitionFlag())
-  {
-    READ_FLAG(uiCode, "pps_alf_info_in_ph_flag");                    pcPPS->setAlfInfoInPhFlag(uiCode ? true : false);
-  }
-  else
-  {
     pcPPS->setAlfInfoInPhFlag(false);
-  }
-  if (!pcPPS->getNoPicPartitionFlag() && (pcPPS->getUseWP() || pcPPS->getWPBiPred()) && pcPPS->getRplInfoInPhFlag())
-  {
-    READ_FLAG(uiCode, "pps_wp_info_in_ph_flag");                   pcPPS->setWpInfoInPhFlag(uiCode ? true : false);
-  }
-  else
-  {
     pcPPS->setWpInfoInPhFlag(false);
-  }
-  if (!pcPPS->getNoPicPartitionFlag())
-  {
-    READ_FLAG(uiCode, "qp_delta_info_in_ph_flag");               pcPPS->setQpDeltaInfoInPhFlag(uiCode ? true : false);
-  }
-  else
-  {
     pcPPS->setQpDeltaInfoInPhFlag(false);
   }
 #else

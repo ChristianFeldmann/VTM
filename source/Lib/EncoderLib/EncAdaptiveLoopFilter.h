@@ -268,7 +268,9 @@ private:
   uint8_t*               m_trainingCovControl;
   Pel*                   m_bufOrigin;
   PelBuf*                m_buf;
+#if !JVET_R0327_ONE_PASS_CCALF
   uint64_t**             m_unfilteredDistortion;  // for different block size
+#endif
   uint64_t*              m_trainingDistortion[MAX_NUM_CC_ALF_FILTERS];    // for current block size
   uint64_t*              m_lumaSwingGreaterThanThresholdCount;
   uint64_t*              m_chromaSampleCountNearMidPoint;
@@ -360,9 +362,23 @@ private:
   int getMaxNumAlternativesChroma( );
   int  getCoeffRateCcAlf(short chromaCoeff[MAX_NUM_CC_ALF_FILTERS][MAX_NUM_CC_ALF_CHROMA_COEFF], bool filterEnabled[MAX_NUM_CC_ALF_FILTERS], uint8_t filterCount, ComponentID compID);
   void deriveCcAlfFilterCoeff( ComponentID compID, const PelUnitBuf& recYuv, const PelUnitBuf& recYuvExt, short filterCoeff[MAX_NUM_CC_ALF_FILTERS][MAX_NUM_CC_ALF_CHROMA_COEFF], const uint8_t filterIdx );
+#if !JVET_R0327_ONE_PASS_CCALF
   void computeLog2BlockSizeDistortion(const Pel *org, int orgStride, const Pel *dec, int decStride, int height,
                                       int width, uint64_t *distortionBuf, int distortionBufStride, int log2BlockWidth,
                                       int log2BlockHeight, uint64_t &totalDistortion);
+#endif
+#if JVET_R0327_ONE_PASS_CCALF
+  void determineControlIdcValues(CodingStructure &cs, const ComponentID compID, const PelBuf *buf, const int ctuWidthC,
+                                 const int ctuHeightC, const int picWidthC, const int picHeightC,
+                                 double **unfilteredDistortion, uint64_t *trainingDistortion[MAX_NUM_CC_ALF_FILTERS],
+                                 uint64_t *lumaSwingGreaterThanThresholdCount,
+                                 uint64_t *chromaSampleCountNearMidPoint,
+                                 bool reuseFilterCoeff, uint8_t *trainingCovControl, uint8_t *filterControl,
+                                 uint64_t &curTotalDistortion, double &curTotalRate,
+                                 bool     filterEnabled[MAX_NUM_CC_ALF_FILTERS],
+                                 uint8_t  mapFilterIdxToFilterIdc[MAX_NUM_CC_ALF_FILTERS + 1],
+                                 uint8_t &ccAlfFilterCount);
+#else
   void determineControlIdcValues(CodingStructure &cs, const ComponentID compID, const PelBuf *buf, const int ctuWidthC,
                                  const int ctuHeightC, const int picWidthC, const int picHeightC,
                                  uint64_t **unfilteredDistortion, uint64_t *trainingDistortion[MAX_NUM_CC_ALF_FILTERS],
@@ -373,6 +389,7 @@ private:
                                  bool     filterEnabled[MAX_NUM_CC_ALF_FILTERS],
                                  uint8_t  mapFilterIdxToFilterIdc[MAX_NUM_CC_ALF_FILTERS + 1],
                                  uint8_t &ccAlfFilterCount);
+#endif
   void deriveCcAlfFilter( CodingStructure& cs, ComponentID compID, const PelUnitBuf& orgYuv, const PelUnitBuf& tempDecYuvBuf, const PelUnitBuf& dstYuv );
   std::vector<int> getAvailableCcAlfApsIds(CodingStructure& cs, ComponentID compID);
   void xSetupCcAlfAPS( CodingStructure& cs );

@@ -1493,7 +1493,18 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   }
 
   READ_FLAG(uiCode, "long_term_ref_pics_flag");          pcSPS->setLongTermRefsPresent(uiCode);
+#if JVET_R0205
+  if (pcSPS->getVPSId() > 0)
+  {
+    READ_FLAG( uiCode, "sps_inter_layer_ref_pics_present_flag" );  pcSPS->setInterLayerPresentFlag( uiCode );
+  }
+  else
+  {
+    pcSPS->setInterLayerPresentFlag(0);
+  }
+#else
   READ_FLAG( uiCode, "inter_layer_ref_pics_present_flag" );  pcSPS->setInterLayerPresentFlag( uiCode );
+#endif
   READ_FLAG( uiCode, "sps_idr_rpl_present_flag" );       pcSPS->setIDRRefParamListPresent( (bool) uiCode );
   READ_FLAG(uiCode, "rpl1_copy_from_rpl0_flag");
   pcSPS->setRPL1CopyFromRPL0Flag(uiCode);

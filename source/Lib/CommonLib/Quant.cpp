@@ -65,7 +65,11 @@
 QpParam::QpParam(const int           qpy,
                  const ComponentID   compID,
                  const int           qpBdOffset,
+#if JVET_R0045_TS_MIN_QP_CLEANUP
+                 const int           internalMinusInputBitDepth,
+#else
                  const int           minQpPrimeTsMinus4,
+#endif
                  const int           chromaQPOffset,
                  const ChromaFormat  chFmt,
                  const int           dqp
@@ -96,7 +100,11 @@ QpParam::QpParam(const int           qpy,
   rems[0]=baseQp%6;
 
   int baseQpTS = baseQp;
+#if JVET_R0045_TS_MIN_QP_CLEANUP
+  baseQpTS = std::max(baseQpTS, 4 + 6 * internalMinusInputBitDepth);
+#else
   baseQpTS = std::max(baseQpTS, 4 + minQpPrimeTsMinus4);
+#endif
 
   Qps[1]  = baseQpTS;
   pers[1] = baseQpTS / 6;
@@ -122,7 +130,11 @@ QpParam::QpParam(const TransformUnit& tu, const ComponentID &compIDX, const int 
 
   const bool useJQP = isChroma(compID) && (abs(TU::getICTMode(tu)) == 2);
   bool applyACTQpoffset = tu.cu->colorTransform && allowACTQpoffset;
+#if JVET_R0045_TS_MIN_QP_CLEANUP
+  *this = QpParam(QP <= -MAX_INT ? tu.cu->qp : QP, useJQP ? JOINT_CbCr : compID, tu.cs->sps->getQpBDOffset(toChannelType(compID)), tu.cs->sps->getInternalMinusInputBitDepth(toChannelType(compID)), chromaQpOffset, tu.chromaFormat, dqp, tu.cs->sps, applyACTQpoffset);
+#else
   *this = QpParam(QP <= -MAX_INT ? tu.cu->qp : QP, useJQP ? JOINT_CbCr : compID, tu.cs->sps->getQpBDOffset(toChannelType(compID)), tu.cs->sps->getMinQpPrimeTsMinus4(toChannelType(compID)), chromaQpOffset, tu.chromaFormat, dqp, tu.cs->sps, applyACTQpoffset);
+#endif
 }
 
 

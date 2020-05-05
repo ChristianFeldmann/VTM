@@ -2085,6 +2085,9 @@ private:
   SliceReshapeInfo       m_reshapeAPSInfo;
   ScalingList            m_scalingListApsInfo;
   CcAlfFilterParam       m_ccAlfAPSParam;
+#if JVET_R0201_PREFIX_SUFFIX_APS_CLEANUP
+  bool                   m_hasPrefixNalUnitType;
+#endif
 
 public:
   APS();
@@ -2109,7 +2112,12 @@ public:
   ScalingList&           getScalingList()                                                 { return m_scalingListApsInfo;                  }
   void                   setCcAlfAPSParam(CcAlfFilterParam& ccAlfAPSParam)                { m_ccAlfAPSParam = ccAlfAPSParam;              }
   CcAlfFilterParam&      getCcAlfAPSParam()  { return m_ccAlfAPSParam; }
+#if JVET_R0201_PREFIX_SUFFIX_APS_CLEANUP
+  void                   setHasPrefixNalUnitType( bool b )                                { m_hasPrefixNalUnitType = b;                   }
+  bool                   getHasPrefixNalUnitType() const                                  { return m_hasPrefixNalUnitType;                }
+#endif
 };
+
 struct WPScalingParam
 {
   // Explicit weighted prediction parameters parsed in slice header,

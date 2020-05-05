@@ -978,6 +978,30 @@ bool DecLib::isSliceNaluFirstInAU( bool newPicture, InputNALUnit &nalu )
   return (m_apcSlicePilot->getPOC() != m_prevPOC);
 }
 
+#if JVET_R0201_PREFIX_SUFFIX_APS_CLEANUP
+void DecLib::checkAPSInPictureUnit()
+{
+  bool firstVCLFound = false;
+  bool suffixAPSFound = false;
+  for (auto &nalu : m_pictureUnitNals)
+  {
+    if (NALUnit::isVclNalUnitType(nalu))
+    {
+      firstVCLFound = true;
+      CHECK( suffixAPSFound, "When any suffix APS NAL units are present in a PU, they shall follow the last VCL unit of the PU" );
+    }
+    else if (nalu == NAL_UNIT_PREFIX_APS)
+    {
+      CHECK( firstVCLFound, "When any prefix APS NAL units are present in a PU, they shall precede the first VCL unit of the PU");
+    }
+    else if (nalu == NAL_UNIT_SUFFIX_APS)
+    {
+      suffixAPSFound = true;
+    }
+  }
+}
+#endif
+
 void activateAPS(PicHeader* picHeader, Slice* pSlice, ParameterSetManager& parameterSetManager, APS** apss, APS* lmcsAPS, APS* scalingListAPS)
 {
 #if JVET_R0232_CCALF_APS_CONSTRAINT
@@ -2169,6 +2193,9 @@ void DecLib::xDecodeAPS(InputNALUnit& nalu)
   m_HLSReader.parseAPS(aps);
   aps->setTemporalId(nalu.m_temporalId);
   aps->setLayerId( nalu.m_nuhLayerId );
+#if JVET_R0201_PREFIX_SUFFIX_APS_CLEANUP
+  aps->setHasPrefixNalUnitType( nalu.m_nalUnitType == NAL_UNIT_PREFIX_APS );
+#endif
   m_parameterSetManager.checkAuApsContent( aps, m_accessUnitApsNals );
 
   // aps will be deleted if it was already stored (and did not changed),
@@ -2181,7 +2208,9 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay, i
   // ignore all NAL units of layers > 0
 
   m_accessUnitNals.push_back( std::pair<NalUnitType, int>( nalu.m_nalUnitType, nalu.m_temporalId ) );
-
+#if JVET_R0201_PREFIX_SUFFIX_APS_CLEANUP
+  m_pictureUnitNals.push_back( nalu.m_nalUnitType );
+#endif
   switch (nalu.m_nalUnitType)
   {
     case NAL_UNIT_VPS:

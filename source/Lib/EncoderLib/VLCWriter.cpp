@@ -408,7 +408,14 @@ void HLSWriter::codePPS( const PPS* pcPPS )
 
     // loop filtering across slice/tile controls
     WRITE_FLAG( pcPPS->getLoopFilterAcrossTilesEnabledFlag(), "loop_filter_across_tiles_enabled_flag");
+#if JVET_R0247_PPS_LP_FTR_ACROSS_SLICES_FLAG_CLEANUP
+    if (pcPPS->getRectSliceFlag() == 0 || pcPPS->getSingleSlicePerSubPicFlag() || pcPPS->getNumSlicesInPic() > 1)
+    {
+#endif
     WRITE_FLAG( pcPPS->getLoopFilterAcrossSlicesEnabledFlag(), "loop_filter_across_slices_enabled_flag");
+#if JVET_R0247_PPS_LP_FTR_ACROSS_SLICES_FLAG_CLEANUP
+    }
+#endif
   }
 
   WRITE_FLAG( pcPPS->getCabacInitPresentFlag() ? 1 : 0,   "cabac_init_present_flag" );

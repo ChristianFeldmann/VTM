@@ -556,18 +556,18 @@ void SEIReader::xParseSEIDecodingUnitInfo(SEIDecodingUnitInfo& sei, uint32_t pay
     {
       if (i < (bp.m_bpMaxSubLayers - 1))
       {
-#else
-    for (int i = temporalId; i < bp.m_bpMaxSubLayers - 1; i++)
-    {
-#endif
-      sei_read_flag( pDecodedMessageOutputStream, val, "dui_sub_layer_delays_present_flag[i]" );
-      sei.m_duiSubLayerDelaysPresentFlag[i] = val;
-#if JVET_R0100
+        sei_read_flag( pDecodedMessageOutputStream, val, "dui_sub_layer_delays_present_flag[i]" );
+        sei.m_duiSubLayerDelaysPresentFlag[i] = val;
       }
       else
       {
         sei.m_duiSubLayerDelaysPresentFlag[i] = 1;
       }
+#else
+    for ( int i = temporalId; i < bp.m_bpMaxSubLayers - 1; i++)
+    {
+      sei_read_flag( pDecodedMessageOutputStream, val, "dui_sub_layer_delays_present_flag[i]" );
+      sei.m_duiSubLayerDelaysPresentFlag[i] = val;
 #endif
       if( sei.m_duiSubLayerDelaysPresentFlag[i] )
       {

@@ -1593,12 +1593,20 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader, bool writeRbspTrailingB
       WRITE_CODE(picHeader->getNumVerVirtualBoundaries(), 2, "ph_num_ver_virtual_boundaries");
       for( unsigned i = 0; i < picHeader->getNumVerVirtualBoundaries(); i++ )
       {
+#if JVET_R0266_DESC
+        WRITE_UVLC(picHeader->getVirtualBoundariesPosX(i) >> 3, "ph_virtual_boundaries_pos_x");
+#else
         WRITE_CODE(picHeader->getVirtualBoundariesPosX(i) >> 3, 13, "ph_virtual_boundaries_pos_x");
+#endif
       }
       WRITE_CODE(picHeader->getNumHorVirtualBoundaries(), 2, "ph_num_hor_virtual_boundaries");
       for( unsigned i = 0; i < picHeader->getNumHorVirtualBoundaries(); i++ )
       {
+#if JVET_R0266_DESC
+        WRITE_UVLC(picHeader->getVirtualBoundariesPosY(i)>>3, "ph_virtual_boundaries_pos_y");
+#else
         WRITE_CODE(picHeader->getVirtualBoundariesPosY(i)>>3, 13, "ph_virtual_boundaries_pos_y");
+#endif
       }
     }
     else

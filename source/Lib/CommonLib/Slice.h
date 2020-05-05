@@ -2180,7 +2180,9 @@ private:
   int                         m_numAlfAps;                                              //!< number of alf aps active for the picture
   std::vector<int>            m_alfApsId;                                               //!< list of alf aps for the picture
   int                         m_alfChromaApsId;                                         //!< chroma alf aps ID
+#if !JVET_R0225_SEPERATE_FLAGS_ALF_CHROMA
   int                         m_alfChromaIdc;                                            //!< alf chroma idc
+#endif
   bool m_ccalfEnabledFlag[MAX_NUM_COMPONENT];
   int  m_ccalfCbApsId;
   int  m_ccalfCrApsId;

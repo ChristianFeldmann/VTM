@@ -51,6 +51,7 @@
 #include <cassert>
 
 //########### place macros to be removed in next cycle below this line ###############
+#define JVET_R0266_DESC                                   1 // JVET-R0266: change the signalling of the PPS ID from ue(v) to u(6); Code virtual boundary positions using ue(v)
 #define JVET_R0330_CRS_CLIP_REM                           1 // JVET-R0330: Remove redundant clipping in chroma residual scaling factor derivation
 
 #define JVET_R0059_RPL_CLEANUP                            1 // JVET-R0059 aspect 2: Condition the signalling of ltrp_in_header_flag[ listIdx ][ rplsIdx ].

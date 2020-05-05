@@ -255,8 +255,11 @@ void HLSWriter::codePPS( const PPS* pcPPS )
 #if ENABLE_TRACING
   xTracePPSHeader ();
 #endif
-
+#if JVET_R0266_DESC
+  WRITE_CODE( pcPPS->getPPSId(), 6,                          "pps_pic_parameter_set_id" );
+#else
   WRITE_UVLC( pcPPS->getPPSId(),                             "pps_pic_parameter_set_id" );
+#endif
   WRITE_CODE( pcPPS->getSPSId(), 4,                          "pps_seq_parameter_set_id" );
 
   WRITE_FLAG( pcPPS->getMixedNaluTypesInPicFlag() ? 1 : 0,   "mixed_nalu_types_in_pic_flag" );
@@ -1136,12 +1139,20 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
       WRITE_CODE( pcSPS->getNumVerVirtualBoundaries(), 2, "sps_num_ver_virtual_boundaries");
       for( unsigned i = 0; i < pcSPS->getNumVerVirtualBoundaries(); i++ )
       {
+#if JVET_R0266_DESC
+        WRITE_UVLC((pcSPS->getVirtualBoundariesPosX(i)>>3), "sps_virtual_boundaries_pos_x");
+#else
         WRITE_CODE((pcSPS->getVirtualBoundariesPosX(i)>>3), 13, "sps_virtual_boundaries_pos_x");
+#endif
       }
       WRITE_CODE(pcSPS->getNumHorVirtualBoundaries(), 2, "sps_num_hor_virtual_boundaries");
       for( unsigned i = 0; i < pcSPS->getNumHorVirtualBoundaries(); i++ )
       {
+#if JVET_R0266_DESC
+        WRITE_UVLC((pcSPS->getVirtualBoundariesPosY(i)>>3), "sps_virtual_boundaries_pos_y");
+#else
         WRITE_CODE((pcSPS->getVirtualBoundariesPosY(i)>>3), 13, "sps_virtual_boundaries_pos_y");
+#endif
       }
     }
   }

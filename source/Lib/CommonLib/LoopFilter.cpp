@@ -804,6 +804,16 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
 
   // and now the pred
   if ( m_aapucBS[edgeDir][rasterIdx] != 0 && m_aapucBS[edgeDir][rasterIdx] != 3 ) return tmpBs;
+#if JVET_R0437_BS_DERIVATION
+  if( chType == CHANNEL_TYPE_CHROMA )
+  {
+    return tmpBs;
+  }
+  if( cuP.predMode != cuQ.predMode && chType == CHANNEL_TYPE_LUMA )
+  {
+    return BsSet(1, COMPONENT_Y);
+  }
+#endif
   const Position& lumaPosQ  = Position{ localPos.x,  localPos.y };
   const Position  lumaPosP  = ( edgeDir == EDGE_VER ) ? lumaPosQ.offset( -1, 0 ) : lumaPosQ.offset( 0, -1 );
   const MotionInfo&     miQ = cuQ.cs->getMotionInfo( lumaPosQ );

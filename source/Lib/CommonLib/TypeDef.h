@@ -61,6 +61,8 @@
 
 #define JVET_R0202_WHEN_PH_IN_SH_NO_SUBPIC_SEPARATE_COLOR 1 // JVET-R0202 Add constraints when sh_picture_header_in_slice_header_flag equal to 1 sps_subpic_info_present_flag and separate_colour_plane_flag shall be equal to 0
 
+#define JVET_R0247_PPS_LP_FTR_ACROSS_SLICES_FLAG_CLEANUP  1 // JVET-R0247: Skip pps_loop_filter_across_slices_enabled_flag when the picture contains one slice
+
 #define JVET_R0327_ONE_PASS_CCALF                         1 // JVET-R0327: One-pass CCALF
 
 #define JVET_R0200_MOVE_LMCS_AND_SCALING_LIST_SE          1 // JVET-R0200 Move the SH flags slice_lmcs_enabled_flag and slice_explicit_scaling_list_used_flag to be just after the ALF parameters

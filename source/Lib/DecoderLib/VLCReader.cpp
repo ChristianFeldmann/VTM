@@ -1144,11 +1144,19 @@ void  HLSyntaxReader::parseVUI(VUI* pcVUI, SPS *pcSPS)
     READ_FLAG(   symbol, "vui_video_full_range_flag");                    pcVUI->setVideoFullRangeFlag(symbol);
   }
 
+#if JVET_R0090_VUI
+  READ_FLAG(symbol,  "general_progressive_source_flag"          ); pcVUI->setProgressiveSourceFlag(symbol ? true : false);
+  READ_FLAG(symbol,  "general_interlaced_source_flag"           ); pcVUI->setInterlacedSourceFlag(symbol ? true : false);
+#endif
   READ_FLAG(     symbol, "vui_chroma_loc_info_present_flag");             pcVUI->setChromaLocInfoPresentFlag(symbol);
   if (pcVUI->getChromaLocInfoPresentFlag())
   {
+#if JVET_R0090_VUI
+    if(pcVUI->getProgressiveSourceFlag() && !pcVUI->getInterlacedSourceFlag())
+#else
     if(pcSPS->getProfileTierLevel()->getConstraintInfo()->getProgressiveSourceFlag() &&
        !pcSPS->getProfileTierLevel()->getConstraintInfo()->getInterlacedSourceFlag())
+#endif
     {
       READ_UVLC(   symbol, "vui_chroma_sample_loc_type" );        pcVUI->setChromaSampleLocType(symbol);
     }
@@ -4324,8 +4332,10 @@ void HLSyntaxReader::getSlicePoc(Slice* pcSlice, PicHeader* picHeader, Parameter
 void HLSyntaxReader::parseConstraintInfo(ConstraintInfo *cinfo)
 {
   uint32_t symbol;
+#if !JVET_R0090_VUI
   READ_FLAG(symbol,  "general_progressive_source_flag"          ); cinfo->setProgressiveSourceFlag(symbol ? true : false);
   READ_FLAG(symbol,  "general_interlaced_source_flag"           ); cinfo->setInterlacedSourceFlag(symbol ? true : false);
+#endif
   READ_FLAG(symbol,  "general_non_packed_constraint_flag"       ); cinfo->setNonPackedConstraintFlag(symbol ? true : false);
   READ_FLAG(symbol,  "general_frame_only_constraint_flag"       ); cinfo->setFrameOnlyConstraintFlag(symbol ? true : false);
   READ_FLAG(symbol,  "general_non_projected_constraint_flag"    ); cinfo->setNonProjectedConstraintFlag(symbol ? true : false);

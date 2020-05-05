@@ -705,11 +705,19 @@ void HLSWriter::codeVUI( const VUI *pcVUI, const SPS* pcSPS )
     WRITE_CODE(pcVUI->getMatrixCoefficients(), 8,             "vui_matrix_coeffs");
     WRITE_FLAG(pcVUI->getVideoFullRangeFlag(),                "vui_video_full_range_flag");
   }
+#if JVET_R0090_VUI
+  WRITE_FLAG(pcVUI->getProgressiveSourceFlag(),   "general_progressive_source_flag"         );
+  WRITE_FLAG(pcVUI->getInterlacedSourceFlag(),    "general_interlaced_source_flag"          );
+#endif
   WRITE_FLAG(pcVUI->getChromaLocInfoPresentFlag(),              "vui_chroma_loc_info_present_flag");
   if (pcVUI->getChromaLocInfoPresentFlag())
   {
+#if JVET_R0090_VUI
+    if(pcVUI->getProgressiveSourceFlag() && !pcVUI->getInterlacedSourceFlag())
+#else
     if(pcSPS->getProfileTierLevel()->getConstraintInfo()->getProgressiveSourceFlag() &&
        !pcSPS->getProfileTierLevel()->getConstraintInfo()->getInterlacedSourceFlag())
+#endif
     {
       WRITE_UVLC(pcVUI->getChromaSampleLocType(),         "vui_chroma_sample_loc_type");
     }
@@ -2555,8 +2563,10 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
 
 void  HLSWriter::codeConstraintInfo  ( const ConstraintInfo* cinfo )
 {
+#if !JVET_R0090_VUI
   WRITE_FLAG(cinfo->getProgressiveSourceFlag(),   "general_progressive_source_flag"         );
   WRITE_FLAG(cinfo->getInterlacedSourceFlag(),    "general_interlaced_source_flag"          );
+#endif
   WRITE_FLAG(cinfo->getNonPackedConstraintFlag(), "general_non_packed_constraint_flag"      );
   WRITE_FLAG(cinfo->getFrameOnlyConstraintFlag(), "general_frame_only_constraint_flag"      );
   WRITE_FLAG(cinfo->getNonProjectedConstraintFlag(), "general_non_projected_constraint_flag");

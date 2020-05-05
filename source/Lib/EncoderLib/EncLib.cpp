@@ -1054,8 +1054,10 @@ void EncLib::xInitSPS( SPS& sps )
 {
   ProfileTierLevel* profileTierLevel = sps.getProfileTierLevel();
   ConstraintInfo* cinfo = profileTierLevel->getConstraintInfo();
+#if !JVET_R0090_VUI
   cinfo->setProgressiveSourceFlag       (m_progressiveSourceFlag);
   cinfo->setInterlacedSourceFlag        (m_interlacedSourceFlag);
+#endif
   cinfo->setNonPackedConstraintFlag     (m_nonPackedConstraintFlag);
   cinfo->setNonProjectedConstraintFlag(m_nonProjectedConstraintFlag);
   cinfo->setNoResChangeInClvsConstraintFlag(m_noResChangeInClvsConstraintFlag);
@@ -1261,6 +1263,10 @@ void EncLib::xInitSPS( SPS& sps )
     pcVUI->setColourPrimaries(getColourPrimaries());
     pcVUI->setTransferCharacteristics(getTransferCharacteristics());
     pcVUI->setMatrixCoefficients(getMatrixCoefficients());
+#if JVET_R0090_VUI
+    pcVUI->setProgressiveSourceFlag       (getProgressiveSourceFlag());
+    pcVUI->setInterlacedSourceFlag        (getInterlacedSourceFlag());
+#endif
     pcVUI->setChromaLocInfoPresentFlag(getChromaLocInfoPresentFlag());
     pcVUI->setChromaSampleLocTypeTopField(getChromaSampleLocTypeTopField());
     pcVUI->setChromaSampleLocTypeBottomField(getChromaSampleLocTypeBottomField());

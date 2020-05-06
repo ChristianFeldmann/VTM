@@ -1813,7 +1813,11 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader, bool writeRbspTrailingB
     if (sps->getSPSTemporalMVPEnabledFlag())
     {
       WRITE_FLAG( picHeader->getEnableTMVPFlag(), "ph_temporal_mvp_enabled_flag" );
+#if R0324_PH_SYNTAX_CONDITION_MODIFY
+      if (picHeader->getEnableTMVPFlag() && pps->getRplInfoInPhFlag() && picHeader->getRPL(1)->getNumRefEntries() > 0)
+#else
       if (picHeader->getEnableTMVPFlag() && pps->getRplInfoInPhFlag())
+#endif
       {
         WRITE_CODE(picHeader->getPicColFromL0Flag(), 1, "ph_collocated_from_l0_flag");
         if ((picHeader->getPicColFromL0Flag() && picHeader->getRPL(0)->getNumRefEntries() > 1) ||
@@ -1829,8 +1833,14 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader, bool writeRbspTrailingB
     }
 
   // mvd L1 zero flag
+#if R0324_PH_SYNTAX_CONDITION_MODIFY
+    if (!pps->getRplInfoInPhFlag() || picHeader->getRPL(1)->getNumRefEntries() > 0)
+    {
+      WRITE_FLAG(picHeader->getMvdL1ZeroFlag(), "pic_mvd_l1_zero_flag");
+    }
+#else
     WRITE_FLAG(picHeader->getMvdL1ZeroFlag(), "mvd_l1_zero_flag");
-
+#endif
   // merge candidate list size
   // subblock merge candidate list size
     if ( sps->getUseAffine() )
@@ -1853,7 +1863,11 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader, bool writeRbspTrailingB
     }
 
   // picture level BDOF disable flags
+#if R0324_PH_SYNTAX_CONDITION_MODIFY
+    if (sps->getBdofControlPresentFlag() && (!pps->getRplInfoInPhFlag() || picHeader->getRPL(1)->getNumRefEntries() > 0))
+#else
     if (sps->getBdofControlPresentFlag())
+#endif
     {
       WRITE_FLAG(picHeader->getDisBdofFlag(), "ph_disable_bdof_flag");
     }
@@ -1863,7 +1877,11 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader, bool writeRbspTrailingB
     }
 
   // picture level DMVR disable flags
+#if R0324_PH_SYNTAX_CONDITION_MODIFY
+    if (sps->getDmvrControlPresentFlag() && (!pps->getRplInfoInPhFlag() || picHeader->getRPL(1)->getNumRefEntries() > 0))
+#else
     if (sps->getDmvrControlPresentFlag())
+#endif
     {
       WRITE_FLAG(picHeader->getDisDmvrFlag(), "ph_disable_dmvr_flag");
     }
@@ -2802,6 +2820,12 @@ void HLSWriter::xCodePredWeightTable(PicHeader *picHeader, const SPS *sps)
     if (numRef == 0)
     {
       numLxWeights         = picHeader->getNumL1Weights();
+#if R0324_PH_SYNTAX_CONDITION_MODIFY
+      if (picHeader->getRPL(1)->getNumRefEntries() > 0)
+      {
+        WRITE_UVLC(numLxWeights, "num_l1_weights");
+      }
+#endif
       moreSyntaxToBeParsed = (numLxWeights == 0) ? false : true;
     }
   }

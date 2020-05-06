@@ -51,6 +51,8 @@
 #include <cassert>
 
 //########### place macros to be removed in next cycle below this line ###############
+#define R0324_PH_SYNTAX_CONDITION_MODIFY                  1 // JVET-R0324 add conditions on PH syntax to conder whether current pic is bi-predictive picture
+
 #define JVET_R0130_TC_DERIVATION_BUGFIX                   1 // JVET-R0130: Cleanup of tC derivation for deblocking filter
 
 #define JVET_R0334_PLT_CLEANUP                            1 // JVET-R0334: Disable chroma palette for local dual tree

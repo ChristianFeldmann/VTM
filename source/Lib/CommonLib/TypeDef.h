@@ -52,6 +52,9 @@
 
 //########### place macros to be removed in next cycle below this line ###############
 
+#define JVET_R0191_ASPECT3                                1 // JVET-R0191#3: Modify the upper range of vps_num_dpb_params and num_ols_hrd_params_minus1 to be total number of OLSs minus the number of single-layer OLSs
+                                                            //               Constrain that each PTL, DPB, and HRD params in VPS are referred to at least once
+
 #define R0324_PH_SYNTAX_CONDITION_MODIFY                  1 // JVET-R0324 add conditions on PH syntax to conder whether current pic is bi-predictive picture
 
 #define JVET_R0130_TC_DERIVATION_BUGFIX                   1 // JVET-R0130: Cleanup of tC derivation for deblocking filter

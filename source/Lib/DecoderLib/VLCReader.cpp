@@ -2920,14 +2920,23 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
     {
       picHeader->setEnableTMVPFlag(false);
     }
-#if R0324_PH_SYNTAX_CONDITION_MODIFY
-    if (picHeader->getEnableTMVPFlag() && pps->getRplInfoInPhFlag() && picHeader->getRPL(1)->getNumRefEntries() > 0)
-#else
+
     if (picHeader->getEnableTMVPFlag() && pps->getRplInfoInPhFlag())
-#endif
     {
+#if R0324_PH_SYNTAX_CONDITION_MODIFY
+      if (picHeader->getRPL(1)->getNumRefEntries() > 0)
+      {
+        READ_CODE(1, uiCode, "ph_collocated_from_l0_flag");
+        picHeader->setPicColFromL0Flag(uiCode);
+      }
+      else
+      {
+        picHeader->setPicColFromL0Flag(1);
+      }
+#else
       READ_CODE( 1, uiCode, "ph_collocated_from_l0_flag");
       picHeader->setPicColFromL0Flag(uiCode);
+#endif
       if ((picHeader->getPicColFromL0Flag() == 1 && picHeader->getRPL(0)->getNumRefEntries() > 1) ||
         (picHeader->getPicColFromL0Flag() == 0 && picHeader->getRPL(1)->getNumRefEntries() > 1))
       {
@@ -2939,20 +2948,13 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
         picHeader->setColRefIdx(0);
       }
     }
-#if R0324_PH_SYNTAX_CONDITION_MODIFY
-    else if (picHeader->getEnableTMVPFlag() && pps->getRplInfoInPhFlag() && picHeader->getRPL(1)->getNumRefEntries() == 0)
-    {
-      picHeader->setPicColFromL0Flag(1);
-    }
-#else
     else
     {
       picHeader->setPicColFromL0Flag(0);
     }
-#endif
 
   // mvd L1 zero flag
-    #if R0324_PH_SYNTAX_CONDITION_MODIFY
+#if R0324_PH_SYNTAX_CONDITION_MODIFY
     if (!pps->getRplInfoInPhFlag() || picHeader->getRPL(1)->getNumRefEntries() > 0)
     {
       READ_FLAG(uiCode, "pic_mvd_l1_zero_flag");

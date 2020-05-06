@@ -1868,13 +1868,16 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader, bool writeRbspTrailingB
     if (sps->getSPSTemporalMVPEnabledFlag())
     {
       WRITE_FLAG( picHeader->getEnableTMVPFlag(), "ph_temporal_mvp_enabled_flag" );
-#if R0324_PH_SYNTAX_CONDITION_MODIFY
-      if (picHeader->getEnableTMVPFlag() && pps->getRplInfoInPhFlag() && picHeader->getRPL(1)->getNumRefEntries() > 0)
-#else
       if (picHeader->getEnableTMVPFlag() && pps->getRplInfoInPhFlag())
-#endif
       {
+#if R0324_PH_SYNTAX_CONDITION_MODIFY
+        if (picHeader->getRPL(1)->getNumRefEntries() > 0)
+        {
+          WRITE_CODE(picHeader->getPicColFromL0Flag(), 1, "ph_collocated_from_l0_flag");
+        }
+#else
         WRITE_CODE(picHeader->getPicColFromL0Flag(), 1, "ph_collocated_from_l0_flag");
+#endif
         if ((picHeader->getPicColFromL0Flag() && picHeader->getRPL(0)->getNumRefEntries() > 1) ||
           (!picHeader->getPicColFromL0Flag() && picHeader->getRPL(1)->getNumRefEntries() > 1))
         {

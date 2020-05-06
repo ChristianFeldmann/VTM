@@ -1546,7 +1546,12 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader, bool writeRbspTrailingB
         const int alfChromaIdc = picHeader->getAlfEnabledFlag(COMPONENT_Cb) + picHeader->getAlfEnabledFlag(COMPONENT_Cr) * 2 ;
         if (sps->getChromaFormatIdc() != CHROMA_400)
         {
+#if JVET_R0225_SEPERATE_FLAGS_ALF_CHROMA
+          WRITE_CODE(picHeader->getAlfEnabledFlag(COMPONENT_Cb), 1, "ph_alf_cb_enabled_flag");
+          WRITE_CODE(picHeader->getAlfEnabledFlag(COMPONENT_Cr), 1, "ph_alf_cr_enabled_flag");
+#else
           WRITE_CODE(alfChromaIdc, 2, "ph_alf_chroma_idc");
+#endif
         }
         if (alfChromaIdc)
         {
@@ -2157,7 +2162,12 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
       const int alfChromaIdc = pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Cb) + pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Cr) * 2;
       if (chromaEnabled)
       {
+#if JVET_R0225_SEPERATE_FLAGS_ALF_CHROMA
+        WRITE_CODE(pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Cb), 1, "slice_alf_cb_enabled_flag");
+        WRITE_CODE(pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Cr), 1, "slice_alf_cr_enabled_flag");
+#else
         WRITE_CODE(alfChromaIdc, 2, "slice_alf_chroma_idc");
+#endif
       }
       if (alfChromaIdc)
       {

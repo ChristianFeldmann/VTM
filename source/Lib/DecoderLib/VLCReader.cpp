@@ -2419,7 +2419,12 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
       READ_FLAG(uiCode, "ph_alf_enabled_flag");
       picHeader->setAlfEnabledFlag(COMPONENT_Y, uiCode);
 
+#if JVET_R0225_SEPERATE_FLAGS_ALF_CHROMA
+      int alfCbEnabledFlag = 0;
+      int alfCrEnabledFlag = 0;
+#else
       int alfChromaIdc = 0;
+#endif
       if (uiCode)
       {
         READ_CODE(3, uiCode, "ph_num_alf_aps_ids_luma");
@@ -2436,15 +2441,29 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
 
         if (sps->getChromaFormatIdc() != CHROMA_400)
         {
+#if JVET_R0225_SEPERATE_FLAGS_ALF_CHROMA
+          READ_CODE(1, uiCode, "ph_alf_cb_enabled_flag");   alfCbEnabledFlag = uiCode;
+          READ_CODE(1, uiCode, "ph_alf_cr_enabled_flag");   alfCrEnabledFlag = uiCode;
+#else
           READ_CODE(2, uiCode, "ph_alf_chroma_idc");
           alfChromaIdc = uiCode;
+#endif
         }
         else
         {
+#if JVET_R0225_SEPERATE_FLAGS_ALF_CHROMA
+          alfCbEnabledFlag = 0;
+          alfCrEnabledFlag = 0;
+#else
           alfChromaIdc = 0;
+#endif
         }
+#if JVET_R0225_SEPERATE_FLAGS_ALF_CHROMA
+        if (alfCbEnabledFlag || alfCrEnabledFlag)
+#else
         picHeader->setAlfChromaIdc(alfChromaIdc);
         if (alfChromaIdc)
+#endif
         {
           READ_CODE(3, uiCode, "ph_alf_aps_id_chroma");
           picHeader->setAlfApsIdChroma(uiCode);
@@ -2476,8 +2495,13 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
       {
         picHeader->setNumAlfAps(0);
       }
+#if JVET_R0225_SEPERATE_FLAGS_ALF_CHROMA
+      picHeader->setAlfEnabledFlag(COMPONENT_Cb, alfCbEnabledFlag);
+      picHeader->setAlfEnabledFlag(COMPONENT_Cr, alfCrEnabledFlag);
+#else
       picHeader->setAlfEnabledFlag(COMPONENT_Cb, alfChromaIdc & 1);
       picHeader->setAlfEnabledFlag(COMPONENT_Cr, alfChromaIdc >> 1);
+#endif
     }
     else
     {
@@ -3212,7 +3236,11 @@ void  HLSyntaxReader::checkAlfNaluTidAndPicTid(Slice* pcSlice, PicHeader* picHea
       CHECK(aps->getTemporalId() > curPicTid, "The TemporalId of the APS NAL unit having aps_params_type equal to ALF_APS and adaptation_parameter_set_id equal to ph_alf_aps_id_luma[ i ] shall be less than or equal to the TemporalId of the picture associated with the PH.");
     }
     //chroma
+#if JVET_R0225_SEPERATE_FLAGS_ALF_CHROMA
+    if (picHeader->getAlfEnabledFlag(COMPONENT_Cb) || picHeader->getAlfEnabledFlag(COMPONENT_Cr))
+#else
     if (picHeader->getAlfChromaIdc())
+#endif
     {
       int chromaAlfApsId = picHeader->getAlfApsIdChroma();
       aps = parameterSetManager->getAPS(chromaAlfApsId, ALF_APS);
@@ -3425,7 +3453,13 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
   {
     READ_FLAG(uiCode, "slice_alf_enabled_flag");
     pcSlice->setTileGroupAlfEnabledFlag(COMPONENT_Y, uiCode);
+#if JVET_R0225_SEPERATE_FLAGS_ALF_CHROMA
+    int alfCbEnabledFlag = 0;
+    int alfCrEnabledFlag = 0;
+#else
     int alfChromaIdc = 0;
+#endif
+
     if (uiCode)
     {
       READ_CODE(3, uiCode, "slice_num_alf_aps_ids_luma");
@@ -3445,13 +3479,27 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
       pcSlice->setAlfAPSs(apsId);
       if (bChroma)
       {
+#if JVET_R0225_SEPERATE_FLAGS_ALF_CHROMA
+        READ_CODE(1, uiCode, "slice_alf_cb_enabled_flag");   alfCbEnabledFlag = uiCode;
+        READ_CODE(1, uiCode, "slice_alf_cr_enabled_flag");   alfCrEnabledFlag = uiCode;
+#else
         READ_CODE(2, uiCode, "slice_alf_chroma_idc");   alfChromaIdc = uiCode;
+#endif
       }
       else
       {
+#if JVET_R0225_SEPERATE_FLAGS_ALF_CHROMA
+        alfCbEnabledFlag = 0;
+        alfCrEnabledFlag = 0;
+#else
         alfChromaIdc = 0;
+#endif
       }
+#if JVET_R0225_SEPERATE_FLAGS_ALF_CHROMA
+      if (alfCbEnabledFlag || alfCrEnabledFlag)
+#else
       if (alfChromaIdc)
+#endif
       {
         READ_CODE(3, uiCode, "slice_alf_aps_id_chroma");
         pcSlice->setTileGroupApsIdChroma(uiCode);
@@ -3464,8 +3512,13 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
     {
       pcSlice->setTileGroupNumAps(0);
     }
+#if JVET_R0225_SEPERATE_FLAGS_ALF_CHROMA
+    pcSlice->setTileGroupAlfEnabledFlag(COMPONENT_Cb, alfCbEnabledFlag);
+    pcSlice->setTileGroupAlfEnabledFlag(COMPONENT_Cr, alfCrEnabledFlag);
+#else
     pcSlice->setTileGroupAlfEnabledFlag(COMPONENT_Cb, alfChromaIdc & 1);
     pcSlice->setTileGroupAlfEnabledFlag(COMPONENT_Cr, alfChromaIdc >> 1);
+#endif
 
     CcAlfFilterParam &filterParam = pcSlice->m_ccAlfFilterParam;
     if (sps->getCCALFEnabledFlag() && pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Y))

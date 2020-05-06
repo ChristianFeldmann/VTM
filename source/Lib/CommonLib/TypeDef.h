@@ -51,6 +51,8 @@
 #include <cassert>
 
 //########### place macros to be removed in next cycle below this line ###############
+#define JVET_R0334_PLT_CLEANUP                            1 // JVET-R0334: Disable chroma palette for local dual tree
+
 #define JVET_R0205                                        1 // JVET-R0205: Condition presence of inter_layer_ref_pics_present_flag on sps_video_parameter_set_id 
 
 #define JVET_R0186_CLEANUP                                1 // JVET-R0186 aspect 1: Signal the pps_no_pic_partition_flag ahead in the PPS.

@@ -1041,7 +1041,12 @@ void LoopFilter::xEdgeFilterLuma( const CodingUnit& cu, const DeblockEdgeDir edg
       const int iIndexTC  = Clip3(0, MAX_QP + DEFAULT_INTRA_TC_OFFSET, int(iQP + DEFAULT_INTRA_TC_OFFSET*(uiBs - 1) + (tcOffsetDiv2 << 1)));
       const int iIndexB   = Clip3(0, MAX_QP, iQP + (betaOffsetDiv2 << 1));
 
+#if JVET_R0130_TC_DERIVATION_BUGFIX
+      const int roundOffset = 1 << (9 - bitDepthLuma);
+      const int iTc = bitDepthLuma < 10 ? ((sm_tcTable[iIndexTC] + roundOffset) >> (10 - bitDepthLuma)) : ((sm_tcTable[iIndexTC]) << (bitDepthLuma - 10));
+#else
       const int iTc = bitDepthLuma < 10 ? ((sm_tcTable[iIndexTC] + 2) >> (10 - bitDepthLuma)) : ((sm_tcTable[iIndexTC]) << (bitDepthLuma - 10));
+#endif
       const int iBeta     = sm_betaTable[iIndexB ] * iBitdepthScale;
       const int iSideThreshold = ( iBeta + ( iBeta >> 1 ) ) >> 3;
       const int iThrCut   = iTc * 10;

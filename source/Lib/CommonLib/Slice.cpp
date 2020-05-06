@@ -3949,8 +3949,10 @@ bool Slice::checkRPR()
 
 bool             operator == (const ConstraintInfo& op1, const ConstraintInfo& op2)
 {
+#if !JVET_R0090_VUI
   if( op1.m_progressiveSourceFlag                        != op2.m_progressiveSourceFlag                          ) return false;
   if( op1.m_interlacedSourceFlag                         != op2.m_interlacedSourceFlag                           ) return false;
+#endif
   if( op1.m_nonPackedConstraintFlag                      != op2.m_nonPackedConstraintFlag                        ) return false;
   if( op1.m_frameOnlyConstraintFlag                      != op2.m_frameOnlyConstraintFlag                        ) return false;
   if( op1.m_intraOnlyConstraintFlag                      != op2.m_intraOnlyConstraintFlag                        ) return false;

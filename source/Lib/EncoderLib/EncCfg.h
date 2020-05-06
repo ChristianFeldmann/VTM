@@ -219,8 +219,10 @@ protected:
   Level::Name   m_level;
   std::vector<uint32_t>      m_subProfile;
   uint8_t       m_numSubProfile;
+#if !JVET_R0090_VUI
   bool m_progressiveSourceFlag;
   bool m_interlacedSourceFlag;
+#endif
   bool m_nonPackedConstraintFlag;
   bool m_nonProjectedConstraintFlag;
   bool m_noResChangeInClvsConstraintFlag;
@@ -669,6 +671,10 @@ protected:
   int       m_colourPrimaries;                                ///< Indicates chromaticity coordinates of the source primaries
   int       m_transferCharacteristics;                        ///< Indicates the opto-electronic transfer characteristics of the source
   int       m_matrixCoefficients;                             ///< Describes the matrix coefficients used in deriving luma and chroma from RGB primaries
+#if JVET_R0090_VUI
+  bool      m_progressiveSourceFlag;                          ///< Indicates if the content is progressive
+  bool      m_interlacedSourceFlag;                           ///< Indicates if the content is interlaced
+#endif
   bool      m_chromaLocInfoPresentFlag;                       ///< Signals whether chroma_sample_loc_type_top_field and chroma_sample_loc_type_bottom_field are present
   int       m_chromaSampleLocTypeTopField;                    ///< Specifies the location of chroma samples for top field
   int       m_chromaSampleLocTypeBottomField;                 ///< Specifies the location of chroma samples for bottom field

@@ -91,6 +91,8 @@
 
 #define JVET_R0371_MAX_NUM_SUB_BLK_MRG_CAND               1 // JVET-R0371: set the range of max number of subblock based merge candidate to 0 to 5 - sps_sbtmvp_enabled_flag. 
 
+#define JVET_R0113_AND_JVET_R0106_PPS_CLEANUP             1 // JVET-R0113 and JVET-R0106: Cleanup in Picture Parameter Set
+
 #define JVET_R0233_CCALF_LINE_BUFFER_REDUCTION            1 // JVET-R0233 method 2: Line buffer reduction for CCALF
 
 #define JVET_Q0471_CHROMA_QT_SPLIT                        0 // JVET-Q0471: Chroma QT split, reverted by JVET-R0131

@@ -64,6 +64,8 @@
 
 #define JVET_R0225_SEPERATE_FLAGS_ALF_CHROMA              1 // Use two separate flags (one for Cb, one for Cr) to replace ph_alf_chroma_idc in PH and sh_alf_chroma_idc in SH
 
+#define JVET_R0266_DESC                                   1 // JVET-R0266: change the signalling of the PPS ID from ue(v) to u(6); Code virtual boundary positions using ue(v)
+
 #define JVET_R0330_CRS_CLIP_REM                           1 // JVET-R0330: Remove redundant clipping in chroma residual scaling factor derivation
 
 #define JVET_R0059_RPL_CLEANUP                            1 // JVET-R0059 aspect 2: Condition the signalling of ltrp_in_header_flag[ listIdx ][ rplsIdx ].

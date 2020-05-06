@@ -427,8 +427,11 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
   uint32_t  uiCode;
 
   int   iCode;
-
+#if JVET_R0266_DESC
+  READ_CODE(6, uiCode, "pps_pic_parameter_set_id");
+#else
   READ_UVLC( uiCode, "pps_pic_parameter_set_id");
+#endif
   CHECK(uiCode > 63, "PPS id exceeds boundary (63)");
   pcPPS->setPPSId (uiCode);
 
@@ -1924,12 +1927,20 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     READ_CODE( 2, uiCode, "sps_num_ver_virtual_boundaries");        pcSPS->setNumVerVirtualBoundaries( uiCode );
     for( unsigned i = 0; i < pcSPS->getNumVerVirtualBoundaries(); i++ )
     {
+#if JVET_R0266_DESC
+      READ_UVLC(uiCode, "sps_virtual_boundaries_pos_x");        pcSPS->setVirtualBoundariesPosX(uiCode << 3, i);
+#else
       READ_CODE(13, uiCode, "sps_virtual_boundaries_pos_x");        pcSPS->setVirtualBoundariesPosX(uiCode << 3, i);
+#endif
     }
     READ_CODE( 2, uiCode, "sps_num_hor_virtual_boundaries");        pcSPS->setNumHorVirtualBoundaries( uiCode );
     for( unsigned i = 0; i < pcSPS->getNumHorVirtualBoundaries(); i++ )
     {
+#if JVET_R0266_DESC
+      READ_UVLC(uiCode, "sps_virtual_boundaries_pos_y");        pcSPS->setVirtualBoundariesPosY(uiCode << 3, i);
+#else
       READ_CODE(13, uiCode, "sps_virtual_boundaries_pos_y");        pcSPS->setVirtualBoundariesPosY(uiCode << 3, i);
+#endif
     }
   }
   else
@@ -2602,12 +2613,20 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
       READ_CODE( 2, uiCode, "ph_num_ver_virtual_boundaries");        picHeader->setNumVerVirtualBoundaries( uiCode );
       for( unsigned i = 0; i < picHeader->getNumVerVirtualBoundaries(); i++ )
       {
+#if JVET_R0266_DESC
+        READ_UVLC(uiCode, "ph_virtual_boundaries_pos_x");        picHeader->setVirtualBoundariesPosX(uiCode << 3, i);
+#else
         READ_CODE(13, uiCode, "ph_virtual_boundaries_pos_x");        picHeader->setVirtualBoundariesPosX(uiCode << 3, i);
+#endif
       }
       READ_CODE( 2, uiCode, "ph_num_hor_virtual_boundaries");        picHeader->setNumHorVirtualBoundaries( uiCode );
       for( unsigned i = 0; i < picHeader->getNumHorVirtualBoundaries(); i++ )
       {
+#if JVET_R0266_DESC
+        READ_UVLC(uiCode, "ph_virtual_boundaries_pos_y");        picHeader->setVirtualBoundariesPosY(uiCode << 3, i);
+#else
         READ_CODE(13, uiCode, "ph_virtual_boundaries_pos_y");        picHeader->setVirtualBoundariesPosY(uiCode << 3, i);
+#endif
       }
     }
     else

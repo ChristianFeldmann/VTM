@@ -281,12 +281,18 @@ public:
     , m_sublayerInitialCpbRemovalDelayPresentFlag(false)
     , m_additionalConcatenationInfoPresentFlag (false)
     , m_maxInitialRemovalDelayForConcatenation (0)
+#if JVET_R0094_DPB_TID_OFFSET
+    , m_sublayerDpbOutputOffsetsPresentFlag (false)
+#endif
     , m_altCpbParamsPresentFlag (false)
     , m_useAltCpbParamsFlag (false)
   {
     ::memset(m_initialCpbRemovalDelay, 0, sizeof(m_initialCpbRemovalDelay));
     ::memset(m_initialCpbRemovalOffset, 0, sizeof(m_initialCpbRemovalOffset));
     ::memset(m_cpbRemovalDelayDelta, 0, sizeof(m_cpbRemovalDelayDelta));
+#if JVET_R0094_DPB_TID_OFFSET
+    ::memset(m_dpbOutputTidOffset, 0, sizeof(m_dpbOutputTidOffset));
+#endif
   }
   virtual ~SEIBufferingPeriod() {}
 
@@ -316,6 +322,10 @@ public:
   bool m_sublayerInitialCpbRemovalDelayPresentFlag;
   bool     m_additionalConcatenationInfoPresentFlag;
   uint32_t m_maxInitialRemovalDelayForConcatenation;
+#if JVET_R0094_DPB_TID_OFFSET
+  bool     m_sublayerDpbOutputOffsetsPresentFlag;
+  uint32_t m_dpbOutputTidOffset      [MAX_TLAYER];
+#endif
   bool     m_altCpbParamsPresentFlag;
   bool     m_useAltCpbParamsFlag;
 };

@@ -675,6 +675,19 @@ void SEIReader::xParseSEIBufferingPeriod(SEIBufferingPeriod& sei, uint32_t paylo
       }
     }
   }
+#if JVET_R0094_DPB_TID_OFFSET
+  sei_read_flag( pDecodedMessageOutputStream, code, "sublayer_dpb_output_offsets_present_flag" );
+  sei.m_sublayerDpbOutputOffsetsPresentFlag = code;
+  if(sei.m_sublayerDpbOutputOffsetsPresentFlag)
+  {
+    for(int i = 0; i < sei.m_bpMaxSubLayers - 1; i++)
+    {
+      sei_read_uvlc( pDecodedMessageOutputStream, code, "dpb_output_tid_offset[i]" );
+      sei.m_dpbOutputTidOffset[i] = code;
+    }
+    sei.m_dpbOutputTidOffset[sei.m_bpMaxSubLayers-1] = 0;
+  }
+#endif
   if (sei.m_altCpbParamsPresentFlag)
   {
     sei_read_flag(pDecodedMessageOutputStream, code, "use_alt_cpb_params_flag"); sei.m_useAltCpbParamsFlag = code;

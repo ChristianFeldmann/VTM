@@ -4156,7 +4156,11 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
   }
 
   // signal TS residual coding disabled flag
+#if JVET_R0483_SH_TSRC_DISABLED_FLAG_CLEANUP
+  if (sps->getTransformSkipEnabledFlag() && !pcSlice->getDepQuantEnabledFlag() && !pcSlice->getSignDataHidingEnabledFlag())
+#else
   if( !pcSlice->getDepQuantEnabledFlag() && !pcSlice->getSignDataHidingEnabledFlag() )
+#endif
   {
     READ_FLAG(uiCode, "slice_ts_residual_coding_disabled_flag");
     pcSlice->setTSResidualCodingDisabledFlag( uiCode != 0 );

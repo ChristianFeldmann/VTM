@@ -738,7 +738,7 @@ void HLSWriter::codeGeneralHrdparameters(const GeneralHrdParams * hrd)
   WRITE_CODE(hrd->getTimeScale(), 32, "time_scale");
   WRITE_FLAG(hrd->getGeneralNalHrdParametersPresentFlag() ? 1 : 0, "general_nal_hrd_parameters_present_flag");
   WRITE_FLAG(hrd->getGeneralVclHrdParametersPresentFlag() ? 1 : 0, "general_vcl_hrd_parameters_present_flag");
-  WRITE_FLAG(hrd->getGeneralSamPicTimingInAllOlsFlag() ? 1 : 0, "general_same_pic_timing_in_all_ols_flag");
+  WRITE_FLAG(hrd->getGeneralSamePicTimingInAllOlsFlag() ? 1 : 0, "general_same_pic_timing_in_all_ols_flag");
   WRITE_FLAG(hrd->getGeneralDecodingUnitHrdParamsPresentFlag() ? 1 : 0, "general_decoding_unit_hrd_params_present_flag");
   if (hrd->getGeneralDecodingUnitHrdParamsPresentFlag())
   {

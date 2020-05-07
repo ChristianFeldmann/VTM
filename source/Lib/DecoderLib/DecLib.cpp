@@ -2383,6 +2383,36 @@ void DecLib::xCheckMixedNalUnit(Slice* pcSlice, SPS *sps, InputNALUnit &nalu)
   {
     CHECK(pcSlice->getPPS()->getNumSlicesInPic() < 2, "mixed nal unit type picture, but with less than 2 slices");
 
+#if JVET_R0203_IRAP_LEADING_CONSTRAINT
+    CHECK( pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR, "picture with mixed NAL unit type cannot have GDR slice");
+
+    //Check that if current slice is IRAP type, the other type of NAL can only be TRAIL_NUT
+    if( pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_W_RADL || pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_N_LP || pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA )
+    {
+      for( int i = 0; i < m_uiSliceSegmentIdx; i++ )
+      {
+        Slice* PreSlice = m_pcPic->slices[i];
+        CHECK( (pcSlice->getNalUnitType() != PreSlice->getNalUnitType()) && (PreSlice->getNalUnitType() != NAL_UNIT_CODED_SLICE_TRAIL), "In a mixed NAL unt type picture, an IRAP slice can be mixed with Trail slice(s) only");
+      }
+    }
+
+    // if this is the last slice of the picture, check whether that there are at least two different NAL unit types in the picture
+    if (pcSlice->getPPS()->getNumSlicesInPic() == (m_uiSliceSegmentIdx + 1))
+    {
+      bool hasDiffTypes = false;
+      for( int i = 1; !hasDiffTypes && i <= m_uiSliceSegmentIdx; i++ )
+      {
+        Slice* slice1 = m_pcPic->slices[i-1];
+        Slice* slice2 = m_pcPic->slices[i];
+        if( slice1->getNalUnitType() != slice2->getNalUnitType())
+        {
+          hasDiffTypes = true;
+        }
+      }
+      CHECK( !hasDiffTypes, "VCL NAL units of the picture shall have two or more different nal_unit_type values");
+    }
+#endif
+
     const unsigned  ctuRsAddr = pcSlice->getCtuAddrInSlice(0);
     const unsigned  ctuXPosInCtus = ctuRsAddr % pcSlice->getPPS()->getPicWidthInCtu();
     const unsigned  ctuYPosInCtus = ctuRsAddr / pcSlice->getPPS()->getPicWidthInCtu();
@@ -2457,6 +2487,7 @@ void DecLib::xCheckMixedNalUnit(Slice* pcSlice, SPS *sps, InputNALUnit &nalu)
         }
       }
     }
+#if !JVET_R0203_IRAP_LEADING_CONSTRAINT
     // if this is the last slice of the picture, check whether the nalu type of the slices meet the nal unit type constraints
     if (pcSlice->getPPS()->getNumSlicesInPic() == (m_uiSliceSegmentIdx + 1))
     {
@@ -2524,6 +2555,7 @@ void DecLib::xCheckMixedNalUnit(Slice* pcSlice, SPS *sps, InputNALUnit &nalu)
         CHECK(!allNalsOK || !foundNalInOtherSet, "disallowed mix of nal unit types");
       }
     }
+#endif
   }
   else // all slices shall have the same nal unit type
   {

@@ -435,6 +435,10 @@ void SEIWriter::xWriteSEIPictureTiming(const SEIPictureTiming& sei, const SEIBuf
   if( bp.m_bpDecodingUnitHrdParamsPresentFlag && bp.m_decodingUnitCpbParamsInPicTimingSeiFlag )
   {
     WRITE_UVLC( sei.m_numDecodingUnitsMinus1, "num_decoding_units_minus1" );
+#if JVET_R0103_DU_SIGNALLING
+    if (sei.m_numDecodingUnitsMinus1 > 0)
+    {
+#endif
     WRITE_FLAG( sei.m_duCommonCpbRemovalDelayFlag, "du_commmon_cpb_removal_delay_flag" );
     if( sei.m_duCommonCpbRemovalDelayFlag )
     {
@@ -456,6 +460,9 @@ void SEIWriter::xWriteSEIPictureTiming(const SEIPictureTiming& sei, const SEIBuf
         }
       }
     }
+#if JVET_R0103_DU_SIGNALLING
+    }
+#endif
   }
   WRITE_UVLC( sei.m_ptDisplayElementalPeriodsMinus1,          "pt_display_elemental_periods_minus1" );
 }

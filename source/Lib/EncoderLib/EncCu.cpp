@@ -2302,7 +2302,7 @@ void EncCu::xCheckRDCostMerge2Nx2N( CodingStructure *&tempCS, CodingStructure *&
 
   static_vector<ModeInfo, MRG_MAX_NUM_CANDS + MMVD_ADD_NUM>  RdModeList;
   bool                                        mrgTempBufSet = false;
-  const int candNum = MRG_MAX_NUM_CANDS + (tempCS->sps->getUseMMVD() ? MMVD_ADD_NUM : 0);
+  const int candNum = mergeCtx.numValidMergeCand + (tempCS->sps->getUseMMVD() ? MMVD_ADD_NUM : 0);
 
   for (int i = 0; i < candNum; i++)
   {

@@ -373,8 +373,8 @@ void HLSWriter::codePPS( const PPS* pcPPS )
 #endif
 
 #if JVET_R0188
-        if( ( ( pcPPS->getSliceTileIdx( i ) / pcPPS->getNumTileColumns() ) != pcPPS->getNumTileRows() - 1 ) &&
-          pcPPS->getTileIdxDeltaPresentFlag() || ( ( pcPPS->getSliceTileIdx( i ) % pcPPS->getNumTileColumns() ) == 0 ) )
+        if( ( ( ( pcPPS->getSliceTileIdx( i ) / pcPPS->getNumTileColumns() ) != pcPPS->getNumTileRows() - 1 ) &&
+          pcPPS->getTileIdxDeltaPresentFlag() ) || ( ( pcPPS->getSliceTileIdx( i ) % pcPPS->getNumTileColumns() ) == 0 ) )
         {
            WRITE_UVLC( pcPPS->getSliceHeightInTiles( i ) - 1, "slice_height_in_tiles_minus1[i]" );
         }

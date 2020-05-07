@@ -2553,7 +2553,11 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
   }
 
   // signal TS residual coding disabled flag
+#if JVET_R0483_SH_TSRC_DISABLED_FLAG_CLEANUP
+  if (pcSlice->getSPS()->getTransformSkipEnabledFlag() && !pcSlice->getDepQuantEnabledFlag() && !pcSlice->getSignDataHidingEnabledFlag())
+#else
   if( !pcSlice->getDepQuantEnabledFlag() && !pcSlice->getSignDataHidingEnabledFlag() )
+#endif
   {
     WRITE_FLAG(pcSlice->getTSResidualCodingDisabledFlag() ? 1 : 0, "slice_ts_residual_coding_disabled_flag");
   }

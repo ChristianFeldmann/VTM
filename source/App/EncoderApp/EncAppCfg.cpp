@@ -3451,6 +3451,11 @@ bool EncAppCfg::xCheckParameter()
 
   xConfirmPara(m_useColorTrans && (m_log2MaxTbSize == 6), "Log2MaxTbSize must be less than 6 when ACT is enabled, otherwise ACT needs to be disabled");
 
+#if  JVET_R0097_MAX_TRSIZE_CONDITIONALY_SIGNALING
+  xConfirmPara(m_uiCTUSize <= 32 && (m_log2MaxTbSize == 6), "Log2MaxTbSize must be less than 6 when CTU size is 32");
+#endif
+
+
 #undef xConfirmPara
   return check_failed;
 }

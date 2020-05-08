@@ -2175,11 +2175,7 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
   READ_CODE(8, uiCode, "vps_num_ptls_minus1");        pcVPS->setNumPtls(uiCode + 1);
 #if JVET_R0191_ASPECT3
   CHECK( uiCode >= pcVPS->getTotalNumOLSs(),"The value of vps_num_ptls_minus1 shall be less than TotalNumOlss");
-  bool* isPTLReferred = (bool*)malloc(sizeof(bool) * (uiCode + 1));
-  for( int i = 0; i <= uiCode; i++ )
-  {
-    isPTLReferred[i] = false;
-  }
+  std::vector<bool> isPTLReferred( pcVPS->getNumPtls(), false);
 #endif
 
   for (int i = 0; i < pcVPS->getNumPtls(); i++)
@@ -2234,8 +2230,6 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
   {
     CHECK( !isPTLReferred[i],"Each profile_tier_level( ) syntax structure in the VPS shall be referred to by at least one value of vps_ols_ptl_idx[ i ] for i in the range of 0 to TotalNumOlss ? 1, inclusive");
   }
-  free(isPTLReferred);
-  isPTLReferred = 0;
 #endif
 
   if( !pcVPS->getAllIndependentLayersFlag() )
@@ -2245,11 +2239,7 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
 
 #if JVET_R0191_ASPECT3
   CHECK( pcVPS->m_numDpbParams > pcVPS->getNumMultiLayeredOlss(),"The value of vps_num_dpb_params_minus1 shall be in the range of 0 to NumMultiLayerOlss ? 1, inclusive");
-  bool* isDPBParamReferred = (bool*)malloc(sizeof(bool) * pcVPS->m_numDpbParams);
-  for( int i = 0; i < pcVPS->m_numDpbParams; i++ )
-  {
-    isDPBParamReferred[i] = false;
-  }
+  std::vector<bool> isDPBParamReferred(pcVPS->m_numDpbParams, false);
 #endif
 
   if( pcVPS->m_numDpbParams > 0 && pcVPS->getMaxSubLayers() > 1 )
@@ -2324,8 +2314,6 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
   {
     CHECK( !isDPBParamReferred[i],"Each dpb_parameters( ) syntax structure in the VPS shall be referred to by at least one value of vps_ols_dpb_params_idx[i] for i in the range of 0 to NumMultiLayerOlss ? 1, inclusive");
   }
-  free(isDPBParamReferred);
-  isDPBParamReferred = 0;
 #endif
   if (!pcVPS->getEachLayerIsAnOlsFlag())
   {
@@ -2346,11 +2334,7 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
     READ_UVLC(uiCode, "num_ols_hrd_params_minus1"); pcVPS->setNumOlsHrdParamsMinus1(uiCode);
 #if JVET_R0191_ASPECT3
     CHECK( uiCode >= pcVPS->getNumMultiLayeredOlss(),"The value of vps_num_ols_hrd_params_minus1 shall be in the range of 0 to NumMultiLayerOlss ? 1, inclusive");
-    bool* isHRDParamReferred = (bool*)malloc(sizeof(bool) * (uiCode + 1));
-    for( int i = 0; i <= uiCode; i++ )
-    {
-      isHRDParamReferred[i] = false;
-    }
+    std::vector<bool> isHRDParamReferred( uiCode + 1, false);
 #else
     CHECK(uiCode >= pcVPS->getTotalNumOLSs(),"The value of num_ols_hrd_params_minus1 shall be in the range of 0 to TotalNumOlss - 1, inclusive");
 #endif
@@ -2400,12 +2384,10 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
 #endif
     }
 #if JVET_R0191_ASPECT3
-  for( int i = 0; i <= pcVPS->getNumOlsHrdParamsMinus1(); i++ )
-  {
-    CHECK( !isHRDParamReferred[i], "Each ols_hrd_parameters( ) syntax structure in the VPS shall be referred to by at least one value of vps_ols_hrd_idx[ i ] for i in the range of 1 to NumMultiLayerOlss ? 1, inclusive");
-  }
-  free(isHRDParamReferred);
-  isHRDParamReferred = 0;
+    for( int i = 0; i <= pcVPS->getNumOlsHrdParamsMinus1(); i++ )
+    {
+      CHECK( !isHRDParamReferred[i], "Each ols_hrd_parameters( ) syntax structure in the VPS shall be referred to by at least one value of vps_ols_hrd_idx[ i ] for i in the range of 1 to NumMultiLayerOlss ? 1, inclusive");
+    }
 #endif
   }
 

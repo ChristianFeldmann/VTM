@@ -55,6 +55,8 @@
 
 #define JVET_R0483_SH_TSRC_DISABLED_FLAG_CLEANUP          1 // JVET-R0483 Comb 4: R0049 + R0271, only R0049 method 3 aspect (Skip signaling sh_ts_residual_coding_disabled_flag when sps_transform_skip_enabled_flag = 0, also proposed in R0068, R0097, R0142, R0153) as R0271 has its own macro 
 
+#define R0091_CONSTRAINT_SLICE_ORDER                      1 // JVET-R0091: constraint slice signalling order to be the same as slice coding order
+
 #define JVET_R0161_CONDITION_SIGNAL_PTL_IDX               1 // JVET_R0161 proposal 2: skip PTL index signaling when number of signaled PTL structure is equal to number of OLSs
 
 #define R0324_PH_SYNTAX_CONDITION_MODIFY                  1 // JVET-R0324 add conditions on PH syntax to conder whether current pic is bi-predictive picture

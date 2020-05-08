@@ -3064,6 +3064,10 @@ void PPS::initSubPic(const SPS &sps)
     else
     {
       int numSlicesInSubPic = 0;
+#if R0091_CONSTRAINT_SLICE_ORDER
+      int idxLastSliceInSubpic = -1;
+      int idxFirstSliceAfterSubpic = m_numSlicesInPic;
+#endif
       for (int j = 0; j < m_numSlicesInPic; j++)
       {
         uint32_t ctu = m_sliceMap[j].getCtuAddrInSlice(0);
@@ -3077,8 +3081,20 @@ void PPS::initSubPic(const SPS &sps)
           // add ctus in a slice to the subpicture it belongs to
           m_subPics[i].addCTUsToSubPic(m_sliceMap[j].getCtuAddrList());
 	  numSlicesInSubPic++;
+#if R0091_CONSTRAINT_SLICE_ORDER
+          idxLastSliceInSubpic = j;
+#endif
         }
+#if R0091_CONSTRAINT_SLICE_ORDER
+        else if (idxFirstSliceAfterSubpic == m_numSlicesInPic && idxLastSliceInSubpic != -1)
+        {
+          idxFirstSliceAfterSubpic = j;
+        }
+#endif
       }
+#if R0091_CONSTRAINT_SLICE_ORDER
+      CHECK( idxFirstSliceAfterSubpic < idxLastSliceInSubpic, "The signalling order of slices shall follow the coding order" );
+#endif
       m_subPics[i].setNumSlicesInSubPic(numSlicesInSubPic);
     }
     m_subPics[i].setTreatedAsPicFlag(sps.getSubPicTreatedAsPicFlag(i));

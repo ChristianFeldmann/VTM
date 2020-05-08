@@ -3123,11 +3123,7 @@ bool EncAppCfg::xCheckParameter()
     // rectangular slices
     if( !m_rasterSliceFlag )
     {
-      if (m_singleSlicePerSubPicFlag)
-      {
-        xConfirmPara( m_subPicInfoPresentFlag == 0 || m_numSubPics < 2, "SingleSlicePerSubPic requires more than one subpicture.");
-      }
-      else
+      if (!m_singleSlicePerSubPicFlag)
       {
         uint32_t sliceIdx;
         bool     needTileIdxDelta = false;
@@ -3450,6 +3446,11 @@ bool EncAppCfg::xCheckParameter()
 #endif
 
   xConfirmPara(m_useColorTrans && (m_log2MaxTbSize == 6), "Log2MaxTbSize must be less than 6 when ACT is enabled, otherwise ACT needs to be disabled");
+
+#if  JVET_R0097_MAX_TRSIZE_CONDITIONALY_SIGNALING
+  xConfirmPara(m_uiCTUSize <= 32 && (m_log2MaxTbSize == 6), "Log2MaxTbSize must be less than 6 when CTU size is 32");
+#endif
+
 
 #undef xConfirmPara
   return check_failed;

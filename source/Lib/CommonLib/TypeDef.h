@@ -51,11 +51,17 @@
 #include <cassert>
 
 //########### place macros to be removed in next cycle below this line ###############
+#define JVET_R0097_MAX_TRSIZE_CONDITIONALY_SIGNALING      1 // JVET-R0097: Aspect 1, If the luma CTB size is not larger than 32, sps_max_luma_transform_size_64_flag is not signalled and inferred to be 0
+
 #define JVET_R0483_SH_TSRC_DISABLED_FLAG_CLEANUP          1 // JVET-R0483 Comb 4: R0049 + R0271, only R0049 method 3 aspect (Skip signaling sh_ts_residual_coding_disabled_flag when sps_transform_skip_enabled_flag = 0, also proposed in R0068, R0097, R0142, R0153) as R0271 has its own macro 
 
 #define R0091_CONSTRAINT_SLICE_ORDER                      1 // JVET-R0091: constraint slice signalling order to be the same as slice coding order
 
+#define JVET_R0161_CONDITION_SIGNAL_PTL_IDX               1 // JVET_R0161 proposal 2: skip PTL index signaling when number of signaled PTL structure is equal to number of OLSs
+
 #define R0324_PH_SYNTAX_CONDITION_MODIFY                  1 // JVET-R0324 add conditions on PH syntax to conder whether current pic is bi-predictive picture
+
+#define JVET_R0278_CONSTRAINT                             1 // JVET-R0278: ph_inter_slice_allowed_flag constraint
 
 #define JVET_R0130_TC_DERIVATION_BUGFIX                   1 // JVET-R0130: Cleanup of tC derivation for deblocking filter
 
@@ -64,6 +70,8 @@
 #define JVET_R0090_VUI                                    1 // JVET-R0090: Fix parsing dependencies in VUI syntax
 
 #define JVET_R0205                                        1 // JVET-R0205: Condition presence of inter_layer_ref_pics_present_flag on sps_video_parameter_set_id 
+
+#define JVET_R0277_RPL                                    1 // JVET-R0277: Modified condition for sh_num_ref_idx_active_override_flag, inference for sh_collocated_from_l0_flag equal to 1 for P-slices
 
 #define JVET_R0186_CLEANUP                                1 // JVET-R0186 aspect 1: Signal the pps_no_pic_partition_flag ahead in the PPS.
 

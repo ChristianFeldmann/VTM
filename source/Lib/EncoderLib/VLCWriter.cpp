@@ -1018,8 +1018,10 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
       WRITE_UVLC(floorLog2(pcSPS->getMaxTTSizeIChroma()) - floorLog2(pcSPS->getMinQTSize(I_SLICE, CHANNEL_TYPE_CHROMA)), "sps_log2_diff_max_tt_min_qt_intra_slice_chroma");
     }
   }
-
-  WRITE_FLAG( (pcSPS->getLog2MaxTbSize() - 5) ? 1 : 0,                       "sps_max_luma_transform_size_64_flag" );
+#if JVET_R0097_MAX_TRSIZE_CONDITIONALY_SIGNALING
+  if (pcSPS->getCTUSize() > 32)
+#endif
+    WRITE_FLAG( (pcSPS->getLog2MaxTbSize() - 5) ? 1 : 0,                       "sps_max_luma_transform_size_64_flag" );
 
   if (chromaArrayType != CHROMA_400)
   {
@@ -1398,7 +1400,11 @@ void HLSWriter::codeVPS(const VPS* pcVPS)
   }
   for (int i = 0; i < totalNumOlss; i++)
   {
+#if JVET_R0161_CONDITION_SIGNAL_PTL_IDX
+    if (pcVPS->getNumPtls() > 1 && pcVPS->getNumPtls() != pcVPS->getTotalNumOLSs())
+#else
     if(pcVPS->getNumPtls() > 1)
+#endif
       WRITE_CODE(pcVPS->getOlsPtlIdx(i), 8, "ols_ptl_idx");
   }
 
@@ -2363,8 +2369,10 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
       }
     }
 
+#if !JVET_R0277_RPL
     if( pcSlice->getPPS()->getRplInfoInPhFlag() || !pcSlice->getIdrPicFlag()|| pcSlice->getSPS()->getIDRRefParamListPresent() )
     {
+#endif
       //check if numrefidxes match the defaults. If not, override
 
       if ((!pcSlice->isIntra() && pcSlice->getRPL0()->getNumRefEntries() > 1) ||
@@ -2405,7 +2413,9 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
         pcSlice->setNumRefIdx( REF_PIC_LIST_0, pcSlice->isIntra() ? 0 : 1 );
         pcSlice->setNumRefIdx( REF_PIC_LIST_1, pcSlice->isInterB() ? 1 : 0 );
       }
+#if !JVET_R0277_RPL
     }
+#endif
 
 
     if( !pcSlice->isIntra() )

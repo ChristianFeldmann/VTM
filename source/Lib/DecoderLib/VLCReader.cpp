@@ -1694,8 +1694,17 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   pcSPS->setMaxBTSize(maxBTSize[1], maxBTSize[0], maxBTSize[2]);
   pcSPS->setMaxTTSize(maxTTSize[1], maxTTSize[0], maxTTSize[2]);
 
-
-  READ_FLAG( uiCode, "sps_max_luma_transform_size_64_flag");        pcSPS->setLog2MaxTbSize( (uiCode ? 1 : 0) + 5 );
+#if JVET_R0097_MAX_TRSIZE_CONDITIONALY_SIGNALING
+  if (pcSPS->getCTUSize() > 32) {
+#endif
+    READ_FLAG(uiCode, "sps_max_luma_transform_size_64_flag");        pcSPS->setLog2MaxTbSize((uiCode ? 1 : 0) + 5);
+#if JVET_R0097_MAX_TRSIZE_CONDITIONALY_SIGNALING
+  }
+  else
+  {
+    pcSPS->setLog2MaxTbSize(5);
+  }
+#endif
 
   if (chromaArrayType != CHROMA_400)
   {
@@ -2209,11 +2218,21 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
   pcVPS->setProfileTierLevel(ptls);
   for (int i = 0; i < pcVPS->getTotalNumOLSs(); i++)
   {
+#if JVET_R0161_CONDITION_SIGNAL_PTL_IDX
+    if (pcVPS->getNumPtls() > 1 && pcVPS->getNumPtls() != pcVPS->getTotalNumOLSs())
+#else
     if(pcVPS->getNumPtls() > 1)
+#endif
     {
       READ_CODE(8, uiCode, "ols_ptl_idx");
       pcVPS->setOlsPtlIdx(i, uiCode);
     }
+#if JVET_R0161_CONDITION_SIGNAL_PTL_IDX
+    else if (pcVPS->getNumPtls() == pcVPS->getTotalNumOLSs())
+    {
+      pcVPS->setOlsPtlIdx(i, i);
+    }
+#endif
     else
       pcVPS->setOlsPtlIdx(i, 0);
   }
@@ -3840,8 +3859,10 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
       pcSlice->setNumRefIdx(REF_PIC_LIST_0, 0);
       pcSlice->setNumRefIdx(REF_PIC_LIST_1, 0);
     }
+#if !JVET_R0277_RPL
     else
     {
+#endif
       if ((!pcSlice->isIntra() && pcSlice->getRPL0()->getNumRefEntries() > 1) ||
           (pcSlice->isInterB() && pcSlice->getRPL1()->getNumRefEntries() > 1) )
       {
@@ -3907,7 +3928,9 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
         pcSlice->setNumRefIdx( REF_PIC_LIST_0, pcSlice->isIntra() ? 0 : 1 );
         pcSlice->setNumRefIdx( REF_PIC_LIST_1, pcSlice->isInterB() ? 1 : 0 );
       }
+#if !JVET_R0277_RPL
     }
+#endif
 
     if (pcSlice->isInterP() || pcSlice->isInterB())
     {
@@ -3927,6 +3950,21 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
 
     if ( picHeader->getEnableTMVPFlag() )
     {
+#if JVET_R0277_RPL
+      if( pcSlice->getSliceType() == P_SLICE )
+      {
+        pcSlice->setColFromL0Flag( true );
+      }
+      else if( !pps->getRplInfoInPhFlag() && pcSlice->getSliceType() == B_SLICE )
+      {
+        READ_FLAG( uiCode, "collocated_from_l0_flag" );
+        pcSlice->setColFromL0Flag( uiCode );
+      }
+      else
+      {
+        pcSlice->setColFromL0Flag( picHeader->getPicColFromL0Flag() );
+      }
+#else
       if ( !pps->getRplInfoInPhFlag())
       {
       if ( pcSlice->getSliceType() == B_SLICE )
@@ -3943,6 +3981,7 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
       {
         pcSlice->setColFromL0Flag(picHeader->getPicColFromL0Flag());
       }
+#endif
 
       if (!pps->getRplInfoInPhFlag())
       {

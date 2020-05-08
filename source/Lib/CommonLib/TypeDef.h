@@ -69,6 +69,8 @@
 
 #define JVET_R0205                                        1 // JVET-R0205: Condition presence of inter_layer_ref_pics_present_flag on sps_video_parameter_set_id 
 
+#define JVET_R0277_RPL                                    1 // JVET-R0277: Modified condition for sh_num_ref_idx_active_override_flag, inference for sh_collocated_from_l0_flag equal to 1 for P-slices
+
 #define JVET_R0186_CLEANUP                                1 // JVET-R0186 aspect 1: Signal the pps_no_pic_partition_flag ahead in the PPS.
 
 #define JVET_R0225_SEPERATE_FLAGS_ALF_CHROMA              1 // Use two separate flags (one for Cb, one for Cr) to replace ph_alf_chroma_idc in PH and sh_alf_chroma_idc in SH

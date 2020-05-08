@@ -562,11 +562,13 @@ void EncAdaptiveLoopFilter::create( const EncCfg* encCfg, const int picWidth, co
     }
   }
   m_trainingCovControl   = new uint8_t[m_numCTUsInPic];
+#if !JVET_R0327_ONE_PASS_CCALF
   m_unfilteredDistortion = new uint64_t *[1];
   for (int i = 0; i < 1; i++)
   {
     m_unfilteredDistortion[i] = new uint64_t[m_numCTUsInPic];
   }
+#endif
   for ( int i = 0; i < MAX_NUM_CC_ALF_FILTERS; i++ )
   {
     m_trainingDistortion[i] = new uint64_t[m_numCTUsInPic];
@@ -744,6 +746,7 @@ void EncAdaptiveLoopFilter::destroy()
     m_trainingCovControl = nullptr;
   }
 
+#if !JVET_R0327_ONE_PASS_CCALF
   for (int i = 0; i < 1; i++)
   {
     if (m_unfilteredDistortion[i])
@@ -754,6 +757,7 @@ void EncAdaptiveLoopFilter::destroy()
   }
   delete[] m_unfilteredDistortion;
   m_unfilteredDistortion = nullptr;
+#endif
 
   for ( int i = 0; i < MAX_NUM_CC_ALF_FILTERS; i++ )
   {
@@ -3368,7 +3372,7 @@ void EncAdaptiveLoopFilter::deriveCcAlfFilterCoeff( ComponentID compID, const Pe
   }
 }
 
-
+#if !JVET_R0327_ONE_PASS_CCALF
 void EncAdaptiveLoopFilter::computeLog2BlockSizeDistortion(const Pel *org, int orgStride, const Pel *dec, int decStride,
                                                            int height, int width, uint64_t *distortionBuf,
                                                            int distortionBufStride, int log2BlockWidth,
@@ -3403,7 +3407,21 @@ void EncAdaptiveLoopFilter::computeLog2BlockSizeDistortion(const Pel *org, int o
     dec += (decStride << log2BlockHeight);
   }
 }
+#endif
 
+#if JVET_R0327_ONE_PASS_CCALF
+void EncAdaptiveLoopFilter::determineControlIdcValues(CodingStructure &cs, const ComponentID compID, const PelBuf *buf,
+                                                      const int ctuWidthC, const int ctuHeightC, const int picWidthC,
+                                                      const int picHeightC, double **unfilteredDistortion,
+                                                      uint64_t *trainingDistortion[MAX_NUM_CC_ALF_FILTERS],
+                                                      uint64_t *lumaSwingGreaterThanThresholdCount,
+                                                      uint64_t *chromaSampleCountNearMidPoint,
+                                                      bool reuseTemporalFilterCoeff, uint8_t *trainingCovControl,
+                                                      uint8_t *filterControl, uint64_t &curTotalDistortion,
+                                                      double &curTotalRate, bool filterEnabled[MAX_NUM_CC_ALF_FILTERS],
+                                                      uint8_t  mapFilterIdxToFilterIdc[MAX_NUM_CC_ALF_FILTERS + 1],
+                                                      uint8_t &ccAlfFilterCount)
+#else
 void EncAdaptiveLoopFilter::determineControlIdcValues(CodingStructure &cs, const ComponentID compID, const PelBuf *buf,
                                                       const int ctuWidthC, const int ctuHeightC, const int picWidthC,
                                                       const int picHeightC, uint64_t **unfilteredDistortion,
@@ -3415,6 +3433,7 @@ void EncAdaptiveLoopFilter::determineControlIdcValues(CodingStructure &cs, const
                                                       double &curTotalRate, bool filterEnabled[MAX_NUM_CC_ALF_FILTERS],
                                                       uint8_t  mapFilterIdxToFilterIdc[MAX_NUM_CC_ALF_FILTERS + 1],
                                                       uint8_t &ccAlfFilterCount)
+#endif
 {
   bool curFilterEnabled[MAX_NUM_CC_ALF_FILTERS];
   std::fill_n(curFilterEnabled, MAX_NUM_CC_ALF_FILTERS, false);
@@ -3467,7 +3486,11 @@ void EncAdaptiveLoopFilter::determineControlIdcValues(CodingStructure &cs, const
 
         if (filterIdx == MAX_NUM_CC_ALF_FILTERS)
         {
+#if JVET_R0327_ONE_PASS_CCALF
+          ssd = (uint64_t)unfilteredDistortion[compID][ctuIdx];   // restore saved distortion computation
+#else
           ssd = unfilteredDistortion[0][ctuIdx];   // restore saved distortion computation
+#endif
         }
         else
         {
@@ -3671,18 +3694,26 @@ void EncAdaptiveLoopFilter::deriveCcAlfFilter( CodingStructure& cs, ComponentID 
   const TempCtx ctxStartCcAlfFilterControlFlag  ( m_CtxCache, SubCtx( Ctx::CcAlfFilterControlFlag, m_CABACEstimator->getCtx() ) );
 
   // compute cost of not filtering
+#if !JVET_R0327_ONE_PASS_CCALF
   const Pel *org                = orgYuv.get( compID ).bufAt(0,0);
   const Pel *unfiltered         = dstYuv.get( compID ).bufAt(0,0);
   const int orgStride           = orgYuv.get( compID ).stride;
   const int unfilteredStride    = dstYuv.get( compID ).stride;
-#if !JVET_R0327_ONE_PASS_CCALF
   const Pel *filtered           = m_buf->bufAt(0,0);
   const int filteredStride      = m_buf->stride;
 #endif
   uint64_t unfilteredDistortion = 0;
+#if JVET_R0327_ONE_PASS_CCALF
+  for (int ctbIdx = 0; ctbIdx < m_numCTUsInPic; ctbIdx++)
+  {
+    unfilteredDistortion += (uint64_t)m_alfCovarianceCcAlf[compID - 1][0][0][ctbIdx].pixAcc;
+  }
+#else
   computeLog2BlockSizeDistortion(org, orgStride, unfiltered, unfilteredStride, m_buf->height, m_buf->width,
                                  m_unfilteredDistortion[0], m_numCTUsInWidth, cs.pcv->maxCUWidthLog2 - scaleX,
                                  cs.pcv->maxCUHeightLog2 - scaleY, unfilteredDistortion);
+#endif
+
   double bestUnfilteredTotalCost = 1 * m_lambda[compID] + unfilteredDistortion;   // 1 bit is for gating flag
 
   bool             ccAlfFilterIdxEnabled[MAX_NUM_CC_ALF_FILTERS];
@@ -3806,6 +3837,15 @@ void EncAdaptiveLoopFilter::deriveCcAlfFilter( CodingStructure& cs, ComponentID 
 
         uint64_t curTotalDistortion = 0;
         double curTotalRate = 0;
+#if JVET_R0327_ONE_PASS_CCALF
+        determineControlIdcValues(cs, compID, m_buf, ctuWidthC, ctuHeightC, picWidthC, picHeightC,
+                                  m_ctbDistortionUnfilter, m_trainingDistortion,
+                                  m_lumaSwingGreaterThanThresholdCount,
+                                  m_chromaSampleCountNearMidPoint,
+                                  (referencingExistingAps == true),
+                                  m_trainingCovControl, m_filterControl, curTotalDistortion, curTotalRate,
+                                  ccAlfFilterIdxEnabled, mapFilterIdxToFilterIdc, ccAlfFilterCount);
+#else
         determineControlIdcValues(cs, compID, m_buf, ctuWidthC, ctuHeightC, picWidthC, picHeightC,
                                   m_unfilteredDistortion, m_trainingDistortion,
                                   m_lumaSwingGreaterThanThresholdCount,
@@ -3813,6 +3853,7 @@ void EncAdaptiveLoopFilter::deriveCcAlfFilter( CodingStructure& cs, ComponentID 
                                   (referencingExistingAps == true),
                                   m_trainingCovControl, m_filterControl, curTotalDistortion, curTotalRate,
                                   ccAlfFilterIdxEnabled, mapFilterIdxToFilterIdc, ccAlfFilterCount);
+#endif
 
         // compute coefficient coding bit cost
         if (ccAlfFilterCount > 0)

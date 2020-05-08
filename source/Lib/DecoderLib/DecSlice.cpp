@@ -115,7 +115,11 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
 
   const unsigned  widthInCtus             = cs.pcv->widthInCtus;
   const bool     wavefrontsEnabled           = cs.sps->getEntropyCodingSyncEnabledFlag();
+#if JVET_R0165_OPTIONAL_ENTRY_POINT
+  const bool     entryPointPresent           = cs.sps->getEntryPointsPresentFlag();
+#else
   const bool     wavefrontsEntryPointPresent = cs.sps->getEntropyCodingSyncEntryPointsPresentFlag();
+#endif
 
   cabacReader.initBitstream( ppcSubstreams[0] );
   cabacReader.initCtxModels( *slice );
@@ -247,6 +251,15 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
       // (end of slice-segment, end of tile, end of wavefront-CTU-row)
       unsigned binVal = cabacReader.terminating_bit();
       CHECK( !binVal, "Expecting a terminating bit" );
+#if JVET_R0165_OPTIONAL_ENTRY_POINT
+#if DECODER_CHECK_SUBSTREAM_AND_SLICE_TRAILING_BYTES
+      cabacReader.remaining_bytes( true );
+#endif
+      if( entryPointPresent )
+      {
+        subStrmId++;
+      }
+#else
       bool isLastTileCtu = (ctuXPosInCtus + 1 == tileXPosInCtus + tileColWidth) && (ctuYPosInCtus + 1 == tileYPosInCtus + tileRowHeight);
       if( isLastTileCtu || wavefrontsEntryPointPresent )
       {
@@ -255,6 +268,7 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
 #endif
         subStrmId++;
       }
+#endif
     }
     if (slice->getPPS()->getNumSubPics() >= 2 && curSubPic.getTreatedAsPicFlag() && ctuIdx == (slice->getNumCtuInSlice() - 1))
     // for last Ctu in the slice

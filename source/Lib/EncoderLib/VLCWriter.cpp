@@ -1018,8 +1018,10 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
       WRITE_UVLC(floorLog2(pcSPS->getMaxTTSizeIChroma()) - floorLog2(pcSPS->getMinQTSize(I_SLICE, CHANNEL_TYPE_CHROMA)), "sps_log2_diff_max_tt_min_qt_intra_slice_chroma");
     }
   }
-
-  WRITE_FLAG( (pcSPS->getLog2MaxTbSize() - 5) ? 1 : 0,                       "sps_max_luma_transform_size_64_flag" );
+#if JVET_R0097_MAX_TRSIZE_CONDITIONALY_SIGNALING
+  if (pcSPS->getCTUSize() > 32)
+#endif
+    WRITE_FLAG( (pcSPS->getLog2MaxTbSize() - 5) ? 1 : 0,                       "sps_max_luma_transform_size_64_flag" );
 
   if (chromaArrayType != CHROMA_400)
   {

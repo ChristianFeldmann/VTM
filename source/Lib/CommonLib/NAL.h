@@ -101,6 +101,24 @@ struct NALUnit
         || m_nalUnitType == NAL_UNIT_SUFFIX_SEI;
   }
 
+#if JVET_R0201_PREFIX_SUFFIX_APS_CLEANUP
+  bool isVcl()
+  {
+    return isVclNalUnitType(m_nalUnitType);
+  }
+
+  static bool isVclNalUnitType(NalUnitType t)
+  {
+    return t == NAL_UNIT_CODED_SLICE_TRAIL
+        || t == NAL_UNIT_CODED_SLICE_STSA
+        || t == NAL_UNIT_CODED_SLICE_RADL
+        || t == NAL_UNIT_CODED_SLICE_RASL
+        || t == NAL_UNIT_CODED_SLICE_IDR_W_RADL
+        || t == NAL_UNIT_CODED_SLICE_IDR_N_LP
+        || t == NAL_UNIT_CODED_SLICE_CRA
+        || t == NAL_UNIT_CODED_SLICE_GDR;
+  }
+#else
   bool isVcl()
   {
     return m_nalUnitType == NAL_UNIT_CODED_SLICE_TRAIL
@@ -112,6 +130,7 @@ struct NALUnit
         || m_nalUnitType == NAL_UNIT_CODED_SLICE_CRA
         || m_nalUnitType == NAL_UNIT_CODED_SLICE_GDR;
   }
+#endif
 };
 
 struct OutputNALUnit;

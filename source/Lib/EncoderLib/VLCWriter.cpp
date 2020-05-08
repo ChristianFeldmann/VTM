@@ -1429,7 +1429,11 @@ void HLSWriter::codeVPS(const VPS* pcVPS)
   {
     if(i > 0)
       WRITE_FLAG(pcVPS->getPtPresentFlag(i), "pt_present_flag");
+#if JVET_R0107_VPS_SIGNALING
+    if (!pcVPS->getAllLayersSameNumSublayersFlag())
+#else
     if(pcVPS->getMaxSubLayers() > 1 && !pcVPS->getAllLayersSameNumSublayersFlag())
+#endif
       WRITE_CODE(pcVPS->getPtlMaxTemporalId(i) ,3, "ptl_max_temporal_id");
   }
   int cnt = 0;
@@ -1465,6 +1469,16 @@ void HLSWriter::codeVPS(const VPS* pcVPS)
 
   for( int i = 0; i < pcVPS->m_numDpbParams; i++ )
   {
+#if JVET_R0107_VPS_SIGNALING
+    if (!pcVPS->getAllLayersSameNumSublayersFlag())
+    {
+      WRITE_CODE(pcVPS->m_dpbMaxTemporalId[i], 3, "dpb_max_temporal_id[i]");
+    }
+    else
+    {
+      CHECK(pcVPS->m_dpbMaxTemporalId[i] != pcVPS->getMaxSubLayers() - 1, "When vps_all_layers_same_num_sublayers_flag is equal to 1, the value of dpb_max_temporal_id[ i ] is inferred to be equal to vps_max_sublayers_minus1");
+    }
+#else
     if( pcVPS->getMaxSubLayers() == 1 )
     {
       CHECK( pcVPS->m_dpbMaxTemporalId[i] != 0, "When vps_max_sublayers_minus1 is equal to 0, the value of dpb_max_temporal_id[ i ] is inferred to be equal to 0" );
@@ -1480,6 +1494,7 @@ void HLSWriter::codeVPS(const VPS* pcVPS)
         WRITE_CODE( pcVPS->m_dpbMaxTemporalId[i], 3, "dpb_max_temporal_id[i]" );
       }
     }
+#endif
 
     for( int j = ( pcVPS->m_sublayerDpbParamsPresentFlag ? 0 : pcVPS->m_dpbMaxTemporalId[i] ); j <= pcVPS->m_dpbMaxTemporalId[i]; j++ )
     {
@@ -1515,7 +1530,11 @@ void HLSWriter::codeVPS(const VPS* pcVPS)
     WRITE_UVLC(pcVPS->getNumOlsHrdParamsMinus1(), "num_ols_hrd_params_minus1");
     for (int i = 0; i <= pcVPS->getNumOlsHrdParamsMinus1(); i++)
     {
+#if JVET_R0107_VPS_SIGNALING
+      if (!pcVPS->getAllLayersSameNumSublayersFlag())
+#else
       if (((pcVPS->getMaxSubLayers()-1) > 0) && (!pcVPS->getAllLayersSameNumSublayersFlag()))
+#endif
       {
         WRITE_CODE(pcVPS->getHrdMaxTid(i), 3, "hrd_max_tid[i]");
       }

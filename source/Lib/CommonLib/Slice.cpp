@@ -2849,58 +2849,74 @@ void PPS::initRectSliceMap(const SPS  *sps)
     CHECK(m_numSlicesInPic > MAX_SLICES, "Number of slices in picture exceeds valid range");
     m_sliceMap.resize( m_numSlicesInPic );
 
-    // Q2001 v15 equation 29
-    std::vector<uint32_t> subpicWidthInTiles;
-    std::vector<uint32_t> subpicHeightInTiles;
-    std::vector<uint32_t> subpicHeightLessThanOneTileFlag;
-    subpicWidthInTiles.resize(sps->getNumSubPics());
-    subpicHeightInTiles.resize(sps->getNumSubPics());
-    subpicHeightLessThanOneTileFlag.resize(sps->getNumSubPics());
-    for (uint32_t i = 0; i <sps->getNumSubPics(); i++)
+    if (sps->getNumSubPics() > 1)
     {
-      uint32_t leftX = sps->getSubPicCtuTopLeftX(i);
-      uint32_t rightX = leftX + sps->getSubPicWidth(i) - 1;
-      subpicWidthInTiles[i] = m_ctuToTileCol[rightX] + 1 - m_ctuToTileCol[leftX];
+      // Q2001 v15 equation 29
+      std::vector<uint32_t> subpicWidthInTiles;
+      std::vector<uint32_t> subpicHeightInTiles;
+      std::vector<uint32_t> subpicHeightLessThanOneTileFlag;
+      subpicWidthInTiles.resize(sps->getNumSubPics());
+      subpicHeightInTiles.resize(sps->getNumSubPics());
+      subpicHeightLessThanOneTileFlag.resize(sps->getNumSubPics());
+      for (uint32_t i = 0; i <sps->getNumSubPics(); i++)
+      {
+        uint32_t leftX = sps->getSubPicCtuTopLeftX(i);
+        uint32_t rightX = leftX + sps->getSubPicWidth(i) - 1;
+        subpicWidthInTiles[i] = m_ctuToTileCol[rightX] + 1 - m_ctuToTileCol[leftX];
 
-      uint32_t topY = sps->getSubPicCtuTopLeftY(i);
-      uint32_t bottomY = topY + sps->getSubPicHeight(i) - 1;
-      subpicHeightInTiles[i] = m_ctuToTileRow[bottomY] + 1 - m_ctuToTileRow[topY];
+        uint32_t topY = sps->getSubPicCtuTopLeftY(i);
+        uint32_t bottomY = topY + sps->getSubPicHeight(i) - 1;
+        subpicHeightInTiles[i] = m_ctuToTileRow[bottomY] + 1 - m_ctuToTileRow[topY];
 
-      if (subpicHeightInTiles[i] == 1 && sps->getSubPicHeight(i) < m_tileRowHeight[m_ctuToTileRow[topY]] )
-      {
-        subpicHeightLessThanOneTileFlag[i] = 1;
-      }
-      else
-      {
-        subpicHeightLessThanOneTileFlag[i] = 0;
-      }
-    }
-
-    for( int i = 0; i < m_numSlicesInPic; i++ )
-    {
-      CHECK(m_numSlicesInPic != sps->getNumSubPics(), "in single slice per subpic mode, number of slice and subpic shall be equal");
-      m_sliceMap[ i ].initSliceMap();
-      if (subpicHeightLessThanOneTileFlag[i])
-      {
-        m_sliceMap[i].addCtusToSlice(sps->getSubPicCtuTopLeftX(i), sps->getSubPicCtuTopLeftX(i) + sps->getSubPicWidth(i),
-                                     sps->getSubPicCtuTopLeftY(i), sps->getSubPicCtuTopLeftY(i) + sps->getSubPicHeight(i), m_picWidthInCtu);
-      }
-      else
-      {
-        tileX = m_ctuToTileCol[sps->getSubPicCtuTopLeftX(i)];
-        tileY = m_ctuToTileRow[sps->getSubPicCtuTopLeftY(i)];
-        for (uint32_t j = 0; j< subpicHeightInTiles[i]; j++)
+        if (subpicHeightInTiles[i] == 1 && sps->getSubPicHeight(i) < m_tileRowHeight[m_ctuToTileRow[topY]] )
         {
-          for (uint32_t k = 0; k < subpicWidthInTiles[i]; k++)
+          subpicHeightLessThanOneTileFlag[i] = 1;
+        }
+        else
+        {
+          subpicHeightLessThanOneTileFlag[i] = 0;
+        }
+      }
+
+      for( int i = 0; i < m_numSlicesInPic; i++ )
+      {
+        CHECK(m_numSlicesInPic != sps->getNumSubPics(), "in single slice per subpic mode, number of slice and subpic shall be equal");
+        m_sliceMap[ i ].initSliceMap();
+        if (subpicHeightLessThanOneTileFlag[i])
+        {
+          m_sliceMap[i].addCtusToSlice(sps->getSubPicCtuTopLeftX(i), sps->getSubPicCtuTopLeftX(i) + sps->getSubPicWidth(i),
+                                       sps->getSubPicCtuTopLeftY(i), sps->getSubPicCtuTopLeftY(i) + sps->getSubPicHeight(i), m_picWidthInCtu);
+        }
+        else
+        {
+          tileX = m_ctuToTileCol[sps->getSubPicCtuTopLeftX(i)];
+          tileY = m_ctuToTileRow[sps->getSubPicCtuTopLeftY(i)];
+          for (uint32_t j = 0; j< subpicHeightInTiles[i]; j++)
           {
-            m_sliceMap[i].addCtusToSlice(getTileColumnBd(tileX + k), getTileColumnBd(tileX + k + 1), getTileRowBd(tileY + j), getTileRowBd(tileY + j + 1), m_picWidthInCtu);
+            for (uint32_t k = 0; k < subpicWidthInTiles[i]; k++)
+            {
+              m_sliceMap[i].addCtusToSlice(getTileColumnBd(tileX + k), getTileColumnBd(tileX + k + 1), getTileRowBd(tileY + j), getTileRowBd(tileY + j + 1), m_picWidthInCtu);
+            }
           }
         }
       }
+      subpicWidthInTiles.clear();
+      subpicHeightInTiles.clear();
+      subpicHeightLessThanOneTileFlag.clear();
     }
-    subpicWidthInTiles.clear();
-    subpicHeightInTiles.clear();
-    subpicHeightLessThanOneTileFlag.clear();
+    else
+    {
+      m_sliceMap[0].initSliceMap();
+      for (int tileY=0; tileY<m_numTileRows; tileY++)
+      {
+        for (int tileX=0; tileX<m_numTileCols; tileX++)
+        {
+          m_sliceMap[0].addCtusToSlice(getTileColumnBd(tileX), getTileColumnBd(tileX + 1),
+                                       getTileRowBd(tileY), getTileRowBd(tileY + 1), m_picWidthInCtu);
+        }
+      }
+      m_sliceMap[0].setSliceID(0);
+    }
   }
   else
   {

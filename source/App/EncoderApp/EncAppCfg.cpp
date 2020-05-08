@@ -3123,11 +3123,7 @@ bool EncAppCfg::xCheckParameter()
     // rectangular slices
     if( !m_rasterSliceFlag )
     {
-      if (m_singleSlicePerSubPicFlag)
-      {
-        xConfirmPara( m_subPicInfoPresentFlag == 0 || m_numSubPics < 2, "SingleSlicePerSubPic requires more than one subpicture.");
-      }
-      else
+      if (!m_singleSlicePerSubPicFlag)
       {
         uint32_t sliceIdx;
         bool     needTileIdxDelta = false;

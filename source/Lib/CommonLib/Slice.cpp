@@ -272,6 +272,13 @@ void Slice::setNumEntryPoints(const SPS *sps, const PPS *pps)
   uint32_t prevCtuAddr, prevCtuX, prevCtuY;
   m_numEntryPoints = 0;
 
+#if JVET_R0165_OPTIONAL_ENTRY_POINT
+  if (!sps->getEntryPointsPresentFlag())
+  {
+    return;
+  }
+#endif
+
   // count the number of CTUs that align with either the start of a tile, or with an entropy coding sync point
   // ignore the first CTU since it doesn't count as an entry point
   for( uint32_t i = 1; i < m_sliceMap.getNumCtuInSlice(); i++ )
@@ -283,7 +290,11 @@ void Slice::setNumEntryPoints(const SPS *sps, const PPS *pps)
     prevCtuX    = (prevCtuAddr % pps->getPicWidthInCtu());
     prevCtuY    = (prevCtuAddr / pps->getPicWidthInCtu());
 
+#if JVET_R0165_OPTIONAL_ENTRY_POINT
+    if (pps->ctuToTileRowBd(ctuY) != pps->ctuToTileRowBd(prevCtuY) || pps->ctuToTileColBd(ctuX) != pps->ctuToTileColBd(prevCtuX) || (ctuY != prevCtuY && sps->getEntropyCodingSyncEnabledFlag()))
+#else
     if (pps->ctuToTileRowBd(ctuY) != pps->ctuToTileRowBd(prevCtuY) || pps->ctuToTileColBd(ctuX) != pps->ctuToTileColBd(prevCtuX) || (ctuY != prevCtuY && sps->getEntropyCodingSyncEntryPointsPresentFlag()))
+#endif
     {
       m_numEntryPoints++;
     }
@@ -2402,7 +2413,11 @@ SPS::SPS()
 , m_BDPCMEnabledFlag          (false)
 , m_JointCbCrEnabledFlag      (false)
 , m_entropyCodingSyncEnabledFlag(false)
+#if JVET_R0165_OPTIONAL_ENTRY_POINT
+, m_entryPointPresentFlag(false)
+#else
 , m_entropyCodingSyncEntryPointPresentFlag(false)
+#endif
 , m_sbtmvpEnabledFlag         (false)
 , m_bdofEnabledFlag           (false)
 , m_fpelMmvdEnabledFlag       ( false )

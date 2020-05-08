@@ -622,6 +622,10 @@ protected:
   uint32_t      m_maxNumIBCMergeCand;                 ///< Max number of IBC merge candidates
   ScalingListMode m_useScalingListId;             ///< Using quantization matrix i.e. 0=off, 1=default, 2=file.
   std::string m_scalingListFileName;              ///< quantization matrix file name
+#if JVET_R0380_SCALING_MATRIX_DISABLE_YCC_OR_RGB
+  bool      m_disableScalingMatrixForAlternativeColourSpace;
+  bool      m_scalingMatrixDesignatedColourSpace;
+#endif
   bool      m_sliceLevelRpl;                      ///< code reference picture lists in slice headers rather than picture header
   bool      m_sliceLevelDblk;                     ///< code deblocking filter parameters in slice headers rather than picture header
   bool      m_sliceLevelSao;                      ///< code SAO parameters in slice headers rather than picture header
@@ -1649,6 +1653,12 @@ public:
   ScalingListMode getUseScalingListId    ()                          { return m_useScalingListId;      }
   void         setScalingListFileName       ( const std::string &s ) { m_scalingListFileName = s;      }
   const std::string& getScalingListFileName () const                 { return m_scalingListFileName;   }
+#if JVET_R0380_SCALING_MATRIX_DISABLE_YCC_OR_RGB
+  void         setDisableScalingMatrixForAlternativeColourSpace(bool b) { m_disableScalingMatrixForAlternativeColourSpace = b; }
+  bool         getDisableScalingMatrixForAlternativeColourSpace()    { return m_disableScalingMatrixForAlternativeColourSpace; }
+  void         setScalingMatrixDesignatedColourSpace (bool b)        { m_scalingMatrixDesignatedColourSpace = b; }
+  bool         getScalingMatrixDesignatedColourSpace ()              { return m_scalingMatrixDesignatedColourSpace; }
+#endif
   void         setSliceLevelRpl  ( bool b )                          { m_sliceLevelRpl = b;     }
   bool         getSliceLevelRpl  ()                                  { return m_sliceLevelRpl;  }
   void         setSliceLevelDblk ( bool b )                          { m_sliceLevelDblk = b;    }

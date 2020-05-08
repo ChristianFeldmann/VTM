@@ -2463,6 +2463,10 @@ SPS::SPS()
 , m_maxNumAffineMergeCand(AFFINE_MRG_MAX_NUM_CANDS)
 , m_maxNumIBCMergeCand(IBC_MRG_MAX_NUM_CANDS)
 , m_maxNumGeoCand(0)
+#if JVET_R0380_SCALING_MATRIX_DISABLE_YCC_OR_RGB
+, m_scalingMatrixAlternativeColourSpaceDisabledFlag( false )
+, m_scalingMatrixDesignatedColourSpaceFlag( true )
+#endif
 {
   for(int ch=0; ch<MAX_NUM_CHANNEL_TYPE; ch++)
   {

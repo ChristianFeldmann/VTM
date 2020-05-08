@@ -1184,6 +1184,16 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 
   // KJS: remove scaling lists?
   WRITE_FLAG( pcSPS->getScalingListFlag() ? 1 : 0,                                   "sps_scaling_list_enabled_flag" );
+#if JVET_R0380_SCALING_MATRIX_DISABLE_YCC_OR_RGB
+  if (pcSPS->getUseColorTrans() && pcSPS->getScalingListFlag())
+  {
+    WRITE_FLAG(pcSPS->getScalingMatrixForAlternativeColourSpaceDisabledFlag(), "sps_scaling_matrix_for_alternative_colour_space_disabled_flag");
+  }
+  if (pcSPS->getScalingMatrixForAlternativeColourSpaceDisabledFlag())
+  {
+    WRITE_FLAG(pcSPS->getScalingMatrixDesignatedColourSpaceFlag(), "sps_scaling_matrix_designated_colour_space_flag");
+  }
+#endif
   WRITE_FLAG(pcSPS->getDepQuantEnabledFlag(), "sps_dep_quant_enabled_flag");
   if (!pcSPS->getDepQuantEnabledFlag())
   {

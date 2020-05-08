@@ -53,6 +53,8 @@
 //########### place macros to be removed in next cycle below this line ###############
 #define JVET_R0483_SH_TSRC_DISABLED_FLAG_CLEANUP          1 // JVET-R0483 Comb 4: R0049 + R0271, only R0049 method 3 aspect (Skip signaling sh_ts_residual_coding_disabled_flag when sps_transform_skip_enabled_flag = 0, also proposed in R0068, R0097, R0142, R0153) as R0271 has its own macro 
 
+#define JVET_R0380_SCALING_MATRIX_DISABLE_YCC_OR_RGB      1 // JVET-R0380 solution3-3: Disable scaling matrix for blocks coded in alternative colour space.
+
 #define R0324_PH_SYNTAX_CONDITION_MODIFY                  1 // JVET-R0324 add conditions on PH syntax to conder whether current pic is bi-predictive picture
 
 #define JVET_R0278_CONSTRAINT                             1 // JVET-R0278: ph_inter_slice_allowed_flag constraint

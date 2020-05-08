@@ -252,23 +252,17 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
       unsigned binVal = cabacReader.terminating_bit();
       CHECK( !binVal, "Expecting a terminating bit" );
 #if JVET_R0165_OPTIONAL_ENTRY_POINT
-#if DECODER_CHECK_SUBSTREAM_AND_SLICE_TRAILING_BYTES
-      cabacReader.remaining_bytes( true );
-#endif
       if( entryPointPresent )
-      {
-        subStrmId++;
-      }
 #else
       bool isLastTileCtu = (ctuXPosInCtus + 1 == tileXPosInCtus + tileColWidth) && (ctuYPosInCtus + 1 == tileYPosInCtus + tileRowHeight);
       if( isLastTileCtu || wavefrontsEntryPointPresent )
+#endif
       {
 #if DECODER_CHECK_SUBSTREAM_AND_SLICE_TRAILING_BYTES
         cabacReader.remaining_bytes( true );
 #endif
         subStrmId++;
       }
-#endif
     }
     if (slice->getPPS()->getNumSubPics() >= 2 && curSubPic.getTreatedAsPicFlag() && ctuIdx == (slice->getNumCtuInSlice() - 1))
     // for last Ctu in the slice

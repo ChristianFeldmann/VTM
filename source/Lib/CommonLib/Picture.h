@@ -155,6 +155,11 @@ struct Picture : public UnitArea
   void setBorderExtension( bool bFlag)              { m_bIsBorderExtended = bFlag;}
   Pel* getOrigin( const PictureType &type, const ComponentID compID ) const;
 
+#if JVET_R0110_MIXED_LOSSLESS
+  void setLossyQPValue(int i)                 { m_lossyQP = i; }
+  int getLossyQPValue()                       const { return m_lossyQP; }
+#endif
+
   int           getSpliceIdx(uint32_t idx) const { return m_spliceIdx[idx]; }
   void          setSpliceIdx(uint32_t idx, int poc) { m_spliceIdx[idx] = poc; }
   void          createSpliceIdx(int nums);
@@ -211,7 +216,9 @@ public:
 
   int* m_spliceIdx;
   int  m_ctuNums;
-
+#if JVET_R0110_MIXED_LOSSLESS
+  int m_lossyQP;
+#endif
   bool interLayerRefPicFlag;
 
 #if ENABLE_SPLIT_PARALLELISM

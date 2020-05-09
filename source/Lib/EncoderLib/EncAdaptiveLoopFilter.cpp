@@ -887,6 +887,9 @@ void EncAdaptiveLoopFilter::ALFProcess(CodingStructure& cs, const double *lambda
 #if ENABLE_QPA
                                        , const double lambdaChromaWeight
 #endif
+#if JVET_R0110_MIXED_LOSSLESS
+                                       , Picture* pcPic, uint32_t numSliceSegments
+#endif
                                       )
 {
   int layerIdx = cs.vps == nullptr ? 0 : cs.vps->getGeneralLayerIdx( cs.slice->getPic()->layerId );
@@ -1048,6 +1051,22 @@ void EncAdaptiveLoopFilter::ALFProcess(CodingStructure& cs, const double *lambda
     , lambdaChromaWeight
 #endif
   );
+
+#if  JVET_R0110_MIXED_LOSSLESS
+  for (int s = 0; s < numSliceSegments; s++)
+  {
+    if (pcPic->slices[s]->isLossless())
+    {
+      for (uint32_t ctuIdx = 0; ctuIdx < pcPic->slices[s]->getNumCtuInSlice(); ctuIdx++)
+      {
+        uint32_t ctuRsAddr = pcPic->slices[s]->getCtuAddrInSlice(ctuIdx);
+        m_ctuEnableFlag[COMPONENT_Y][ctuRsAddr] = 0;
+        m_ctuEnableFlag[COMPONENT_Cb][ctuRsAddr] = 0;
+        m_ctuEnableFlag[COMPONENT_Cr][ctuRsAddr] = 0;
+      }
+    }
+  }
+#endif
 
   alfReconstructor(cs, recYuv);
 

@@ -2024,6 +2024,12 @@ Allow signalling of entry points for WPP in slice header.
 Note that when a slice contains more than one tile, entry point offsets for tile are always present in the slice header.
 \\
 
+\Option{SliceLosslessArray} &
+%\ShortOption{\None} &
+\Default{0} &
+Define pattern of lossless coding in unit of slices, 0 means lossy slice; 1 means lossless slice. Example:  1 1 0 0 means first 2 slices are lossless coded and rest of the slices are lossy coded. Default is all slices are lossy coded.
+\\
+
 \end{OptionTableNoShorthand}
 
 %%

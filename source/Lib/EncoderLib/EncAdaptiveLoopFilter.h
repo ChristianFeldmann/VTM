@@ -294,6 +294,9 @@ public:
 #if ENABLE_QPA
     , const double lambdaChromaWeight
 #endif
+#if JVET_R0110_MIXED_LOSSLESS
+    , Picture* pcPic, uint32_t numSliceSegments
+#endif
   );
   int getNewCcAlfApsId(CodingStructure &cs, int cIdx);
   void initCABACEstimator( CABACEncoder* cabacEncoder, CtxCache* ctxCache, Slice* pcSlice, ParameterSetMap<APS>* apsMap );

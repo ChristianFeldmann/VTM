@@ -1881,8 +1881,14 @@ bool InterSearch::xRectHashInterEstimation(PredictionUnit& pu, RefPicList& bestR
           currAMVPInfo4Pel.mvCand[mvpIdxTemp].changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
         }
 
+#if JVET_Q0764_WRAP_AROUND_WITH_RPR
+        bool wrap = pu.cu->slice->getRefPic(eRefPicList, refIdx)->isWrapAroundEnabled( pu.cs->pps );
+        const Pel* refBufStart = pu.cu->slice->getRefPic(eRefPicList, refIdx)->getRecoBuf(wrap).get(COMPONENT_Y).buf;
+        const int refStride = pu.cu->slice->getRefPic(eRefPicList, refIdx)->getRecoBuf(wrap).get(COMPONENT_Y).stride;
+#else
         const Pel* refBufStart = pu.cu->slice->getRefPic(eRefPicList, refIdx)->getRecoBuf(pu.cs->sps->getWrapAroundEnabledFlag()).get(COMPONENT_Y).buf;
         const int refStride = pu.cu->slice->getRefPic(eRefPicList, refIdx)->getRecoBuf(pu.cs->sps->getWrapAroundEnabledFlag()).get(COMPONENT_Y).stride;
+#endif
         m_cDistParam.cur.stride = refStride;
 
         m_pcRdCost->selectMotionLambda( );
@@ -2079,8 +2085,14 @@ bool InterSearch::xHashInterEstimation(PredictionUnit& pu, RefPicList& bestRefPi
           currAMVPInfo4Pel.mvCand[mvpIdxTemp].changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
         }
 
+#if JVET_Q0764_WRAP_AROUND_WITH_RPR
+        bool wrap = pu.cu->slice->getRefPic(eRefPicList, refIdx)->isWrapAroundEnabled( pu.cs->pps );
+        const Pel* refBufStart = pu.cu->slice->getRefPic(eRefPicList, refIdx)->getRecoBuf(wrap).get(COMPONENT_Y).buf;
+        const int refStride = pu.cu->slice->getRefPic(eRefPicList, refIdx)->getRecoBuf(wrap).get(COMPONENT_Y).stride;
+#else
         const Pel* refBufStart = pu.cu->slice->getRefPic(eRefPicList, refIdx)->getRecoBuf(pu.cs->sps->getWrapAroundEnabledFlag()).get(COMPONENT_Y).buf;
         const int refStride = pu.cu->slice->getRefPic(eRefPicList, refIdx)->getRecoBuf(pu.cs->sps->getWrapAroundEnabledFlag()).get(COMPONENT_Y).stride;
+#endif
 
         m_cDistParam.cur.stride = refStride;
 
@@ -3328,7 +3340,12 @@ void InterSearch::xMotionEstimation(PredictionUnit& pu, PelUnitBuf& origBuf, Ref
 
   m_lumaClpRng = pu.cs->slice->clpRng( COMPONENT_Y );
 
+#if JVET_Q0764_WRAP_AROUND_WITH_RPR
+  bool wrap =  pu.cu->slice->getRefPic(eRefPicList, iRefIdxPred)->isWrapAroundEnabled( pu.cs->pps );
+  CPelBuf buf = pu.cu->slice->getRefPic(eRefPicList, iRefIdxPred)->getRecoBuf(pu.blocks[COMPONENT_Y], wrap);
+#else
   CPelBuf buf = pu.cu->slice->getRefPic(eRefPicList, iRefIdxPred)->getRecoBuf(pu.blocks[COMPONENT_Y], pu.cs->sps->getWrapAroundEnabledFlag());
+#endif
 
   IntTZSearchStruct cStruct;
   cStruct.pcPatternKey  = pcPatternKey;
@@ -7753,7 +7770,11 @@ void InterSearch::xClipMv( Mv& rcMv, const Position& pos, const struct Size& siz
     verMax = ((curSubPic.getSubPicBottom() + 1) + offset -  (int)pos.y - 1) << mvShift;
     verMin = (-(int)sps.getMaxCUHeight() - offset - ((int)pos.y - curSubPic.getSubPicTop()) + 1) << mvShift;
   }
+#if JVET_Q0764_WRAP_AROUND_WITH_RPR
+  if( pps.getWrapAroundEnabledFlag() )
+#else
   if( sps.getWrapAroundEnabledFlag() )
+#endif
   {
     int horMax = ( pps.getPicWidthInLumaSamples() + sps.getMaxCUWidth() - size.width + offset - (int)pos.x - 1 ) << mvShift;
     int horMin = ( -( int ) sps.getMaxCUWidth()                                      - offset - ( int ) pos.x + 1 ) << mvShift;

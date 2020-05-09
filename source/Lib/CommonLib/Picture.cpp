@@ -175,6 +175,10 @@ Picture::Picture()
   cs                   = nullptr;
   m_isSubPicBorderSaved = false;
   m_bIsBorderExtended  = false;
+#if JVET_Q0764_WRAP_AROUND_WITH_RPR
+  m_wrapAroundValid    = false;
+  m_wrapAroundOffset   = 0;
+#endif
   usedByCurr           = false;
   longTerm             = false;
   reconstructed        = false;
@@ -941,10 +945,20 @@ void Picture::restoreSubPicBorder(int POC, int subPicX0, int subPicY0, int subPi
   m_bufSubPicRight.destroy();
 }
 
+#if JVET_Q0764_WRAP_AROUND_WITH_RPR  
+void Picture::extendPicBorder( const PPS *pps )
+#else
 void Picture::extendPicBorder()
+#endif
 {
   if ( m_bIsBorderExtended )
   {
+#if JVET_Q0764_WRAP_AROUND_WITH_RPR
+    if( isWrapAroundEnabled( pps ) && ( !m_wrapAroundValid || m_wrapAroundOffset != pps->getWrapAroundOffset() ) )
+    {
+      extendWrapBorder( pps );
+    }
+#endif
     return;
   }
 
@@ -985,6 +999,17 @@ void Picture::extendPicBorder()
     }
 
     // reference picture with horizontal wrapped boundary
+#if JVET_Q0764_WRAP_AROUND_WITH_RPR
+    if ( isWrapAroundEnabled( pps ) )
+    {
+      extendWrapBorder( pps );
+    }
+    else
+    {
+      m_wrapAroundValid = false;
+      m_wrapAroundOffset = 0;
+    }
+#else
     if (cs->sps->getWrapAroundEnabledFlag())
     {
       p = M_BUFS( 0, PIC_RECON_WRAP ).get( compID );
@@ -1020,11 +1045,58 @@ void Picture::extendPicBorder()
         ::memcpy( pi - (y+1)*p.stride, pi, sizeof(Pel)*(p.width + (xmargin<<1)) );
       }
     }
+#endif
   }
 
   m_bIsBorderExtended = true;
 }
 
+#if JVET_Q0764_WRAP_AROUND_WITH_RPR
+void Picture::extendWrapBorder( const PPS *pps )
+{
+  for(int comp=0; comp<getNumberValidComponents( cs->area.chromaFormat ); comp++)
+  {
+    ComponentID compID = ComponentID( comp );
+    PelBuf p = M_BUFS( 0, PIC_RECON_WRAP ).get( compID );
+    p.copyFrom(M_BUFS( 0, PIC_RECONSTRUCTION ).get( compID ));
+    Pel *piTxt = p.bufAt(0,0);
+    int xmargin = margin >> getComponentScaleX( compID, cs->area.chromaFormat );
+    int ymargin = margin >> getComponentScaleY( compID, cs->area.chromaFormat );
+    Pel*  pi = piTxt;
+    int xoffset = pps->getWrapAroundOffset() >> getComponentScaleX( compID, cs->area.chromaFormat );
+    for (int y = 0; y < p.height; y++)
+    {
+      for (int x = 0; x < xmargin; x++ )
+      {
+        if( x < xoffset )
+        {
+          pi[ -x - 1 ] = pi[ -x - 1 + xoffset ];
+          pi[  p.width + x ] = pi[ p.width + x - xoffset ];
+        }
+        else
+        {
+          pi[ -x - 1 ] = pi[ 0 ];
+          pi[  p.width + x ] = pi[ p.width - 1 ];
+        }
+      }
+      pi += p.stride;
+    }
+    pi -= (p.stride + xmargin);
+    for (int y = 0; y < ymargin; y++ )
+    {
+      ::memcpy( pi + (y+1)*p.stride, pi, sizeof(Pel)*(p.width + (xmargin << 1)));
+    }
+    pi -= ((p.height-1) * p.stride);
+    for (int y = 0; y < ymargin; y++ )
+    {
+      ::memcpy( pi - (y+1)*p.stride, pi, sizeof(Pel)*(p.width + (xmargin<<1)) );
+    }
+  }
+  m_wrapAroundValid = true;
+  m_wrapAroundOffset = pps->getWrapAroundOffset();
+}
+
+#endif
 PelBuf Picture::getBuf( const ComponentID compID, const PictureType &type )
 {
   return M_BUFS( ( type == PIC_ORIGINAL || type == PIC_TRUE_ORIGINAL || type == PIC_ORIGINAL_INPUT || type == PIC_TRUE_ORIGINAL_INPUT ) ? 0 : scheduler.getSplitPicId(), type ).getBuf( compID );

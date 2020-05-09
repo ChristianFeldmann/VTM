@@ -311,6 +311,19 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
     m_noPicPartitionFlag = true;
 
     xInitPPS( pps, sps0 ); // will allocate memory for and initialize pps.pcv inside
+    
+#if JVET_Q0764_WRAP_AROUND_WITH_RPR  
+    if( pps.getWrapAroundEnabledFlag() )
+    {
+      int minCbSizeY = (1 << sps0.getLog2MinCodingBlockSize());
+      pps.setWrapAroundOffsetMinusCtbSize       ( ((m_wrapAroundOffset * pps.getPicWidthInLumaSamples() / pps0.getPicWidthInLumaSamples()) / minCbSizeY) - 2 - (sps0.getCTUSize() / minCbSizeY) );
+      pps.setWrapAroundOffset                   ( minCbSizeY * (pps.getWrapAroundOffsetMinusCtbSize() + 2 + sps0.getCTUSize() / minCbSizeY) );
+    }
+    else {
+      pps.setWrapAroundOffsetMinusCtbSize       ( 0 );
+      pps.setWrapAroundOffset                   ( 0 );       
+    }
+#endif
   }
 
 #if ER_CHROMA_QP_WCG_PPS
@@ -1198,7 +1211,9 @@ void EncLib::xInitSPS( SPS& sps )
   sps.setPLTMode                            ( m_PLTMode);
   sps.setIBCFlag                            ( m_IBCMode);
   sps.setWrapAroundEnabledFlag                      ( m_wrapAround );
+#if !JVET_Q0764_WRAP_AROUND_WITH_RPR
   sps.setWrapAroundOffset                   ( m_wrapAroundOffset );
+#endif
   // ADD_NEW_TOOL : (encoder lib) set tool enabling flags and associated parameters here
   sps.setUseISP                             ( m_ISP );
   sps.setUseLmcs                            ( m_lmcsEnabled );
@@ -1544,6 +1559,21 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
     pps.setSliceChromaQpFlag(m_chromaCbQpOffsetDualTree != 0 || m_chromaCrQpOffsetDualTree != 0 || m_chromaCbCrQpOffsetDualTree != 0);
   }
 
+#if JVET_Q0764_WRAP_AROUND_WITH_RPR
+  int minCbSizeY = (1 << sps.getLog2MinCodingBlockSize());
+  pps.setWrapAroundEnabledFlag                ( m_wrapAround );
+  if( m_wrapAround )
+  {
+    pps.setWrapAroundOffsetMinusCtbSize       ( (m_wrapAroundOffset / minCbSizeY) - 2 - (sps.getCTUSize() / minCbSizeY) );
+    pps.setWrapAroundOffset                   ( minCbSizeY * (pps.getWrapAroundOffsetMinusCtbSize() + 2 + sps.getCTUSize() / minCbSizeY) );
+  }
+  else {
+    pps.setWrapAroundOffsetMinusCtbSize       ( 0 );
+    pps.setWrapAroundOffset                   ( 0 );       
+  }
+  CHECK( !sps.getWrapAroundEnabledFlag() && pps.getWrapAroundEnabledFlag(), "When sps_ref_wraparound_enabled_flag is equal to 0, the value of pps_ref_wraparound_enabled_flag shall be equal to 0.");
+  CHECK( (((sps.getCTUSize() / minCbSizeY) + 1) > ((pps.getPicWidthInLumaSamples() / minCbSizeY) - 1)) && pps.getWrapAroundEnabledFlag(), "When the value of CtbSizeY / MinCbSizeY + 1 is greater than pic_width_in_luma_samples / MinCbSizeY - 1, the value of pps_ref_wraparound_enabled_flag shall be equal to 0.");
+#endif
 
   pps.setNoPicPartitionFlag( m_noPicPartitionFlag );
   if( m_noPicPartitionFlag == false )

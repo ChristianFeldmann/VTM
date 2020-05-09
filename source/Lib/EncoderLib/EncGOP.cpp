@@ -4672,7 +4672,11 @@ void EncGOP::updateCompositeReference(Slice* pcSlice, PicList& rcListPic, int po
   // Update background reference
   if (pcSlice->isIRAP())//(pocCurr == 0)
   {
+#if JVET_Q0764_WRAP_AROUND_WITH_RPR  
+    curPic->extendPicBorder( pcSlice->getPPS() );
+#else
     curPic->extendPicBorder();
+#endif
     curPic->setBorderExtension(true);
 
     m_picBg->getRecoBuf().copyFrom(curPic->getRecoBuf());
@@ -4711,15 +4715,27 @@ void EncGOP::updateCompositeReference(Slice* pcSlice, PicList& rcListPic, int po
       }
     }
     m_picBg->setBorderExtension(false);
+#if JVET_Q0764_WRAP_AROUND_WITH_RPR  
+    m_picBg->extendPicBorder( pcSlice->getPPS() );
+#else
     m_picBg->extendPicBorder();
+#endif
     m_picBg->setBorderExtension(true);
 
+#if JVET_Q0764_WRAP_AROUND_WITH_RPR  
+    curPic->extendPicBorder( pcSlice->getPPS() );
+#else
     curPic->extendPicBorder();
+#endif
     curPic->setBorderExtension(true);
     m_picOrig->getOrigBuf().copyFrom(curPic->getOrigBuf());
 
     m_picBg->setBorderExtension(false);
+#if JVET_Q0764_WRAP_AROUND_WITH_RPR  
+    m_picBg->extendPicBorder( pcSlice->getPPS() );
+#else
     m_picBg->extendPicBorder();
+#endif
     m_picBg->setBorderExtension(true);
   }
 }

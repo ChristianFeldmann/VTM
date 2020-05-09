@@ -144,7 +144,12 @@ struct Picture : public UnitArea
          PelUnitBuf getBuf(const UnitArea &unit,     const PictureType &type);
   const CPelUnitBuf getBuf(const UnitArea &unit,     const PictureType &type) const;
 
+#if JVET_Q0764_WRAP_AROUND_WITH_RPR  
+  void extendPicBorder( const PPS *pps );
+  void extendWrapBorder( const PPS *pps );
+#else
   void extendPicBorder();
+#endif
   void finalInit( const VPS* vps, const SPS& sps, const PPS& pps, PicHeader *picHeader, APS** alfApss, APS* lmcsAps, APS* scalingListAps );
 
   int  getPOC()                               const { return poc; }
@@ -192,6 +197,10 @@ public:
   bool getSubPicSaved()          { return m_isSubPicBorderSaved; }
   void setSubPicSaved(bool bVal) { m_isSubPicBorderSaved = bVal; }
   bool m_bIsBorderExtended;
+#if JVET_Q0764_WRAP_AROUND_WITH_RPR
+  bool m_wrapAroundValid;
+  unsigned m_wrapAroundOffset;
+#endif
   bool referenced;
   bool reconstructed;
   bool neededForOutput;
@@ -242,6 +251,9 @@ public:
                                                                                                getScalingWindow().getWindowRightOffset()  != pps->getScalingWindow().getWindowRightOffset() ||
                                                                                                getScalingWindow().getWindowTopOffset()    != pps->getScalingWindow().getWindowTopOffset()   ||
                                                                                                getScalingWindow().getWindowBottomOffset() != pps->getScalingWindow().getWindowBottomOffset(); }
+#if JVET_Q0764_WRAP_AROUND_WITH_RPR
+  bool               isWrapAroundEnabled( const PPS* pps ) const                     { return  pps->getWrapAroundEnabledFlag() && !isRefScaled( pps ); }
+#endif
 
   void         allocateNewSlice();
   Slice        *swapSliceObject(Slice * p, uint32_t i);

@@ -203,7 +203,7 @@ struct AlfCovariance
   double calculateError( const int *clip, const double *coeff ) const { return calculateError(clip, coeff, numCoeff); }
   double calculateError( const int *clip, const double *coeff, const int numCoeff ) const;
   double calcErrorForCoeffs( const int *clip, const int *coeff, const int numCoeff, const int bitDepth ) const;
-  double calcErrorForCcAlfCoeffs(const int* coeff, const int numCoeff, const int bitDepth) const;
+  double calcErrorForCcAlfCoeffs(const int16_t *coeff, const int numCoeff, const int bitDepth) const;
 
   void getClipMax(const AlfFilterShape& alfShape, int *clip_max) const;
   void reduceClipCost(const AlfFilterShape& alfShape, int *clip) const;
@@ -338,7 +338,7 @@ private:
 #endif
                                   const int numClasses, const int numCoeff, double& distUnfilter );
   void   roundFiltCoeff( int *filterCoeffQuant, double *filterCoeff, const int numCoeff, const int factor );
-  void   roundFiltCoeffCCALF( int *filterCoeffQuant, double *filterCoeff, const int numCoeff, const int factor );
+  void   roundFiltCoeffCCALF(int16_t *filterCoeffQuant, double *filterCoeff, const int numCoeff, const int factor);
 
   double getDistCoeffForce0( bool* codedVarBins, double errorForce0CoeffTab[MAX_NUM_ALF_CLASSES][2], int* bitsVarBin, int zeroBitsVarBin, const int numFilters);
   int    lengthUvlc( int uiCode );

@@ -2663,6 +2663,9 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     // now compress (trial encode) the various slice segments (slices, and dependent slices)
     {
       DTRACE_UPDATE( g_trace_ctx, ( std::make_pair( "poc", pocCurr ) ) );
+#if JVET_R0110_MIXED_LOSSLESS
+      const std::vector<uint32_t> sliceLosslessArray = *(m_pcCfg->getSliceLosslessArray());
+#endif
 
       for(uint32_t sliceIdx = 0; sliceIdx < pcPic->cs->pps->getNumSlicesInPic(); sliceIdx++ )
       {
@@ -2705,6 +2708,16 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
             }
           }
         }
+
+#if JVET_R0110_MIXED_LOSSLESS
+        bool isLossless = false;
+        if (m_pcCfg->getCostMode() == COST_LOSSLESS_CODING)
+        {
+          isLossless = (sliceLosslessArray[sliceIdx] != 0);
+        }
+        m_pcSliceEncoder->setLosslessSlice(pcPic, isLossless);
+#endif
+
         m_pcSliceEncoder->precompressSlice( pcPic );
         m_pcSliceEncoder->compressSlice   ( pcPic, false, false );
 
@@ -2799,7 +2812,18 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         }
   #endif
       }
-
+#if JVET_R0110_MIXED_LOSSLESS
+      if (m_pcCfg->getCostMode() == COST_LOSSLESS_CODING) 
+      {
+        for (int s = 0; s < uiNumSliceSegments; s++)
+        {
+          if (pcPic->slices[s]->isLossless())
+          {
+            pcPic->slices[s]->setDeblockingFilterDisable(true);
+          }
+        }
+      }
+#endif
       m_pcLoopFilter->loopFilterPic( cs );
 
       CS::setRefinedMotionField(cs);
@@ -2815,11 +2839,26 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 #endif
                              m_pcCfg->getTestSAODisableAtPictureLevel(), m_pcCfg->getSaoEncodingRate(), m_pcCfg->getSaoEncodingRateChroma(), m_pcCfg->getSaoCtuBoundary(), m_pcCfg->getSaoGreedyMergeEnc() );
         //assign SAO slice header
-        for(int s=0; s< uiNumSliceSegments; s++)
+        for (int s = 0; s < uiNumSliceSegments; s++)
         {
-          pcPic->slices[s]->setSaoEnabledFlag(CHANNEL_TYPE_LUMA, sliceEnabled[COMPONENT_Y]);
-          CHECK(!(sliceEnabled[COMPONENT_Cb] == sliceEnabled[COMPONENT_Cr]), "Unspecified error");
-          pcPic->slices[s]->setSaoEnabledFlag(CHANNEL_TYPE_CHROMA, sliceEnabled[COMPONENT_Cb]);
+
+#if  JVET_R0110_MIXED_LOSSLESS
+          if (pcPic->slices[s]->isLossless() && m_pcCfg->getCostMode() == COST_LOSSLESS_CODING)
+          {
+            pcPic->slices[s]->setSaoEnabledFlag(CHANNEL_TYPE_LUMA, false);
+            pcPic->slices[s]->setSaoEnabledFlag(CHANNEL_TYPE_CHROMA, false);
+          }
+          else
+          {
+#endif          
+            pcPic->slices[s]->setSaoEnabledFlag(CHANNEL_TYPE_LUMA, sliceEnabled[COMPONENT_Y]);
+            CHECK(!(sliceEnabled[COMPONENT_Cb] == sliceEnabled[COMPONENT_Cr]), "Unspecified error");
+            pcPic->slices[s]->setSaoEnabledFlag(CHANNEL_TYPE_CHROMA, sliceEnabled[COMPONENT_Cb]);
+
+#if  JVET_R0110_MIXED_LOSSLESS
+        }
+#endif
+
         }
       }
 
@@ -2837,14 +2876,34 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 #if ENABLE_QPA
           , (m_pcCfg->getUsePerceptQPA() && !m_pcCfg->getUseRateCtrl() && pcSlice->getPPS()->getUseDQP() ? m_pcEncLib->getRdCost(PARL_PARAM0(0))->getChromaWeight() : 0.0)
 #endif
+#if JVET_R0110_MIXED_LOSSLESS
+          , pcPic, uiNumSliceSegments
+#endif
         );
 
         //assign ALF slice header
         for (int s = 0; s < uiNumSliceSegments; s++)
         {
-          pcPic->slices[s]->setTileGroupAlfEnabledFlag(COMPONENT_Y, cs.slice->getTileGroupAlfEnabledFlag(COMPONENT_Y));
-          pcPic->slices[s]->setTileGroupAlfEnabledFlag(COMPONENT_Cb, cs.slice->getTileGroupAlfEnabledFlag(COMPONENT_Cb));
-          pcPic->slices[s]->setTileGroupAlfEnabledFlag(COMPONENT_Cr, cs.slice->getTileGroupAlfEnabledFlag(COMPONENT_Cr));
+#if JVET_R0110_MIXED_LOSSLESS
+           //For the first slice, even if it is lossless, slice level ALF is not disabled and ALF-APS is signaled so that the later lossy slices can use APS of the first slice. 
+           //However, if the first slice is lossless, the ALF process is disabled for all of the CTUs ( m_ctuEnableFlag == 0) of that slice which is implemented in the function void EncAdaptiveLoopFilter::ALFProcess.         
+      
+          if (pcPic->slices[s]->isLossless() && s && m_pcCfg->getCostMode() == COST_LOSSLESS_CODING)
+          {
+            pcPic->slices[s]->setTileGroupAlfEnabledFlag(COMPONENT_Y, false);
+            pcPic->slices[s]->setTileGroupAlfEnabledFlag(COMPONENT_Cb, false);
+            pcPic->slices[s]->setTileGroupAlfEnabledFlag(COMPONENT_Cr, false);
+          }
+          else
+          {
+#endif          
+            pcPic->slices[s]->setTileGroupAlfEnabledFlag(COMPONENT_Y, cs.slice->getTileGroupAlfEnabledFlag(COMPONENT_Y));
+            pcPic->slices[s]->setTileGroupAlfEnabledFlag(COMPONENT_Cb, cs.slice->getTileGroupAlfEnabledFlag(COMPONENT_Cb));
+            pcPic->slices[s]->setTileGroupAlfEnabledFlag(COMPONENT_Cr, cs.slice->getTileGroupAlfEnabledFlag(COMPONENT_Cr));
+
+#if JVET_R0110_MIXED_LOSSLESS
+          }
+#endif
           if (pcPic->slices[s]->getTileGroupAlfEnabledFlag(COMPONENT_Y))
           {
             pcPic->slices[s]->setTileGroupNumAps(cs.slice->getTileGroupNumAps());

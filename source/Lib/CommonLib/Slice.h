@@ -2588,6 +2588,9 @@ private:
   int                        m_tileGroupCcAlfCbApsId;
   int                        m_tileGroupCcAlfCrApsId;
   bool                       m_disableSATDForRd;
+#if JVET_R0110_MIXED_LOSSLESS
+  bool                       m_isLossless;
+#endif
 public:
                               Slice();
   virtual                     ~Slice();
@@ -2877,6 +2880,10 @@ public:
   int  getTileGroupCcAlfCrApsId() { return m_tileGroupCcAlfCrApsId; }
   void                        setDisableSATDForRD(bool b) { m_disableSATDForRd = b; }
   bool                        getDisableSATDForRD() { return m_disableSATDForRd; }
+#if JVET_R0110_MIXED_LOSSLESS
+  void                        setLossless(bool b) { m_isLossless = b; }
+  bool                        isLossless() const { return m_isLossless; }
+#endif
   void                        scaleRefPicList( Picture *scaledRefPic[ ], PicHeader *picHeader, APS** apss, APS* lmcsAps, APS* scalingListAps, const bool isDecoder );
   void                        freeScaledRefPicList( Picture *scaledRefPic[] );
   bool                        checkRPR();

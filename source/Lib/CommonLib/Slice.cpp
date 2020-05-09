@@ -1019,6 +1019,9 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
   m_tileGroupLumaApsId            = pSrc->m_tileGroupLumaApsId;
   m_tileGroupChromaApsId          = pSrc->m_tileGroupChromaApsId;
   m_disableSATDForRd              = pSrc->m_disableSATDForRd;
+#if JVET_R0110_MIXED_LOSSLESS
+  m_isLossless = pSrc->m_isLossless;
+#endif
 
   if( cpyAlmostAll ) m_encCABACTableIdx  = pSrc->m_encCABACTableIdx;
   for( int i = 0; i < NUM_REF_PIC_LIST_01; i ++ )

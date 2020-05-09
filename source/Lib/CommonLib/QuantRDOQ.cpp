@@ -527,6 +527,11 @@ void QuantRDOQ::quant(TransformUnit &tu, const ComponentID &compID, const CCoeff
     useRDOQ &= uiHeight > 2;
   }
 
+#if  JVET_R0110_MIXED_LOSSLESS
+  if (tu.cs->slice->isLossless())
+    useRDOQ = false;
+#endif
+
   if (useRDOQ && (isLuma(compID) || RDOQ_CHROMA))
   {
 #if T0196_SELECTIVE_RDOQ

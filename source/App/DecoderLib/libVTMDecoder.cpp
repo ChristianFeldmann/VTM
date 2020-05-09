@@ -67,7 +67,10 @@ public:
     m_cDecLib.m_targetSubPicIdx = 0;
     m_cDecLib.initScalingList();
   }
-  ~vtmDecoderWrapper() { m_cDecLib.destroy(); };
+  ~vtmDecoderWrapper() 
+  { 
+    m_cDecLib.destroy(); 
+  };
 
   bool initAndCheckFrameRetrieval();
   bool iterateLoopToNextPicture();

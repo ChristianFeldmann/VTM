@@ -37,6 +37,7 @@
 
 #include "libVTMDecoder.h"
 
+#include "Logger.h"
 #include "DecoderLib/DecLib.h"
 #include "DecoderLib/NALread.h"
 #include "DecoderLib/AnnexBread.h"
@@ -45,9 +46,10 @@
 
 enum class PictureBufferStatus
 {
-  FLUSHED,
-  FLUSHING_NEEDED_IN_BITSTREAM,
-  FLUSHING_EOF
+  NORMAL,
+  SCHEDULE_FLUSHING_EOF,
+  FLUSHING_EOF,
+  FLUSHING_NEEDED_IN_BITSTREAM
 };
 
 class vtmDecoderWrapper
@@ -67,6 +69,9 @@ public:
   }
   ~vtmDecoderWrapper() { m_cDecLib.destroy(); };
 
+  bool initAndCheckFrameRetrieval();
+  bool iterateLoopToNextPicture();
+
   // Members of the DecApp
   int m_iPOCLastDisplay{ -MAX_INT };
   DecLib m_cDecLib;
@@ -77,7 +82,7 @@ public:
   std::vector<int> m_targetDecLayerIdSet;             ///< set of LayerIds to be included in the sub-bitstream extraction process.
 
   unsigned int nrNalUnitsPushed {0};
-  PictureBufferStatus bufferStatus { PictureBufferStatus::FLUSHED };
+  PictureBufferStatus bufferStatus { PictureBufferStatus::NORMAL };
 
   // Variables which are locally defined in DecApp::decode locally in the loop
   PicList *pcListPic{ nullptr };
@@ -101,45 +106,143 @@ public:
   // The vector is defined, filled and cleared only in this library so that no chaos is created
   // between the heap of the shared library and the caller programm.
   std::vector<libVTMDec_BlockValue> internalsBlockData;
+
+  Logger log;
 };
 
-void initFrameRetrieval(vtmDecoderWrapper *d)
+bool vtmDecoderWrapper::iterateLoopToNextPicture()
 {
-  // This is what xWriteOutput does before iterating over the pictures
-  d->numPicsNotYetDisplayed = 0;
-  d->dpbFullness = 0;
-  const SPS* activeSPS = (d->pcListPic->front()->cs->sps);
-  uint32_t maxNrSublayers = activeSPS->getMaxTLayers();
+  assert(this->pcListPic_readIdx >= 0);
+  auto iterPic = this->pcListPic->begin();
+  std::advance(iterPic, this->pcListPic_readIdx);
 
-  if (d->m_iMaxTemporalLayer == -1 || d->m_iMaxTemporalLayer >= maxNrSublayers)
+  const bool flushOutput = this->bufferStatus == PictureBufferStatus::FLUSHING_EOF;
+
+  Picture* pcPic = *(iterPic);
+  if (this->numPicsNotYetDisplayed>2 && pcPic->fieldPic)
   {
-    d->numReorderPicsHighestTid = activeSPS->getNumReorderPics(maxNrSublayers - 1);
-    d->maxDecPicBufferingHighestTid = activeSPS->getMaxDecPicBuffering(maxNrSublayers - 1);
+    this->log(Logger::LogLevel::ERROR) << "Field decoding not supported (yet)";
+    return false;
+  }
+  else if( !pcPic->fieldPic ) //Frame Decoding
+  {
+    while (iterPic != this->pcListPic->end())
+    {
+      pcPic = *(iterPic);
+      bool outputPic;
+      if (flushOutput)
+        outputPic = pcPic->neededForOutput;
+      else
+        outputPic = pcPic->neededForOutput && pcPic->getPOC() > this->m_iPOCLastDisplay &&
+        (this->numPicsNotYetDisplayed > this->numReorderPicsHighestTid || this->dpbFullness > this->maxDecPicBufferingHighestTid);
+
+      if(outputPic)
+      {
+        this->log(Logger::LogLevel::INFO) << "Found picture to " << (flushOutput ? "flush" : "writeOut") << " POC " << pcPic->getPOC() << std::endl;
+        return true;
+      }
+
+      iterPic++;
+      this->pcListPic_readIdx++;
+    }
+  }
+
+  if (this->nrOfTimesToCheckForOutputPictures > 1)
+  {
+    this->nrOfTimesToCheckForOutputPictures--;
+    if (this->bufferStatus == PictureBufferStatus::SCHEDULE_FLUSHING_EOF)
+    {
+      this->log(Logger::LogLevel::INFO) << "No more frames to write out normally. Switching to flushing." << std::endl;
+      this->bufferStatus = PictureBufferStatus::FLUSHING_EOF;
+    }
+    return this->initAndCheckFrameRetrieval();
+  }
+
+  if (this->bufferStatus == PictureBufferStatus::FLUSHING_EOF)
+  {
+    this->log(Logger::LogLevel::INFO) << "No more pictures found for flushing. Decoding ended." << std::endl;
+    return false;
+  }
+  
+  this->log(Logger::LogLevel::INFO) << "No picture found for output. Waiting for more data to decode." << std::endl;
+  this->pcListPic_readIdx = -1;
+  return false;
+}
+
+/* Init frame retriveal (as xWriteOutput does). Then go to the next picture in the picList which
+ * is ready to be returned. Return true if a picture is found. Return false if not.
+ */
+bool vtmDecoderWrapper::initAndCheckFrameRetrieval()
+{
+  this->log(Logger::LogLevel::INFO) << "Initializing frame retrieval (" << this->nrOfTimesToCheckForOutputPictures << ")" << std::endl;
+
+  this->pcListPic_readIdx = 0;
+
+  if (this->bufferStatus == PictureBufferStatus::FLUSHING_EOF)
+  {
+    // This is what xFlushOutput does for initialization. Well .. nothing really.
   }
   else
   {
-    d->numReorderPicsHighestTid = activeSPS->getNumReorderPics(d->m_iMaxTemporalLayer);
-    d->maxDecPicBufferingHighestTid = activeSPS->getMaxDecPicBuffering(d->m_iMaxTemporalLayer);
-  }
+    // This is what xWriteOutput does before iterating over the pictures
+    this->numPicsNotYetDisplayed = 0;
+    this->dpbFullness = 0;
+    const SPS* activeSPS = (this->pcListPic->front()->cs->sps);
+    uint32_t maxNrSublayers = activeSPS->getMaxTLayers();
 
-  PicList::iterator iterPic = d->pcListPic->begin();
-  while (iterPic != d->pcListPic->end())
+    const VPS* referredVPS = this->pcListPic->front()->cs->vps;
+    const int temporalId = ( this->m_iMaxTemporalLayer == -1 || this->m_iMaxTemporalLayer >= maxNrSublayers ) ? maxNrSublayers - 1 : this->m_iMaxTemporalLayer;
+
+    if( referredVPS == nullptr || referredVPS->m_numLayersInOls[referredVPS->m_targetOlsIdx] == 1 )
+    {
+      this->numReorderPicsHighestTid = activeSPS->getNumReorderPics( temporalId );
+      this->maxDecPicBufferingHighestTid = activeSPS->getMaxDecPicBuffering( temporalId );
+    }
+    else
+    {
+      this->numReorderPicsHighestTid = referredVPS->getNumReorderPics( temporalId );
+      this->maxDecPicBufferingHighestTid = referredVPS->getMaxDecPicBuffering( temporalId );
+    }
+
+    for (const auto &pcPic : *(this->pcListPic))
+    {
+      if (pcPic->neededForOutput && pcPic->getPOC() > this->m_iPOCLastDisplay)
+      {
+        this->numPicsNotYetDisplayed++;
+        this->dpbFullness++;
+      }
+      else if (pcPic->referenced)
+      {
+        this->dpbFullness++;
+      }
+    }
+
+    if (this->numPicsNotYetDisplayed > 2)
+    {
+      auto it = this->pcListPic->begin();
+      it++;
+      const bool fieldDecoding = (*it)->fieldPic;
+      if (fieldDecoding)
+        this->pcListPic_readIdx = 1;
+    }
+  }
+  
   {
-    Picture* pcPic = *(iterPic);
-    if (pcPic->neededForOutput && pcPic->getPOC() > d->m_iPOCLastDisplay)
+    std::stringstream pocList;
+    std::string delimiter;
+    for (const auto &pic : *(this->pcListPic))
     {
-      d->numPicsNotYetDisplayed++;
-      d->dpbFullness++;
+      pocList << delimiter << pic->getPOC();
+      if (pic->neededForOutput || pic->reconstructed)
+      {
+        pocList << "(" << (pic->neededForOutput ? "O" : "") << (pic->reconstructed ? "R" : "") << ")";
+      }
+      delimiter = ", ";
     }
-    else if (pcPic->referenced)
-    {
-      d->dpbFullness++;
-    }
-    iterPic++;
+    this->log(Logger::LogLevel::INFO) << "Get Picture - List: [" << pocList.str() << "] readIndex " << this->pcListPic_readIdx << std::endl;
   }
 
-  // Reset the iterator over the output images
-  d->pcListPic_readIdx = 0;
+  return this->iterateLoopToNextPicture();
 }
 
 bool libCheckPictureHeaderInSliceHeaderFlag(InputNALUnit& nalu)
@@ -153,7 +256,6 @@ bool isNewPicture(InputNALUnit &nalu)
 {
   switch( nalu.m_nalUnitType ) 
   {
-
     // NUT that indicate the start of a new picture
     case NAL_UNIT_ACCESS_UNIT_DELIMITER:
     case NAL_UNIT_DCI:
@@ -201,19 +303,20 @@ bool isNewPicture(InputNALUnit &nalu)
   }
 }
 
-void filterPicture(vtmDecoderWrapper *d, uint32_t nuhLayerId)
+void filterPicture(vtmDecoderWrapper *d, uint32_t nuhLayerId, bool eof = false)
 {
-  const bool eof = d->bufferStatus == PictureBufferStatus::FLUSHING_EOF;
   // Filter the picture if decoding is complete
   if (!d->m_cDecLib.getFirstSliceInSequence(nuhLayerId) && !d->bPicSkipped)
   {
-    if (!d->loopFiltered[nuhLayerId] || !eof)
+    if (eof || !d->loopFiltered[nuhLayerId])
     {
       int poc;
       d->m_cDecLib.executeLoopFilters();
       d->m_cDecLib.finishPicture( poc, d->pcListPic );
+      d->log(Logger::LogLevel::INFO) << "Executed loop filter for POC " << poc << std::endl;
     }
-    d->loopFiltered[nuhLayerId] = eof;
+    if (!eof)
+      d->loopFiltered[nuhLayerId] = eof;
     if (eof)
     {
       d->m_cDecLib.setFirstSliceInSequence(true, nuhLayerId);
@@ -224,19 +327,6 @@ void filterPicture(vtmDecoderWrapper *d, uint32_t nuhLayerId)
   else if (d->m_cDecLib.getFirstSliceInSequence(nuhLayerId))
   {
     d->m_cDecLib.setFirstSliceInPicture(true);
-  }
-
-  // Check if we might be able to read pictures
-  if (d->pcListPic != nullptr)
-  {
-    // In DecApp "xWriteOutput" is called. Here we just track how often this "function" should be called.
-    d->nrOfTimesToCheckForOutputPictures = 0;
-      d->nrOfTimesToCheckForOutputPictures++;
-    if (eof)
-    {
-      d->nrOfTimesToCheckForOutputPictures++;
-      d->m_cDecLib.setFirstSliceInPicture(false);
-    }
   }
 }
 
@@ -261,8 +351,12 @@ extern "C" {
   {
     vtmDecoderWrapper *decCtx = new vtmDecoderWrapper();
     if (!decCtx)
+    {
+      decCtx->log(Logger::LogLevel::ERROR) << "Error allocating new VTM decoder." << std::endl;
       return NULL;
+    }
 
+    decCtx->log(Logger::LogLevel::INFO) << "Allocated new VTM decoder." << std::endl;
     return (libVTMDec_context*)decCtx;
   }
 
@@ -272,7 +366,30 @@ extern "C" {
     if (!d)
       return LIBVTMDEC_ERROR;
 
+    if (d->pcListPic != nullptr)
+    {
+      d->log(Logger::LogLevel::INFO) << "Deleting decoder reference buffer." << std::endl;
+      for (const auto &pcPic : *d->pcListPic)
+      {
+        pcPic->destroy();
+        delete pcPic;
+      }
+      d->pcListPic->clear();
+    }
+
+    d->log(Logger::LogLevel::INFO) << "Deleting vtm decoder." << std::endl;
     delete d;
+    return LIBVTMDEC_OK;
+  }
+
+  VTM_DEC_API libVTMDec_error libVTMDec_set_log_callback(libVTMDec_context* decCtx, void *userData, void (*callback)(void*, int, const char*))
+  {
+    vtmDecoderWrapper *d = (vtmDecoderWrapper*)decCtx;
+    if (!d)
+      return LIBVTMDEC_ERROR;
+
+    d->log.set_log_callback(userData, callback);
+    d->log(Logger::LogLevel::INFO) << "Successfully set logger callback. Hello world." << std::endl;
     return LIBVTMDEC_OK;
   }
 
@@ -283,6 +400,7 @@ extern "C" {
       return;
 
     d->m_cDecLib.setDecodedPictureHashSEIEnabled(check_hash);
+    d->log(Logger::LogLevel::INFO) << "Enabled SEI picture hash checking." << std::endl;
   }
 
   VTM_DEC_API void libVTMDec_set_max_temporal_layer(libVTMDec_context* decCtx, int max_layer)
@@ -291,6 +409,7 @@ extern "C" {
     if (!d)
       return;
 
+    d->log(Logger::LogLevel::INFO) << "Set max temporal layer for decoding to " << max_layer << "." << std::endl;
     d->m_iMaxTemporalLayer = max_layer;
   }
 
@@ -301,24 +420,31 @@ extern "C" {
       return LIBVTMDEC_ERROR;
 
     if (length <= 0 && !eof)
+    {
+      d->log(Logger::LogLevel::ERROR) << "Trying to push NAL unit with length " << length << " which is <= 0 and eof is not set." << std::endl;
       return LIBVTMDEC_ERROR_READ_ERROR;
+    }
 
     // Check the NAL unit header
     uint8_t *data = (uint8_t*)data8;
     if (length < 4 && !eof)
+    {
+      d->log(Logger::LogLevel::ERROR) << "Length of NAL unit is " << length << " which is < 4 and eof is not set. In order to read a NLA unit header we need at least 4 bytes." << std::endl;
       return LIBVTMDEC_ERROR_READ_ERROR;
+    }
 
     rawDataAccessStreamBuffer dataStreamBuffer(data, length);
 
     std::istream dataInputStream(&dataStreamBuffer);
     InputByteStream bytestream(dataInputStream);
+    d->nrOfTimesToCheckForOutputPictures = 0;
 
     if (d->bufferStatus == PictureBufferStatus::FLUSHING_EOF)
     {
-      // When we are in this state, no new data should arrive
+      d->log(Logger::LogLevel::ERROR) << "Trying to push data but the decoder is in status flushing because of EOF. No new data must arrive after EOF." << std::endl;
       return LIBVTMDEC_ERROR;
     }
-    d->bufferStatus = PictureBufferStatus::FLUSHED;
+    d->bufferStatus = PictureBufferStatus::NORMAL;
 
     if (length > 0)
     {
@@ -333,31 +459,46 @@ extern "C" {
          *  - two back-to-back start_code_prefixes
          *  - start_code_prefix immediately followed by EOF
          */
+        d->log(Logger::LogLevel::ERROR) << "Parsing the NAL bytestream failed." << std::endl;
         return LIBVTMDEC_ERROR_READ_ERROR;
       }
 
       read(nalu);
       bool bNewPicture = !d->m_cDecLib.getFirstSliceInPicture() && isNewPicture(nalu);
+      d->log(Logger::LogLevel::INFO) << "Read NAL unit type " << nalu.m_nalUnitType << " layer " << nalu.m_nuhLayerId << (bNewPicture ? " newPicture" : "") << std::endl;
 
       if (bNewPicture)
       {
         filterPicture(d, nalu.m_nuhLayerId);
-        if (d->nrOfTimesToCheckForOutputPictures > 0)
-        {
-          initFrameRetrieval(d);
+        d->nrOfTimesToCheckForOutputPictures++;
+      }
+      if (nalu.m_nalUnitType == NAL_UNIT_EOS)
+      {
+        d->nrOfTimesToCheckForOutputPictures++;
+      }
+      if (!bNewPicture && ((nalu.m_nalUnitType >= NAL_UNIT_CODED_SLICE_TRAIL && nalu.m_nalUnitType <= NAL_UNIT_RESERVED_IRAP_VCL_12)
+        || (nalu.m_nalUnitType >= NAL_UNIT_CODED_SLICE_IDR_W_RADL && nalu.m_nalUnitType <= NAL_UNIT_CODED_SLICE_GDR)))
+      {
+        d->nrOfTimesToCheckForOutputPictures++;
+      }
+
+      if (d->nrOfTimesToCheckForOutputPictures > 0)
+      {
+        if (d->pcListPic == nullptr)
+          d->nrOfTimesToCheckForOutputPictures = 0;
+        else if (d->initAndCheckFrameRetrieval())
           return LIBVTMDEC_OK_FLUSH_REPUSH;
-        }
       }
 
       // flush output for first slice of an IDR picture
-      if(d->bufferStatus != PictureBufferStatus::FLUSHED &&
+      if(d->bufferStatus != PictureBufferStatus::NORMAL &&
           d->m_cDecLib.getFirstSliceInPicture() &&
           (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL ||
             nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP))
       {
         d->bufferStatus = PictureBufferStatus::FLUSHING_NEEDED_IN_BITSTREAM;
         bNewPicture = true;
-        return LIBVTMDEC_OK;
+        return LIBVTMDEC_OK_FLUSH_REPUSH;
       }
 
       bool isNaluWithinTargetDecLayerIdSet = false;
@@ -423,19 +564,19 @@ extern "C" {
         d->m_cDecLib.resetAccessUnitPicInfo();
       }
     }
-
-    const bool checkOutputPictures = (d->nrOfTimesToCheckForOutputPictures > 0 || eof);
-    if (checkOutputPictures)
-      initFrameRetrieval(d);
+    else // eof
+    {
+      filterPicture(d, -1, true);
+    }
 
     if (eof)
     {
       // At the end of the file we have to use the normal output function once and then the flushing
-      d->bufferStatus = PictureBufferStatus::FLUSHING_EOF;
+      d->nrOfTimesToCheckForOutputPictures = 2;
+      d->bufferStatus = PictureBufferStatus::SCHEDULE_FLUSHING_EOF;
+      d->initAndCheckFrameRetrieval();
     }
 
-    if (length > 0 && checkOutputPictures)
-      return LIBVTMDEC_OK_FLUSH_REPUSH;
     return LIBVTMDEC_OK;
   }
 
@@ -452,66 +593,33 @@ extern "C" {
     if (d->pcListPic_readIdx < 0 || d->pcListPic_readIdx > d->pcListPic->size())
       return NULL;
 
-    // Forward the iterator to the picture pcListPic_readIdx
-    PicList::iterator iterPic = d->pcListPic->begin();
-    for (int i = 0; i < d->pcListPic_readIdx; i++)
-      iterPic++;
+    auto iterPic = d->pcListPic->begin();
+    std::advance(iterPic, d->pcListPic_readIdx);
 
     if ((*(iterPic))->fieldPic)
-      // TODO: Field output not supported (YET?)
+    {
+      d->log(Logger::LogLevel::ERROR) << "Field decoding not supported (yet)" << std::endl;
       return NULL;
-
-    // Go on in the list until we run out of frames or find one that we can output
-    const bool flushOutput = d->bufferStatus == PictureBufferStatus::FLUSHING_NEEDED_IN_BITSTREAM || d->bufferStatus == PictureBufferStatus::FLUSHING_EOF;
-    while (iterPic != d->pcListPic->end())
-    {
-      Picture* pcPic = *(iterPic);
-
-      if ((flushOutput && pcPic->neededForOutput) || (pcPic->neededForOutput && pcPic->getPOC() > d->m_iPOCLastDisplay &&
-        (d->numPicsNotYetDisplayed > d->numReorderPicsHighestTid || d->dpbFullness > d->maxDecPicBufferingHighestTid)))
-      {
-        if (!flushOutput)
-        {
-          // Output picture found
-          d->numPicsNotYetDisplayed--;
-          if (pcPic->referenced == false)
-            d->dpbFullness--;
-        }
-
-        // update POC of display order
-        d->m_iPOCLastDisplay = pcPic->getPOC();
-
-        // erase non-referenced picture in the reference picture list after display
-        if (!pcPic->referenced && pcPic->reconstructed)
-        {
-          pcPic->reconstructed = false;
-        }
-        pcPic->neededForOutput = false;
-
-        // Return the picture. The next fime this function is called we want to continue at the next picture.
-        d->pcListPic_readIdx++;
-        return (libVTMDec_picture*)pcPic;
-      }
-
-      iterPic++;
-      d->pcListPic_readIdx++;
-    }
-    // We reached the end of the list wothout finding an output picture
-    if (d->nrOfTimesToCheckForOutputPictures > 0)
-    {
-      // Start the whole process over again
-      d->nrOfTimesToCheckForOutputPictures--;
-      initFrameRetrieval(d);
-      return libVTMDec_get_picture(decCtx);
-    }
-    if (d->bufferStatus == PictureBufferStatus::FLUSHING_EOF)
-    {
-      // Flushing is over. There nothing we can decode anymore. The end.
-      d->pcListPic->clear();
-      d->m_iPOCLastDisplay = -MAX_INT;
     }
 
-    return NULL;
+    Picture* pcPic = *(iterPic);
+
+    // update POC of display order
+    d->m_iPOCLastDisplay = pcPic->getPOC();
+
+    // erase non-referenced picture in the reference picture list after display
+    if (!pcPic->referenced && pcPic->reconstructed)
+    {
+      pcPic->reconstructed = false;
+    }
+    pcPic->neededForOutput = false;
+
+    Picture* pcOutputPic = pcPic;
+
+    d->iterateLoopToNextPicture();
+
+    d->log(Logger::LogLevel::INFO) << "Returning picture POC " << pcOutputPic->getPOC() << std::endl;
+    return (libVTMDec_picture*)pcOutputPic;
   }
 
   VTM_DEC_API int libVTMDec_get_POC(libVTMDec_picture *pic)

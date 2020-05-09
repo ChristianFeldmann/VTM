@@ -1244,7 +1244,11 @@ void EncLib::xInitSPS( SPS& sps )
   }
 
   sps.setEntropyCodingSyncEnabledFlag( m_entropyCodingSyncEnabledFlag );
+#if JVET_R0165_OPTIONAL_ENTRY_POINT
+  sps.setEntryPointsPresentFlag( m_entryPointPresentFlag );
+#else
   sps.setEntropyCodingSyncEntryPointsPresentFlag( m_entropyCodingSyncEntryPointPresentFlag );
+#endif
 
   sps.setUseWP( m_useWeightedPred );
   sps.setUseWPBiPred( m_useWeightedBiPred );

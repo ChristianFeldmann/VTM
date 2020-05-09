@@ -53,7 +53,15 @@
 //########### place macros to be removed in next cycle below this line ###############
 #define JVET_Q0764_WRAP_AROUND_WITH_RPR                   1 // JVET-Q0764: Combination of wrap around offset and RPR
 
+#define JVET_R0097_MAX_TRSIZE_CONDITIONALY_SIGNALING      1 // JVET-R0097: Aspect 1, If the luma CTB size is not larger than 32, sps_max_luma_transform_size_64_flag is not signalled and inferred to be 0
+
 #define JVET_R0483_SH_TSRC_DISABLED_FLAG_CLEANUP          1 // JVET-R0483 Comb 4: R0049 + R0271, only R0049 method 3 aspect (Skip signaling sh_ts_residual_coding_disabled_flag when sps_transform_skip_enabled_flag = 0, also proposed in R0068, R0097, R0142, R0153) as R0271 has its own macro 
+
+#define R0091_CONSTRAINT_SLICE_ORDER                      1 // JVET-R0091: constraint slice signalling order to be the same as slice coding order
+
+#define JVET_R0161_CONDITION_SIGNAL_PTL_IDX               1 // JVET_R0161 proposal 2: skip PTL index signaling when number of signaled PTL structure is equal to number of OLSs
+
+#define JVET_R0165_OPTIONAL_ENTRY_POINT                   1 // JVET-R0165: Optional entry point offset
 
 #define R0324_PH_SYNTAX_CONDITION_MODIFY                  1 // JVET-R0324 add conditions on PH syntax to conder whether current pic is bi-predictive picture
 
@@ -66,6 +74,8 @@
 #define JVET_R0090_VUI                                    1 // JVET-R0090: Fix parsing dependencies in VUI syntax
 
 #define JVET_R0205                                        1 // JVET-R0205: Condition presence of inter_layer_ref_pics_present_flag on sps_video_parameter_set_id 
+
+#define JVET_R0277_RPL                                    1 // JVET-R0277: Modified condition for sh_num_ref_idx_active_override_flag, inference for sh_collocated_from_l0_flag equal to 1 for P-slices
 
 #define JVET_R0186_CLEANUP                                1 // JVET-R0186 aspect 1: Signal the pps_no_pic_partition_flag ahead in the PPS.
 
@@ -82,6 +92,8 @@
 #define JVET_R0059_RPL_CLEANUP                            1 // JVET-R0059 aspect 2: Condition the signalling of ltrp_in_header_flag[ listIdx ][ rplsIdx ].
 
 #define JVET_R0202_WHEN_PH_IN_SH_INFO_FLAGS_EQUAL_0       1 // JVET-R0202 When sh_picture_header_in_slice_header_flag is equal to 1, rpl_info_in_ph_flag, dbf_info_in_ph_flag, sao_info_in_ph_flag, wp_info_in_ph_flag, qp_delta_info_in_ph_flag shall be be equal to 0
+
+#define JVET_R0201_PREFIX_SUFFIX_APS_CLEANUP              1 // JVET-R0201 Cleanups on Prefix and Suffix APS
 
 #define JVET_R0202_WHEN_PH_IN_SH_NO_SUBPIC_SEPARATE_COLOR 1 // JVET-R0202 Add constraints when sh_picture_header_in_slice_header_flag equal to 1 sps_subpic_info_present_flag and separate_colour_plane_flag shall be equal to 0
 

@@ -270,6 +270,13 @@ uint32_t DecApp::decode()
         xWriteOutput( pcListPic, nalu.m_temporalId );
       }
     }
+#if JVET_R0201_PREFIX_SUFFIX_APS_CLEANUP
+    if (bNewPicture || !bitstreamFile || nalu.m_nalUnitType == NAL_UNIT_EOS)
+    {
+      m_cDecLib.checkAPSInPictureUnit();
+      m_cDecLib.resetPictureUnitNals();
+    }
+#endif
     if(bNewAccessUnit)
     {
       m_cDecLib.checkTidLayerIdInAccessUnit();

@@ -1099,7 +1099,11 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("WeightedPredMethod,-wpM",                         tmpWeightedPredictionMethod, int(WP_PER_PICTURE_WITH_SIMPLE_DC_COMBINED_COMPONENT), "Weighted prediction method")
   ("Log2ParallelMergeLevel",                          m_log2ParallelMergeLevel,                            2u, "Parallel merge estimation region")
   ("WaveFrontSynchro",                                m_entropyCodingSyncEnabledFlag,                   false, "0: entropy coding sync disabled; 1 entropy coding sync enabled")
+#if JVET_R0165_OPTIONAL_ENTRY_POINT
+  ("EntryPointsPresent",                              m_entryPointPresentFlag,                           true, "0: entry points is not present; 1 entry points may be present in slice header")
+#else
   ("WaveFrontEntryPointsPresent",                     m_entropyCodingSyncEntryPointPresentFlag,         false, "0: entry points for WPP is not present; 1 entry points for WPP may be present in slice header")
+#endif
   ("ScalingList",                                     m_useScalingListId,                    SCALING_LIST_OFF, "0/off: no scaling list, 1/default: default scaling lists, 2/file: scaling lists specified in ScalingListFile")
   ("ScalingListFile",                                 m_scalingListFileName,                       string(""), "Scaling list file name. Use an empty string to produce help.")
   ("DisableScalingMatrixForLFNST",                    m_disableScalingMatrixForLfnstBlks,                true, "Disable scaling matrices, when enabled, for LFNST-coded blocks")
@@ -1685,10 +1689,12 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     m_outputBitDepth     [CHANNEL_TYPE_CHROMA] = m_outputBitDepth     [CHANNEL_TYPE_LUMA  ];
   }
 
+#if !JVET_R0165_OPTIONAL_ENTRY_POINT
   if( !m_entropyCodingSyncEnabledFlag )
   {
     m_entropyCodingSyncEntryPointPresentFlag = false;
   }
+#endif
 
   m_InputChromaFormatIDC = numberToChromaFormat(tmpInputChromaFormat);
   m_chromaFormatIDC      = ((tmpChromaFormat == 0) ? (m_InputChromaFormatIDC) : (numberToChromaFormat(tmpChromaFormat)));
@@ -3123,11 +3129,7 @@ bool EncAppCfg::xCheckParameter()
     // rectangular slices
     if( !m_rasterSliceFlag )
     {
-      if (m_singleSlicePerSubPicFlag)
-      {
-        xConfirmPara( m_subPicInfoPresentFlag == 0 || m_numSubPics < 2, "SingleSlicePerSubPic requires more than one subpicture.");
-      }
-      else
+      if (!m_singleSlicePerSubPicFlag)
       {
         uint32_t sliceIdx;
         bool     needTileIdxDelta = false;
@@ -3450,6 +3452,11 @@ bool EncAppCfg::xCheckParameter()
 #endif
 
   xConfirmPara(m_useColorTrans && (m_log2MaxTbSize == 6), "Log2MaxTbSize must be less than 6 when ACT is enabled, otherwise ACT needs to be disabled");
+
+#if  JVET_R0097_MAX_TRSIZE_CONDITIONALY_SIGNALING
+  xConfirmPara(m_uiCTUSize <= 32 && (m_log2MaxTbSize == 6), "Log2MaxTbSize must be less than 6 when CTU size is 32");
+#endif
+
 
 #undef xConfirmPara
   return check_failed;

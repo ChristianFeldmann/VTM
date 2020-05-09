@@ -272,6 +272,13 @@ void Slice::setNumEntryPoints(const SPS *sps, const PPS *pps)
   uint32_t prevCtuAddr, prevCtuX, prevCtuY;
   m_numEntryPoints = 0;
 
+#if JVET_R0165_OPTIONAL_ENTRY_POINT
+  if (!sps->getEntryPointsPresentFlag())
+  {
+    return;
+  }
+#endif
+
   // count the number of CTUs that align with either the start of a tile, or with an entropy coding sync point
   // ignore the first CTU since it doesn't count as an entry point
   for( uint32_t i = 1; i < m_sliceMap.getNumCtuInSlice(); i++ )
@@ -283,7 +290,11 @@ void Slice::setNumEntryPoints(const SPS *sps, const PPS *pps)
     prevCtuX    = (prevCtuAddr % pps->getPicWidthInCtu());
     prevCtuY    = (prevCtuAddr / pps->getPicWidthInCtu());
 
+#if JVET_R0165_OPTIONAL_ENTRY_POINT
+    if (pps->ctuToTileRowBd(ctuY) != pps->ctuToTileRowBd(prevCtuY) || pps->ctuToTileColBd(ctuX) != pps->ctuToTileColBd(prevCtuX) || (ctuY != prevCtuY && sps->getEntropyCodingSyncEnabledFlag()))
+#else
     if (pps->ctuToTileRowBd(ctuY) != pps->ctuToTileRowBd(prevCtuY) || pps->ctuToTileColBd(ctuX) != pps->ctuToTileColBd(prevCtuX) || (ctuY != prevCtuY && sps->getEntropyCodingSyncEntryPointsPresentFlag()))
+#endif
     {
       m_numEntryPoints++;
     }
@@ -2410,7 +2421,11 @@ SPS::SPS()
 , m_BDPCMEnabledFlag          (false)
 , m_JointCbCrEnabledFlag      (false)
 , m_entropyCodingSyncEnabledFlag(false)
+#if JVET_R0165_OPTIONAL_ENTRY_POINT
+, m_entryPointPresentFlag(false)
+#else
 , m_entropyCodingSyncEntryPointPresentFlag(false)
+#endif
 , m_sbtmvpEnabledFlag         (false)
 , m_bdofEnabledFlag           (false)
 , m_fpelMmvdEnabledFlag       ( false )
@@ -2864,58 +2879,74 @@ void PPS::initRectSliceMap(const SPS  *sps)
     CHECK(m_numSlicesInPic > MAX_SLICES, "Number of slices in picture exceeds valid range");
     m_sliceMap.resize( m_numSlicesInPic );
 
-    // Q2001 v15 equation 29
-    std::vector<uint32_t> subpicWidthInTiles;
-    std::vector<uint32_t> subpicHeightInTiles;
-    std::vector<uint32_t> subpicHeightLessThanOneTileFlag;
-    subpicWidthInTiles.resize(sps->getNumSubPics());
-    subpicHeightInTiles.resize(sps->getNumSubPics());
-    subpicHeightLessThanOneTileFlag.resize(sps->getNumSubPics());
-    for (uint32_t i = 0; i <sps->getNumSubPics(); i++)
+    if (sps->getNumSubPics() > 1)
     {
-      uint32_t leftX = sps->getSubPicCtuTopLeftX(i);
-      uint32_t rightX = leftX + sps->getSubPicWidth(i) - 1;
-      subpicWidthInTiles[i] = m_ctuToTileCol[rightX] + 1 - m_ctuToTileCol[leftX];
+      // Q2001 v15 equation 29
+      std::vector<uint32_t> subpicWidthInTiles;
+      std::vector<uint32_t> subpicHeightInTiles;
+      std::vector<uint32_t> subpicHeightLessThanOneTileFlag;
+      subpicWidthInTiles.resize(sps->getNumSubPics());
+      subpicHeightInTiles.resize(sps->getNumSubPics());
+      subpicHeightLessThanOneTileFlag.resize(sps->getNumSubPics());
+      for (uint32_t i = 0; i <sps->getNumSubPics(); i++)
+      {
+        uint32_t leftX = sps->getSubPicCtuTopLeftX(i);
+        uint32_t rightX = leftX + sps->getSubPicWidth(i) - 1;
+        subpicWidthInTiles[i] = m_ctuToTileCol[rightX] + 1 - m_ctuToTileCol[leftX];
 
-      uint32_t topY = sps->getSubPicCtuTopLeftY(i);
-      uint32_t bottomY = topY + sps->getSubPicHeight(i) - 1;
-      subpicHeightInTiles[i] = m_ctuToTileRow[bottomY] + 1 - m_ctuToTileRow[topY];
+        uint32_t topY = sps->getSubPicCtuTopLeftY(i);
+        uint32_t bottomY = topY + sps->getSubPicHeight(i) - 1;
+        subpicHeightInTiles[i] = m_ctuToTileRow[bottomY] + 1 - m_ctuToTileRow[topY];
 
-      if (subpicHeightInTiles[i] == 1 && sps->getSubPicHeight(i) < m_tileRowHeight[m_ctuToTileRow[topY]] )
-      {
-        subpicHeightLessThanOneTileFlag[i] = 1;
-      }
-      else
-      {
-        subpicHeightLessThanOneTileFlag[i] = 0;
-      }
-    }
-
-    for( int i = 0; i < m_numSlicesInPic; i++ )
-    {
-      CHECK(m_numSlicesInPic != sps->getNumSubPics(), "in single slice per subpic mode, number of slice and subpic shall be equal");
-      m_sliceMap[ i ].initSliceMap();
-      if (subpicHeightLessThanOneTileFlag[i])
-      {
-        m_sliceMap[i].addCtusToSlice(sps->getSubPicCtuTopLeftX(i), sps->getSubPicCtuTopLeftX(i) + sps->getSubPicWidth(i),
-                                     sps->getSubPicCtuTopLeftY(i), sps->getSubPicCtuTopLeftY(i) + sps->getSubPicHeight(i), m_picWidthInCtu);
-      }
-      else
-      {
-        tileX = m_ctuToTileCol[sps->getSubPicCtuTopLeftX(i)];
-        tileY = m_ctuToTileRow[sps->getSubPicCtuTopLeftY(i)];
-        for (uint32_t j = 0; j< subpicHeightInTiles[i]; j++)
+        if (subpicHeightInTiles[i] == 1 && sps->getSubPicHeight(i) < m_tileRowHeight[m_ctuToTileRow[topY]] )
         {
-          for (uint32_t k = 0; k < subpicWidthInTiles[i]; k++)
+          subpicHeightLessThanOneTileFlag[i] = 1;
+        }
+        else
+        {
+          subpicHeightLessThanOneTileFlag[i] = 0;
+        }
+      }
+
+      for( int i = 0; i < m_numSlicesInPic; i++ )
+      {
+        CHECK(m_numSlicesInPic != sps->getNumSubPics(), "in single slice per subpic mode, number of slice and subpic shall be equal");
+        m_sliceMap[ i ].initSliceMap();
+        if (subpicHeightLessThanOneTileFlag[i])
+        {
+          m_sliceMap[i].addCtusToSlice(sps->getSubPicCtuTopLeftX(i), sps->getSubPicCtuTopLeftX(i) + sps->getSubPicWidth(i),
+                                       sps->getSubPicCtuTopLeftY(i), sps->getSubPicCtuTopLeftY(i) + sps->getSubPicHeight(i), m_picWidthInCtu);
+        }
+        else
+        {
+          tileX = m_ctuToTileCol[sps->getSubPicCtuTopLeftX(i)];
+          tileY = m_ctuToTileRow[sps->getSubPicCtuTopLeftY(i)];
+          for (uint32_t j = 0; j< subpicHeightInTiles[i]; j++)
           {
-            m_sliceMap[i].addCtusToSlice(getTileColumnBd(tileX + k), getTileColumnBd(tileX + k + 1), getTileRowBd(tileY + j), getTileRowBd(tileY + j + 1), m_picWidthInCtu);
+            for (uint32_t k = 0; k < subpicWidthInTiles[i]; k++)
+            {
+              m_sliceMap[i].addCtusToSlice(getTileColumnBd(tileX + k), getTileColumnBd(tileX + k + 1), getTileRowBd(tileY + j), getTileRowBd(tileY + j + 1), m_picWidthInCtu);
+            }
           }
         }
       }
+      subpicWidthInTiles.clear();
+      subpicHeightInTiles.clear();
+      subpicHeightLessThanOneTileFlag.clear();
     }
-    subpicWidthInTiles.clear();
-    subpicHeightInTiles.clear();
-    subpicHeightLessThanOneTileFlag.clear();
+    else
+    {
+      m_sliceMap[0].initSliceMap();
+      for (int tileY=0; tileY<m_numTileRows; tileY++)
+      {
+        for (int tileX=0; tileX<m_numTileCols; tileX++)
+        {
+          m_sliceMap[0].addCtusToSlice(getTileColumnBd(tileX), getTileColumnBd(tileX + 1),
+                                       getTileRowBd(tileY), getTileRowBd(tileY + 1), m_picWidthInCtu);
+        }
+      }
+      m_sliceMap[0].setSliceID(0);
+    }
   }
   else
   {
@@ -3063,6 +3094,10 @@ void PPS::initSubPic(const SPS &sps)
     else
     {
       int numSlicesInSubPic = 0;
+#if R0091_CONSTRAINT_SLICE_ORDER
+      int idxLastSliceInSubpic = -1;
+      int idxFirstSliceAfterSubpic = m_numSlicesInPic;
+#endif
       for (int j = 0; j < m_numSlicesInPic; j++)
       {
         uint32_t ctu = m_sliceMap[j].getCtuAddrInSlice(0);
@@ -3076,8 +3111,20 @@ void PPS::initSubPic(const SPS &sps)
           // add ctus in a slice to the subpicture it belongs to
           m_subPics[i].addCTUsToSubPic(m_sliceMap[j].getCtuAddrList());
 	  numSlicesInSubPic++;
+#if R0091_CONSTRAINT_SLICE_ORDER
+          idxLastSliceInSubpic = j;
+#endif
         }
+#if R0091_CONSTRAINT_SLICE_ORDER
+        else if (idxFirstSliceAfterSubpic == m_numSlicesInPic && idxLastSliceInSubpic != -1)
+        {
+          idxFirstSliceAfterSubpic = j;
+        }
+#endif
       }
+#if R0091_CONSTRAINT_SLICE_ORDER
+      CHECK( idxFirstSliceAfterSubpic < idxLastSliceInSubpic, "The signalling order of slices shall follow the coding order" );
+#endif
       m_subPics[i].setNumSlicesInSubPic(numSlicesInSubPic);
     }
     m_subPics[i].setTreatedAsPicFlag(sps.getSubPicTreatedAsPicFlag(i));

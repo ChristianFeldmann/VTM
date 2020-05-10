@@ -7209,7 +7209,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
 
       if( bCheckFull && anyCbfSet && csSplit->cost < csFull->cost )
       {
-        cs.useSubStructure( *csSplit, partitioner.chType, currArea, false, false, false, true );
+        cs.useSubStructure( *csSplit, partitioner.chType, currArea, false, false, false, true, true );
         cs.cost = csSplit->cost;
       }
     }

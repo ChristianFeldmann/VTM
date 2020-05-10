@@ -630,6 +630,10 @@ protected:
   ScalingListMode m_useScalingListId;                         ///< using quantization matrix
   std::string m_scalingListFileName;                          ///< quantization matrix file name
   bool      m_disableScalingMatrixForLfnstBlks;
+#if JVET_R0380_SCALING_MATRIX_DISABLE_YCC_OR_RGB
+  bool      m_disableScalingMatrixForAlternativeColourSpace;
+  bool      m_scalingMatrixDesignatedColourSpace;
+#endif
   CostMode  m_costMode;                                       ///< Cost mode to use
 #if JVET_R0143_TSRCdisableLL
   bool      m_TSRCdisableLL;                                  ///< disable TSRC for lossless

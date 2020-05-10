@@ -1190,12 +1190,12 @@ bool IntraSearch::estIntraPredLumaQT(CodingUnit &cu, Partitioner &partitioner, c
     {
       if (cu.colorTransform)
       {
-        cs.useSubStructure(*csBest, partitioner.chType, pu, true, true, KEEP_PRED_AND_RESI_SIGNALS, KEEP_PRED_AND_RESI_SIGNALS);
+        cs.useSubStructure(*csBest, partitioner.chType, pu, true, true, KEEP_PRED_AND_RESI_SIGNALS, KEEP_PRED_AND_RESI_SIGNALS, true);
       }
       else
       {
         cs.useSubStructure(*csBest, partitioner.chType, pu.singleChan(CHANNEL_TYPE_LUMA), true, true, KEEP_PRED_AND_RESI_SIGNALS,
-                           KEEP_PRED_AND_RESI_SIGNALS);
+                           KEEP_PRED_AND_RESI_SIGNALS, true);
       }
     }
     csBest->releaseIntermediateData();

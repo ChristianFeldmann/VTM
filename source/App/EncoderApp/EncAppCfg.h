@@ -135,6 +135,20 @@ protected:
   uint32_t  m_maxBitDepthConstraintIdc;
   uint32_t  m_maxChromaFormatConstraintIdc;
   bool      m_bFrameConstraintFlag;
+#if JVET_R0286_GCI_CLEANUP
+  bool      m_singleLayerConstraintFlag;
+  bool      m_allLayersIndependentConstraintFlag;
+  bool      m_noMrlConstraintFlag;
+  bool      m_noIspConstraintFlag;
+  bool      m_noMipConstraintFlag;
+  bool      m_noLfnstConstraintFlag;
+  bool      m_noMmvdConstraintFlag;
+  bool      m_noSmvdConstraintFlag;
+  bool      m_noProfConstraintFlag;
+  bool      m_noPaletteConstraintFlag;
+  bool      m_noActConstraintFlag;
+  bool      m_noLmcsConstraintFlag;
+#endif
   bool      m_bNoQtbttDualTreeIntraConstraintFlag;
   bool      m_noPartitionConstraintsOverrideConstraintFlag;
   bool      m_bNoSaoConstraintFlag;

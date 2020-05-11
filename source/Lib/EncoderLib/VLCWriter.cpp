@@ -494,7 +494,7 @@ void HLSWriter::codePPS( const PPS* pcPPS )
       }
 #endif
     }
-
+  }
 #if JVET_R0113_AND_JVET_R0106_PPS_CLEANUP
   if (!pcPPS->getNoPicPartitionFlag())
   {

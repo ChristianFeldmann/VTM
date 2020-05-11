@@ -577,6 +577,7 @@ void EncApp::xInitLibCfg()
   //====== Parallel Merge Estimation ========
   m_cEncLib.setLog2ParallelMergeLevelMinus2(m_log2ParallelMergeLevel - 2);
 #if JVET_R0110_MIXED_LOSSLESS
+  m_cEncLib.setMixedLossyLossless(m_mixedLossyLossless);
   m_cEncLib.setSliceLosslessArray(m_sliceLosslessArray);
 #endif
 

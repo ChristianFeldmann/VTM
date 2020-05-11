@@ -489,7 +489,8 @@ protected:
   bool      m_gopBasedTemporalFilterEnabled;
   bool      m_noPicPartitionFlag;                             ///< no picture partitioning flag (single tile, single slice)
 #if JVET_R0110_MIXED_LOSSLESS
-  std::vector<uint32_t> m_sliceLosslessArray;                    ///< Slice lossless array
+  bool      m_mixedLossyLossless;                             ///< enable mixed lossy/lossless coding
+  std::vector<uint16_t> m_sliceLosslessArray;                      ///< Slice lossless array
 #endif
   std::vector<uint32_t> m_tileColumnWidth;                    ///< tile column widths in units of CTUs (last column width will be repeated uniformly to cover any remaining picture width)
   std::vector<uint32_t> m_tileRowHeight;                      ///< tile row heights in units of CTUs (last row height will be repeated uniformly to cover any remaining picture height)
@@ -1410,8 +1411,10 @@ public:
   uint32_t      getDeltaQpRD                    () const { return m_uiDeltaQpRD; }
   bool      getFastDeltaQp                  () const { return m_bFastDeltaQP; }
 #if JVET_R0110_MIXED_LOSSLESS
-  void      setSliceLosslessArray(std::vector<uint32_t> sliceLosslessArray) { m_sliceLosslessArray = sliceLosslessArray; }
-  const     std::vector<uint32_t>*   getSliceLosslessArray() const { return &m_sliceLosslessArray; }
+  void      setMixedLossyLossless(bool b) { m_mixedLossyLossless = b; }
+  bool      getMixedLossyLossless()       { return m_mixedLossyLossless; }
+  void      setSliceLosslessArray(std::vector<uint16_t> sliceLosslessArray) { m_sliceLosslessArray = sliceLosslessArray; }
+  const     std::vector<uint16_t>*   getSliceLosslessArray() const { return &m_sliceLosslessArray; }
 #endif
   //====== Tiles and Slices ========
   void      setNoPicPartitionFlag( bool b )                                { m_noPicPartitionFlag = b;              }

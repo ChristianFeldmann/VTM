@@ -51,6 +51,7 @@
 #include <cassert>
 
 //########### place macros to be removed in next cycle below this line ###############
+
 #define JVET_R0055_HANDLING_NON_EXISTENT_QM               1 // JVET-R0055: infer chroma scaling lists to be all 16 in 4:0:0 by copy mode flag
 
 #define JVET_R0097_MAX_TRSIZE_CONDITIONALY_SIGNALING      1 // JVET-R0097: Aspect 1, If the luma CTB size is not larger than 32, sps_max_luma_transform_size_64_flag is not signalled and inferred to be 0
@@ -99,6 +100,8 @@
 #define JVET_R0437_BS_DERIVATION                          1 // JVET-R0437: fix the bS derivation for palette mode
 
 #define JVET_R0110_MIXED_LOSSLESS                         1 // JVET-R0110: Slice level mixed lossy/lossless coding: encoder only method
+
+#define JVET_R0267_IDR_RPL                                1 // JVET-R0267: Add RPL constraint for IDR picture
 
 #define JVET_R0330_CRS_CLIP_REM                           1 // JVET-R0330: Remove redundant clipping in chroma residual scaling factor derivation
 

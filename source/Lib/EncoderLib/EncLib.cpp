@@ -1054,8 +1054,10 @@ void EncLib::xInitSPS( SPS& sps )
 {
   ProfileTierLevel* profileTierLevel = sps.getProfileTierLevel();
   ConstraintInfo* cinfo = profileTierLevel->getConstraintInfo();
+#if !JVET_R0090_VUI
   cinfo->setProgressiveSourceFlag       (m_progressiveSourceFlag);
   cinfo->setInterlacedSourceFlag        (m_interlacedSourceFlag);
+#endif
   cinfo->setNonPackedConstraintFlag     (m_nonPackedConstraintFlag);
   cinfo->setNonProjectedConstraintFlag(m_nonProjectedConstraintFlag);
   cinfo->setNoResChangeInClvsConstraintFlag(m_noResChangeInClvsConstraintFlag);
@@ -1066,6 +1068,20 @@ void EncLib::xInitSPS( SPS& sps )
   cinfo->setIntraOnlyConstraintFlag         (m_intraConstraintFlag);
   cinfo->setMaxBitDepthConstraintIdc    (m_maxBitDepthConstraintIdc);
   cinfo->setMaxChromaFormatConstraintIdc((ChromaFormat)m_maxChromaFormatConstraintIdc);
+#if JVET_R0286_GCI_CLEANUP
+  cinfo->setSingleLayerConstraintFlag (m_singleLayerConstraintFlag);
+  cinfo->setAllLayersIndependentConstraintFlag (m_allLayersIndependentConstraintFlag);
+  cinfo->setNoMrlConstraintFlag (m_noMrlConstraintFlag);
+  cinfo->setNoIspConstraintFlag (m_noIspConstraintFlag);
+  cinfo->setNoMipConstraintFlag (m_noMipConstraintFlag);
+  cinfo->setNoLfnstConstraintFlag (m_noLfnstConstraintFlag);
+  cinfo->setNoMmvdConstraintFlag (m_noMmvdConstraintFlag);
+  cinfo->setNoSmvdConstraintFlag (m_noSmvdConstraintFlag);
+  cinfo->setNoProfConstraintFlag (m_noProfConstraintFlag);
+  cinfo->setNoPaletteConstraintFlag (m_noPaletteConstraintFlag);
+  cinfo->setNoActConstraintFlag (m_noActConstraintFlag);
+  cinfo->setNoLmcsConstraintFlag (m_noLmcsConstraintFlag);
+#endif
   cinfo->setNoQtbttDualTreeIntraConstraintFlag(m_bNoQtbttDualTreeIntraConstraintFlag);
   cinfo->setNoPartitionConstraintsOverrideConstraintFlag(m_noPartitionConstraintsOverrideConstraintFlag);
   cinfo->setNoSaoConstraintFlag(m_bNoSaoConstraintFlag);
@@ -1219,11 +1235,19 @@ void EncLib::xInitSPS( SPS& sps )
   {
     sps.setBitDepth      (ChannelType(channelType), m_bitDepth[channelType] );
     sps.setQpBDOffset  (ChannelType(channelType), (6 * (m_bitDepth[channelType] - 8)));
+#if JVET_R0045_TS_MIN_QP_CLEANUP
+    sps.setInternalMinusInputBitDepth(ChannelType(channelType), max(0, (m_bitDepth[channelType] - m_inputBitDepth[channelType])));
+#else
     sps.setMinQpPrimeTsMinus4(ChannelType(channelType), max(0, 6 * (m_bitDepth[channelType] - m_inputBitDepth[channelType])));
+#endif
   }
 
   sps.setEntropyCodingSyncEnabledFlag( m_entropyCodingSyncEnabledFlag );
+#if JVET_R0165_OPTIONAL_ENTRY_POINT
+  sps.setEntryPointsPresentFlag( m_entryPointPresentFlag );
+#else
   sps.setEntropyCodingSyncEntryPointsPresentFlag( m_entropyCodingSyncEntryPointPresentFlag );
+#endif
 
   sps.setUseWP( m_useWeightedPred );
   sps.setUseWPBiPred( m_useWeightedBiPred );
@@ -1240,6 +1264,10 @@ void EncLib::xInitSPS( SPS& sps )
   }
 
   sps.setScalingListFlag ( (m_useScalingListId == SCALING_LIST_OFF) ? 0 : 1 );
+#if JVET_R0380_SCALING_MATRIX_DISABLE_YCC_OR_RGB
+  sps.setScalingMatrixForAlternativeColourSpaceDisabledFlag( m_disableScalingMatrixForAlternativeColourSpace );
+  sps.setScalingMatrixDesignatedColourSpaceFlag( m_scalingMatrixDesignatedColourSpace );
+#endif
   sps.setALFEnabledFlag( m_alf );
   sps.setCCALFEnabledFlag( m_ccalf );
   sps.setFieldSeqFlag(false);
@@ -1257,6 +1285,10 @@ void EncLib::xInitSPS( SPS& sps )
     pcVUI->setColourPrimaries(getColourPrimaries());
     pcVUI->setTransferCharacteristics(getTransferCharacteristics());
     pcVUI->setMatrixCoefficients(getMatrixCoefficients());
+#if JVET_R0090_VUI
+    pcVUI->setProgressiveSourceFlag       (getProgressiveSourceFlag());
+    pcVUI->setInterlacedSourceFlag        (getInterlacedSourceFlag());
+#endif
     pcVUI->setChromaLocInfoPresentFlag(getChromaLocInfoPresentFlag());
     pcVUI->setChromaSampleLocTypeTopField(getChromaSampleLocTypeTopField());
     pcVUI->setChromaSampleLocTypeBottomField(getChromaSampleLocTypeBottomField());

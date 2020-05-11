@@ -177,6 +177,22 @@ protected:
   uint32_t  m_maxBitDepthConstraintIdc;
   uint32_t  m_maxChromaFormatConstraintIdc;
   bool      m_bFrameConstraintFlag;
+
+#if JVET_R0286_GCI_CLEANUP
+  bool      m_singleLayerConstraintFlag;
+  bool      m_allLayersIndependentConstraintFlag;
+  bool      m_noMrlConstraintFlag;
+  bool      m_noIspConstraintFlag;
+  bool      m_noMipConstraintFlag;
+  bool      m_noLfnstConstraintFlag;
+  bool      m_noMmvdConstraintFlag;
+  bool      m_noSmvdConstraintFlag;
+  bool      m_noProfConstraintFlag;
+  bool      m_noPaletteConstraintFlag;
+  bool      m_noActConstraintFlag;
+  bool      m_noLmcsConstraintFlag;
+#endif
+
   bool      m_bNoQtbttDualTreeIntraConstraintFlag;
   bool      m_noPartitionConstraintsOverrideConstraintFlag;
   bool      m_bNoSaoConstraintFlag;
@@ -219,8 +235,10 @@ protected:
   Level::Name   m_level;
   std::vector<uint32_t>      m_subProfile;
   uint8_t       m_numSubProfile;
+#if !JVET_R0090_VUI
   bool m_progressiveSourceFlag;
   bool m_interlacedSourceFlag;
+#endif
   bool m_nonPackedConstraintFlag;
   bool m_nonProjectedConstraintFlag;
   bool m_noResChangeInClvsConstraintFlag;
@@ -470,6 +488,9 @@ protected:
   bool      m_bUseBLambdaForNonKeyLowDelayPictures;
   bool      m_gopBasedTemporalFilterEnabled;
   bool      m_noPicPartitionFlag;                             ///< no picture partitioning flag (single tile, single slice)
+#if JVET_R0110_MIXED_LOSSLESS
+  std::vector<uint32_t> m_sliceLosslessArray;                    ///< Slice lossless array
+#endif
   std::vector<uint32_t> m_tileColumnWidth;                    ///< tile column widths in units of CTUs (last column width will be repeated uniformly to cover any remaining picture width)
   std::vector<uint32_t> m_tileRowHeight;                      ///< tile row heights in units of CTUs (last row height will be repeated uniformly to cover any remaining picture height)
   bool      m_rectSliceFlag;                                  ///< indicates if using rectangular or raster-scan slices
@@ -484,8 +505,11 @@ protected:
   //====== Sub-picture and Slices ========
   bool      m_singleSlicePerSubPicFlag;
   bool      m_entropyCodingSyncEnabledFlag;
+#if JVET_R0165_OPTIONAL_ENTRY_POINT
+  bool      m_entryPointPresentFlag;                           ///< flag for the presence of entry points
+#else
   bool      m_entropyCodingSyncEntryPointPresentFlag;          ///< flag for the presence of entry points for WPP
-
+#endif
 
   HashType  m_decodedPictureHashSEIType;
   bool      m_bufferingPeriodSEIEnabled;
@@ -620,6 +644,10 @@ protected:
   uint32_t      m_maxNumIBCMergeCand;                 ///< Max number of IBC merge candidates
   ScalingListMode m_useScalingListId;             ///< Using quantization matrix i.e. 0=off, 1=default, 2=file.
   std::string m_scalingListFileName;              ///< quantization matrix file name
+#if JVET_R0380_SCALING_MATRIX_DISABLE_YCC_OR_RGB
+  bool      m_disableScalingMatrixForAlternativeColourSpace;
+  bool      m_scalingMatrixDesignatedColourSpace;
+#endif
   bool      m_sliceLevelRpl;                      ///< code reference picture lists in slice headers rather than picture header
   bool      m_sliceLevelDblk;                     ///< code deblocking filter parameters in slice headers rather than picture header
   bool      m_sliceLevelSao;                      ///< code SAO parameters in slice headers rather than picture header
@@ -669,6 +697,10 @@ protected:
   int       m_colourPrimaries;                                ///< Indicates chromaticity coordinates of the source primaries
   int       m_transferCharacteristics;                        ///< Indicates the opto-electronic transfer characteristics of the source
   int       m_matrixCoefficients;                             ///< Describes the matrix coefficients used in deriving luma and chroma from RGB primaries
+#if JVET_R0090_VUI
+  bool      m_progressiveSourceFlag;                          ///< Indicates if the content is progressive
+  bool      m_interlacedSourceFlag;                           ///< Indicates if the content is interlaced
+#endif
   bool      m_chromaLocInfoPresentFlag;                       ///< Signals whether chroma_sample_loc_type_top_field and chroma_sample_loc_type_bottom_field are present
   int       m_chromaSampleLocTypeTopField;                    ///< Specifies the location of chroma samples for top field
   int       m_chromaSampleLocTypeBottomField;                 ///< Specifies the location of chroma samples for bottom field
@@ -745,6 +777,34 @@ public:
   void      setMaxChromaFormatConstraintIdc(uint32_t u) { m_maxChromaFormatConstraintIdc = u; }
   bool      getFrameConstraintFlag() const { return m_bFrameConstraintFlag; }
   void      setFrameConstraintFlag(bool bVal) { m_bFrameConstraintFlag = bVal; }
+
+#if JVET_R0286_GCI_CLEANUP
+  bool          getSingleLayerConstraintFlag() const { return m_singleLayerConstraintFlag; }
+  void          setSingleLayerConstraintFlag(bool bVal) { m_singleLayerConstraintFlag = bVal; }
+  bool          getAllLayersIndependentConstraintFlag() const { return m_allLayersIndependentConstraintFlag; }
+  void          setAllLayersIndependentConstraintFlag(bool bVal) { m_allLayersIndependentConstraintFlag = bVal; }
+  bool          getNoMrlConstraintFlag() const { return m_noMrlConstraintFlag; }
+  void          setNoMrlConstraintFlag(bool bVal) { m_noMrlConstraintFlag = bVal; }
+  bool          getNoIspConstraintFlag() const { return m_noIspConstraintFlag; }
+  void          setNoIspConstraintFlag(bool bVal) { m_noIspConstraintFlag = bVal; }
+  bool          getNoMipConstraintFlag() const { return m_noMipConstraintFlag; }
+  void          setNoMipConstraintFlag(bool bVal) { m_noMipConstraintFlag = bVal; }
+  bool          getNoLfnstConstraintFlag() const { return m_noLfnstConstraintFlag; }
+  void          setNoLfnstConstraintFlag(bool bVal) { m_noLfnstConstraintFlag = bVal; }
+  bool          getNoMmvdConstraintFlag() const { return m_noMmvdConstraintFlag; }
+  void          setNoMmvdConstraintFlag(bool bVal) { m_noMmvdConstraintFlag = bVal; }
+  bool          getNoSmvdConstraintFlag() const { return m_noSmvdConstraintFlag; }
+  void          setNoSmvdConstraintFlag(bool bVal) { m_noSmvdConstraintFlag = bVal; }
+  bool          getNoProfConstraintFlag() const { return m_noProfConstraintFlag; }
+  void          setNoProfConstraintFlag(bool bVal) { m_noProfConstraintFlag = bVal; }
+  bool          getNoPaletteConstraintFlag() const { return m_noPaletteConstraintFlag; }
+  void          setNoPaletteConstraintFlag(bool bVal) { m_noPaletteConstraintFlag = bVal; }
+  bool          getNoActConstraintFlag() const { return m_noActConstraintFlag; }
+  void          setNoActConstraintFlag(bool bVal) { m_noActConstraintFlag = bVal; }
+  bool          getNoLmcsConstraintFlag() const { return m_noLmcsConstraintFlag; }
+  void          setNoLmcsConstraintFlag(bool bVal) { m_noLmcsConstraintFlag = bVal; }
+#endif
+
   bool      getNoQtbttDualTreeIntraConstraintFlag() const { return m_bNoQtbttDualTreeIntraConstraintFlag; }
   void      setNoQtbttDualTreeIntraConstraintFlag(bool bVal) { m_bNoQtbttDualTreeIntraConstraintFlag = bVal; }
   bool      getNoPartitionConstraintsOverrideConstraintFlag() const { return m_noPartitionConstraintsOverrideConstraintFlag; }
@@ -1346,7 +1406,10 @@ public:
   const int* getdQPs                        () const { return m_aidQP;       }
   uint32_t      getDeltaQpRD                    () const { return m_uiDeltaQpRD; }
   bool      getFastDeltaQp                  () const { return m_bFastDeltaQP; }
-
+#if JVET_R0110_MIXED_LOSSLESS
+  void      setSliceLosslessArray(std::vector<uint32_t> sliceLosslessArray) { m_sliceLosslessArray = sliceLosslessArray; }
+  const     std::vector<uint32_t>*   getSliceLosslessArray() const { return &m_sliceLosslessArray; }
+#endif
   //====== Tiles and Slices ========
   void      setNoPicPartitionFlag( bool b )                                { m_noPicPartitionFlag = b;              }
   bool      getNoPicPartitionFlag()                                        { return m_noPicPartitionFlag;           }
@@ -1389,7 +1452,11 @@ public:
   bool  getSaoGreedyMergeEnc           ()                            { return m_saoGreedyMergeEnc; }
   void  setEntropyCodingSyncEnabledFlag(bool b)                      { m_entropyCodingSyncEnabledFlag = b; }
   bool  getEntropyCodingSyncEnabledFlag() const                      { return m_entropyCodingSyncEnabledFlag; }
+#if JVET_R0165_OPTIONAL_ENTRY_POINT
+  void  setEntryPointPresentFlag(bool b)                             { m_entryPointPresentFlag = b; }
+#else
   void  setEntropyCodingSyncEntryPointPresentFlag(bool b)            { m_entropyCodingSyncEntryPointPresentFlag = b; }
+#endif
   void  setDecodedPictureHashSEIType(HashType m)                     { m_decodedPictureHashSEIType = m; }
   HashType getDecodedPictureHashSEIType() const                      { return m_decodedPictureHashSEIType; }
   void  setBufferingPeriodSEIEnabled(bool b)                         { m_bufferingPeriodSEIEnabled = b; }
@@ -1643,6 +1710,12 @@ public:
   ScalingListMode getUseScalingListId    ()                          { return m_useScalingListId;      }
   void         setScalingListFileName       ( const std::string &s ) { m_scalingListFileName = s;      }
   const std::string& getScalingListFileName () const                 { return m_scalingListFileName;   }
+#if JVET_R0380_SCALING_MATRIX_DISABLE_YCC_OR_RGB
+  void         setDisableScalingMatrixForAlternativeColourSpace(bool b) { m_disableScalingMatrixForAlternativeColourSpace = b; }
+  bool         getDisableScalingMatrixForAlternativeColourSpace()    { return m_disableScalingMatrixForAlternativeColourSpace; }
+  void         setScalingMatrixDesignatedColourSpace (bool b)        { m_scalingMatrixDesignatedColourSpace = b; }
+  bool         getScalingMatrixDesignatedColourSpace ()              { return m_scalingMatrixDesignatedColourSpace; }
+#endif
   void         setSliceLevelRpl  ( bool b )                          { m_sliceLevelRpl = b;     }
   bool         getSliceLevelRpl  ()                                  { return m_sliceLevelRpl;  }
   void         setSliceLevelDblk ( bool b )                          { m_sliceLevelDblk = b;    }

@@ -83,6 +83,20 @@ EncAppCfg::EncAppCfg()
 , m_maxBitDepthConstraintIdc(0)
 , m_maxChromaFormatConstraintIdc(CHROMA_420)
 , m_bFrameConstraintFlag(false)
+#if JVET_R0286_GCI_CLEANUP
+, m_singleLayerConstraintFlag(false)
+, m_allLayersIndependentConstraintFlag(false)
+, m_noMrlConstraintFlag(false)
+, m_noIspConstraintFlag(false)
+, m_noMipConstraintFlag(false)
+, m_noLfnstConstraintFlag(false)
+, m_noMmvdConstraintFlag(false)
+, m_noSmvdConstraintFlag(false)
+, m_noProfConstraintFlag(false)
+, m_noPaletteConstraintFlag(false)
+, m_noActConstraintFlag(false)
+, m_noLmcsConstraintFlag(false)
+#endif
 , m_bNoQtbttDualTreeIntraConstraintFlag(false)
 , m_noPartitionConstraintsOverrideConstraintFlag(false)
 , m_bNoSaoConstraintFlag(false)
@@ -606,7 +620,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 
 
   SMultiValueInput<double> cfg_adIntraLambdaModifier         (0, std::numeric_limits<double>::max(), 0, MAX_TLAYER); ///< Lambda modifier for Intra pictures, one for each temporal layer. If size>temporalLayer, then use [temporalLayer], else if size>0, use [size()-1], else use m_adLambdaModifier.
-
+#if JVET_R0110_MIXED_LOSSLESS
+  SMultiValueInput<uint32_t>  cfgSliceLosslessArray(0, std::numeric_limits<uint32_t>::max(), 0, std::numeric_limits<uint32_t>::max());
+#endif
 #if SHARP_LUMA_DELTA_QP
   const int defaultLumaLevelTodQp_QpChangePoints[]   =  {-3,  -2,  -1,   0,   1,   2,   3,   4,   5,   6};
   const int defaultLumaLevelTodQp_LumaChangePoints[] =  { 0, 301, 367, 434, 501, 567, 634, 701, 767, 834};
@@ -802,11 +818,17 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("MaxChromaFormatConstraint",                       tmpConstraintChromaFormat,                            0, "Chroma-format to use for the profile-constraint for RExt profiles. 0=automatically choose based upon other parameters")
   ("IntraConstraintFlag",                             m_intraConstraintFlag,                            false, "Value of general_intra_constraint_flag to use for RExt profiles (not used if an explicit RExt sub-profile is specified)")
 
+#if !JVET_R0090_VUI
   ("ProgressiveSource",                               m_progressiveSourceFlag,                          false, "Indicate that source is progressive")
   ("InterlacedSource",                                m_interlacedSourceFlag,                           false, "Indicate that source is interlaced")
+#endif
   ("NonPackedSource",                                 m_nonPackedConstraintFlag,                        false, "Indicate that source does not contain frame packing")
   ("NonProjectedConstraintFlag",                      m_nonProjectedConstraintFlag,                     false, "Indicate that the bitstream contains projection SEI messages")
   ("NoResChangeInClvsConstraintFlag",                 m_noResChangeInClvsConstraintFlag,                false, "Indicate that the picture spatial resolution does not change within any CLVS referring to the SPS")
+#if JVET_R0286_GCI_CLEANUP
+  ("SingleLayerConstraintFlag",                       m_singleLayerConstraintFlag,                     false, "Indicate that the bitstream contains only one layer")
+  ("AllLayersIndependentConstraintFlag",              m_allLayersIndependentConstraintFlag,            false, "Indicate that all layers are independent")
+#endif
   ("OneTilePerPicConstraintFlag",                     m_oneTilePerPicConstraintFlag,                    false, "Indicate that each picture shall contain only one tile")
   ("OneSlicePerPicConstraintFlag",                    m_oneSlicePerPicConstraintFlag,                   false, "Indicate that each picture shall contain only one slice")
   ("OneSubpicPerPicConstraintFlag",                   m_oneSubpicPerPicConstraintFlag,                  false, "Indicate that each picture shall contain only one subpicture")
@@ -1079,6 +1101,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("SAOLcuBoundary",                                  m_saoCtuBoundary,                                 false, "0: right/bottom CTU boundary areas skipped from SAO parameter estimation, 1: non-deblocked pixels are used for those areas")
   ("SAOGreedyEnc",                                    m_saoGreedyMergeEnc,                              false, "SAO greedy merge encoding algorithm")
   ("EnablePicPartitioning",                           m_picPartitionFlag,                               false, "Enable picture partitioning (0: single tile, single slice, 1: multiple tiles/slices can be used)")
+#if JVET_R0110_MIXED_LOSSLESS
+  ("SliceLosslessArray", cfgSliceLosslessArray, cfgSliceLosslessArray, " Lossless slice array Last lossless flag in the  list will be repeated uniformly to cover any remaining slice")
+#endif 
   ("TileColumnWidthArray",                            cfgTileColumnWidth,                  cfgTileColumnWidth, "Tile column widths in units of CTUs. Last column width in list will be repeated uniformly to cover any remaining picture width")
   ("TileRowHeightArray",                              cfgTileRowHeight,                      cfgTileRowHeight, "Tile row heights in units of CTUs. Last row height in list will be repeated uniformly to cover any remaining picture height")
   ("RasterScanSlices",                                m_rasterSliceFlag,                                false, "Indicates if using raster-scan or rectangular slices (0: rectangular, 1: raster-scan)")
@@ -1097,10 +1122,18 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("WeightedPredMethod,-wpM",                         tmpWeightedPredictionMethod, int(WP_PER_PICTURE_WITH_SIMPLE_DC_COMBINED_COMPONENT), "Weighted prediction method")
   ("Log2ParallelMergeLevel",                          m_log2ParallelMergeLevel,                            2u, "Parallel merge estimation region")
   ("WaveFrontSynchro",                                m_entropyCodingSyncEnabledFlag,                   false, "0: entropy coding sync disabled; 1 entropy coding sync enabled")
+#if JVET_R0165_OPTIONAL_ENTRY_POINT
+  ("EntryPointsPresent",                              m_entryPointPresentFlag,                           true, "0: entry points is not present; 1 entry points may be present in slice header")
+#else
   ("WaveFrontEntryPointsPresent",                     m_entropyCodingSyncEntryPointPresentFlag,         false, "0: entry points for WPP is not present; 1 entry points for WPP may be present in slice header")
+#endif
   ("ScalingList",                                     m_useScalingListId,                    SCALING_LIST_OFF, "0/off: no scaling list, 1/default: default scaling lists, 2/file: scaling lists specified in ScalingListFile")
   ("ScalingListFile",                                 m_scalingListFileName,                       string(""), "Scaling list file name. Use an empty string to produce help.")
   ("DisableScalingMatrixForLFNST",                    m_disableScalingMatrixForLfnstBlks,                true, "Disable scaling matrices, when enabled, for LFNST-coded blocks")
+#if JVET_R0380_SCALING_MATRIX_DISABLE_YCC_OR_RGB
+  ("DisableScalingMatrixForAlternativeColourSpace",   m_disableScalingMatrixForAlternativeColourSpace,  false, "Disable scaling matrices when the colour space is not equal to the designated colour space of scaling matrix")
+  ("ScalingMatrixDesignatedColourSpace",              m_scalingMatrixDesignatedColourSpace,              true, "Indicates if the designated colour space of scaling matrices is equal to the original colour space")
+#endif
   ("DepQuant",                                        m_depQuantEnabledFlag,                                          true, "Enable  dependent quantization (Default: 1)" )
   ("SignHideFlag,-SBH",                               m_signDataHidingEnabledFlag,                                    false,  "Enable sign hiding" )
   ("MaxNumMergeCand",                                 m_maxNumMergeCand,                                   5u, "Maximum number of merge candidates")
@@ -1152,6 +1185,10 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("ColourPrimaries",                                 m_colourPrimaries,                                    2, "Indicates chromaticity coordinates of the source primaries")
   ("TransferCharacteristics",                         m_transferCharacteristics,                            2, "Indicates the opto-electronic transfer characteristics of the source")
   ("MatrixCoefficients",                              m_matrixCoefficients,                                 2, "Describes the matrix coefficients used in deriving luma and chroma from RGB primaries")
+#if JVET_R0090_VUI
+  ("ProgressiveSource",                               m_progressiveSourceFlag,                          false, "Indicate that source is progressive")
+  ("InterlacedSource",                                m_interlacedSourceFlag,                           false, "Indicate that source is interlaced")
+#endif
   ("ChromaLocInfoPresent",                            m_chromaLocInfoPresentFlag,                       false, "Signals whether chroma_sample_loc_type_top_field and chroma_sample_loc_type_bottom_field are present")
   ("ChromaSampleLocTypeTopField",                     m_chromaSampleLocTypeTopField,                        0, "Specifies the location of chroma samples for top field")
   ("ChromaSampleLocTypeBottomField",                  m_chromaSampleLocTypeBottomField,                     0, "Specifies the location of chroma samples for bottom field")
@@ -1600,6 +1637,34 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     }
   }
 
+#if JVET_R0110_MIXED_LOSSLESS
+  // store slice lossless array 
+  const int maxSlicesPerPicture = 600; // the maximum number of slices per picture is 600
+  m_sliceLosslessArray.resize(maxSlicesPerPicture);
+  if (cfgSliceLosslessArray.values.size() == 0)
+  {
+    // Default all slices are lossy
+    for (uint32_t i = 0; i < maxSlicesPerPicture; i++)
+    {
+      m_sliceLosslessArray[i] = 0;
+    }
+  }
+  else
+  {
+    for (uint32_t i = 0; i < cfgSliceLosslessArray.values.size(); i++)
+    {
+      m_sliceLosslessArray[i] = cfgSliceLosslessArray.values[i];
+    }
+    for (uint32_t i = (uint32_t)cfgSliceLosslessArray.values.size(); i < maxSlicesPerPicture; i++)
+    {
+      if (cfgSliceLosslessArray.values.size() > 0)
+        m_sliceLosslessArray[i] = cfgSliceLosslessArray.values[cfgSliceLosslessArray.values.size() - 1];
+      else
+        m_sliceLosslessArray[i] = 0;
+    }
+  }
+#endif
+
   if( m_picPartitionFlag )
   {
     // store tile column widths
@@ -1679,10 +1744,12 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     m_outputBitDepth     [CHANNEL_TYPE_CHROMA] = m_outputBitDepth     [CHANNEL_TYPE_LUMA  ];
   }
 
+#if !JVET_R0165_OPTIONAL_ENTRY_POINT
   if( !m_entropyCodingSyncEnabledFlag )
   {
     m_entropyCodingSyncEntryPointPresentFlag = false;
   }
+#endif
 
   m_InputChromaFormatIDC = numberToChromaFormat(tmpInputChromaFormat);
   m_chromaFormatIDC      = ((tmpChromaFormat == 0) ? (m_InputChromaFormatIDC) : (numberToChromaFormat(tmpChromaFormat)));
@@ -2208,10 +2275,15 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 #endif
 #endif // ENABLE_QPA
 
+#if JVET_R0110_MIXED_LOSSLESS
+  if (m_costMode == COST_LOSSLESS_CODING && m_sliceLosslessArray[0]) // if first slice is lossless 
+#else
   if( m_costMode == COST_LOSSLESS_CODING )
+#endif
   {
     m_iQP = LOSSLESS_AND_MIXED_LOSSLESS_RD_COST_TEST_QP - ( ( m_internalBitDepth[CHANNEL_TYPE_LUMA] - 8 ) * 6 );
   }
+
 
   m_uiMaxCUWidth = m_uiMaxCUHeight = m_uiCTUSize;
 
@@ -2531,6 +2603,14 @@ bool EncAppCfg::xCheckParameter()
   xConfirmPara( m_uiMaxCUWidth > MAX_CU_SIZE,                                               "MaxCUWith exceeds predefined MAX_CU_SIZE limit");
 
   const int minCuSize = 1 << m_log2MinCuSize;
+#if JVET_R0347_MTT_SIZE_CONSTRAIN
+  xConfirmPara( m_uiMinQT[0] > 64,                                                          "Min Luma QT size in I slices should be smaller than or equal to 64");
+  xConfirmPara( m_uiMinQT[1] > 64,                                                          "Min Luma QT size in non-I slices should be smaller than or equal to 64");
+  xConfirmPara( m_uiMaxBT[2] > 64,                                                          "Maximum BT size for chroma block in I slice should be smaller than or equal to 64");
+  xConfirmPara( m_uiMaxTT[0] > 64,                                                          "Maximum TT size for luma block in I slice should be smaller than or equal to 64");
+  xConfirmPara( m_uiMaxTT[1] > 64,                                                          "Maximum TT size for luma block in non-I slice should be smaller than or equal to 64");
+  xConfirmPara( m_uiMaxTT[2] > 64,                                                          "Maximum TT size for chroma block in I slice should be smaller than or equal to 64");
+#endif
   xConfirmPara( m_uiMinQT[0] < minCuSize,                                                   "Min Luma QT size in I slices should be larger than or equal to minCuSize");
   xConfirmPara( m_uiMinQT[1] < minCuSize,                                                   "Min Luma QT size in non-I slices should be larger than or equal to minCuSize");
   xConfirmPara((m_iSourceWidth % minCuSize ) || (m_iSourceHeight % minCuSize),              "Picture width or height is not a multiple of minCuSize");
@@ -3109,11 +3189,7 @@ bool EncAppCfg::xCheckParameter()
     // rectangular slices
     if( !m_rasterSliceFlag )
     {
-      if (m_singleSlicePerSubPicFlag)
-      {
-        xConfirmPara( m_subPicInfoPresentFlag == 0 || m_numSubPics < 2, "SingleSlicePerSubPic requires more than one subpicture.");
-      }
-      else
+      if (!m_singleSlicePerSubPicFlag)
       {
         uint32_t sliceIdx;
         bool     needTileIdxDelta = false;
@@ -3436,6 +3512,11 @@ bool EncAppCfg::xCheckParameter()
 #endif
 
   xConfirmPara(m_useColorTrans && (m_log2MaxTbSize == 6), "Log2MaxTbSize must be less than 6 when ACT is enabled, otherwise ACT needs to be disabled");
+
+#if  JVET_R0097_MAX_TRSIZE_CONDITIONALY_SIGNALING
+  xConfirmPara(m_uiCTUSize <= 32 && (m_log2MaxTbSize == 6), "Log2MaxTbSize must be less than 6 when CTU size is 32");
+#endif
+
 
 #undef xConfirmPara
   return check_failed;

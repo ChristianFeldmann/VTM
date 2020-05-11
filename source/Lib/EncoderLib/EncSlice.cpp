@@ -628,6 +628,9 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
 
   rpcSlice->setSliceQp           ( iQP );
   rpcSlice->setSliceQpDelta      ( 0 );
+#if JVET_R0110_MIXED_LOSSLESS
+  pcPic->setLossyQPValue(iQP);
+#endif
 #if !W0038_CQP_ADJ
   rpcSlice->setSliceChromaQpDelta( COMPONENT_Cb, 0 );
   rpcSlice->setSliceChromaQpDelta( COMPONENT_Cr, 0 );
@@ -1135,6 +1138,36 @@ void EncSlice::setSearchRange( Slice* pcSlice )
   }
 }
 
+#if JVET_R0110_MIXED_LOSSLESS
+void EncSlice::setLosslessSlice(Picture* pcPic, bool islossless) 
+{
+  Slice* slice = pcPic->slices[getSliceSegmentIdx()];
+  slice->setLossless(islossless);
+
+  if (m_pcCfg->getCostMode() == COST_LOSSLESS_CODING)
+  {
+    if (islossless)
+    {
+      int losslessQp = LOSSLESS_AND_MIXED_LOSSLESS_RD_COST_TEST_QP - ((slice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA) - 8) * 6);
+      slice->setSliceQp(losslessQp); // update the slice/base QPs
+
+#if JVET_R0143_TSRCdisableLL
+     slice->setTSResidualCodingDisabledFlag(m_pcCfg->getTSRCdisableLL() ? true : false);
+#else
+     slice->setTSResidualCodingDisabledFlag(true);
+#endif 
+
+    }
+    else
+    {
+        slice->setSliceQp(pcPic->getLossyQPValue());
+        slice->setTSResidualCodingDisabledFlag(false);
+    }
+  }
+}
+#endif
+
+
 /**
  Multi-loop slice encoding for different slice QP
 
@@ -1441,6 +1474,9 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
   RdCost*         pRdCost         = pEncLib->getRdCost( PARL_PARAM0( dataId ) );
   EncCfg*         pCfg            = pEncLib;
   RateCtrl*       pRateCtrl       = pEncLib->getRateCtrl();
+#if JVET_R0110_MIXED_LOSSLESS
+  pRdCost->setLosslessRDCost(pcSlice->isLossless());
+#endif
 #if RDOQ_CHROMA_LAMBDA
   pTrQuant    ->setLambdas( pcSlice->getLambdas() );
 #else
@@ -1744,7 +1780,11 @@ void EncSlice::encodeSlice   ( Picture* pcPic, OutputBitstream* pcSubstreams, ui
 
   Slice *const pcSlice               = pcPic->slices[getSliceSegmentIdx()];
   const bool wavefrontsEnabled         = pcSlice->getSPS()->getEntropyCodingSyncEnabledFlag();
+#if JVET_R0165_OPTIONAL_ENTRY_POINT
+  const bool entryPointsPresentFlag    = pcSlice->getSPS()->getEntryPointsPresentFlag();
+#else
   const bool wavefrontsEntryPointsFlag = (wavefrontsEnabled) ? pcSlice->getSPS()->getEntropyCodingSyncEntryPointsPresentFlag() : false;
+#endif
   uint32_t substreamSize               = 0;
   pcSlice->resetNumberOfSubstream();
 
@@ -1832,7 +1872,11 @@ void EncSlice::encodeSlice   ( Picture* pcPic, OutputBitstream* pcSubstreams, ui
         // write sub-stream size
         substreamSize += (pcSubstreams[uiSubStrm].getNumberOfWrittenBits() >> 3) + pcSubstreams[uiSubStrm].countStartCodeEmulations();
         pcSlice->increaseNumberOfSubstream();
+#if JVET_R0165_OPTIONAL_ENTRY_POINT
+        if( entryPointsPresentFlag )
+#else
         if( isLastCTUinTile || (isLastCTUinWPP && wavefrontsEntryPointsFlag) )
+#endif
         {
           pcSlice->addSubstreamSize(substreamSize);
           substreamSize = 0;

@@ -338,7 +338,7 @@ void EncCu::compressCtu( CodingStructure& cs, const UnitArea& area, const unsign
   // all signals were already copied during compression if the CTU was split - at this point only the structures are copied to the top level CS
   const bool copyUnsplitCTUSignals = bestCS->cus.size() == 1;
   cs.useSubStructure(*bestCS, partitioner.chType, CS::getArea(*bestCS, area, partitioner.chType), copyUnsplitCTUSignals,
-                     false, false, copyUnsplitCTUSignals);
+                     false, false, copyUnsplitCTUSignals, true);
 
   if (CS::isDualITree (cs) && isChromaEnabled (cs.pcv->chrFormat))
   {
@@ -356,7 +356,7 @@ void EncCu::compressCtu( CodingStructure& cs, const UnitArea& area, const unsign
 
     const bool copyUnsplitCTUSignals = bestCS->cus.size() == 1;
     cs.useSubStructure(*bestCS, partitioner.chType, CS::getArea(*bestCS, area, partitioner.chType),
-                       copyUnsplitCTUSignals, false, false, copyUnsplitCTUSignals);
+                       copyUnsplitCTUSignals, false, false, copyUnsplitCTUSignals, true);
   }
 
   if (m_pcEncCfg->getUseRateCtrl())
@@ -775,7 +775,11 @@ void EncCu::xCompressCU( CodingStructure*& tempCS, CodingStructure*& bestCS, Par
       {
         bool skipSecColorSpace = false;
         skipSecColorSpace = xCheckRDCostIntra(tempCS, bestCS, partitioner, currTestMode, (m_pcEncCfg->getRGBFormatFlag() ? true : false));
+#if JVET_R0110_MIXED_LOSSLESS        
+        if ((m_pcEncCfg->getCostMode() == COST_LOSSLESS_CODING && slice.isLossless()) && !m_pcEncCfg->getRGBFormatFlag())
+#else
         if ((m_pcEncCfg->getCostMode() == COST_LOSSLESS_CODING) && !m_pcEncCfg->getRGBFormatFlag())
+#endif
         {
           skipSecColorSpace = true;
         }
@@ -1176,7 +1180,7 @@ void EncCu::copyState( EncCu* other, Partitioner& partitioner, const UnitArea& c
     bool keepResi = KEEP_PRED_AND_RESI_SIGNALS;
     bool keepPred = true;
 
-    dst->useSubStructure( *src, partitioner.chType, currArea, keepPred, true, keepResi, keepResi );
+    dst->useSubStructure( *src, partitioner.chType, currArea, keepPred, true, keepResi, keepResi, true );
 
     dst->cost           =  src->cost;
     dst->dist           =  src->dist;
@@ -1331,7 +1335,7 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
       }
 
       bool keepResi = KEEP_PRED_AND_RESI_SIGNALS;
-      tempCS->useSubStructure( *bestSubCS, partitioner.chType, CS::getArea( *tempCS, subCUArea, partitioner.chType ), KEEP_PRED_AND_RESI_SIGNALS, true, keepResi, keepResi );
+      tempCS->useSubStructure( *bestSubCS, partitioner.chType, CS::getArea( *tempCS, subCUArea, partitioner.chType ), KEEP_PRED_AND_RESI_SIGNALS, true, keepResi, keepResi, true );
 
       if( partitioner.currQgEnable() )
       {
@@ -1445,7 +1449,7 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
     assert( tempCS->treeType == TREE_L );
     uint32_t numCuPuTu[6];
     tempCS->picture->cs->getNumCuPuTuOffset( numCuPuTu );
-    tempCS->picture->cs->useSubStructure( *tempCS, partitioner.chType, CS::getArea( *tempCS, partitioner.currArea(), partitioner.chType ), false, true, false, false );
+    tempCS->picture->cs->useSubStructure( *tempCS, partitioner.chType, CS::getArea( *tempCS, partitioner.currArea(), partitioner.chType ), false, true, false, false, false );
 
     if (isChromaEnabled(tempCS->pcv->chrFormat))
     {
@@ -1467,7 +1471,7 @@ void EncCu::xCheckModeSplit(CodingStructure *&tempCS, CodingStructure *&bestCS, 
     bool keepResi = KEEP_PRED_AND_RESI_SIGNALS;
     //bestCSChroma->treeType = tempCSChroma->treeType = TREE_C;
     CHECK( bestCSChroma->treeType != TREE_C || tempCSChroma->treeType != TREE_C, "wrong treeType for chroma CS" );
-    tempCS->useSubStructure( *bestCSChroma, partitioner.chType, CS::getArea( *bestCSChroma, partitioner.currArea(), partitioner.chType ), KEEP_PRED_AND_RESI_SIGNALS, true, keepResi, true );
+    tempCS->useSubStructure( *bestCSChroma, partitioner.chType, CS::getArea( *bestCSChroma, partitioner.currArea(), partitioner.chType ), KEEP_PRED_AND_RESI_SIGNALS, true, keepResi, true, true );
 
     //release tmp resource
     tempCSChroma->releaseIntermediateData();
@@ -1936,8 +1940,14 @@ bool EncCu::xCheckRDCostIntra(CodingStructure *&tempCS, CodingStructure *&bestCS
 
 void EncCu::xCheckPLT(CodingStructure *&tempCS, CodingStructure *&bestCS, Partitioner &partitioner, const EncTestMode& encTestMode)
 {
+#if JVET_R0334_PLT_CLEANUP
+  if (((partitioner.currArea().lumaSize().width * partitioner.currArea().lumaSize().height <= 16) && (isLuma(partitioner.chType)) )
+        || ((partitioner.currArea().chromaSize().width * partitioner.currArea().chromaSize().height <= 16) && (!isLuma(partitioner.chType)) && partitioner.isSepTree(*tempCS) ) 
+      || (partitioner.isLocalSepTree(*tempCS)  && (!isLuma(partitioner.chType))  )  )
+#else
   if (((partitioner.currArea().lumaSize().width * partitioner.currArea().lumaSize().height <= 16) && (isLuma(partitioner.chType)) )
         || ((partitioner.currArea().chromaSize().width * partitioner.currArea().chromaSize().height <= 16) && (!isLuma(partitioner.chType)) && partitioner.isSepTree(*tempCS) ) )
+#endif  
   {
     return;
   }

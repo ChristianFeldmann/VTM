@@ -804,6 +804,16 @@ unsigned LoopFilter::xGetBoundaryStrengthSingle ( const CodingUnit& cu, const De
 
   // and now the pred
   if ( m_aapucBS[edgeDir][rasterIdx] != 0 && m_aapucBS[edgeDir][rasterIdx] != 3 ) return tmpBs;
+#if JVET_R0437_BS_DERIVATION
+  if( chType == CHANNEL_TYPE_CHROMA )
+  {
+    return tmpBs;
+  }
+  if( cuP.predMode != cuQ.predMode && chType == CHANNEL_TYPE_LUMA )
+  {
+    return BsSet(1, COMPONENT_Y);
+  }
+#endif
   const Position& lumaPosQ  = Position{ localPos.x,  localPos.y };
   const Position  lumaPosP  = ( edgeDir == EDGE_VER ) ? lumaPosQ.offset( -1, 0 ) : lumaPosQ.offset( 0, -1 );
   const MotionInfo&     miQ = cuQ.cs->getMotionInfo( lumaPosQ );
@@ -1041,7 +1051,11 @@ void LoopFilter::xEdgeFilterLuma( const CodingUnit& cu, const DeblockEdgeDir edg
       const int iIndexTC  = Clip3(0, MAX_QP + DEFAULT_INTRA_TC_OFFSET, int(iQP + DEFAULT_INTRA_TC_OFFSET*(uiBs - 1) + (tcOffsetDiv2 << 1)));
       const int iIndexB   = Clip3(0, MAX_QP, iQP + (betaOffsetDiv2 << 1));
 
+#if JVET_R0130_TC_DERIVATION_BUGFIX
+      const int iTc = bitDepthLuma < 10 ? ((sm_tcTable[iIndexTC] + (1 << (9 - bitDepthLuma))) >> (10 - bitDepthLuma)) : ((sm_tcTable[iIndexTC]) << (bitDepthLuma - 10));
+#else
       const int iTc = bitDepthLuma < 10 ? ((sm_tcTable[iIndexTC] + 2) >> (10 - bitDepthLuma)) : ((sm_tcTable[iIndexTC]) << (bitDepthLuma - 10));
+#endif
       const int iBeta     = sm_betaTable[iIndexB ] * iBitdepthScale;
       const int iSideThreshold = ( iBeta + ( iBeta >> 1 ) ) >> 3;
       const int iThrCut   = iTc * 10;
@@ -1300,7 +1314,12 @@ void LoopFilter::xEdgeFilterChroma(const CodingUnit& cu, const DeblockEdgeDir ed
 
 
         const int iIndexTC = Clip3<int>(0, MAX_QP + DEFAULT_INTRA_TC_OFFSET, iQP + DEFAULT_INTRA_TC_OFFSET * (bS[chromaIdx] - 1) + (tcOffsetDiv2[chromaIdx] << 1));
+#if JVET_R0130_TC_DERIVATION_BUGFIX
+        const int bitDepthChroma = sps.getBitDepth(CHANNEL_TYPE_CHROMA);
+        const int iTc = bitDepthChroma < 10 ? ((sm_tcTable[iIndexTC] + (1 << (9 - bitDepthChroma))) >> (10 - bitDepthChroma)) : ((sm_tcTable[iIndexTC]) << (bitDepthChroma - 10));
+#else
         const int iTc = sps.getBitDepth(CHANNEL_TYPE_CHROMA) < 10 ? ((sm_tcTable[iIndexTC] + 2) >> (10 - sps.getBitDepth(CHANNEL_TYPE_CHROMA))) : ((sm_tcTable[iIndexTC]) << (sps.getBitDepth(CHANNEL_TYPE_CHROMA) - 10));
+#endif
         bool useLongFilter = false;
         if (largeBoundary)
         {

@@ -95,8 +95,12 @@ void  Reshape::destroy()
 */
 int  Reshape::calculateChromaAdj(Pel avgLuma)
 {
+#if JVET_R0330_CRS_CLIP_REM
+  int iAdj = m_chromaAdjHelpLUT[getPWLIdxInv(avgLuma)];
+#else
   int lumaIdx = Clip3<int>(0, (1<<m_lumaBD) - 1, avgLuma);
   int iAdj = m_chromaAdjHelpLUT[getPWLIdxInv(lumaIdx)];
+#endif
   return(iAdj);
 }
 
@@ -181,16 +185,28 @@ int  Reshape::calculateChromaAdjVpduNei(TransformUnit &tu, const CompArea &areaY
     }
     if (pelnum == numNeighbor)
     {
+#if JVET_R0330_CRS_CLIP_REM
+      lumaValue = (recLuma + (1 << (numNeighborLog - 1))) >> numNeighborLog;
+#else
       lumaValue = ClipPel((recLuma + (1 << (numNeighborLog - 1))) >> numNeighborLog, tu.cs->slice->clpRng(COMPONENT_Y));
+#endif
     }
     else if (pelnum == (numNeighbor << 1))
     {
+#if JVET_R0330_CRS_CLIP_REM
+      lumaValue = (recLuma + (1 << numNeighborLog)) >> (numNeighborLog + 1);
+#else
       lumaValue = ClipPel((recLuma + (1 << numNeighborLog)) >> (numNeighborLog + 1), tu.cs->slice->clpRng(COMPONENT_Y));
+#endif
     }
     else
     {
       CHECK(pelnum != 0, "");
+#if JVET_R0330_CRS_CLIP_REM
+      lumaValue = valueDC;
+#else
       lumaValue = ClipPel(valueDC, tu.cs->slice->clpRng(COMPONENT_Y));
+#endif
     }
     chromaScale = calculateChromaAdj(lumaValue);
     setChromaScale(chromaScale);

@@ -43,6 +43,9 @@
 
 
 MatrixIntraPrediction::MatrixIntraPrediction():
+#if JVET_R0350_MIP_CHROMA_444_SINGLETREE
+  m_component(MAX_NUM_COMPONENT),
+#endif
   m_reducedBoundary          (MIP_MAX_INPUT_SIZE),
   m_reducedBoundaryTransposed(MIP_MAX_INPUT_SIZE),
   m_inputOffset      ( 0 ),
@@ -58,9 +61,16 @@ MatrixIntraPrediction::MatrixIntraPrediction():
 {
 }
 
+#if JVET_R0350_MIP_CHROMA_444_SINGLETREE
+void MatrixIntraPrediction::prepareInputForPred(const CPelBuf &pSrc, const Area &block, const int bitDepth,
+                                                const ComponentID compId)
+{
+  m_component = compId;
 
+#else
 void MatrixIntraPrediction::prepareInputForPred(const CPelBuf &pSrc, const Area& block, const int bitDepth)
 {
+#endif
   // Step 1: Save block size and calculate dependent values
   initPredBlockParams(block);
 
@@ -114,8 +124,16 @@ void MatrixIntraPrediction::prepareInputForPred(const CPelBuf &pSrc, const Area&
   }
 }
 
+#if JVET_R0350_MIP_CHROMA_444_SINGLETREE
+void MatrixIntraPrediction::predBlock(int *const result, const int modeIdx, const bool transpose, const int bitDepth,
+                                      const ComponentID compId)
+{
+  CHECK(m_component != compId, "Boundary has not been prepared for this component.");
+
+#else
 void MatrixIntraPrediction::predBlock(int* const result, const int modeIdx, const bool transpose, const int bitDepth)
 {
+#endif
   const bool needUpsampling = ( m_upsmpFactorHor > 1 ) || ( m_upsmpFactorVer > 1 );
 
   const uint8_t* matrix = getMatrixData(modeIdx);

@@ -50,10 +50,20 @@ class MatrixIntraPrediction
 public:
   MatrixIntraPrediction();
 
+#if JVET_R0350_MIP_CHROMA_444_SINGLETREE
+  void prepareInputForPred(const CPelBuf &pSrc, const Area &block, const int bitDepth, const ComponentID compId);
+  void predBlock(int *const result, const int modeIdx, const bool transpose, const int bitDepth,
+                 const ComponentID compId);
+#else
   void prepareInputForPred(const CPelBuf &pSrc, const Area& block, const int bitDepth);
   void predBlock(int* const result, const int modeIdx, const bool transpose, const int bitDepth);
+#endif
 
   private:
+#if JVET_R0350_MIP_CHROMA_444_SINGLETREE
+    ComponentID m_component;
+
+#endif
     static_vector<int, MIP_MAX_INPUT_SIZE> m_reducedBoundary;           // downsampled             boundary of a block
     static_vector<int, MIP_MAX_INPUT_SIZE> m_reducedBoundaryTransposed; // downsampled, transposed boundary of a block
     int                                    m_inputOffset;

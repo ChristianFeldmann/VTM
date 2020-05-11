@@ -152,7 +152,11 @@ public:
 
 protected:
   void  copyRefPicList(SPS* pcSPS, ReferencePictureList* source_rpl, ReferencePictureList* dest_rpl);
+#if JVET_R0059_RPL_CLEANUP
+  void  parseRefPicList(SPS* pcSPS, ReferencePictureList* rpl, int rplIdx);
+#else
   void  parseRefPicList(SPS* pcSPS, ReferencePictureList* rpl);
+#endif
 
 public:
   void  setBitstream        ( InputBitstream* p )   { m_pcBitstream = p; }

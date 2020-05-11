@@ -51,11 +51,71 @@
 #include <cassert>
 
 //########### place macros to be removed in next cycle below this line ###############
+#define JVET_R0097_MAX_TRSIZE_CONDITIONALY_SIGNALING      1 // JVET-R0097: Aspect 1, If the luma CTB size is not larger than 32, sps_max_luma_transform_size_64_flag is not signalled and inferred to be 0
+
+#define JVET_R0483_SH_TSRC_DISABLED_FLAG_CLEANUP          1 // JVET-R0483 Comb 4: R0049 + R0271, only R0049 method 3 aspect (Skip signaling sh_ts_residual_coding_disabled_flag when sps_transform_skip_enabled_flag = 0, also proposed in R0068, R0097, R0142, R0153) as R0271 has its own macro 
+
+#define JVET_R0380_SCALING_MATRIX_DISABLE_YCC_OR_RGB      1 // JVET-R0380 solution3-3: Disable scaling matrix for blocks coded in alternative colour space.
+
+#define R0091_CONSTRAINT_SLICE_ORDER                      1 // JVET-R0091: constraint slice signalling order to be the same as slice coding order
+
+#define JVET_R0161_CONDITION_SIGNAL_PTL_IDX               1 // JVET_R0161 proposal 2: skip PTL index signaling when number of signaled PTL structure is equal to number of OLSs
+
+#define JVET_R0165_OPTIONAL_ENTRY_POINT                   1 // JVET-R0165: Optional entry point offset
+
+#define R0324_PH_SYNTAX_CONDITION_MODIFY                  1 // JVET-R0324 add conditions on PH syntax to conder whether current pic is bi-predictive picture
+
+#define JVET_R0278_CONSTRAINT                             1 // JVET-R0278: ph_inter_slice_allowed_flag constraint
+
+#define JVET_R0276_REORDERED_SUBPICS                      1 // JVET-R0276: reference picture constraint for reordered sub-pictures
+
+#define JVET_R0130_TC_DERIVATION_BUGFIX                   1 // JVET-R0130: Cleanup of tC derivation for deblocking filter
+
+#define JVET_R0334_PLT_CLEANUP                            1 // JVET-R0334: Disable chroma palette for local dual tree
+
+#define JVET_R0286_GCI_CLEANUP                            1 // JVET-R0286: Sensibility constraints and general constraints on tools
+
+#define JVET_R0090_VUI                                    1 // JVET-R0090: Fix parsing dependencies in VUI syntax
+
+#define JVET_R0205                                        1 // JVET-R0205: Condition presence of inter_layer_ref_pics_present_flag on sps_video_parameter_set_id 
+
+#define JVET_R0277_RPL                                    1 // JVET-R0277: Modified condition for sh_num_ref_idx_active_override_flag, inference for sh_collocated_from_l0_flag equal to 1 for P-slices
+
+#define JVET_R0186_CLEANUP                                1 // JVET-R0186 aspect 1: Signal the pps_no_pic_partition_flag ahead in the PPS.
+
+#define JVET_R0225_SEPERATE_FLAGS_ALF_CHROMA              1 // Use two separate flags (one for Cb, one for Cr) to replace ph_alf_chroma_idc in PH and sh_alf_chroma_idc in SH
+
+#define JVET_R0266_DESC                                   1 // JVET-R0266: change the signalling of the PPS ID from ue(v) to u(6); Code virtual boundary positions using ue(v)
+
+#define JVET_R0094_DPB_TID_OFFSET                         1 // JVET-R0094: DPB output temporal ID offsets
+
+#define JVET_R0437_BS_DERIVATION                          1 // JVET-R0437: fix the bS derivation for palette mode
+
+#define JVET_R0110_MIXED_LOSSLESS                         1 // JVET-R0110: Slice level mixed lossy/lossless coding: encoder only method
+
+#define JVET_R0330_CRS_CLIP_REM                           1 // JVET-R0330: Remove redundant clipping in chroma residual scaling factor derivation
+
+#define JVET_R0059_RPL_CLEANUP                            1 // JVET-R0059 aspect 2: Condition the signalling of ltrp_in_header_flag[ listIdx ][ rplsIdx ].
+
+#define JVET_R0202_WHEN_PH_IN_SH_INFO_FLAGS_EQUAL_0       1 // JVET-R0202 When sh_picture_header_in_slice_header_flag is equal to 1, rpl_info_in_ph_flag, dbf_info_in_ph_flag, sao_info_in_ph_flag, wp_info_in_ph_flag, qp_delta_info_in_ph_flag shall be be equal to 0
+
+#define JVET_R0201_PREFIX_SUFFIX_APS_CLEANUP              1 // JVET-R0201 Cleanups on Prefix and Suffix APS
+
+#define JVET_R0202_WHEN_PH_IN_SH_NO_SUBPIC_SEPARATE_COLOR 1 // JVET-R0202 Add constraints when sh_picture_header_in_slice_header_flag equal to 1 sps_subpic_info_present_flag and separate_colour_plane_flag shall be equal to 0
+
+#define JVET_R0247_PPS_LP_FTR_ACROSS_SLICES_FLAG_CLEANUP  1 // JVET-R0247: Skip pps_loop_filter_across_slices_enabled_flag when the picture contains one slice
+
 #define JVET_R0327_ONE_PASS_CCALF                         1 // JVET-R0327: One-pass CCALF
 
 #define JVET_R0200_MOVE_LMCS_AND_SCALING_LIST_SE          1 // JVET-R0200 Move the SH flags slice_lmcs_enabled_flag and slice_explicit_scaling_list_used_flag to be just after the ALF parameters
 
+#if JVET_R0200_MOVE_LMCS_AND_SCALING_LIST_SE
+#define JVET_R0098_LMCS_AND_SCALING_LISTS_FOR_PH_IN_SH    1 // JVET-R0098: Only signall LMCS and explicit scaling list enable flags in SH when PH is not in SH
+#endif
+
 #define JVET_R0388_DBF_CLEANUP                            1 // JVET-R0388: Cleanups on deblocking signalling
+
+#define JVET_R0114_NEGATIVE_SCALING_WINDOW_OFFSETS        1 // JVET-R0114: Allow negative scaling window offsets
 
 #define JVET_R0071_SPS_PPS_CELANUP                        1 // JVET-R0071 item 2-4: cleanups on subpicture signalling (item 1 has been ported in JVET_R0156_ASPECT4)
 
@@ -63,7 +123,9 @@
 
 #define JVET_R0143_TSRCdisableLL                          1 // JVET-R0143: disable TSRC for lossless coding
 
-#define JVET_R0371_MAX_NUM_SUB_BLK_MRG_CAND               1 // JVET-R0371: set the range of max number of subblock based merge candidate to 0 to 5 – sps_sbtmvp_enabled_flag. 
+#define JVET_R0371_MAX_NUM_SUB_BLK_MRG_CAND               1 // JVET-R0371: set the range of max number of subblock based merge candidate to 0 to 5 - sps_sbtmvp_enabled_flag. 
+
+#define JVET_R0113_AND_JVET_R0106_PPS_CLEANUP             1 // JVET-R0113 and JVET-R0106: Cleanup in Picture Parameter Set
 
 #define JVET_R0233_CCALF_LINE_BUFFER_REDUCTION            1 // JVET-R0233 method 2: Line buffer reduction for CCALF
 
@@ -80,6 +142,14 @@
 
 #define JVET_R0156_ASPECT3_SPS_CLEANUP                    1 // Condition sps_sublayer_dpb_params_flag on sps_ptl_dpb_hrd_params_present_flag, in addition to sps_max_sublayer_minus1,	JVET-R0156 proposal 3, JVET-R0170, JVET-R0222 proposal 2
 
+
+#define JVET_R0350_MIP_CHROMA_444_SINGLETREE              1 // JVET-R0350: MIP for chroma in case of 4:4:4 format and single tree
+
+#define JVET_R0347_MTT_SIZE_CONSTRAIN                     1 // JVET-R0347: Set upper limit of minQtSize and maxTtSize to 64, set upper limit of maxBtSize to 64 in chroma-tree
+
+#define JVET_R0045_TS_MIN_QP_CLEANUP                      1 // JVET-R0045: Cleanup for signalling of minimum QP of transform skip
+
+#define JVET_R0100                                        1 // JVET-R0100: Proposal 1 DUI Signalling and inference
 
 //########### place macros to be be kept below this line ###############
 

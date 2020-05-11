@@ -1028,18 +1028,6 @@ For --profile=main-RExt, specifies the value of general_one_picture_only_constra
 Specifies the value of general_lower_bit_constraint_flag to use for RExt profiles.
 \\
 
-\Option{ProgressiveSource} &
-%\ShortOption{\None} &
-\Default{false} &
-Specifies the value of general_progressive_source_flag
-\\
-
-\Option{InterlacedSource} &
-%\ShortOption{\None} &
-\Default{false} &
-Specifies the value of general_interlaced_source_flag 
-\\
-
 \Option{NonPackedSource} &
 %\ShortOption{\None} &
 \Default{false} &
@@ -1056,6 +1044,18 @@ Specifies the value of general_non_projected_constraint_flag
 %\ShortOption{\None} &
 \Default{false} &
 Specifies the value of no_res_change_in_clvs_constraint_flag
+\\
+
+\Option{SingleLayerConstraintFlag} &
+%\ShortOption{\None} &
+\Default{false} &
+Specifies the value of single_layer_constraint_flag
+\\
+
+\Option{AllLayersIndependentConstraintFlag} &
+%\ShortOption{\None} &
+\Default{false} &
+Specifies the value of all_layers_independent_constraint_flag
 \\
 
 \Option{OneTilePerPicConstraintFlag} &
@@ -1935,6 +1935,18 @@ is output and the encoder stops.
 Specifies whether scaling matrices are to be applied to blocks coded with LFNST.
 \\
 
+\Option{DisableScalingMatrixForAlternativeColourSpace} &
+%\ShortOption{\None} &
+\Default{true} &
+Specifies whether scaling matrices are disabled to blocks when the colour space is not equal to the designated colour space of scaling matrices.
+\\
+
+\Option{ScalingMatrixDesignatedColourSpace} &
+%\ShortOption{\None} &
+\Default{true} &
+Indicates if the designated colour space of scaling matrices is equal to the original colour space.
+\\
+
 \Option{MaxCUChromaQpAdjustmentDepth} &
 %\ShortOption{\None} &
 \Default{-1} &
@@ -2034,6 +2046,12 @@ be encoded or decoded using one or more cores.
 \Default{false} &
 Allow signalling of entry points for WPP in slice header.
 Note that when a slice contains more than one tile, entry point offsets for tile are always present in the slice header.
+\\
+
+\Option{SliceLosslessArray} &
+%\ShortOption{\None} &
+\Default{0} &
+Define pattern of lossless coding in unit of slices, 0 means lossy slice; 1 means lossless slice. Example:  1 1 0 0 means first 2 slices are lossless coded and rest of the slices are lossy coded. Default is all slices are lossy coded.
 \\
 
 \end{OptionTableNoShorthand}
@@ -2858,6 +2876,14 @@ Indicates the black level and range of luma and chroma signals.
   0 & Indicates that the luma and chroma signals are to be scaled prior to display. \\
   1 & Indicates that the luma and chroma signals are not to be scaled prior to display. \\
 \end{tabular}
+\\
+\Option{ProgressiveSource} &
+\Default{false} &
+Specifies the value of general_progressive_source_flag
+\\
+\Option{InterlacedSource} &
+\Default{false} &
+Specifies the value of general_interlaced_source_flag 
 \\
 \Option{ChromaLocInfoPresent} &
 \Default{false} &

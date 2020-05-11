@@ -1811,6 +1811,11 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     READ_FLAG( uiCode, "sps_chroma_horizontal_collocated_flag" );   pcSPS->setHorCollocatedChromaFlag( uiCode != 0 );
     READ_FLAG( uiCode, "sps_chroma_vertical_collocated_flag" );     pcSPS->setVerCollocatedChromaFlag( uiCode != 0 );
   }
+  else
+  {
+    pcSPS->setHorCollocatedChromaFlag(true);
+    pcSPS->setVerCollocatedChromaFlag(true);
+  }
 
   READ_FLAG( uiCode,    "sps_mts_enabled_flag" );                       pcSPS->setUseMTS                 ( uiCode != 0 );
   if ( pcSPS->getUseMTS() )

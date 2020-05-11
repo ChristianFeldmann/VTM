@@ -2020,7 +2020,19 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   }
 #endif
 
-
+  if (m_chromaFormatIDC != CHROMA_420)
+  {
+    if (!m_horCollocatedChromaFlag)
+    {
+      msg(WARNING, "\nWARNING: HorCollocatedChroma is forced to 1 for chroma formats other than 4:2:0\n");
+      m_horCollocatedChromaFlag = true;
+    }
+    if (!m_verCollocatedChromaFlag)
+    {
+      msg(WARNING, "\nWARNING: VerCollocatedChroma is forced to 1 for chroma formats other than 4:2:0\n");
+      m_verCollocatedChromaFlag = true;
+    }
+  }
 #if JVET_O0756_CONFIG_HDRMETRICS && !JVET_O0756_CALCULATE_HDRMETRICS
   if ( m_calculateHdrMetrics == true)
   {

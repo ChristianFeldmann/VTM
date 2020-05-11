@@ -1441,10 +1441,12 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
     bUseDQP = true;
   }
 #endif
+#if !JVET_R0078_DISABLE_CHROMA_DBF_OFFSET_SINGALLING
   if (sps.getChromaFormatIdc() != CHROMA_400)
   {
-    pps.setPPSChromaToolFlag (true);
+    pps.setPPSChromaToolFlag(true);
   }
+#endif
 #if ENABLE_QPA
   if (getUsePerceptQPA() && !bUseDQP)
   {
@@ -1498,7 +1500,11 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
     pps.setPicInitQPMinus26( std::min( maxDQP, std::max( minDQP, baseQp ) ));
   }
 
+#if JVET_R0078_DISABLE_CHROMA_DBF_OFFSET_SINGALLING
+  if( sps.getJointCbCrEnabledFlag() == false || getChromaFormatIdc() == CHROMA_400 || m_chromaCbCrQpOffset == 0 )
+#else
   if (sps.getJointCbCrEnabledFlag() == false || getChromaFormatIdc() == CHROMA_400)
+#endif
   {
     pps.setJointCbCrQpOffsetPresentFlag(false);
   }
@@ -1661,6 +1667,24 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
   pps.setCabacInitPresentFlag(CABAC_INIT_PRESENT_FLAG);
   pps.setLoopFilterAcrossSlicesEnabledFlag( m_bLFCrossSliceBoundaryFlag );
 
+#if JVET_R0078_DISABLE_CHROMA_DBF_OFFSET_SINGALLING
+  bool bChromaQPOffsetNotZero = false;
+  if( pps.getQpOffset(COMPONENT_Cb) != 0 || pps.getQpOffset(COMPONENT_Cr) != 0 || pps.getJointCbCrQpOffsetPresentFlag() || pps.getSliceChromaQpFlag() || pps.getCuChromaQpOffsetListEnabledFlag() )
+  {
+    bChromaQPOffsetNotZero = true;
+  }
+  bool bChromaDbfOffsetNotSameAsLuma = true;
+  if( pps.getDeblockingFilterCbBetaOffsetDiv2() == pps.getDeblockingFilterBetaOffsetDiv2() && pps.getDeblockingFilterCrBetaOffsetDiv2() == pps.getDeblockingFilterBetaOffsetDiv2()
+     && pps.getDeblockingFilterCbTcOffsetDiv2() == pps.getDeblockingFilterTcOffsetDiv2() && pps.getDeblockingFilterCrTcOffsetDiv2() == pps.getDeblockingFilterTcOffsetDiv2() )
+  {
+    bChromaDbfOffsetNotSameAsLuma = false;
+  }
+  const uint32_t chromaArrayType = (int)sps.getSeparateColourPlaneFlag() ? 0 : sps.getChromaFormatIdc();
+  if( ( chromaArrayType != CHROMA_400 ) && ( bChromaQPOffsetNotZero || bChromaDbfOffsetNotSameAsLuma ) )
+  {
+    pps.setPPSChromaToolFlag(true);
+  }
+#endif
 
   int histogram[MAX_NUM_REF + 1];
   for( int i = 0; i <= MAX_NUM_REF; i++ )

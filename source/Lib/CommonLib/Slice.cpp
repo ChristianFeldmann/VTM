@@ -224,10 +224,24 @@ void Slice::inheritFromPicHeader( PicHeader *picHeader, const PPS *pps, const SP
   setDeblockingFilterDisable( picHeader->getDeblockingFilterDisable() );
   setDeblockingFilterBetaOffsetDiv2( picHeader->getDeblockingFilterBetaOffsetDiv2() );
   setDeblockingFilterTcOffsetDiv2( picHeader->getDeblockingFilterTcOffsetDiv2() );
-  setDeblockingFilterCbBetaOffsetDiv2( picHeader->getDeblockingFilterCbBetaOffsetDiv2() );
-  setDeblockingFilterCbTcOffsetDiv2( picHeader->getDeblockingFilterCbTcOffsetDiv2() );
-  setDeblockingFilterCrBetaOffsetDiv2( picHeader->getDeblockingFilterCrBetaOffsetDiv2() );
-  setDeblockingFilterCrTcOffsetDiv2( picHeader->getDeblockingFilterCrTcOffsetDiv2() );
+#if JVET_R0078_DISABLE_CHROMA_DBF_OFFSET_SINGALLING
+  if (pps->getPPSChromaToolFlag())
+  {
+#endif
+    setDeblockingFilterCbBetaOffsetDiv2 ( picHeader->getDeblockingFilterCbBetaOffsetDiv2() );
+    setDeblockingFilterCbTcOffsetDiv2   ( picHeader->getDeblockingFilterCbTcOffsetDiv2()   );
+    setDeblockingFilterCrBetaOffsetDiv2 ( picHeader->getDeblockingFilterCrBetaOffsetDiv2() );
+    setDeblockingFilterCrTcOffsetDiv2   ( picHeader->getDeblockingFilterCrTcOffsetDiv2()   );
+#if JVET_R0078_DISABLE_CHROMA_DBF_OFFSET_SINGALLING
+  }
+  else
+  {
+    setDeblockingFilterCbBetaOffsetDiv2 ( getDeblockingFilterBetaOffsetDiv2() );
+    setDeblockingFilterCbTcOffsetDiv2   ( getDeblockingFilterTcOffsetDiv2()   );
+    setDeblockingFilterCrBetaOffsetDiv2 ( getDeblockingFilterBetaOffsetDiv2() );
+    setDeblockingFilterCrTcOffsetDiv2   ( getDeblockingFilterTcOffsetDiv2()   );
+  }
+#endif
 
   setSaoEnabledFlag(CHANNEL_TYPE_LUMA,     picHeader->getSaoEnabledFlag(CHANNEL_TYPE_LUMA));
   setSaoEnabledFlag(CHANNEL_TYPE_CHROMA,   picHeader->getSaoEnabledFlag(CHANNEL_TYPE_CHROMA));
@@ -2644,6 +2658,9 @@ PPS::PPS()
 , m_SPSId                            (0)
 , m_picInitQPMinus26                 (0)
 , m_useDQP                           (false)
+#if JVET_R0078_DISABLE_CHROMA_DBF_OFFSET_SINGALLING
+, m_usePPSChromaTool                 (false)
+#endif
 , m_bSliceChromaQpFlag               (false)
 , m_chromaCbQpOffset                 (0)
 , m_chromaCrQpOffset                 (0)

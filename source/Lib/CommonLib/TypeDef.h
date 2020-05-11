@@ -163,6 +163,8 @@
 
 #define JVET_R0100                                        1 // JVET-R0100: Proposal 1 DUI Signalling and inference
 
+#define JVET_R0413_HRD_TIMING_INFORMATION                 1   // JVET-R0413: HRD timing parameters signalling
+
 //########### place macros to be be kept below this line ###############
 
 #define JVET_R0164_MEAN_SCALED_SATD                       1 // JVET-R0164: Use a mean scaled version of SATD in encoder decisions

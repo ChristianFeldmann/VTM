@@ -141,10 +141,21 @@ void SEIPictureTiming::copyTo (SEIPictureTiming& target) const
   target.m_numNalusInDuMinus1 = m_numNalusInDuMinus1;
   target.m_duCpbRemovalDelayMinus1 = m_duCpbRemovalDelayMinus1;
   target.m_cpbAltTimingInfoPresentFlag = m_cpbAltTimingInfoPresentFlag;
+#if JVET_R0413_HRD_TIMING_INFORMATION
+  target.m_nalCpbAltInitialRemovalDelayDelta  = m_nalCpbAltInitialRemovalDelayDelta;
+  target.m_nalCpbAltInitialRemovalOffsetDelta = m_nalCpbAltInitialRemovalOffsetDelta;
+  target.m_nalCpbDelayOffset = m_nalCpbDelayOffset;
+  target.m_nalCpbDelayOffset = m_nalCpbDelayOffset;
+  target.m_vclCpbAltInitialRemovalDelayDelta  = m_vclCpbAltInitialRemovalDelayDelta;
+  target.m_vclCpbAltInitialRemovalOffsetDelta = m_vclCpbAltInitialRemovalOffsetDelta;
+  target.m_vclCpbDelayOffset = m_vclCpbDelayOffset;
+  target.m_vclCpbDelayOffset = m_vclCpbDelayOffset;
+#else
   target.m_cpbAltInitialCpbRemovalDelayDelta = m_cpbAltInitialCpbRemovalDelayDelta;
   target.m_cpbAltInitialCpbRemovalOffsetDelta = m_cpbAltInitialCpbRemovalOffsetDelta;
   target.m_cpbDelayOffset = m_cpbDelayOffset;
   target.m_dpbDelayOffset = m_dpbDelayOffset;
+#endif
 }
 
 // Static member

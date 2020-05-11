@@ -713,6 +713,61 @@ void SEIReader::xParseSEIPictureTiming(SEIPictureTiming& sei, uint32_t payloadSi
     sei_read_flag( pDecodedMessageOutputStream, symbol, "cpb_alt_timing_info_present_flag" ); sei.m_cpbAltTimingInfoPresentFlag = symbol;
     if( sei.m_cpbAltTimingInfoPresentFlag )
     {
+#if JVET_R0413_HRD_TIMING_INFORMATION
+      if (bp.m_bpNalCpbParamsPresentFlag)
+      {
+        sei.m_nalCpbAltInitialRemovalDelayDelta.resize(bp.m_bpMaxSubLayers);
+        sei.m_nalCpbAltInitialRemovalOffsetDelta.resize(bp.m_bpMaxSubLayers);
+        sei.m_nalCpbDelayOffset.resize(bp.m_bpMaxSubLayers);
+        sei.m_nalDpbDelayOffset.resize(bp.m_bpMaxSubLayers);
+        for (int i = (bp.m_sublayerInitialCpbRemovalDelayPresentFlag ? 0 : bp.m_bpMaxSubLayers - 1);
+             i <= bp.m_bpMaxSubLayers - 1; ++i)
+        {
+          sei.m_nalCpbAltInitialRemovalDelayDelta[i].resize(bp.m_bpCpbCnt);
+          sei.m_nalCpbAltInitialRemovalOffsetDelta[i].resize(bp.m_bpCpbCnt);
+          for (int j = 0; j < bp.m_bpCpbCnt; j++)
+          {
+            sei_read_code(pDecodedMessageOutputStream, bp.m_initialCpbRemovalDelayLength, symbol,
+                          "nal_cpb_alt_initial_cpb_removal_delay_delta[ i ][ j ]");
+            sei.m_nalCpbAltInitialRemovalDelayDelta[i][j] = symbol;
+            sei_read_code(pDecodedMessageOutputStream, bp.m_initialCpbRemovalDelayLength, symbol,
+                          "nal_cpb_alt_initial_cpb_removal_offset_delta[ i ][ j ]");
+            sei.m_nalCpbAltInitialRemovalOffsetDelta[i][j] = symbol;
+          }
+          sei_read_code(pDecodedMessageOutputStream, bp.m_initialCpbRemovalDelayLength, sei.m_nalCpbDelayOffset[i],
+                        "nal_cpb_delay_offset[ i ]");
+          sei_read_code(pDecodedMessageOutputStream, bp.m_initialCpbRemovalDelayLength, sei.m_nalDpbDelayOffset[i],
+                        "nal_dpb_delay_offset[ i ]");
+        }
+      }
+
+      if (bp.m_bpVclCpbParamsPresentFlag)
+      {
+        sei.m_vclCpbAltInitialRemovalDelayDelta.resize(bp.m_bpMaxSubLayers);
+        sei.m_vclCpbAltInitialRemovalOffsetDelta.resize(bp.m_bpMaxSubLayers);
+        sei.m_vclCpbDelayOffset.resize(bp.m_bpMaxSubLayers);
+        sei.m_vclDpbDelayOffset.resize(bp.m_bpMaxSubLayers);
+        for (int i = (bp.m_sublayerInitialCpbRemovalDelayPresentFlag ? 0 : bp.m_bpMaxSubLayers - 1);
+             i <= bp.m_bpMaxSubLayers - 1; ++i)
+        {
+          sei.m_vclCpbAltInitialRemovalDelayDelta[i].resize(bp.m_bpCpbCnt);
+          sei.m_vclCpbAltInitialRemovalOffsetDelta[i].resize(bp.m_bpCpbCnt);
+          for (int j = 0; j < bp.m_bpCpbCnt; j++)
+          {
+            sei_read_code(pDecodedMessageOutputStream, bp.m_initialCpbRemovalDelayLength, symbol,
+                          "vcl_cpb_alt_initial_cpb_removal_delay_delta[ i ][ j ]");
+            sei.m_vclCpbAltInitialRemovalDelayDelta[i][j] = symbol;
+            sei_read_code(pDecodedMessageOutputStream, bp.m_initialCpbRemovalDelayLength, symbol,
+                          "vcl_cpb_alt_initial_cpb_removal_offset_delta[ i ][ j ]");
+            sei.m_vclCpbAltInitialRemovalOffsetDelta[i][j] = symbol;
+          }
+          sei_read_code(pDecodedMessageOutputStream, bp.m_initialCpbRemovalDelayLength, sei.m_vclCpbDelayOffset[i],
+                        "vcl_cpb_delay_offset[ i ]");
+          sei_read_code(pDecodedMessageOutputStream, bp.m_initialCpbRemovalDelayLength, sei.m_vclDpbDelayOffset[i],
+                        "vcl_dpb_delay_offset[ i ]");
+        }
+      }
+#else
       sei.m_cpbAltInitialCpbRemovalDelayDelta.resize(bp.m_bpMaxSubLayers);
       sei.m_cpbAltInitialCpbRemovalOffsetDelta.resize(bp.m_bpMaxSubLayers);
       sei.m_cpbDelayOffset.resize(bp.m_bpMaxSubLayers);
@@ -736,13 +791,38 @@ void SEIReader::xParseSEIPictureTiming(SEIPictureTiming& sei, uint32_t payloadSi
         sei_read_code(pDecodedMessageOutputStream, bp.m_initialCpbRemovalDelayLength, sei.m_dpbDelayOffset[i],
                       "dpb_delay_offset[ i ]");
       }
+#endif
     }
   }
   else
   {
     sei.m_cpbAltTimingInfoPresentFlag = false;
+#if JVET_R0413_HRD_TIMING_INFORMATION
+    sei.m_nalCpbAltInitialRemovalDelayDelta.resize(bp.m_bpMaxSubLayers);
+    sei.m_nalCpbAltInitialRemovalOffsetDelta.resize(bp.m_bpMaxSubLayers);
+    sei.m_nalCpbDelayOffset.resize(bp.m_bpMaxSubLayers, 0);
+    sei.m_nalDpbDelayOffset.resize(bp.m_bpMaxSubLayers, 0);
+    for (int i = (bp.m_sublayerInitialCpbRemovalDelayPresentFlag ? 0 : bp.m_bpMaxSubLayers - 1);
+         i <= bp.m_bpMaxSubLayers - 1; ++i)
+    {
+      sei.m_nalCpbAltInitialRemovalDelayDelta[i].resize(bp.m_bpCpbCnt, 0);
+      sei.m_nalCpbAltInitialRemovalOffsetDelta[i].resize(bp.m_bpCpbCnt, 0);
+    }
+
+    sei.m_vclCpbAltInitialRemovalDelayDelta.resize(bp.m_bpMaxSubLayers);
+    sei.m_vclCpbAltInitialRemovalOffsetDelta.resize(bp.m_bpMaxSubLayers);
+    sei.m_vclCpbDelayOffset.resize(bp.m_bpMaxSubLayers, 0);
+    sei.m_vclDpbDelayOffset.resize(bp.m_bpMaxSubLayers, 0);
+    for (int i = (bp.m_sublayerInitialCpbRemovalDelayPresentFlag ? 0 : bp.m_bpMaxSubLayers - 1);
+         i <= bp.m_bpMaxSubLayers - 1; ++i)
+    {
+      sei.m_vclCpbAltInitialRemovalDelayDelta[i].resize(bp.m_bpCpbCnt, 0);
+      sei.m_vclCpbAltInitialRemovalOffsetDelta[i].resize(bp.m_bpCpbCnt, 0);
+    }
+#else
     sei.m_cpbDelayOffset.resize(bp.m_bpMaxSubLayers, 0);
     sei.m_dpbDelayOffset.resize(bp.m_bpMaxSubLayers, 0);
+#endif
   }
 
   for( int i = temporalId; i < bp.m_bpMaxSubLayers - 1; i ++ )

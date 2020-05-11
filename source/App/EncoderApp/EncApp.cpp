@@ -790,6 +790,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setUseRecalculateQPAccordingToLambda                 ( m_recalculateQPAccordingToLambda );
   m_cEncLib.setDCIEnabled                                        ( m_DCIEnabled );
   m_cEncLib.setVuiParametersPresentFlag                          ( m_vuiParametersPresentFlag );
+#if JVET_Q0394_TIMING_SEI
+  m_cEncLib.setSamePicTimingInAllOLS                             (m_samePicTimingInAllOLS);
+#endif
   m_cEncLib.setAspectRatioInfoPresentFlag                        ( m_aspectRatioInfoPresentFlag);
   m_cEncLib.setAspectRatioIdc                                    ( m_aspectRatioIdc );
   m_cEncLib.setSarWidth                                          ( m_sarWidth );

@@ -482,19 +482,22 @@ void SEIReader::xParseSEIScalableNesting(SEIScalableNesting& sei, const NalUnitT
         sei.m_nestingOlsIdx[i] = sei.m_nestingOlsIdxDeltaMinus1[i] + sei.m_nestingOlsIdxDeltaMinus1[i - 1] + 1;
       }
     }
-    uint32_t lowestLayerId = MAX_UINT;
-    for (uint32_t olsIdxForSEI = 0; olsIdxForSEI <= sei.m_nestingNumOlssMinus1; olsIdxForSEI++)
+    if (vps && vps->getVPSId() != 0)
     {
-      int olsIdx = sei.m_nestingOlsIdx[olsIdxForSEI];
-      for (int layerIdx = 0; layerIdx < vps->getNumLayersInOls(olsIdx); layerIdx++)
+      uint32_t lowestLayerId = MAX_UINT;
+      for (uint32_t olsIdxForSEI = 0; olsIdxForSEI <= sei.m_nestingNumOlssMinus1; olsIdxForSEI++)
       {
-        if (lowestLayerId > vps->getLayerIdInOls(olsIdx, layerIdx))
+        int olsIdx = sei.m_nestingOlsIdx[olsIdxForSEI];
+        for (int layerIdx = 0; layerIdx < vps->getNumLayersInOls(olsIdx); layerIdx++)
         {
-          lowestLayerId = vps->getLayerIdInOls(olsIdx, layerIdx);
+          if (lowestLayerId > vps->getLayerIdInOls(olsIdx, layerIdx))
+          {
+            lowestLayerId = vps->getLayerIdInOls(olsIdx, layerIdx);
+          }
         }
       }
+      CHECK(lowestLayerId!= nuh_layer_id, "nuh_layer_id is not equal to the lowest layer among Olss that the scalable SEI applies");
     }
-    CHECK(lowestLayerId!= nuh_layer_id, "nuh_layer_id is not equal to the lowest layer among Olss that the scalable SEI applies");
   }
   else
   {
@@ -542,6 +545,7 @@ void SEIReader::xParseSEIScalableNesting(SEIScalableNesting& sei, const NalUnitT
     (*pDecodedMessageOutputStream) << "End of scalable nesting SEI message\n";
   }
 }
+
 void SEIReader::xParseSEIDecodingUnitInfo(SEIDecodingUnitInfo& sei, uint32_t payloadSize, const SEIBufferingPeriod& bp, const uint32_t temporalId, std::ostream *pDecodedMessageOutputStream)
 {
   uint32_t val;

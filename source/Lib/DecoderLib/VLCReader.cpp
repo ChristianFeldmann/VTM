@@ -5015,7 +5015,18 @@ void HLSyntaxReader::parseScalingList(ScalingList* scalingList)
   }
   else
   {
+#if JVET_R0055_HANDLING_NON_EXISTENT_QM
+    scalingListCopyModeFlag = true;
+    scalingList->setScalingListCopyModeFlag(scalingListId, scalingListCopyModeFlag);
+    scalingList->setRefMatrixId(scalingListId, (uint32_t)((int)(scalingListId)));
+    if (scalingListId >= SCALING_LIST_1D_START_16x16)
+    {
+      scalingList->setScalingListDC(scalingListId, 16);
+    }
+    scalingList->processRefMatrix(scalingListId, scalingList->getRefMatrixId(scalingListId));
+#else
     scalingList->processDefaultMatrix(scalingListId);
+#endif
   }
   }
 

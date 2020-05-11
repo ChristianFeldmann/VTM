@@ -684,6 +684,10 @@ void HLSWriter::codeVUI( const VUI *pcVUI, const SPS* pcSPS )
 #endif
 
 
+#if JVET_R0090_VUI
+  WRITE_FLAG(pcVUI->getProgressiveSourceFlag(),   "vui_general_progressive_source_flag"         );
+  WRITE_FLAG(pcVUI->getInterlacedSourceFlag(),    "vui_general_interlaced_source_flag"          );
+#endif
   WRITE_FLAG(pcVUI->getAspectRatioInfoPresentFlag(),            "vui_aspect_ratio_info_present_flag");
   if (pcVUI->getAspectRatioInfoPresentFlag())
   {
@@ -708,10 +712,6 @@ void HLSWriter::codeVUI( const VUI *pcVUI, const SPS* pcSPS )
     WRITE_CODE(pcVUI->getMatrixCoefficients(), 8,             "vui_matrix_coeffs");
     WRITE_FLAG(pcVUI->getVideoFullRangeFlag(),                "vui_video_full_range_flag");
   }
-#if JVET_R0090_VUI
-  WRITE_FLAG(pcVUI->getProgressiveSourceFlag(),   "general_progressive_source_flag"         );
-  WRITE_FLAG(pcVUI->getInterlacedSourceFlag(),    "general_interlaced_source_flag"          );
-#endif
   WRITE_FLAG(pcVUI->getChromaLocInfoPresentFlag(),              "vui_chroma_loc_info_present_flag");
   if (pcVUI->getChromaLocInfoPresentFlag())
   {

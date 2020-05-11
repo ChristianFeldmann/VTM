@@ -1705,8 +1705,7 @@ void EncGOP::xPicInitRateControl(int &estimatedBits, int gopId, double &lambda, 
   }
   else if ( frameLevel == 0 )   // intra case, but use the model
   {
-    m_pcSliceEncoder->calCostSliceI(pic); // TODO: This only analyses the first slice segment - what about the others?
-
+    m_pcSliceEncoder->calCostPictureI(pic);
     if ( m_pcCfg->getIntraPeriod() != 1 )   // do not refine allocated bits for all intra case
     {
       int bits = m_pcRateCtrl->getRCSeq()->getLeftAverageBits();

@@ -1336,6 +1336,13 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   CHECK(uiCode != 0, "sps_reserved_zero_4bits not equal to zero");
   READ_FLAG(uiCode, "sps_ptl_dpb_hrd_params_present_flag"); pcSPS->setPtlDpbHrdParamsPresentFlag(uiCode);
 
+#if JVET_R0275_SPS_PTL_DBP_HRD
+  if( !pcSPS->getVPSId() )
+  {
+    CHECK( !pcSPS->getPtlDpbHrdParamsPresentFlag(), "When sps_video_parameter_set_id is equal to 0, the value of sps_ptl_dpb_hrd_params_present_flag shall be equal to 1" );
+  }
+#endif
+
   if (pcSPS->getPtlDpbHrdParamsPresentFlag())
   {
 

@@ -1114,7 +1114,9 @@ void EncLib::xInitSPS( SPS& sps )
   cinfo->setNoBcwConstraintFlag(m_bNoBcwConstraintFlag);
   cinfo->setNoIbcConstraintFlag(m_noIbcConstraintFlag);
   cinfo->setNoCiipConstraintFlag(m_bNoCiipConstraintFlag);
+#if !JVET_R0214_MMVD_SYNTAX_MODIFICATION
   cinfo->setNoFPelMmvdConstraintFlag(m_noFPelMmvdConstraintFlag);
+#endif
   cinfo->setNoGeoConstraintFlag(m_noGeoConstraintFlag);
   cinfo->setNoLadfConstraintFlag(m_bNoLadfConstraintFlag);
   cinfo->setNoTransformSkipConstraintFlag(m_noTransformSkipConstraintFlag);

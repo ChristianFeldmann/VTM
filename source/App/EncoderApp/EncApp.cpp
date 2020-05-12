@@ -266,7 +266,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setNoBcwConstraintFlag                               ( !m_bcw );
   m_cEncLib.setNoIbcConstraintFlag                               ( m_IBCMode ? false : true );
   m_cEncLib.setNoCiipConstraintFlag                           ( !m_ciip );
+#if !JVET_R0214_MMVD_SYNTAX_MODIFICATION
   m_cEncLib.setNoFPelMmvdConstraintFlag                          ( !(m_MMVD && m_allowDisFracMMVD) );
+#endif
   m_cEncLib.setNoGeoConstraintFlag                               ( !m_Geo );
   m_cEncLib.setNoLadfConstraintFlag                              ( !m_LadfEnabed );
   m_cEncLib.setNoTransformSkipConstraintFlag                     ( !m_useTransformSkip );

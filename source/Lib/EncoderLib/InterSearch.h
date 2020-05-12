@@ -97,11 +97,7 @@ typedef struct
 } EncAffineMotion;
 
 /// encoder search class
-#if !REMOVE_PPS_REXT
-class InterSearch : public InterPrediction, CrossComponentPrediction, AffineGradientSearch
-#else
 class InterSearch : public InterPrediction, AffineGradientSearch
-#endif
 {
 private:
   EncModeCtrl     *m_modeCtrl;

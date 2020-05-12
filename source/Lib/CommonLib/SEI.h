@@ -63,9 +63,7 @@ public:
     FRAME_PACKING                        = 45,
     DECODING_UNIT_INFO                   = 130,
     DECODED_PICTURE_HASH                 = 132,
-#if JVET_P0190_SCALABLE_NESTING_SEI
     SCALABLE_NESTING                     = 133,
-#endif
     MASTERING_DISPLAY_COLOUR_VOLUME      = 137,
     DEPENDENT_RAP_INDICATION             = 145,
     EQUIRECTANGULAR_PROJECTION           = 150,
@@ -143,7 +141,7 @@ public:
   bool     m_omniViewportCancelFlag;
   bool     m_omniViewportPersistenceFlag;
   uint8_t  m_omniViewportCntMinus1;
-  std::vector<OmniViewport> m_omniViewportRegions;  
+  std::vector<OmniViewport> m_omniViewportRegions;
 };
 
 class SEIRegionWisePacking : public SEI
@@ -197,12 +195,8 @@ public:
   std::vector<uint8_t> m_gcmpFunctionCoeffV;
   std::vector<bool>    m_gcmpFunctionVAffectedByUFlag;
   bool                 m_gcmpGuardBandFlag;
-#if JVET_Q0343_GCMP_GUARD_BAND_TYPE
   uint8_t              m_gcmpGuardBandType;
   bool                 m_gcmpGuardBandBoundaryExteriorFlag;
-#else
-  bool                 m_gcmpGuardBandBoundaryType;
-#endif
   uint8_t              m_gcmpGuardBandSamplesMinus1;
 };
 
@@ -283,18 +277,22 @@ public:
   , m_bpMaxSubLayers (0)
   , m_bpDecodingUnitHrdParamsPresentFlag (false)
   , m_decodingUnitCpbParamsInPicTimingSeiFlag (false)
-#if JVET_Q0221
   , m_decodingUnitDpbDuParamsInPicTimingSeiFlag(false)
-#endif
     , m_sublayerInitialCpbRemovalDelayPresentFlag(false)
     , m_additionalConcatenationInfoPresentFlag (false)
     , m_maxInitialRemovalDelayForConcatenation (0)
+#if JVET_R0094_DPB_TID_OFFSET
+    , m_sublayerDpbOutputOffsetsPresentFlag (false)
+#endif
     , m_altCpbParamsPresentFlag (false)
     , m_useAltCpbParamsFlag (false)
   {
     ::memset(m_initialCpbRemovalDelay, 0, sizeof(m_initialCpbRemovalDelay));
     ::memset(m_initialCpbRemovalOffset, 0, sizeof(m_initialCpbRemovalOffset));
     ::memset(m_cpbRemovalDelayDelta, 0, sizeof(m_cpbRemovalDelayDelta));
+#if JVET_R0094_DPB_TID_OFFSET
+    ::memset(m_dpbOutputTidOffset, 0, sizeof(m_dpbOutputTidOffset));
+#endif
   }
   virtual ~SEIBufferingPeriod() {}
 
@@ -320,12 +318,14 @@ public:
   uint32_t m_cpbRemovalDelayDelta    [15];
   bool m_bpDecodingUnitHrdParamsPresentFlag;
   bool m_decodingUnitCpbParamsInPicTimingSeiFlag;
-#if JVET_Q0221
   bool m_decodingUnitDpbDuParamsInPicTimingSeiFlag;
-#endif
   bool m_sublayerInitialCpbRemovalDelayPresentFlag;
   bool     m_additionalConcatenationInfoPresentFlag;
   uint32_t m_maxInitialRemovalDelayForConcatenation;
+#if JVET_R0094_DPB_TID_OFFSET
+  bool     m_sublayerDpbOutputOffsetsPresentFlag;
+  uint32_t m_dpbOutputTidOffset      [MAX_TLAYER];
+#endif
   bool     m_altCpbParamsPresentFlag;
   bool     m_useAltCpbParamsFlag;
 };
@@ -342,13 +342,7 @@ public:
   , m_numDecodingUnitsMinus1 (0)
   , m_duCommonCpbRemovalDelayFlag (false)
   , m_cpbAltTimingInfoPresentFlag (false)
-#if !JVET_Q0219_SIGNAL_ALT_BUFFER_DELAY_PARMS
-    , m_cpbDelayOffset(0)
-    , m_dpbDelayOffset(0)
-#endif
-#if JVET_Q0818_PT_SEI
   , m_ptDisplayElementalPeriodsMinus1(0)
-#endif
   {
     ::memset(m_ptSubLayerDelaysPresentFlag, 0, sizeof(m_ptSubLayerDelaysPresentFlag));
     ::memset(m_duCommonCpbRemovalDelayMinus1, 0, sizeof(m_duCommonCpbRemovalDelayMinus1));
@@ -373,20 +367,22 @@ public:
   std::vector<uint32_t> m_numNalusInDuMinus1;
   std::vector<uint32_t> m_duCpbRemovalDelayMinus1;
   bool     m_cpbAltTimingInfoPresentFlag;
-#if JVET_Q0219_SIGNAL_ALT_BUFFER_DELAY_PARMS
+#if JVET_R0413_HRD_TIMING_INFORMATION
+  std::vector<std::vector<uint32_t>> m_nalCpbAltInitialRemovalDelayDelta;
+  std::vector<std::vector<uint32_t>> m_nalCpbAltInitialRemovalOffsetDelta;
+  std::vector<uint32_t>              m_nalCpbDelayOffset;
+  std::vector<uint32_t>              m_nalDpbDelayOffset;
+  std::vector<std::vector<uint32_t>> m_vclCpbAltInitialRemovalDelayDelta;
+  std::vector<std::vector<uint32_t>> m_vclCpbAltInitialRemovalOffsetDelta;
+  std::vector<uint32_t>              m_vclCpbDelayOffset;
+  std::vector<uint32_t>              m_vclDpbDelayOffset;
+#else
   std::vector<std::vector<uint32_t>> m_cpbAltInitialCpbRemovalDelayDelta;
   std::vector<std::vector<uint32_t>> m_cpbAltInitialCpbRemovalOffsetDelta;
   std::vector<uint32_t>              m_cpbDelayOffset;
   std::vector<uint32_t>              m_dpbDelayOffset;
-#else
-  std::vector<uint32_t> m_cpbAltInitialCpbRemovalDelayDelta;
-  std::vector<uint32_t> m_cpbAltInitialCpbRemovalOffsetDelta;
-  uint32_t              m_cpbDelayOffset;
-  uint32_t              m_dpbDelayOffset;
 #endif
-#if JVET_Q0818_PT_SEI
   int m_ptDisplayElementalPeriodsMinus1;
-#endif
 };
 
 class SEIDecodingUnitInfo : public SEI
@@ -490,7 +486,6 @@ SEIMessages extractSeisByType(SEIMessages &seiList, SEI::PayloadType seiType);
 /// delete list of SEI messages (freeing the referenced objects)
 void deleteSEIs (SEIMessages &seiList);
 
-#if JVET_P0190_SCALABLE_NESTING_SEI
 class SEIScalableNesting : public SEI
 {
 public:
@@ -513,7 +508,6 @@ public:
 
   SEIMessages m_nestedSEIs;
 };
-#endif
 
 
 #if ENABLE_TRACING
@@ -521,7 +515,7 @@ void xTraceSEIHeader();
 void xTraceSEIMessageType( SEI::PayloadType payloadType );
 #endif
 
-#if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI 
+#if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
 class SEIAlternativeTransferCharacteristics : public SEI
 {
 public:
@@ -638,27 +632,15 @@ class SEISubpicureLevelInfo : public SEI
 public:
   PayloadType payloadType() const { return SUBPICTURE_LEVEL_INFO; }
   SEISubpicureLevelInfo()
-#if !JVET_Q0630_SUBPIC_LEVEL
-  : m_sliSeqParameterSetId(0)
-  , m_numRefLevels(0)
-#else
   : m_numRefLevels(0)
-#endif
   , m_explicitFractionPresentFlag (false)
-#if JVET_Q0630_SUBPIC_LEVEL
   , m_numSubpics(0)
-#endif
   {}
   virtual ~SEISubpicureLevelInfo() {}
 
-#if !JVET_Q0630_SUBPIC_LEVEL
-  int       m_sliSeqParameterSetId;
-#endif
   int       m_numRefLevels;
   bool      m_explicitFractionPresentFlag;
-#if JVET_Q0630_SUBPIC_LEVEL
   int       m_numSubpics;
-#endif
   std::vector<Level::Name>      m_refLevelIdc;
   std::vector<std::vector<int>> m_refLevelFraction;
 };

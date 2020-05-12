@@ -42,9 +42,7 @@
 #include "CommonLib/Picture.h"
 #include "CommonLib/UnitTools.h"
 //#include "CommonLib/CodingStructure.h"
-#if JVET_Q0806
 #include <queue>
-#endif
 
 #define BLOCK_STATS_POLYGON_MIN_POINTS                    3
 #define BLOCK_STATS_POLYGON_MAX_POINTS                    5
@@ -226,7 +224,7 @@ void CDTrace::dtrace_block_vector(int k, const TransformUnit &tu, std::string st
 {
   const CodingStructure& cs = *tu.cs;
 #if BLOCK_STATS_AS_CSV
-  dtrace<false>(k, "BlockStat;%d;%4d;%4d;%2d;%2d;%s;%4d;%4d\n", cs.picture->poc, pu.lx(), pu.ly(), pu.lwidth(), pu.lheight(), stat_type.c_str(), val_x, val_y);
+  dtrace<false>(k, "BlockStat;%d;%4d;%4d;%2d;%2d;%s;%4d;%4d\n", cs.picture->poc, tu.lx(), tu.ly(), tu.lwidth(), tu.lheight(), stat_type.c_str(), val_x, val_y);
 #else
   dtrace<false>(k, "BlockStat: POC %d @(%4d,%4d) [%2dx%2d] %s={%4d,%4d}\n", cs.picture->poc, tu.lx(), tu.ly(), tu.lwidth(), tu.lheight(), stat_type.c_str(), val_x, val_y);
 #endif
@@ -275,95 +273,6 @@ void CDTrace::dtrace_polygon_vector(int k, int poc, const std::vector<Position> 
   dtrace<false>(k, "BlockStat: POC %d @[%s] %s={%4d,%4d}\n", poc, polygonDescription.c_str(), stat_type.c_str(), val_x, val_y);
 }
 
-#if !JVET_Q0806
-void retrieveTriangularMvInfo(const PredictionUnit& pu, MotionInfo& mi0, MotionInfo& mi1)
-{
-  int triangleDir = pu.triangleSplitDir;
-  CMotionBuf mb = pu.getMotionBuf();
-  bool foundMv[2] = { false, false };
-  bool foundBi = false;
-  int32_t idxW  = (int32_t)(floorLog2(pu.lwidth() ) - MIN_CU_LOG2);
-  int32_t idxH  = (int32_t)(floorLog2(pu.lheight()) - MIN_CU_LOG2);
-  for (int32_t y = 0; y < mb.height; y++)
-  {
-    for (int32_t x = 0; x < mb.width; x++)
-    {
-      if (g_triangleMvStorage[triangleDir][idxH][idxW][y][x] == 0 && foundMv[0] == false)
-      {
-        mi0.mv[0]     = mb.at(x, y).mv[0];
-        mi0.mv[1]     = mb.at(x, y).mv[1];
-        mi0.refIdx[0] = mb.at(x, y).refIdx[0];
-        mi0.refIdx[1] = mb.at(x, y).refIdx[1];
-        foundMv[0] = true;
-      }
-      if (g_triangleMvStorage[triangleDir][idxH][idxW][y][x] == 1 && foundMv[1] == false)
-      {
-        mi1.mv[0]     = mb.at(x, y).mv[0];
-        mi1.mv[1]     = mb.at(x, y).mv[1];
-        mi1.refIdx[0] = mb.at(x, y).refIdx[0];
-        mi1.refIdx[1] = mb.at(x, y).refIdx[1];
-        foundMv[1] = true;
-      }
-      if (g_triangleMvStorage[triangleDir][idxH][idxW][y][x] == 2 && foundMv[0] == false && foundMv[1] == false)
-      {
-        mi0.mv[0] = Mv(0, 0);
-        mi0.mv[1] = Mv(0, 0);
-        mi1.mv[0] = Mv(0, 0);
-        mi1.mv[1] = Mv(0, 0);
-        mi0.refIdx[0] = -1;
-        mi0.refIdx[1] = -1;
-        mi1.refIdx[0] = -1;
-        mi1.refIdx[1] = -1;
-        if (mb.at(x, y).interDir == 3)
-        {
-          mi0.mv[0] = mb.at(x, y).mv[0];
-          mi1.mv[0] = mb.at(x, y).mv[1];
-          mi0.refIdx[0] = mb.at(x, y).refIdx[0];
-          mi1.refIdx[0] = mb.at(x, y).refIdx[1];
-          foundBi = true;
-        }
-      }
-      if ((foundMv[0] == true && foundMv[1] == true) || foundBi == true)
-        return;
-    }
-  }
-}
-void retrieveTrianglePolygon(const PredictionUnit& pu, std::vector<Position>& triangle0, std::vector<Position>& triangle1, Position& S, Position& E)
-{
-  TriangleSplit triangleDir = TriangleSplit(pu.triangleSplitDir);
-  Position TL = pu.Y().topLeft();
-  Position TR = pu.Y().topRight();    TR = TR.offset(1, 0);
-  Position BL = pu.Y().bottomLeft();  BL = BL.offset(0, 1);
-  Position BR = pu.Y().bottomRight(); BR = BR.offset(1, 1);
-
-  if (triangleDir == TRIANGLE_DIR_135)
-  {
-    S = Position(0, 0);
-    E = Position(pu.Y().width, pu.Y().height);
-    triangle0.push_back(TL);
-    triangle0.push_back(TR);
-    triangle0.push_back(BR);
-    triangle1.push_back(TL);
-    triangle1.push_back(BL);
-    triangle1.push_back(BR);
-  }
-  else if (triangleDir == TRIANGLE_DIR_45)
-  {
-    S = Position(0,  pu.Y().height);
-    E = Position(pu.Y().width, 0);
-    triangle0.push_back(TL);
-    triangle0.push_back(TR);
-    triangle0.push_back(BL);
-    triangle1.push_back(TR);
-    triangle1.push_back(BL);
-    triangle1.push_back(BR);
-  }
-  else
-  {
-    CHECK(triangleDir != TRIANGLE_DIR_45 && triangleDir != TRIANGLE_DIR_135, "Unknown triangle type");
-  }
-}
-#else
 void retrieveGeoPolygons(const CodingUnit& cu, std::vector<Position> (&geoPartitions)[2], Position (&linePositions)[2])
 {
   // adapted code from interpolation filter to find geo partition polygons like this:
@@ -542,7 +451,6 @@ void storeGeoMergeCtx(MergeCtx geoMergeCtx)
 {
   geoMergeCtxtsOfCurrentCtu.push(geoMergeCtx);
 }
-#endif
 
 void writeBlockStatisticsHeader(const SPS *sps)
 {
@@ -678,11 +586,7 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
               DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu, GetBlockStatisticName(BlockStatistic::MVPIdxL1), pu.mvpIdx[REF_PIC_LIST_1]);
               DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu, GetBlockStatisticName(BlockStatistic::RefIdxL1), pu.refIdx[REF_PIC_LIST_1]);
             }
-#if !JVET_Q0806
-            if (!pu.cu->affine && !pu.cu->triangle)
-#else
             if (!pu.cu->affine && !pu.cu->geoFlag)
-#endif
             {
               if (pu.interDir != 2 /* PRED_L1 */)
               {
@@ -707,29 +611,6 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
                 DTRACE_BLOCK_VECTOR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu, GetBlockStatisticName(BlockStatistic::MVL1), mv.hor, mv.ver);
               }
             }
-#if !JVET_Q0806
-            else if (pu.cu->triangle)
-            {
-              MotionInfo mi[2];
-              std::vector<Position> triangleCorners[2];
-              Position S, E;
-              retrieveTrianglePolygon(pu, triangleCorners[0], triangleCorners[1], S, E);
-              DTRACE_LINE(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::TrianglePartitioning), S.x, S.y, E.x, E.y);
-              retrieveTriangularMvInfo(pu, mi[0], mi[1]);
-              for (int triangleIdx = 0; triangleIdx < 2; triangleIdx++)
-              {
-                for (int refIdx = 0; refIdx < 2; refIdx++)
-                {
-                  mi[triangleIdx].mv[refIdx].hor = mi[triangleIdx].mv[refIdx].hor >= 0 ? (mi[triangleIdx].mv[refIdx].hor + nOffset) >> nShift : -((-mi[triangleIdx].mv[refIdx].hor + nOffset) >> nShift);
-                  mi[triangleIdx].mv[refIdx].ver = mi[triangleIdx].mv[refIdx].ver >= 0 ? (mi[triangleIdx].mv[refIdx].ver + nOffset) >> nShift : -((-mi[triangleIdx].mv[refIdx].ver + nOffset) >> nShift);
-                  if (mi[triangleIdx].refIdx[refIdx] != -1)
-                  {
-                    DTRACE_POLYGON_VECTOR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu.cu->slice->getPOC(), triangleCorners[triangleIdx], GetBlockStatisticName(refIdx==0?BlockStatistic::TriangleMVL0:BlockStatistic::TriangleMVL1), mi[triangleIdx].mv[refIdx].hor, mi[triangleIdx].mv[refIdx].ver);
-                  }
-                }
-              }
-            }
-#endif
             else if (pu.cu->affine)
             {
               if (pu.interDir != 2 /* PRED_L1 */)
@@ -841,7 +722,6 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
             }
           }
 
-#if JVET_Q0806
           if (cu.geoFlag)
           {
             const uint8_t candIdx0 = cu.firstPU->geoMergeIdx0;
@@ -908,7 +788,6 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
               }
             }
           }
-#endif
 
           DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::SMVDFlag), cu.smvdMode);
           DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, cu, GetBlockStatisticName(BlockStatistic::IMVMode), cu.imv);
@@ -968,20 +847,6 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
           DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, tu, GetBlockStatisticName(BlockStatistic::JointCbCr), tu.jointCbCr);
         }
 
-#if !REMOVE_PPS_REXT
-        bool lumaOnly  = ( cu.chromaFormat == CHROMA_400 || !tu.blocks[COMPONENT_Cb].valid() );
-        if( !lumaOnly )
-        {
-          if( TU::hasCrossCompPredInfo( tu, COMPONENT_Cb ) )
-          {
-            DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, tu, GetBlockStatisticName(BlockStatistic::CompAlphaCb), tu.compAlpha[COMPONENT_Cb] );
-          }
-          if( TU::hasCrossCompPredInfo( tu, COMPONENT_Cr ) )
-          {
-            DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_ALL, tu, GetBlockStatisticName(BlockStatistic::CompAlphaCr), tu.compAlpha[COMPONENT_Cr] );
-          }
-        }
-#endif
         if( !(cu.chromaFormat == CHROMA_400 || (cu.isSepTree() && cu.chType == CHANNEL_TYPE_LUMA)) )
         {
           DTRACE_BLOCK_SCALAR_CHROMA(g_trace_ctx, D_BLOCK_STATISTICS_ALL, tu, GetBlockStatisticName(BlockStatistic::Cbf_Cb), tu.cbf[COMPONENT_Cb]);
@@ -993,9 +858,7 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
     }
   }
 
-#if JVET_Q0806
   CHECK(geoMergeCtxtsOfCurrentCtu.size() != 0, "Did not use all pushed back geo merge contexts. Should not be possible!");
-#endif
 }
 
 void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
@@ -1126,11 +989,7 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
               DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, pu, GetBlockStatisticName(BlockStatistic::MVPIdxL1), pu.mvpIdx[REF_PIC_LIST_1]);
               DTRACE_BLOCK_SCALAR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, pu, GetBlockStatisticName(BlockStatistic::RefIdxL1), pu.refIdx[REF_PIC_LIST_1]);
             }
-#if !JVET_Q0806
-            if (!pu.cu->affine && !pu.cu->triangle)
-#else
             if (!pu.cu->affine && !pu.cu->geoFlag)
-#endif
             {
               if (pu.interDir != 2 /* PRED_L1 */)
               {
@@ -1155,29 +1014,6 @@ void writeAllCodedData(const CodingStructure & cs, const UnitArea & ctuArea)
                 DTRACE_BLOCK_VECTOR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, pu, GetBlockStatisticName(BlockStatistic::MVL1), mv.hor, mv.ver);
               }
             }
-#if !JVET_Q0806
-            else if (pu.cu->triangle)
-            {
-              MotionInfo mi[2];
-              std::vector<Position> triangleCorners[2];
-              Position S, E;
-              retrieveTrianglePolygon(pu, triangleCorners[0], triangleCorners[1], S, E);
-              DTRACE_LINE(g_trace_ctx, D_BLOCK_STATISTICS_CODED, cu, GetBlockStatisticName(BlockStatistic::TrianglePartitioning), S.x, S.y, E.x, E.y);
-              retrieveTriangularMvInfo(pu, mi[0], mi[1]);
-              for (int triangleIdx = 0; triangleIdx < 2; triangleIdx++)
-              {
-                for (int refIdx = 0; refIdx < 2; refIdx++)
-                {
-                  mi[triangleIdx].mv[refIdx].hor = mi[triangleIdx].mv[refIdx].hor >= 0 ? (mi[triangleIdx].mv[refIdx].hor + nOffset) >> nShift : -((-mi[triangleIdx].mv[refIdx].hor + nOffset) >> nShift);
-                  mi[triangleIdx].mv[refIdx].ver = mi[triangleIdx].mv[refIdx].ver >= 0 ? (mi[triangleIdx].mv[refIdx].ver + nOffset) >> nShift : -((-mi[triangleIdx].mv[refIdx].ver + nOffset) >> nShift);
-                  if (mi[triangleIdx].refIdx[refIdx] != -1)
-                  {
-                    DTRACE_POLYGON_VECTOR(g_trace_ctx, D_BLOCK_STATISTICS_CODED, pu.cu->slice->getPOC(), triangleCorners[triangleIdx], GetBlockStatisticName(refIdx==0?BlockStatistic::TriangleMVL0:BlockStatistic::TriangleMVL1), mi[triangleIdx].mv[refIdx].hor, mi[triangleIdx].mv[refIdx].ver);
-                  }
-                }
-              }
-            }
-#endif
             else
             {
               if (pu.interDir != 2 /* PRED_L1 */)

@@ -71,9 +71,7 @@ public:
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
   void initSEIAlternativeTransferCharacteristics(SEIAlternativeTransferCharacteristics *sei);
 #endif
-#if JVET_P0190_SCALABLE_NESTING_SEI
   void initSEIScalableNesting(SEIScalableNesting *sei, SEIMessages &nestedSEIs);
-#endif
   // trailing SEIs
   void initDecodedPictureHashSEI(SEIDecodedPictureHash *sei, PelUnitBuf& pic, std::string &rHashString, const BitDepths &bitDepths);
   void initSEIErp(SEIEquirectangularProjection *sei);

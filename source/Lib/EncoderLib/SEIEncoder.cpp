@@ -179,10 +179,25 @@ void SEIEncoder::initSEIBufferingPeriod(SEIBufferingPeriod *bufferingPeriodSEI, 
         break;
     }
   }
+#if JVET_R0094_DPB_TID_OFFSET
+  bufferingPeriodSEI->m_sublayerDpbOutputOffsetsPresentFlag = true;
+  for(int i = 0; i < bufferingPeriodSEI->m_bpMaxSubLayers; i++)
+  {
+    bufferingPeriodSEI->m_dpbOutputTidOffset[i] = m_pcCfg->getNumReorderPics(i) * static_cast<int>(pow(2, static_cast<double>(bufferingPeriodSEI->m_bpMaxSubLayers-1-i)));
+    if(bufferingPeriodSEI->m_dpbOutputTidOffset[i] >= m_pcCfg->getNumReorderPics(bufferingPeriodSEI->m_bpMaxSubLayers-1))
+    {
+      bufferingPeriodSEI->m_dpbOutputTidOffset[i] -= m_pcCfg->getNumReorderPics(bufferingPeriodSEI->m_bpMaxSubLayers-1);
+    }
+    else
+    {
+      bufferingPeriodSEI->m_dpbOutputTidOffset[i] = 0;
+    }
+  }
+#endif
   // A commercial encoder should track the buffer state for all layers and sub-layers
   // to ensure CPB conformance. Such tracking is required for calculating alternative
   // CPB parameters.
-  // Unfortunately VTM does not have such tracking. Thus we cannot encode alternative 
+  // Unfortunately VTM does not have such tracking. Thus we cannot encode alternative
   // CPB parameters here.
   bufferingPeriodSEI->m_altCpbParamsPresentFlag = false;
   bufferingPeriodSEI->m_useAltCpbParamsFlag = false;
@@ -275,7 +290,7 @@ void SEIEncoder::initSEIRegionWisePacking(SEIRegionWisePacking *seiRegionWisePac
   seiRegionWisePacking->m_rwpTopGuardBandHeight.resize(seiRegionWisePacking->m_numPackedRegions);
   seiRegionWisePacking->m_rwpBottomGuardBandHeight.resize(seiRegionWisePacking->m_numPackedRegions);
   seiRegionWisePacking->m_rwpGuardBandNotUsedForPredFlag.resize(seiRegionWisePacking->m_numPackedRegions);
-  seiRegionWisePacking->m_rwpGuardBandType.resize(4*seiRegionWisePacking->m_numPackedRegions); 
+  seiRegionWisePacking->m_rwpGuardBandType.resize(4*seiRegionWisePacking->m_numPackedRegions);
   for( int i=0; i < seiRegionWisePacking->m_numPackedRegions; i++ )
   {
     seiRegionWisePacking->m_rwpTransformType[i]                  = m_pcCfg->getRwpSEIRwpTransformType(i);
@@ -341,14 +356,9 @@ void SEIEncoder::initSEIGcmp(SEIGeneralizedCubemapProjection* seiGeneralizedCube
     seiGeneralizedCubemapProjection->m_gcmpGuardBandFlag                 = m_pcCfg->getGcmpSEIGuardBandFlag();
     if (seiGeneralizedCubemapProjection->m_gcmpGuardBandFlag)
     {
-#if JVET_Q0343_GCMP_GUARD_BAND_TYPE
       seiGeneralizedCubemapProjection->m_gcmpGuardBandType                 = m_pcCfg->getGcmpSEIGuardBandType();
       seiGeneralizedCubemapProjection->m_gcmpGuardBandBoundaryExteriorFlag = m_pcCfg->getGcmpSEIGuardBandBoundaryExteriorFlag();
       seiGeneralizedCubemapProjection->m_gcmpGuardBandSamplesMinus1        = m_pcCfg->getGcmpSEIGuardBandSamplesMinus1();
-#else
-      seiGeneralizedCubemapProjection->m_gcmpGuardBandBoundaryType       = m_pcCfg->getGcmpSEIGuardBandBoundaryType();
-      seiGeneralizedCubemapProjection->m_gcmpGuardBandSamplesMinus1      = m_pcCfg->getGcmpSEIGuardBandSamplesMinus1();
-#endif
     }
   }
 }
@@ -376,19 +386,18 @@ void SEIEncoder::initSEISampleAspectRatioInfo(SEISampleAspectRatioInfo* seiSampl
   }
 }
 
-#if JVET_P0190_SCALABLE_NESTING_SEI
 //! initialize scalable nesting SEI message.
 //! Note: The SEI message structures input into this function will become part of the scalable nesting SEI and will be
 //!       automatically freed, when the nesting SEI is disposed.
-void SEIEncoder::initSEIScalableNesting(SEIScalableNesting *scalableNestingSEI, SEIMessages &nestedSEIs) 
+void SEIEncoder::initSEIScalableNesting(SEIScalableNesting *scalableNestingSEI, SEIMessages &nestedSEIs)
 {
   CHECK(!(m_isInitialized), "Unspecified error");
   CHECK(!(scalableNestingSEI != NULL), "Unspecified error");
   scalableNestingSEI->m_nestingOlsFlag = 1;         // by If the nested SEI messages are picture buffering SEI messages, picture timing SEI messages or sub-picture timing SEI messages, nesting_ols_flag shall be equal to 1, by default case
-  scalableNestingSEI->m_nestingNumOlssMinus1 =  1;  // by default the nesting scalable SEI message applies to two OLSs. 
+  scalableNestingSEI->m_nestingNumOlssMinus1 =  1;  // by default the nesting scalable SEI message applies to two OLSs.
   for (int i = 0; i <= scalableNestingSEI->m_nestingNumOlssMinus1; i++)
   {
-    scalableNestingSEI->m_nestingOlsIdxDeltaMinus1[i] = 0; // first ols to which nesting SEI applies is  
+    scalableNestingSEI->m_nestingOlsIdxDeltaMinus1[i] = 0; // first ols to which nesting SEI applies is
   }
   for (int i = 0; i <= scalableNestingSEI->m_nestingNumOlssMinus1; i++)
   {
@@ -412,7 +421,6 @@ void SEIEncoder::initSEIScalableNesting(SEIScalableNesting *scalableNestingSEI, 
     scalableNestingSEI->m_nestedSEIs.push_back((*it));
   }
 }
-#endif
 
 
 //! calculate hashes for entire reconstructed picture
@@ -621,7 +629,6 @@ void SEIEncoder::initSEIContentColourVolume(SEIContentColourVolume *seiContentCo
 }
 void SEIEncoder::initSEISubpictureLevelInfo(SEISubpicureLevelInfo *sei, const SPS *sps)
 {
-#if JVET_SUBPIC_LEVEL_CFG
   const EncCfgParam::CfgSEISubpictureLevel &cfgSubPicLevel = m_pcCfg->getSubpicureLevelInfoSEICfg();
 
   sei->m_numRefLevels = (int) cfgSubPicLevel.m_refLevels.size();
@@ -641,23 +648,6 @@ void SEIEncoder::initSEISubpictureLevelInfo(SEISubpicureLevelInfo *sei, const SP
       }
     }
   }
-#else
-  // subpicture level information should be specified via config file
-  // unfortunately the implementation of subpictures is still not available
-  // TODO: implement config file parameters and intialization
-  fprintf(stderr, "SEISubpicureLevelInfo depends on subpictures! Initializing to dummy values!\n");
-
-#if !JVET_Q0630_SUBPIC_LEVEL
-  sei->m_sliSeqParameterSetId = sps->getSPSId();
-#else
-  sei->m_numSubpics = sps->getNumSubPics();
-#endif
-  sei->m_numRefLevels = 2;
-  sei->m_refLevelIdc.resize(2);
-  sei->m_refLevelIdc[0] = Level::LEVEL4;
-  sei->m_refLevelIdc[1] = Level::LEVEL8_5;
-  sei->m_explicitFractionPresentFlag = false;
-#endif
 }
 
 

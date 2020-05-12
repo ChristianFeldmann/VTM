@@ -63,9 +63,7 @@ private:
   DecCu*          m_pcCuDecoder;
 
   Ctx             m_entropyCodingSyncContextState;      ///< context storage for state of contexts at the wavefront/WPP/entropy-coding-sync second CTU of tile-row
-#if JVET_Q0501_PALETTE_WPP_INIT_ABOVECTU
   PLTBuf          m_palettePredictorSyncState;      /// palette predictor storage at wavefront/WPP
-#endif
 
 public:
   DecSlice();

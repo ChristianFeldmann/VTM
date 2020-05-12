@@ -319,6 +319,11 @@ void EncRCGOP::create( EncRCSeq* encRCSeq, int numPic )
 {
   destroy();
   int targetBits = xEstGOPTargetBits( encRCSeq, numPic );
+  int bitdepth_luma_scale =
+    2 * (encRCSeq->getbitDepth() - 8
+      - DISTORTION_PRECISION_ADJUSTMENT(encRCSeq->getbitDepth()));
+  m_minEstLambda = 0.1;
+  m_maxEstLambda = 10000.0 * pow(2.0, bitdepth_luma_scale);
 
   if ( encRCSeq->getAdaptiveBits() > 0 && encRCSeq->getLastLambda() > 0.1 )
   {
@@ -328,7 +333,7 @@ void EncRCGOP::create( EncRCSeq* encRCSeq, int numPic )
     double* equaCoeffA = new double[encRCSeq->getGOPSize()];
     double* equaCoeffB = new double[encRCSeq->getGOPSize()];
 
-    if ( encRCSeq->getAdaptiveBits() == 1 )   // for GOP size =4, low delay case
+    if ( encRCSeq->getAdaptiveBits() == 1 && encRCSeq->getGOPSize() == 4)   // for GOP size =4, low delay case
     {
       if ( encRCSeq->getLastLambda() < 120.0 )
       {
@@ -343,6 +348,31 @@ void EncRCGOP::create( EncRCSeq* encRCSeq, int numPic )
         lambdaRatio[1] = 4.0;
         lambdaRatio[2] = 5.0;
         lambdaRatio[3] = 1.0;
+      }
+    }
+    else if (encRCSeq->getAdaptiveBits() == 1 && encRCSeq->getGOPSize() == 8) // for GOP size =8, low delay case
+    {
+      if (encRCSeq->getLastLambda() < 120.0)
+      {
+        lambdaRatio[1] = 0.725 * log(encRCSeq->getLastLambda()) + 0.5793;
+        lambdaRatio[3] = 0.725 * log(encRCSeq->getLastLambda()) + 0.5793;
+        lambdaRatio[5] = 0.725 * log(encRCSeq->getLastLambda()) + 0.5793;
+        lambdaRatio[0] = 1.3 * lambdaRatio[1];
+        lambdaRatio[2] = 1.3 * lambdaRatio[1];
+        lambdaRatio[4] = 1.3 * lambdaRatio[1];
+        lambdaRatio[6] = 1.3 * lambdaRatio[1];
+        lambdaRatio[7] = 1.0;
+      }
+      else
+      {
+        lambdaRatio[0] = 5.0;
+        lambdaRatio[1] = 4.0;
+        lambdaRatio[2] = 5.0;
+        lambdaRatio[3] = 4.0;
+        lambdaRatio[4] = 5.0;
+        lambdaRatio[5] = 4.0;
+        lambdaRatio[6] = 5.0;
+        lambdaRatio[7] = 1.0;
       }
     }
     else if ( encRCSeq->getAdaptiveBits() == 2 )  // for GOP size = 8, random access case
@@ -449,6 +479,10 @@ void EncRCGOP::create( EncRCSeq* encRCSeq, int numPic )
         lambdaRatio[15] = lambdaLev5 / lambdaLev1;
       }
     }
+    else
+    {
+      msg( WARNING, "Warning: Current rate control does not support this coding configuration." );
+    }
 
     xCalEquaCoeff( encRCSeq, lambdaRatio, equaCoeffA, equaCoeffB, encRCSeq->getGOPSize() );
     basicLambda = xSolveEqua(encRCSeq, targetBpp, equaCoeffA, equaCoeffB, encRCSeq->getGOPSize());
@@ -478,11 +512,7 @@ void EncRCGOP::create( EncRCSeq* encRCSeq, int numPic )
   m_targetBits   = targetBits;
   m_picLeft      = m_numPic;
   m_bitsLeft     = m_targetBits;
-  int bitdepth_luma_scale =
-    2 * (encRCSeq->getbitDepth() - 8
-      - DISTORTION_PRECISION_ADJUSTMENT(encRCSeq->getbitDepth()));
-  m_minEstLambda = 0.1;
-  m_maxEstLambda = 10000.0 * pow(2.0, bitdepth_luma_scale);
+  
 }
 
 void EncRCGOP::xCalEquaCoeff( EncRCSeq* encRCSeq, double* lambdaRatio, double* equaCoeffA, double* equaCoeffB, int GOPSize )
@@ -1351,7 +1381,7 @@ double EncRCPic::clipRcAlpha(const int bitdepth, const double alpha)
   int bitdepth_luma_scale =
     2
     * (bitdepth - 8
-      - DISTORTION_PRECISION_ADJUSTMENT(m_encRCSeq->getbitDepth()));
+      - DISTORTION_PRECISION_ADJUSTMENT(bitdepth));
   return Clip3(g_RCAlphaMinValue, g_RCAlphaMaxValue * pow(2.0, bitdepth_luma_scale), alpha);
 }
 
@@ -1566,6 +1596,58 @@ void RateCtrl::init(int totalFrames, int targetBitrate, int frameRate, int GOPSi
         adaptiveBit = 1;
       }
     }
+    else if (GOPSize == 8 && isLowdelay)
+    {
+      if (bpp > 0.2)
+      {
+        bitsRatio[0] = 2;
+        bitsRatio[1] = 3;
+        bitsRatio[2] = 2;
+        bitsRatio[3] = 3;
+        bitsRatio[4] = 2;
+        bitsRatio[5] = 3;
+        bitsRatio[6] = 2;
+        bitsRatio[7] = 6;
+      }
+      else if (bpp > 0.1)
+      {
+        bitsRatio[0] = 2;
+        bitsRatio[1] = 3;
+        bitsRatio[2] = 2;
+        bitsRatio[3] = 3;
+        bitsRatio[4] = 2;
+        bitsRatio[5] = 3;
+        bitsRatio[6] = 2;
+        bitsRatio[7] = 10;
+      }
+      else if (bpp > 0.05)
+      {
+        bitsRatio[0] = 2;
+        bitsRatio[1] = 3;
+        bitsRatio[2] = 2;
+        bitsRatio[3] = 3;
+        bitsRatio[4] = 2;
+        bitsRatio[5] = 3;
+        bitsRatio[6] = 2;
+        bitsRatio[7] = 12;
+      }
+      else
+      {
+        bitsRatio[0] = 2;
+        bitsRatio[1] = 3;
+        bitsRatio[2] = 2;
+        bitsRatio[3] = 3;
+        bitsRatio[4] = 2;
+        bitsRatio[5] = 3;
+        bitsRatio[6] = 2;
+        bitsRatio[7] = 14;
+      }
+
+      if (keepHierBits == 2)
+      {
+        adaptiveBit = 1;
+      }
+    }
     else if ( GOPSize == 8 && !isLowdelay )
     {
       if ( bpp > 0.2 )
@@ -1727,6 +1809,17 @@ void RateCtrl::init(int totalFrames, int targetBitrate, int frameRate, int GOPSi
       GOPID2Level[2] = 3;
       GOPID2Level[3] = 1;
     }
+    if (GOPSize == 8 && isLowdelay)
+    {
+      GOPID2Level[0] = 3;
+      GOPID2Level[1] = 2;
+      GOPID2Level[2] = 3;
+      GOPID2Level[3] = 2;
+      GOPID2Level[4] = 3;
+      GOPID2Level[5] = 2;
+      GOPID2Level[6] = 3;
+      GOPID2Level[7] = 1;
+    }
     else if ( GOPSize == 8 && !isLowdelay )
     {
       GOPID2Level[0] = 1;
@@ -1843,7 +1936,6 @@ int  RateCtrl::updateCpbState(int actualBits)
   return cpbState;
 }
 
-#if JVET_P0118_HRD_ASPECTS
 void RateCtrl::initHrdParam(const GeneralHrdParams* generalHrd, const OlsHrdParams* olsHrd, int iFrameRate, double fInitialCpbFullness)
 {
   m_CpbSaturationEnabled = true;
@@ -1852,16 +1944,6 @@ void RateCtrl::initHrdParam(const GeneralHrdParams* generalHrd, const OlsHrdPara
   m_bufferingRate = (uint32_t)(((olsHrd->getBitRateValueMinus1(0, 0) + 1) << (6 + generalHrd->getBitRateScale())) / iFrameRate);
   msg(NOTICE, "\nHRD - [Initial CPB state %6d] [CPB Size %6d] [Buffering Rate %6d]\n", m_cpbState, m_cpbSize, m_bufferingRate);
 }
-#else
-void RateCtrl::initHrdParam(const HRDParameters* pcHrd, int iFrameRate, double fInitialCpbFullness)
-{
-  m_CpbSaturationEnabled = true;
-  m_cpbSize = (pcHrd->getCpbSizeValueMinus1(0, 0, 0) + 1) << (4 + pcHrd->getCpbSizeScale());
-  m_cpbState = (uint32_t)(m_cpbSize*fInitialCpbFullness);
-  m_bufferingRate = (uint32_t)(((pcHrd->getBitRateValueMinus1(0, 0, 0) + 1) << (6 + pcHrd->getBitRateScale())) / iFrameRate);
-  msg( NOTICE, "\nHRD - [Initial CPB state %6d] [CPB Size %6d] [Buffering Rate %6d]\n", m_cpbState, m_cpbSize, m_bufferingRate);
-}
-#endif
 #endif
 
 void RateCtrl::destroyRCGOP()

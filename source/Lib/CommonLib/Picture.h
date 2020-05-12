@@ -148,14 +148,17 @@ struct Picture : public UnitArea
   void finalInit( const VPS* vps, const SPS& sps, const PPS& pps, PicHeader *picHeader, APS** alfApss, APS* lmcsAps, APS* scalingListAps );
 
   int  getPOC()                               const { return poc; }
-#if JVET_P0978_RPL_RESTRICTIONS
   int  getDecodingOrderNumber()               const { return m_decodingOrderNumber; }
   void setDecodingOrderNumber(const int val)        { m_decodingOrderNumber = val;  }
   NalUnitType getPictureType()                const { return m_pictureType;         }
   void setPictureType(const NalUnitType val)        { m_pictureType = val;          }
-#endif
   void setBorderExtension( bool bFlag)              { m_bIsBorderExtended = bFlag;}
   Pel* getOrigin( const PictureType &type, const ComponentID compID ) const;
+
+#if JVET_R0110_MIXED_LOSSLESS
+  void setLossyQPValue(int i)                 { m_lossyQP = i; }
+  int getLossyQPValue()                       const { return m_lossyQP; }
+#endif
 
   int           getSpliceIdx(uint32_t idx) const { return m_spliceIdx[idx]; }
   void          setSpliceIdx(uint32_t idx, int poc) { m_spliceIdx[idx] = poc; }
@@ -167,8 +170,8 @@ struct Picture : public UnitArea
                                 const int bitDepth, const bool useLumaFilter, const bool downsampling,
                                 const bool horCollocatedPositionFlag, const bool verCollocatedPositionFlag );
 
-  static void   rescalePicture( const std::pair<int, int> scalingRatio, 
-                                const CPelUnitBuf& beforeScaling, const Window& scalingWindowBefore, 
+  static void   rescalePicture( const std::pair<int, int> scalingRatio,
+                                const CPelUnitBuf& beforeScaling, const Window& scalingWindowBefore,
                                 const PelUnitBuf& afterScaling, const Window& scalingWindowAfter,
                                 const ChromaFormat chromaFormatIDC, const BitDepths& bitDepths, const bool useLumaFilter, const bool downsampling,
                                 const bool horCollocatedChromaFlag, const bool verCollocatedChromaFlag );
@@ -176,13 +179,10 @@ struct Picture : public UnitArea
 private:
   Window        m_conformanceWindow;
   Window        m_scalingWindow;
-#if JVET_P0978_RPL_RESTRICTIONS
   int           m_decodingOrderNumber;
   NalUnitType   m_pictureType;
-#endif
 
 public:
-#if JVET_O1143_MV_ACROSS_SUBPIC_BOUNDARY  
   bool m_isSubPicBorderSaved;
 
   PelStorage m_bufSubPicAbove;
@@ -196,7 +196,6 @@ public:
 
   bool getSubPicSaved()          { return m_isSubPicBorderSaved; }
   void setSubPicSaved(bool bVal) { m_isSubPicBorderSaved = bVal; }
-#endif
   bool m_bIsBorderExtended;
   bool referenced;
   bool reconstructed;
@@ -217,8 +216,14 @@ public:
 
   int* m_spliceIdx;
   int  m_ctuNums;
-
+#if JVET_R0110_MIXED_LOSSLESS
+  int m_lossyQP;
+#endif
   bool interLayerRefPicFlag;
+
+#if JVET_R0276_REORDERED_SUBPICS
+  std::vector<int> subPicIDs;
+#endif
 
 #if ENABLE_SPLIT_PARALLELISM
   PelStorage m_bufs[PARL_SPLIT_MAX_NUM_JOBS][NUM_PIC_TYPES];
@@ -242,14 +247,12 @@ public:
   const Window&      getConformanceWindow() const                                    { return  m_conformanceWindow; }
   Window&            getScalingWindow()                                              { return  m_scalingWindow; }
   const Window&      getScalingWindow()                                        const { return  m_scalingWindow; }
-#if JVET_Q0487_SCALING_WINDOW_ISSUES
   bool               isRefScaled( const PPS* pps ) const                             { return  unscaledPic->getPicWidthInLumaSamples()    != pps->getPicWidthInLumaSamples()                ||
                                                                                                unscaledPic->getPicHeightInLumaSamples()   != pps->getPicHeightInLumaSamples()               ||
                                                                                                getScalingWindow().getWindowLeftOffset()   != pps->getScalingWindow().getWindowLeftOffset()  ||
                                                                                                getScalingWindow().getWindowRightOffset()  != pps->getScalingWindow().getWindowRightOffset() ||
                                                                                                getScalingWindow().getWindowTopOffset()    != pps->getScalingWindow().getWindowTopOffset()   ||
                                                                                                getScalingWindow().getWindowBottomOffset() != pps->getScalingWindow().getWindowBottomOffset(); }
-#endif
 
   void         allocateNewSlice();
   Slice        *swapSliceObject(Slice * p, uint32_t i);
@@ -324,10 +327,8 @@ public:
 
 int calcAndPrintHashStatus(const CPelUnitBuf& pic, const class SEIDecodedPictureHash* pictureHashSEI, const BitDepths &bitDepths, const MsgLevel msgl);
 
-#if JVET_P2008_OUTPUT_LOG
 uint32_t calcMD5(const CPelUnitBuf& pic, PictureHash &digest, const BitDepths &bitDepths);
 std::string hashToString(const PictureHash &digest, int numChar);
-#endif // JVET_P2008_OUTPUT_LOG
 
 typedef std::list<Picture*> PicList;
 

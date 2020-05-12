@@ -98,24 +98,6 @@ void xCalcHistogram(const Pel  *pPel,
   }
 }
 
-#if !JVET_Q0447_WP_PARAM_ESTIM
-static
-Distortion xCalcHistDistortion (const std::vector<int> &histogram0,
-                                const std::vector<int> &histogram1)
-{
-  Distortion distortion = 0;
-  CHECK(histogram0.size()!=histogram1.size(), "Different histogram sizes");
-  const int numElements=int(histogram0.size());
-
-  // Scan histograms to compute histogram distortion
-  for (int i = 0; i <= numElements; i++)
-  {
-    distortion += (Distortion)(abs(histogram0[i] - histogram1[i]));
-  }
-
-  return distortion;
-}
-#endif
 
 static
 void xScaleHistogram(const std::vector<int> &histogramInput,
@@ -146,7 +128,6 @@ void xScaleHistogram(const std::vector<int> &histogramInput,
   }
 }
 
-#if JVET_Q0447_WP_PARAM_ESTIM
 static
 Distortion xCalcHistCumulDistortion(const std::vector<int>& histogram0,
   const std::vector<int>& histogram1)
@@ -166,7 +147,6 @@ Distortion xCalcHistCumulDistortion(const std::vector<int>& histogram0,
 
   return distortion;
 }
-#endif
 
 static
 Distortion xSearchHistogram(const std::vector<int> &histogramSource,
@@ -202,11 +182,7 @@ Distortion xSearchHistogram(const std::vector<int> &histogramSource,
                searchOffset++)
       {
         xScaleHistogram(histogramRef, outputHistogram, bitDepth, log2Denom, searchWeight, searchOffset, bHighPrecision);
-#if JVET_Q0447_WP_PARAM_ESTIM
         const Distortion distortion = xCalcHistCumulDistortion(histogramSource, outputHistogram);
-#else
-        const Distortion distortion = xCalcHistDistortion(histogramSource, outputHistogram);
-#endif
 
         if (distortion < minDistortion)
         {
@@ -225,11 +201,7 @@ Distortion xSearchHistogram(const std::vector<int> &histogramSource,
         const int deltaOffset   = Clip3( -4*maxOffset, 4*maxOffset-1, (searchOffset - pred) ); // signed 10bit (if !bHighPrecision)
         const int clippedOffset = Clip3( -1*maxOffset, 1*maxOffset-1, (deltaOffset  + pred) ); // signed 8bit  (if !bHighPrecision)
         xScaleHistogram(histogramRef, outputHistogram, bitDepth, log2Denom, searchWeight, clippedOffset, bHighPrecision);
-#if JVET_Q0447_WP_PARAM_ESTIM
         const Distortion distortion = xCalcHistCumulDistortion(histogramSource, outputHistogram);
-#else
-        const Distortion distortion = xCalcHistDistortion(histogramSource, outputHistogram);
-#endif
 
         if (distortion < minDistortion)
         {
@@ -542,7 +514,6 @@ bool WeightPredAnalysis::xSelectWPHistExtClip(Slice *const slice, const int log2
               int          offsetDef  = 0;
 
         // calculate SAD costs with/without wp for luma
-#if JVET_Q0447_WP_PARAM_ESTIM
               std::vector<int> histogramOrg;
               std::vector<int> histogramRef;
               uint64_t SADnoWP = std::numeric_limits<uint64_t>::max();
@@ -559,12 +530,8 @@ bool WeightPredAnalysis::xSelectWPHistExtClip(Slice *const slice, const int log2
               {
                 SADnoWP = (uint64_t)xCalcSADvalueWPOptionalClip(bitDepth, pOrg, pRef, width, height, orgStride, refStride, log2Denom, defaultWeight, 0, useHighPrecision, bClipInitialSADWP);
               }
-#else
-        const int64_t SADnoWP = xCalcSADvalueWPOptionalClip(bitDepth, pOrg, pRef, width, height, orgStride, refStride, log2Denom, defaultWeight, 0, useHighPrecision, bClipInitialSADWP);
-#endif
         if (SADnoWP > 0)
         {
-#if JVET_Q0447_WP_PARAM_ESTIM
           uint64_t SADWP = std::numeric_limits<uint64_t>::max();
           if (bUseHistogram && compID == COMPONENT_Y)
           {
@@ -576,31 +543,18 @@ bool WeightPredAnalysis::xSelectWPHistExtClip(Slice *const slice, const int log2
           {
             SADWP = (uint64_t)xCalcSADvalueWPOptionalClip(bitDepth, pOrg, pRef, width, height, orgStride, refStride, log2Denom, weight, offset, useHighPrecision, bClipInitialSADWP);
           }
-#else
-          const int64_t SADWP   = xCalcSADvalueWPOptionalClip(bitDepth, pOrg, pRef, width, height, orgStride, refStride, log2Denom, weight,   offset, useHighPrecision, bClipInitialSADWP);
-#endif
           const double dRatioSAD = (double)SADWP / (double)SADnoWP;
           double dRatioSr0SAD = std::numeric_limits<double>::max();
           double dRatioSrSAD  = std::numeric_limits<double>::max();
 
           if (bUseHistogram)
           {
-#if !JVET_Q0447_WP_PARAM_ESTIM
-            std::vector<int> histogramOrg;// = pPic->getHistogram(compID);
-            std::vector<int> histogramRef;// = slice->getRefPic(eRefPicList, refIdxTemp)->getPicYuvRec()->getHistogram(compID);
-#endif
             std::vector<int> searchedHistogram;
 
-#if !JVET_Q0447_WP_PARAM_ESTIM
-            // Compute histograms
-            xCalcHistogram(pOrg, histogramOrg, width, height, orgStride, 1 << bitDepth);
-            xCalcHistogram(pRef, histogramRef, width, height, refStride, 1 << bitDepth);
-#endif
 
             // Do a histogram search around DC WP parameters; resulting distortion and 'searchedHistogram' is discarded
             xSearchHistogram(histogramOrg, histogramRef, searchedHistogram, bitDepth, log2Denom, weight, offset, useHighPrecision, compID);
             // calculate updated WP SAD
-#if JVET_Q0447_WP_PARAM_ESTIM
             uint64_t SADSrWP = std::numeric_limits<uint64_t>::max();
             if (bUseHistogram && compID == COMPONENT_Y)
             {
@@ -612,9 +566,6 @@ bool WeightPredAnalysis::xSelectWPHistExtClip(Slice *const slice, const int log2
             {
               SADSrWP = (uint64_t)xCalcSADvalueWP(bitDepth, pOrg, pRef, width, height, orgStride, refStride, log2Denom, weight, offset, useHighPrecision);
             }
-#else
-            const int64_t SADSrWP = xCalcSADvalueWP(bitDepth, pOrg, pRef, width, height, orgStride, refStride, log2Denom, weight, offset, useHighPrecision);
-#endif
             dRatioSrSAD  = (double)SADSrWP  / (double)SADnoWP;
 
             if (bDoEnhancement)
@@ -622,7 +573,6 @@ bool WeightPredAnalysis::xSelectWPHistExtClip(Slice *const slice, const int log2
               // Do the same around the default ones; resulting distortion and 'searchedHistogram' is discarded
               xSearchHistogram(histogramOrg, histogramRef, searchedHistogram, bitDepth, log2Denom, weightDef, offsetDef, useHighPrecision, compID);
               // calculate updated WP SAD
-#if JVET_Q0447_WP_PARAM_ESTIM
               uint64_t SADSr0WP = std::numeric_limits<uint64_t>::max();
               if (bUseHistogram && compID == COMPONENT_Y)
               {
@@ -634,9 +584,6 @@ bool WeightPredAnalysis::xSelectWPHistExtClip(Slice *const slice, const int log2
               {
                 SADSr0WP = (uint64_t)xCalcSADvalueWP(bitDepth, pOrg, pRef, width, height, orgStride, refStride, log2Denom, weightDef, offsetDef, useHighPrecision);
               }
-#else
-              const int64_t SADSr0WP = xCalcSADvalueWP(bitDepth, pOrg, pRef, width, height, orgStride, refStride, log2Denom, weightDef, offsetDef, useHighPrecision);
-#endif
               dRatioSr0SAD = (double)SADSr0WP / (double)SADnoWP;
             }
           }

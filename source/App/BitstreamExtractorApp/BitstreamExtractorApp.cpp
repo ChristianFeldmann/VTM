@@ -46,9 +46,11 @@
 #include "EncoderLib/AnnexBwrite.h"
 
 BitstreamExtractorApp::BitstreamExtractorApp()
-#if JVET_P0118_OLS_EXTRACTION
 :m_vpsId(-1)
+#if JVET_Q0394_TIMING_SEI
+, m_removeTimingSEI (false)
 #endif
+
 {
 }
 
@@ -79,7 +81,6 @@ void BitstreamExtractorApp::xPrintVPSInfo (VPS *vps)
   }
 }
 
-#if JVET_Q0397_SUB_PIC_EXTRACT
 void BitstreamExtractorApp::xPrintSubPicInfo (PPS *pps)
 {
   msg (VERBOSE, "Subpic Info: \n");
@@ -116,7 +117,7 @@ bool BitstreamExtractorApp::xCheckSliceSubpicture(InputNALUnit &nalu, int target
   slice.setTLayer(nalu.m_temporalId);
 
   m_hlSynaxReader.parseSliceHeader(&slice, &m_picHeader, &m_parameterSetManager, m_prevTid0Poc);
-  
+
   PPS *pps = m_parameterSetManager.getPPS(m_picHeader.getPPSId());
   CHECK (nullptr==pps, "referenced PPS not found");
   SPS *sps = m_parameterSetManager.getSPS(pps->getSPSId());
@@ -132,7 +133,7 @@ bool BitstreamExtractorApp::xCheckSliceSubpicture(InputNALUnit &nalu, int target
   {
     THROW ("Subpicture signalling disbled, cannot extract.");
   }
-    
+
   return true;
 }
 
@@ -182,7 +183,7 @@ void BitstreamExtractorApp::xRewritePPS (PPS &targetPPS, const PPS &sourcePPS, S
     }
   }
   numTileCols=(int)tileColBd.size() - 1;
-  CHECK (numTileCols < 1, "After extraction there should be at least one tile horizonally.")
+  CHECK (numTileCols < 1, "After extraction there should be at least one tile horizonally.");
   tileColWidth.resize(numTileCols);
   for (int i=0; i<numTileCols; i++)
   {
@@ -201,7 +202,34 @@ void BitstreamExtractorApp::xRewritePPS (PPS &targetPPS, const PPS &sourcePPS, S
     }
   }
   numTileRows=(int)tileRowBd.size() - 1;
-  CHECK (numTileRows < 1, "After extraction there should be at least one tile vertically.")
+  // if subpicture was part of a tile, top and/or bottom borders need to be added
+  // note: this can only happen with vertical slice splits of a tile
+  if (numTileRows < 1 )
+  {
+    if (tileRowBd.size()==0)
+    {
+      tileRowBd.push_back(0);
+      tileRowBd.push_back(subPic.getSubPicHeightInCTUs());
+      numTileRows+=2;
+    }
+    else
+    {
+      if (tileRowBd[0] == 0)
+      {
+        // top border exists, add bottom
+        tileRowBd.push_back(subPic.getSubPicHeightInCTUs());
+        numTileRows++;
+      }
+      else
+      {
+        // bottom border exists, add top
+        const int row1 = tileRowBd[0];
+        tileRowBd[0] = 0;
+        tileRowBd.push_back(row1);
+        numTileRows++;
+      }
+    }
+  }
   tileRowHeight.resize(numTileRows);
   for (int i=0; i<numTileRows; i++)
   {
@@ -255,7 +283,6 @@ void BitstreamExtractorApp::xRewritePPS (PPS &targetPPS, const PPS &sourcePPS, S
 
 }
 
-#endif
 
 void BitstreamExtractorApp::xWriteVPS(VPS *vps, std::ostream& out, int layerId, int temporalId)
 {
@@ -384,9 +411,7 @@ uint32_t BitstreamExtractorApp::decode()
         // get VPS back
         vps = m_parameterSetManager.getVPS(vpsId);
         xPrintVPSInfo(vps);
-#if JVET_P0118_OLS_EXTRACTION
         m_vpsId = vps->getVPSId();
-#endif
         // example: just write the parsed VPS back to the stream
         // *** add modifications here ***
         // only write, if not dropped earlier
@@ -397,7 +422,6 @@ uint32_t BitstreamExtractorApp::decode()
         }
       }
 
-#if JVET_P0118_OLS_EXTRACTION
       VPS *vps = nullptr;
       if (m_targetOlsIdx >= 0)
       {
@@ -420,9 +444,11 @@ uint32_t BitstreamExtractorApp::decode()
           std::vector<int> LayerIdInOls = vps->getLayerIdsInOls(m_targetOlsIdx);
           bool isIncludedInTargetOls = std::find(LayerIdInOls.begin(), LayerIdInOls.end(), nalu.m_nuhLayerId) != LayerIdInOls.end();
           writeInpuNalUnitToStream &= (isSpecialNalTypes || isIncludedInTargetOls);
+#if JVET_Q0394_TIMING_SEI
+          m_removeTimingSEI = !vps->getGeneralHrdParameters()->getGeneralSamePicTimingInAllOlsFlag();
+#endif
         }
       }
-#endif
       if( nalu.m_nalUnitType == NAL_UNIT_SPS )
       {
         SPS* sps = new SPS();
@@ -439,7 +465,6 @@ uint32_t BitstreamExtractorApp::decode()
         // *** add modifications here ***
         // only write, if not dropped earlier
         // rewrite the SPS
-#if JVET_Q0397_SUB_PIC_EXTRACT
         if (m_subPicId >= 0)
         {
           // we generally don't write SPS to the bitstream unless referred to by PPS
@@ -447,7 +472,6 @@ uint32_t BitstreamExtractorApp::decode()
           xSetSPSUpdated(sps->getSPSId());
           writeInpuNalUnitToStream = false;
         }
-#endif
         if (writeInpuNalUnitToStream)
         {
           xWriteSPS(sps, bitstreamFileOut, nalu.m_nuhLayerId, nalu.m_temporalId);
@@ -467,7 +491,6 @@ uint32_t BitstreamExtractorApp::decode()
         pps = m_parameterSetManager.getPPS(ppsId);
         msg (VERBOSE, "PPS Info: PPS ID = %d\n", pps->getPPSId());
 
-#if JVET_Q0397_SUB_PIC_EXTRACT
         SPS *sps = m_parameterSetManager.getSPS(pps->getSPSId());
         if ( nullptr == sps)
         {
@@ -481,7 +504,7 @@ uint32_t BitstreamExtractorApp::decode()
           {
             SubPic subPic;
             bool found = false;
-            
+
             for (int i=0; i< pps->getNumSubPics() && !found; i++)
             {
               subPic = pps->getSubPic(i);
@@ -509,7 +532,6 @@ uint32_t BitstreamExtractorApp::decode()
             writeInpuNalUnitToStream = false;
           }
         }
-#endif
 
         // example: just write the parsed PPS back to the stream
         // *** add modifications here ***
@@ -520,7 +542,6 @@ uint32_t BitstreamExtractorApp::decode()
           writeInpuNalUnitToStream = false;
         }
       }
-#if JVET_Q0397_SUB_PIC_EXTRACT
       // when re-using code for slice header parsing, we need to store APSs
       if( ( nalu.m_nalUnitType == NAL_UNIT_PREFIX_APS ) || ( nalu.m_nalUnitType == NAL_UNIT_SUFFIX_APS ))
       {
@@ -539,8 +560,6 @@ uint32_t BitstreamExtractorApp::decode()
       {
         xReadPicHeader(nalu);
       }
-#endif
-#if JVET_P0118_OLS_EXTRACTION
       if (m_targetOlsIdx>=0)
       {
         if (nalu.m_nalUnitType == NAL_UNIT_PREFIX_SEI)
@@ -570,7 +589,11 @@ uint32_t BitstreamExtractorApp::decode()
               }
             }
             // remove unqualified timing related SEI
+#if JVET_Q0394_TIMING_SEI
+            if (sei->payloadType() == SEI::BUFFERING_PERIOD || (m_removeTimingSEI && sei->payloadType() == SEI::PICTURE_TIMING ) || sei->payloadType() == SEI::DECODING_UNIT_INFO)
+#else
             if (sei->payloadType() == SEI::BUFFERING_PERIOD || sei->payloadType() == SEI::PICTURE_TIMING || sei->payloadType() == SEI::DECODING_UNIT_INFO)
+#endif
             {
               bool targetOlsIdxGreaterThanZero = m_targetOlsIdx > 0;
               writeInpuNalUnitToStream &= !targetOlsIdxGreaterThanZero;
@@ -582,8 +605,6 @@ uint32_t BitstreamExtractorApp::decode()
           delete vps;
         }
       }
-#endif
-#if JVET_Q0397_SUB_PIC_EXTRACT
       if (m_subPicId>=0)
       {
         if ( nalu.isSlice() )
@@ -593,7 +614,6 @@ uint32_t BitstreamExtractorApp::decode()
         }
 
       }
-#endif
       unitCnt++;
 
       if( writeInpuNalUnitToStream )

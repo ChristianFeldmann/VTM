@@ -136,7 +136,6 @@ const TFilterCoeff InterpolationFilter::m_lumaFilterRPR2[LUMA_INTERPOLATION_FILT
   { -2, -4,  5, 21, 29, 19,  0, -4 }
 };
 
-#if JVET_Q0517_RPR_AFFINE_DS
 // 1.5x
 const TFilterCoeff InterpolationFilter::m_affineLumaFilterRPR1[LUMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS][NTAPS_LUMA] =
 {
@@ -178,7 +177,6 @@ const TFilterCoeff InterpolationFilter::m_affineLumaFilterRPR2[LUMA_INTERPOLATIO
   {  0, -6,  6, 22, 29, 18, -5,  0 },
   {  0, -6,  5, 21, 29, 19, -4,  0 }
 };
-#endif
 
 const TFilterCoeff InterpolationFilter::m_lumaAltHpelIFilter[NTAPS_LUMA] = {  0, 3, 9, 20, 20, 9, 3, 0 };
 const TFilterCoeff InterpolationFilter::m_chromaFilter[CHROMA_INTERPOLATION_FILTER_SUB_SAMPLE_POSITIONS][NTAPS_CHROMA] =
@@ -371,11 +369,7 @@ InterpolationFilter::InterpolationFilter()
   m_filterCopy[1][0]   = filterCopy<true, false>;
   m_filterCopy[1][1]   = filterCopy<true, true>;
 
-#if !JVET_Q0806
-  m_weightedTriangleBlk = xWeightedTriangleBlk;
-#else
   m_weightedGeoBlk = xWeightedGeoBlk;
-#endif
 }
 
 
@@ -765,7 +759,6 @@ void InterpolationFilter::filterHor(const ComponentID compID, Pel const *src, in
     {
       filterHor<NTAPS_LUMA>( clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_lumaFilterRPR2[frac], biMCForDMVR );
     }
-#if JVET_Q0517_RPR_AFFINE_DS
     else if (nFilterIdx == 5)
     {
       filterHor<NTAPS_LUMA>(clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_affineLumaFilterRPR1[frac], biMCForDMVR);
@@ -774,7 +767,6 @@ void InterpolationFilter::filterHor(const ComponentID compID, Pel const *src, in
     {
       filterHor<NTAPS_LUMA>(clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_affineLumaFilterRPR2[frac], biMCForDMVR);
     }
-#endif
     else if( frac == 8 && useAltHpelIf )
     {
       filterHor<NTAPS_LUMA>( clpRng, src, srcStride, dst, dstStride, width, height, isLast, m_lumaAltHpelIFilter, biMCForDMVR );
@@ -850,7 +842,6 @@ void InterpolationFilter::filterVer(const ComponentID compID, Pel const *src, in
     {
       filterVer<NTAPS_LUMA>( clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_lumaFilterRPR2[frac], biMCForDMVR );
     }
-#if JVET_Q0517_RPR_AFFINE_DS
     else if (nFilterIdx == 5)
     {
       filterVer<NTAPS_LUMA>(clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_affineLumaFilterRPR1[frac], biMCForDMVR);
@@ -859,7 +850,6 @@ void InterpolationFilter::filterVer(const ComponentID compID, Pel const *src, in
     {
       filterVer<NTAPS_LUMA>(clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_affineLumaFilterRPR2[frac], biMCForDMVR);
     }
-#endif
     else if( frac == 8 && useAltHpelIf )
     {
       filterVer<NTAPS_LUMA>( clpRng, src, srcStride, dst, dstStride, width, height, isFirst, isLast, m_lumaAltHpelIFilter, biMCForDMVR );
@@ -892,103 +882,6 @@ void InterpolationFilter::filterVer(const ComponentID compID, Pel const *src, in
   }
 }
 
-#if !JVET_Q0806
-void InterpolationFilter::xWeightedTriangleBlk( const PredictionUnit &pu, const uint32_t width, const uint32_t height, const ComponentID compIdx, const bool splitDir, PelUnitBuf& predDst, PelUnitBuf& predSrc0, PelUnitBuf& predSrc1 )
-{
-  Pel*    dst        = predDst .get(compIdx).buf;
-  Pel*    src0       = predSrc0.get(compIdx).buf;
-  Pel*    src1       = predSrc1.get(compIdx).buf;
-  int32_t strideDst  = predDst .get(compIdx).stride  - width;
-  int32_t strideSrc0 = predSrc0.get(compIdx).stride  - width;
-  int32_t strideSrc1 = predSrc1.get(compIdx).stride  - width;
-
-  const char    log2WeightBase    = 3;
-  const ClpRng  clipRng           = pu.cu->slice->clpRngs().comp[compIdx];
-  const int32_t clipbd            = clipRng.bd;
-  const int32_t shiftDefault      = std::max<int>(2, (IF_INTERNAL_PREC - clipbd));
-  const int32_t offsetDefault     = (1<<(shiftDefault-1)) + IF_INTERNAL_OFFS;
-  const int32_t shiftWeighted     = std::max<int>(2, (IF_INTERNAL_PREC - clipbd)) + log2WeightBase;
-  const int32_t offsetWeighted    = (1 << (shiftWeighted - 1)) + (IF_INTERNAL_OFFS << log2WeightBase);
-  int32_t stepX = 1 << getComponentScaleX(compIdx, pu.chromaFormat);
-  int32_t stepY = 1 << getComponentScaleY(compIdx, pu.chromaFormat);
-
-  int32_t widthY = width << getComponentScaleX(compIdx, pu.chromaFormat);
-  int32_t heightY = height << getComponentScaleY(compIdx, pu.chromaFormat);
-
-  int32_t ratioWH = (widthY > heightY) ? (widthY / heightY) : 1;
-  int32_t ratioHW = (widthY > heightY) ? 1 : (heightY / widthY);
-
-  int32_t weightedLength = 7;
-  int32_t weightedStartPos = (splitDir == 0) ? (0 - (weightedLength >> 1) * ratioWH) : (widthY - ((weightedLength + 1) >> 1) * ratioWH);
-        int32_t weightedEndPos    = weightedStartPos + weightedLength * ratioWH - 1;
-        int32_t weightedPosoffset = ( splitDir == 0 ) ? ratioWH : -ratioWH;
-
-        Pel     tmpPelWeighted;
-        int32_t weightIdx;
-        int32_t x, y, tmpX, tmpY, tmpWeightedStart, tmpWeightedEnd;
-  for (y = 0; y < heightY; y += ratioHW)
-  {
-    if (y % stepY != 0)
-    {
-      weightedStartPos += weightedPosoffset;
-      weightedEndPos += weightedPosoffset;
-      continue;
-    }
-    for (tmpY = ratioHW; tmpY > 0; tmpY -= stepY)
-    {
-      for (x = 0; x < weightedStartPos; x += stepX)
-      {
-        *dst++ = ClipPel( rightShift( (splitDir == 0 ? *src1 : *src0) + offsetDefault, shiftDefault), clipRng );
-        src0++;
-        src1++;
-      }
-
-      tmpWeightedStart = std::max((int32_t)0, weightedStartPos);
-      tmpWeightedEnd = std::min(weightedEndPos, (int32_t)(widthY - 1));
-      weightIdx        = 1;
-      if( weightedStartPos < 0 )
-      {
-        weightIdx     += abs(weightedStartPos) / ratioWH;
-      }
-      for( x = tmpWeightedStart; x <= tmpWeightedEnd; x+= ratioWH )
-      {
-        if (x % stepX != 0)
-        {
-          weightIdx++;
-          continue;
-        }
-
-        for (tmpX = ratioWH; tmpX > 0; tmpX -= stepX)
-        {
-          tmpPelWeighted = Clip3(1, 7, weightIdx);
-          tmpPelWeighted = splitDir ? ( 8 - tmpPelWeighted ) : tmpPelWeighted;
-          *dst++         = ClipPel( rightShift( (tmpPelWeighted*(*src0++) + ((8 - tmpPelWeighted) * (*src1++)) + offsetWeighted), shiftWeighted ), clipRng );
-        }
-        weightIdx ++;
-      }
-
-      int32_t start = ((weightedEndPos + 1) % stepX != 0) ? (weightedEndPos + 2) : (weightedEndPos + 1);
-      for (x = start; x < widthY; x += stepX)
-      {
-        *dst++ = ClipPel( rightShift( (splitDir == 0 ? *src0 : *src1) + offsetDefault, shiftDefault ), clipRng );
-        src0++;
-        src1++;
-      }
-
-      dst  += strideDst;
-      src0 += strideSrc0;
-      src1 += strideSrc1;
-    }
-    weightedStartPos += weightedPosoffset;
-    weightedEndPos   += weightedPosoffset;
-  }
-}
-
-void InterpolationFilter::weightedTriangleBlk(const PredictionUnit &pu, const uint32_t width, const uint32_t height, const ComponentID compIdx, const bool splitDir, PelUnitBuf& predDst, PelUnitBuf& predSrc0, PelUnitBuf& predSrc1)
-{
-  m_weightedTriangleBlk(pu, width, height, compIdx, splitDir, predDst, predSrc0, predSrc1);
-}
-#else
 void InterpolationFilter::weightedGeoBlk(const PredictionUnit &pu, const uint32_t width, const uint32_t height, const ComponentID compIdx, const uint8_t splitDir, PelUnitBuf& predDst, PelUnitBuf& predSrc0, PelUnitBuf& predSrc1)
 {
   m_weightedGeoBlk(pu, width, height, compIdx, splitDir, predDst, predSrc0, predSrc1);
@@ -1046,7 +939,6 @@ void InterpolationFilter::xWeightedGeoBlk(const PredictionUnit &pu, const uint32
     weight += stepY;
   }
 }
-#endif
 
 /**
  * \brief turn on SIMD fuc

@@ -180,7 +180,6 @@ int main(int argc, char* argv[])
 
   delete[] layerArgv;
 
-#if JVET_Q0172_CHROMA_FORMAT_BITDEPTH_CONSTRAINT
   if (layerIdx > 1)
   {
     VPS* vps = pcEncApp[0]->getVPS();
@@ -201,7 +200,6 @@ int main(int argc, char* argv[])
       }
     }
   }
-#endif
 
 #if PRINT_MACRO_VALUES
   printMacroSettings();

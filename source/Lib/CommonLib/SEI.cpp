@@ -119,6 +119,10 @@ void SEIBufferingPeriod::copyTo (SEIBufferingPeriod& target) const
   target.m_sublayerInitialCpbRemovalDelayPresentFlag = m_sublayerInitialCpbRemovalDelayPresentFlag;
   target.m_concatenationFlag = m_concatenationFlag;
   target.m_maxInitialRemovalDelayForConcatenation = m_maxInitialRemovalDelayForConcatenation;
+#if JVET_R0094_DPB_TID_OFFSET
+  target.m_sublayerDpbOutputOffsetsPresentFlag = m_sublayerDpbOutputOffsetsPresentFlag;
+  ::memcpy(target.m_dpbOutputTidOffset, m_dpbOutputTidOffset, sizeof(m_dpbOutputTidOffset));
+#endif
   target.m_altCpbParamsPresentFlag = m_altCpbParamsPresentFlag;
 }
 
@@ -137,10 +141,21 @@ void SEIPictureTiming::copyTo (SEIPictureTiming& target) const
   target.m_numNalusInDuMinus1 = m_numNalusInDuMinus1;
   target.m_duCpbRemovalDelayMinus1 = m_duCpbRemovalDelayMinus1;
   target.m_cpbAltTimingInfoPresentFlag = m_cpbAltTimingInfoPresentFlag;
+#if JVET_R0413_HRD_TIMING_INFORMATION
+  target.m_nalCpbAltInitialRemovalDelayDelta  = m_nalCpbAltInitialRemovalDelayDelta;
+  target.m_nalCpbAltInitialRemovalOffsetDelta = m_nalCpbAltInitialRemovalOffsetDelta;
+  target.m_nalCpbDelayOffset = m_nalCpbDelayOffset;
+  target.m_nalCpbDelayOffset = m_nalCpbDelayOffset;
+  target.m_vclCpbAltInitialRemovalDelayDelta  = m_vclCpbAltInitialRemovalDelayDelta;
+  target.m_vclCpbAltInitialRemovalOffsetDelta = m_vclCpbAltInitialRemovalOffsetDelta;
+  target.m_vclCpbDelayOffset = m_vclCpbDelayOffset;
+  target.m_vclCpbDelayOffset = m_vclCpbDelayOffset;
+#else
   target.m_cpbAltInitialCpbRemovalDelayDelta = m_cpbAltInitialCpbRemovalDelayDelta;
   target.m_cpbAltInitialCpbRemovalOffsetDelta = m_cpbAltInitialCpbRemovalOffsetDelta;
   target.m_cpbDelayOffset = m_cpbDelayOffset;
   target.m_dpbDelayOffset = m_dpbDelayOffset;
+#endif
 }
 
 // Static member
@@ -156,9 +171,7 @@ const char *SEI::getSEIMessageString(SEI::PayloadType payloadType)
     case SEI::FILM_GRAIN_CHARACTERISTICS:           return "Film grain characteristics";           // not currently decoded
     case SEI::FRAME_PACKING:                        return "Frame packing arrangement";
     case SEI::DECODING_UNIT_INFO:                   return "Decoding unit information";
-#if JVET_P0190_SCALABLE_NESTING_SEI
     case SEI::SCALABLE_NESTING:                     return "Scalable nesting";
-#endif
     case SEI::DECODED_PICTURE_HASH:                 return "Decoded picture hash";
     case SEI::DEPENDENT_RAP_INDICATION:             return "Dependent RAP indication";
     case SEI::MASTERING_DISPLAY_COLOUR_VOLUME:      return "Mastering display colour volume";

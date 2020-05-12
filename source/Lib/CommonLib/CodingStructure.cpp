@@ -665,7 +665,7 @@ void CodingStructure::addEmptyTUs( Partitioner &partitioner )
 
   if( split )
   {
-    partitioner.splitCurrArea( TU_MAX_TR_SPLIT, *this );  
+    partitioner.splitCurrArea( TU_MAX_TR_SPLIT, *this );
     do
     {
       addEmptyTUs( partitioner );
@@ -900,9 +900,7 @@ void CodingStructure::reorderPrevPLT(PLTBuf& prevPLT, uint8_t curPLTSize[MAX_NUM
   uint8_t tempCurPLTsize[MAX_NUM_CHANNEL_TYPE];
   uint8_t stuffPLTsize[MAX_NUM_COMPONENT];
 
-#if JVET_Q0291_REDUCE_DUALTREE_PLT_SIZE
   uint32_t maxPredPltSize = jointPLT ? MAXPLTPREDSIZE : MAXPLTPREDSIZE_DUALTREE;
-#endif
 
   for (int i = compBegin; i < (compBegin + numComp); i++)
   {
@@ -918,11 +916,7 @@ void CodingStructure::reorderPrevPLT(PLTBuf& prevPLT, uint8_t curPLTSize[MAX_NUM
     if (ch > 1) break;
     for (int i = 0; i < prevPLT.curPLTSize[comID]; i++)
     {
-#if JVET_Q0291_REDUCE_DUALTREE_PLT_SIZE
       if (tempCurPLTsize[comID] + stuffPLTsize[ch] >= maxPredPltSize)
-#else
-      if (tempCurPLTsize[comID] + stuffPLTsize[ch] >= MAXPLTPREDSIZE)
-#endif
         break;
 
       if (!reuseflag[comID][i])
@@ -946,13 +940,10 @@ void CodingStructure::reorderPrevPLT(PLTBuf& prevPLT, uint8_t curPLTSize[MAX_NUM
     ComponentID comID = jointPLT ? (ComponentID)compBegin : ((i > 0) ? COMPONENT_Cb : COMPONENT_Y);
     prevPLT.curPLTSize[comID] = curPLTSize[comID] + stuffPLTsize[comID];
     memcpy(prevPLT.curPLT[i], stuffedPLT[i], prevPLT.curPLTSize[comID] * sizeof(Pel));
-#if JVET_Q0291_REDUCE_DUALTREE_PLT_SIZE
     CHECK(prevPLT.curPLTSize[comID] > maxPredPltSize, " Maximum palette predictor size exceed limit");
-#endif
   }
 }
 
-#if JVET_Q0501_PALETTE_WPP_INIT_ABOVECTU
 void CodingStructure::setPrevPLT(PLTBuf predictor)
 {
   for (int comp = 0; comp < MAX_NUM_CHANNEL_TYPE; comp++)
@@ -975,7 +966,6 @@ void CodingStructure::storePrevPLT(PLTBuf& predictor)
     memcpy(predictor.curPLT[comp], prevPLT.curPLT[comp], MAXPLTPREDSIZE * sizeof(Pel));
   }
 }
-#endif
 
 void CodingStructure::rebindPicBufs()
 {
@@ -1008,11 +998,7 @@ void CodingStructure::createCoeffs(const bool isPLTused)
 
   if (isPLTused)
   {
-#if JVET_Q0438_MONOCHROME_BUGFIXES
     for (unsigned i = 0; i < (isChromaEnabled(area.chromaFormat) ? 2 : 1); i++)
-#else
-    for (unsigned i = 0; i < numCh - 1; i++)
-#endif
     {
       unsigned _area = area.blocks[i].area();
 
@@ -1110,7 +1096,7 @@ void CodingStructure::initSubStructure( CodingStructure& subStruct, const Channe
   }
 }
 
-void CodingStructure::useSubStructure( const CodingStructure& subStruct, const ChannelType chType, const UnitArea &subArea, const bool cpyPred /*= true*/, const bool cpyReco /*= true*/, const bool cpyOrgResi /*= true*/, const bool cpyResi /*= true*/ )
+void CodingStructure::useSubStructure( const CodingStructure& subStruct, const ChannelType chType, const UnitArea &subArea, const bool cpyPred /*= true*/, const bool cpyReco /*= true*/, const bool cpyOrgResi /*= true*/, const bool cpyResi /*= true*/, const bool updateCost /*= true*/ )
 {
   UnitArea clippedArea = clipArea( subArea, *picture );
 
@@ -1146,10 +1132,13 @@ void CodingStructure::useSubStructure( const CodingStructure& subStruct, const C
   prevPLT = subStruct.prevPLT;
 
 
-  fracBits += subStruct.fracBits;
-  dist     += subStruct.dist;
-  cost     += subStruct.cost;
-  costDbOffset += subStruct.costDbOffset;
+  if ( updateCost )
+  {
+    fracBits += subStruct.fracBits;
+    dist     += subStruct.dist;
+    cost     += subStruct.cost;
+    costDbOffset += subStruct.costDbOffset;
+  }
   if( parent )
   {
     // allow this to be false at the top level
@@ -1569,11 +1558,7 @@ const CodingUnit* CodingStructure::getCURestricted( const Position &pos, const C
   const CodingUnit* cu = getCU( pos, _chType );
   // exists       same slice and tile                  cu precedes curCu in encoding order
   //                                                  (thus, is either from parent CS in RD-search or its index is lower)
-#if JVET_Q0151_Q0205_ENTRYPOINTS
   const bool wavefrontsEnabled = curCu.slice->getSPS()->getEntropyCodingSyncEnabledFlag();
-#else
-  const bool wavefrontsEnabled = curCu.slice->getPPS()->getEntropyCodingSyncEnabledFlag();
-#endif
   int ctuSizeBit = floorLog2(curCu.cs->sps->getMaxCUWidth());
   int xNbY  = pos.x << getChannelTypeScaleX( _chType, curCu.chromaFormat );
   int xCurr = curCu.blocks[_chType].x << getChannelTypeScaleX( _chType, curCu.chromaFormat );
@@ -1591,11 +1576,7 @@ const CodingUnit* CodingStructure::getCURestricted( const Position &pos, const C
 const CodingUnit* CodingStructure::getCURestricted( const Position &pos, const Position curPos, const unsigned curSliceIdx, const unsigned curTileIdx, const ChannelType _chType ) const
 {
   const CodingUnit* cu = getCU( pos, _chType );
-#if JVET_Q0151_Q0205_ENTRYPOINTS
   const bool wavefrontsEnabled = this->slice->getSPS()->getEntropyCodingSyncEnabledFlag();
-#else
-  const bool wavefrontsEnabled = this->slice->getPPS()->getEntropyCodingSyncEnabledFlag();
-#endif
   int ctuSizeBit = floorLog2(this->sps->getMaxCUWidth());
   int xNbY  = pos.x << getChannelTypeScaleX( _chType, this->area.chromaFormat );
   int xCurr = curPos.x << getChannelTypeScaleX( _chType, this->area.chromaFormat );
@@ -1608,11 +1589,7 @@ const PredictionUnit* CodingStructure::getPURestricted( const Position &pos, con
   const PredictionUnit* pu = getPU( pos, _chType );
   // exists       same slice and tile                  pu precedes curPu in encoding order
   //                                                  (thus, is either from parent CS in RD-search or its index is lower)
-#if JVET_Q0151_Q0205_ENTRYPOINTS
   const bool wavefrontsEnabled = curPu.cu->slice->getSPS()->getEntropyCodingSyncEnabledFlag();
-#else
-  const bool wavefrontsEnabled = curPu.cu->slice->getPPS()->getEntropyCodingSyncEnabledFlag();
-#endif
   int ctuSizeBit = floorLog2(curPu.cs->sps->getMaxCUWidth());
   int xNbY  = pos.x << getChannelTypeScaleX( _chType, curPu.chromaFormat );
   int xCurr = curPu.blocks[_chType].x << getChannelTypeScaleX( _chType, curPu.chromaFormat );
@@ -1632,11 +1609,7 @@ const TransformUnit* CodingStructure::getTURestricted( const Position &pos, cons
   const TransformUnit* tu = getTU( pos, _chType );
   // exists       same slice and tile                  tu precedes curTu in encoding order
   //                                                  (thus, is either from parent CS in RD-search or its index is lower)
-#if JVET_Q0151_Q0205_ENTRYPOINTS
   const bool wavefrontsEnabled = curTu.cu->slice->getSPS()->getEntropyCodingSyncEnabledFlag();
-#else
-  const bool wavefrontsEnabled = curTu.cu->slice->getPPS()->getEntropyCodingSyncEnabledFlag();
-#endif
   int ctuSizeBit = floorLog2(curTu.cs->sps->getMaxCUWidth());
   int xNbY  = pos.x << getChannelTypeScaleX( _chType, curTu.chromaFormat );
   int xCurr = curTu.blocks[_chType].x << getChannelTypeScaleX( _chType, curTu.chromaFormat );

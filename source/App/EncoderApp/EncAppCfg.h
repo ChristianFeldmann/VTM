@@ -116,9 +116,7 @@ protected:
   int       m_framesToBeEncoded;                              ///< number of encoded frames
   int       m_aiPad[2];                                       ///< number of padded pixels for width and height
   bool      m_AccessUnitDelimiter;                            ///< add Access Unit Delimiter NAL units
-#if JVET_Q0775_PH_IN_SH
   bool      m_enablePictureHeaderInSliceHeader;               ///< Enable Picture Header in Slice Header
-#endif
   InputColourSpaceConversion m_inputColourSpaceConvert;       ///< colour space conversion to apply to input video
   bool      m_snrInternalColourSpace;                       ///< if true, then no colour space conversion is applied for snr calculation, otherwise inverse of input is applied.
   bool      m_outputInternalColourSpace;                    ///< if true, then no colour space conversion is applied for reconstructed video, otherwise inverse of input is applied.
@@ -137,13 +135,25 @@ protected:
   uint32_t  m_maxBitDepthConstraintIdc;
   uint32_t  m_maxChromaFormatConstraintIdc;
   bool      m_bFrameConstraintFlag;
+#if JVET_R0286_GCI_CLEANUP
+  bool      m_singleLayerConstraintFlag;
+  bool      m_allLayersIndependentConstraintFlag;
+  bool      m_noMrlConstraintFlag;
+  bool      m_noIspConstraintFlag;
+  bool      m_noMipConstraintFlag;
+  bool      m_noLfnstConstraintFlag;
+  bool      m_noMmvdConstraintFlag;
+  bool      m_noSmvdConstraintFlag;
+  bool      m_noProfConstraintFlag;
+  bool      m_noPaletteConstraintFlag;
+  bool      m_noActConstraintFlag;
+  bool      m_noLmcsConstraintFlag;
+#endif
   bool      m_bNoQtbttDualTreeIntraConstraintFlag;
   bool      m_noPartitionConstraintsOverrideConstraintFlag;
   bool      m_bNoSaoConstraintFlag;
   bool      m_bNoAlfConstraintFlag;
-#if JVET_Q0795_CCALF
   bool      m_noCCAlfConstraintFlag;
-#endif
   bool      m_bNoRefWraparoundConstraintFlag;
   bool      m_bNoTemporalMvpConstraintFlag;
   bool      m_bNoSbtmvpConstraintFlag;
@@ -158,11 +168,7 @@ protected:
   bool      m_noIbcConstraintFlag;
   bool      m_bNoCiipConstraintFlag;
   bool      m_noFPelMmvdConstraintFlag;
-#if !JVET_Q0806
-  bool      m_bNoTriangleConstraintFlag;
-#else
   bool      m_noGeoConstraintFlag;
-#endif
   bool      m_bNoLadfConstraintFlag;
   bool      m_noTransformSkipConstraintFlag;
   bool      m_noBDPCMConstraintFlag;
@@ -189,16 +195,16 @@ protected:
   uint32_t          m_bitDepthConstraint;
   ChromaFormat  m_chromaFormatConstraint;
   bool          m_intraConstraintFlag;
+#if !JVET_R0090_VUI
   bool          m_progressiveSourceFlag;
   bool          m_interlacedSourceFlag;
+#endif
   bool          m_nonPackedConstraintFlag;
-#if JVET_Q0114_CONSTRAINT_FLAGS
   bool          m_nonProjectedConstraintFlag;
   bool          m_noResChangeInClvsConstraintFlag;
   bool          m_oneTilePerPicConstraintFlag;
   bool          m_oneSlicePerPicConstraintFlag;
   bool          m_oneSubpicPerPicConstraintFlag;
-#endif
   bool          m_frameOnlyConstraintFlag;
 
   // coding structure
@@ -213,20 +219,10 @@ protected:
   GOPEntry  m_GOPList[MAX_GOP];                               ///< the coding structure entries from the config file
   int       m_numReorderPics[MAX_TLAYER];                     ///< total number of reorder pictures
   int       m_maxDecPicBuffering[MAX_TLAYER];                 ///< total number of pictures in the decoded picture buffer
-#if !REMOVE_PPS_REXT
-  bool      m_crossComponentPredictionEnabledFlag;            ///< flag enabling the use of cross-component prediction
-#endif
   bool      m_reconBasedCrossCPredictionEstimate;             ///< causes the alpha calculation in encoder search to be based on the decoded residual rather than the pre-transform encoder-side residual
-#if !JVET_Q0441_SAO_MOD_12_BIT
-  uint32_t      m_log2SaoOffsetScale[MAX_NUM_CHANNEL_TYPE];       ///< number of bits for the upward bit shift operation on the decoded SAO offsets
-#endif
   bool      m_useTransformSkip;                               ///< flag for enabling intra transform skipping
   bool      m_useTransformSkipFast;                           ///< flag for enabling fast intra transform skipping
-#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
   bool      m_useBDPCM;
-#else
-  int       m_useBDPCM;
-#endif
   uint32_t      m_log2MaxTransformSkipBlockSize;                  ///< transform-skip maximum size (minimum of 2)
   bool      m_transformSkipRotationEnabledFlag;               ///< control flag for transform-skip/transquant-bypass residual rotation
   bool      m_transformSkipContextEnabledFlag;                ///< control flag for transform-skip/transquant-bypass single significance map context
@@ -285,36 +281,25 @@ protected:
 
   // coding unit (CU) definition
   unsigned  m_uiCTUSize;
-#if JVET_Q0119_CLEANUPS
   bool m_subPicInfoPresentFlag;
-#else
-  bool m_subPicPresentFlag;
-#endif
   unsigned m_numSubPics;
   std::vector<uint32_t> m_subPicCtuTopLeftX;
   std::vector<uint32_t> m_subPicCtuTopLeftY;
   std::vector<uint32_t> m_subPicWidth;
   std::vector<uint32_t> m_subPicHeight;
-  std::vector<uint32_t> m_subPicTreatedAsPicFlag;
-  std::vector<uint32_t> m_loopFilterAcrossSubpicEnabledFlag;
-#if JVET_Q0119_CLEANUPS
+  std::vector<bool>     m_subPicTreatedAsPicFlag;
+  std::vector<bool>     m_loopFilterAcrossSubpicEnabledFlag;
   bool m_subPicIdMappingExplicitlySignalledFlag;
   bool m_subPicIdMappingInSpsFlag;
-#else
-  bool m_subPicIdPresentFlag;
-  bool m_subPicIdSignallingPresentFlag;
-#endif
   unsigned m_subPicIdLen;
-  std::vector<uint32_t> m_subPicId;
+  std::vector<uint16_t> m_subPicId;
   bool      m_SplitConsOverrideEnabledFlag;
   unsigned  m_uiMinQT[3]; // 0: I slice luma; 1: P/B slice; 2: I slice chroma
   unsigned  m_uiMaxMTTHierarchyDepth;
   unsigned  m_uiMaxMTTHierarchyDepthI;
   unsigned  m_uiMaxMTTHierarchyDepthIChroma;
-#if JVET_Q0330_BLOCK_PARTITION
   unsigned  m_uiMaxBT[3];
   unsigned  m_uiMaxTT[3];
-#endif 
   bool      m_dualTree;
   bool      m_LFNST;
   bool      m_useFastLFNST;
@@ -344,11 +329,7 @@ protected:
 #endif
 
   bool      m_ciip;
-#if !JVET_Q0806
-  bool      m_Triangle;
-#else
   bool      m_Geo;
-#endif
   bool      m_HashME;
   bool      m_allowDisFracMMVD;
   bool      m_AffineAmvr;
@@ -373,12 +354,8 @@ protected:
   unsigned  m_wrapAroundOffset;
 
   // ADD_NEW_TOOL : (encoder app) add tool enabling flags and associated parameters here
-#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
   bool      m_virtualBoundariesEnabledFlag;
   bool      m_virtualBoundariesPresentFlag;
-#else
-  bool      m_loopFilterAcrossVirtualBoundariesDisabledFlag;
-#endif
   unsigned  m_numVerVirtualBoundaries;
   unsigned  m_numHorVirtualBoundaries;
   std::vector<unsigned> m_virtualBoundariesPosX;
@@ -394,13 +371,7 @@ protected:
   bool      m_encDbOpt;
   unsigned  m_uiMaxCUWidth;                                   ///< max. CU width in pixel
   unsigned  m_uiMaxCUHeight;                                  ///< max. CU height in pixel
-#if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
   unsigned m_log2MinCuSize;                                   ///< min. CU size log2
-#else
-  unsigned  m_uiMaxCUDepth;                                   ///< max. CU depth (as specified by command line)
-  unsigned  m_uiMaxCodingDepth;                               ///< max. total CU depth - includes depth of transform-block structure
-  unsigned  m_uiLog2DiffMaxMinCodingBlockSize;                ///< difference between largest and smallest CU depth
-#endif
 
   bool      m_useFastLCTU;
   bool      m_usePbIntraFast;
@@ -449,12 +420,10 @@ protected:
   bool      m_loopFilterOffsetInPPS;                         ///< offset for deblocking filter in 0 = slice header, 1 = PPS
   int       m_loopFilterBetaOffsetDiv2;                     ///< beta offset for deblocking filter
   int       m_loopFilterTcOffsetDiv2;                       ///< tc offset for deblocking filter
-#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
   int       m_loopFilterCbBetaOffsetDiv2;                     ///< beta offset for Cb deblocking filter
   int       m_loopFilterCbTcOffsetDiv2;                       ///< tc offset for Cb deblocking filter
   int       m_loopFilterCrBetaOffsetDiv2;                     ///< beta offset for Cr deblocking filter
   int       m_loopFilterCrTcOffsetDiv2;                       ///< tc offset for Cr deblocking filter
-#endif
 #if W0038_DB_OPT
   int       m_deblockingFilterMetric;                         ///< blockiness metric in encoder
 #else
@@ -485,6 +454,9 @@ protected:
   bool      m_bUseCbfFastMode;                                ///< flag for using Cbf Fast PU Mode Decision
   bool      m_useEarlySkipDetection;                          ///< flag for using Early SKIP Detection
   bool      m_picPartitionFlag;                               ///< enable picture partitioning (0: single tile, single slice, 1: multiple tiles/slices can be used)
+#if JVET_R0110_MIXED_LOSSLESS
+  std::vector<uint32_t> m_sliceLosslessArray;                    ///< Slice lossless array
+#endif
   std::vector<uint32_t> m_tileColumnWidth;                    ///< tile column widths in units of CTUs (last column width will be repeated uniformly to cover any remaining picture width)
   std::vector<uint32_t> m_tileRowHeight;                      ///< tile row heights in units of CTUs (last row height will be repeated uniformly to cover any remaining picture height)
   bool      m_rasterSliceFlag;                                ///< indicates if using raster-scan or rectangular slices (0: rectangular, 1: raster-scan)
@@ -499,10 +471,11 @@ protected:
   std::vector<RectSlice> m_rectSlices;                        ///< derived list of rectangular slice signalling parameters
   uint32_t  m_numTileCols;                                    ///< derived number of tile columns
   uint32_t  m_numTileRows;                                    ///< derived number of tile rows
-  bool      m_subPicPartitionFlag;
   bool      m_singleSlicePerSubPicFlag;
   bool      m_entropyCodingSyncEnabledFlag;
-#if JVET_Q0151_Q0205_ENTRYPOINTS
+#if JVET_R0165_OPTIONAL_ENTRY_POINT
+  bool      m_entryPointPresentFlag;                          ///< flag for the presence of entry points
+#else
   bool      m_entropyCodingSyncEntryPointPresentFlag;         ///< flag for the presence of entry points for WPP
 #endif
 
@@ -515,9 +488,7 @@ protected:
   bool      m_pictureTimingSEIEnabled;
   bool      m_bpDeltasGOPStructure;
   bool      m_decodingUnitInfoSEIEnabled;
-#if JVET_P0190_SCALABLE_NESTING_SEI
   bool      m_scalableNestingSEIEnabled;
-#endif
   bool      m_frameFieldInfoSEIEnabled;
   bool      m_framePackingSEIEnabled;
   int       m_framePackingSEIType;
@@ -622,19 +593,11 @@ protected:
   std::vector<double>  m_gcmpSEIFunctionCoeffV;
   std::vector<bool>    m_gcmpSEIFunctionVAffectedByUFlag;
   bool                 m_gcmpSEIGuardBandFlag;
-#if JVET_Q0343_GCMP_GUARD_BAND_TYPE
   uint32_t             m_gcmpSEIGuardBandType;
   bool                 m_gcmpSEIGuardBandBoundaryExteriorFlag;
-#else
-  bool                 m_gcmpSEIGuardBandBoundaryType;
-#endif
   uint32_t             m_gcmpSEIGuardBandSamplesMinus1;
 
-#if JVET_SUBPIC_LEVEL_CFG
   EncCfgParam::CfgSEISubpictureLevel m_cfgSubpictureLevelInfoSEI;
-#else
-  bool m_subpicureLevelInfoSEIEnabled;
-#endif
 
   bool                  m_sampleAspectRatioInfoSEIEnabled;
   bool                  m_sariCancelFlag;
@@ -650,47 +613,20 @@ protected:
   bool      m_useWeightedBiPred;                  ///< Use of bi-directional weighted prediction in B slices
   WeightedPredictionMethod m_weightedPredictionMethod;
 
-#if JVET_Q0297_MER
   uint32_t      m_log2ParallelMergeLevel;                         ///< Parallel merge estimation region
-#endif
   uint32_t      m_maxNumMergeCand;                                ///< Max number of merge candidates
   uint32_t      m_maxNumAffineMergeCand;                          ///< Max number of affine merge candidates
-#if !JVET_Q0806
-#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
   uint32_t      m_maxNumGeoCand;
-#else
-  uint32_t      m_maxNumTriangleCand;
-#endif
-#else
-  uint32_t      m_maxNumGeoCand;
-#endif
   uint32_t      m_maxNumIBCMergeCand;                             ///< Max number of IBC merge candidates
 
   bool      m_sliceLevelRpl;                                      ///< code reference picture lists in slice headers rather than picture header
   bool      m_sliceLevelDblk;                                     ///< code deblocking filter parameters in slice headers rather than picture header
   bool      m_sliceLevelSao;                                      ///< code SAO parameters in slice headers rather than picture header
   bool      m_sliceLevelAlf;                                      ///< code ALF parameters in slice headers rather than picture header
-#if JVET_Q0819_PH_CHANGES
   bool      m_sliceLevelWp;                                       ///< code weighted prediction parameters in slice headers rather than picture header
   bool      m_sliceLevelDeltaQp;                                  ///< code delta in slice headers rather than picture header
-#endif
 
   int       m_TMVPModeId;
-#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
-  int       m_PPSorSliceMode;
-  bool      m_constantSliceHeaderParamsEnabledFlag;
-  int       m_PPSDepQuantEnabledIdc;
-  int       m_PPSRefPicListSPSIdc0;
-  int       m_PPSRefPicListSPSIdc1;
-  int       m_PPSMvdL1ZeroIdc;
-  int       m_PPSCollocatedFromL0Idc;
-  uint32_t  m_PPSSixMinusMaxNumMergeCandPlus1;
-#if !JVET_Q0806
-  uint32_t  m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1;
-#else
-  uint32_t  m_PPSMaxNumMergeCandMinusMaxNumGeoCandPlus1;
-#endif
-#endif
   bool      m_depQuantEnabledFlag;
   bool      m_signDataHidingEnabledFlag;
   bool      m_RCEnableRateControl;                ///< enable rate control or not
@@ -708,17 +644,23 @@ protected:
   ScalingListMode m_useScalingListId;                         ///< using quantization matrix
   std::string m_scalingListFileName;                          ///< quantization matrix file name
   bool      m_disableScalingMatrixForLfnstBlks;
+#if JVET_R0380_SCALING_MATRIX_DISABLE_YCC_OR_RGB
+  bool      m_disableScalingMatrixForAlternativeColourSpace;
+  bool      m_scalingMatrixDesignatedColourSpace;
+#endif
   CostMode  m_costMode;                                       ///< Cost mode to use
+#if JVET_R0143_TSRCdisableLL
+  bool      m_TSRCdisableLL;                                  ///< disable TSRC for lossless
+#endif
 
   bool      m_recalculateQPAccordingToLambda;                 ///< recalculate QP value according to the lambda value
 
-#if JVET_Q0117_PARAMETER_SETS_CLEANUP
   bool      m_DCIEnabled;                                     ///< enable Decoding Capability Information (DCI)
-#else
-  bool      m_decodingParameterSetEnabled;                   ///< enable decoding parameter set
-#endif
   bool      m_hrdParametersPresentFlag;                       ///< enable generation of HRD parameters
   bool      m_vuiParametersPresentFlag;                       ///< enable generation of VUI parameters
+#if JVET_Q0394_TIMING_SEI
+  bool      m_samePicTimingInAllOLS;                          ///< same picture timing SEI message is used in all OLS
+#endif
   bool      m_aspectRatioInfoPresentFlag;                     ///< Signals whether aspect_ratio_idc is present
   int       m_aspectRatioIdc;                                 ///< aspect_ratio_idc
   int       m_sarWidth;                                       ///< horizontal size of the sample aspect ratio
@@ -727,6 +669,10 @@ protected:
   int       m_colourPrimaries;                                ///< Indicates chromaticity coordinates of the source primaries
   int       m_transferCharacteristics;                        ///< Indicates the opto-electronic transfer characteristics of the source
   int       m_matrixCoefficients;                             ///< Describes the matrix coefficients used in deriving luma and chroma from RGB primaries
+#if JVET_R0090_VUI
+  bool      m_progressiveSourceFlag;                          ///< Indicates if the content is progressive
+  bool      m_interlacedSourceFlag;                           ///< Indicates if the content is interlaced
+#endif
   bool      m_chromaLocInfoPresentFlag;                       ///< Signals whether chroma_sample_loc_type_top_field and chroma_sample_loc_type_bottom_field are present
   int       m_chromaSampleLocTypeTopField;                    ///< Specifies the location of chroma samples for top field
   int       m_chromaSampleLocTypeBottomField;                 ///< Specifies the location of chroma samples for bottom field
@@ -753,10 +699,8 @@ protected:
   bool        m_forceDecodeBitstream1;
 
   bool        m_alf;                                          ///< Adaptive Loop Filter
-#if JVET_Q0795_CCALF
   bool        m_ccalf;
   int         m_ccalfQpThreshold;
-#endif
 
   double      m_scalingRatioHor;
   double      m_scalingRatioVer;
@@ -770,9 +714,7 @@ protected:
   std::map<int, double> m_gopBasedTemporalFilterStrengths;             ///< Filter strength per frame for the GOP-based Temporal Filter
 
   int         m_maxLayers;
-#if JVET_Q0814_DPB
   int         m_targetOlsIdx;
-#endif
 
   int         m_layerId[MAX_VPS_LAYERS];
   int         m_layerIdx;
@@ -786,11 +728,9 @@ protected:
   int         m_numOutputLayerSets;
   std::string m_olsOutputLayerStr[MAX_VPS_LAYERS];
 
-#if JVET_Q0786_PTL_only
   int         m_numPtlsInVps;
   Level::Name m_levelPtl[MAX_NUM_OLSS];
-  int         m_olsPtlIdx[MAX_NUM_OLSS]; 
-#endif
+  int         m_olsPtlIdx[MAX_NUM_OLSS];
 
 #if EXTENSION_360_VIDEO
   TExt360AppEncCfg m_ext360;

@@ -217,6 +217,9 @@ void IntraPrediction::predIntraAng( const ComponentID compId, PelBuf &piPred, co
   const int            iWidth       = piPred.width;
   const int            iHeight      = piPred.height;
   CHECK(iWidth == 2, "Width of 2 is not supported");
+#if JVET_R0350_MIP_CHROMA_444_SINGLETREE
+  CHECK(PU::isMIP(pu, toChannelType(compId)), "We should not get here for MIP.");
+#endif
   const uint32_t       uiDirMode    = isLuma( compId ) && pu.cu->bdpcmMode ? BDPCM_IDX : !isLuma(compId) && pu.cu->bdpcmModeChroma ? BDPCM_IDX : PU::getFinalIntraMode(pu, channelType);
 
   CHECK( floorLog2(iWidth) < 2 && pu.cs->pcv->noChroma2x2, "Size not allowed" );
@@ -365,11 +368,7 @@ void IntraPrediction::initPredIntraParams(const PredictionUnit & pu, const CompA
   m_ipaParam.multiRefIndex        = isLuma (chType) ? pu.multiRefIdx : 0 ;
   m_ipaParam.refFilterFlag        = false;
   m_ipaParam.interpolationFlag    = false;
-#if JVET_Q0293_REMOVAL_PDPC_CHROMA_NX2
   m_ipaParam.applyPDPC            = (puSize.width >= MIN_TB_SIZEY && puSize.height >= MIN_TB_SIZEY) && m_ipaParam.multiRefIndex == 0;
-#else
-  m_ipaParam.applyPDPC            = ((puSize.width >= MIN_TB_SIZEY && puSize.height >= MIN_TB_SIZEY) || !isLuma(compId)) && m_ipaParam.multiRefIndex == 0;
-#endif
 
   const int    intraPredAngleMode = (m_ipaParam.isModeVer) ? predMode - VER_IDX : -(predMode - HOR_IDX);
 
@@ -743,12 +742,10 @@ void IntraPrediction::geneIntrainterPred(const CodingUnit &cu)
 
   initIntraPatternChType(cu, pu->Y());
   predIntraAng(COMPONENT_Y, cu.cs->getPredBuf(*pu).Y(), *pu);
-#if JVET_Q0438_MONOCHROME_BUGFIXES
   int maxCompID = 1;
   if (isChromaEnabled(pu->chromaFormat))
   {
     maxCompID = MAX_NUM_COMPONENT;
-#endif
   if (pu->chromaSize().width > 2)
   {
     initIntraPatternChType(cu, pu->Cb());
@@ -757,7 +754,6 @@ void IntraPrediction::geneIntrainterPred(const CodingUnit &cu)
     initIntraPatternChType(cu, pu->Cr());
     predIntraAng(COMPONENT_Cr, cu.cs->getPredBuf(*pu).Cr(), *pu);
   }
-#if JVET_Q0438_MONOCHROME_BUGFIXES
   }
   for (int currCompID = 0; currCompID < maxCompID; currCompID++)
   {
@@ -765,12 +761,6 @@ void IntraPrediction::geneIntrainterPred(const CodingUnit &cu)
     {
       continue;
     }
-#else
-  for (int currCompID = 0; currCompID < 3; currCompID++)
-  {
-    if (pu->chromaSize().width <= 2 && currCompID > 0)
-      continue;
-#endif
     ComponentID currCompID2 = (ComponentID)currCompID;
     PelBuf tmpBuf = currCompID == 0 ? cu.cs->getPredBuf(*pu).Y() : (currCompID == 1 ? cu.cs->getPredBuf(*pu).Cb() : cu.cs->getPredBuf(*pu).Cr());
     switchBuffer(*pu, currCompID2, tmpBuf, getPredictorPtr2(currCompID2, 0));
@@ -1360,7 +1350,6 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
   int logSubHeightC = getChannelTypeScaleY(CHANNEL_TYPE_CHROMA, pu.chromaFormat);
 
   int iRecStride2       = iRecStride << logSubHeightC;
-  const int mult        =          1 << logSubWidthC ;
 
   const CodingUnit& lumaCU = isChroma( pu.chType ) ? *pu.cs->picture->cs->getCU( lumaArea.pos(), CH_L ) : *pu.cu;
   const CodingUnit&     cu = *pu.cu;
@@ -1395,24 +1384,24 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
   int avaiLeftBelowUnits = 0;
   bool  bNeighborFlags[4 * MAX_NUM_PART_IDXS_IN_CTU_WIDTH + 1];
   memset(bNeighborFlags, 0, totalUnits);
-  bool bAboveAvaillable, bLeftAvaillable;
+  bool aboveIsAvailable, leftIsAvailable;
 
   int availlableUnit = isLeftAvailable( isChroma( pu.chType ) ? cu : lumaCU, toChannelType( area.compID ), area.pos(), iLeftUnits, iUnitHeight,
   ( bNeighborFlags + iLeftUnits + leftBelowUnits - 1 ) );
 
-  bLeftAvaillable = availlableUnit == iTUHeightInUnits;
+  leftIsAvailable = availlableUnit == iTUHeightInUnits;
 
   availlableUnit = isAboveAvailable( isChroma( pu.chType ) ? cu : lumaCU, toChannelType( area.compID ), area.pos(), iAboveUnits, iUnitWidth,
   ( bNeighborFlags + iLeftUnits + leftBelowUnits + 1 ) );
 
-  bAboveAvaillable = availlableUnit == iTUWidthInUnits;
+  aboveIsAvailable = availlableUnit == iTUWidthInUnits;
 
-  if (bLeftAvaillable) // if left is not available, then the below left is not available
+  if (leftIsAvailable)   // if left is not available, then the below left is not available
   {
     avaiLeftBelowUnits = isBelowLeftAvailable(isChroma(pu.chType) ? cu : lumaCU, toChannelType(area.compID), area.bottomLeftComp(area.compID), leftBelowUnits, iUnitHeight, (bNeighborFlags + leftBelowUnits - 1));
   }
 
-  if (bAboveAvaillable) // if above is not available, then  the above right is not available.
+  if (aboveIsAvailable)   // if above is not available, then  the above right is not available.
   {
     avaiAboveRightUnits = isAboveRightAvailable(isChroma(pu.chType) ? cu : lumaCU, toChannelType(area.compID), area.topRightComp(area.compID), aboveRightUnits, iUnitWidth, (bNeighborFlags + iLeftUnits + leftBelowUnits + iAboveUnits + 1));
   }
@@ -1420,40 +1409,9 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
   Pel*       pDst  = nullptr;
   Pel const* piSrc = nullptr;
 
-  bool isFirstRowOfCtu = ( lumaArea.y & ((pu.cs->sps)->getCTUSize() - 1) ) == 0;
-  const int strOffset = (CHROMA_444 == pu.chromaFormat) ? 0 : iRecStride;
-#if !JVET_Q0500_CCLM_REF_PADDING
-  int c0_2tap = 1, c1_2tap = 1,                                                     offset_2tap = 1, shift_2tap = 1; //sum = 2
-#endif
-  int c0_3tap = 2, c1_3tap = 1, c2_3tap = 1,                                        offset_3tap = 2, shift_3tap = 2; //sum = 4
-  int c0_5tap = 1, c1_5tap = 4, c2_5tap = 1, c3_5tap = 1, c4_5tap = 1,              offset_5tap = 4, shift_5tap = 3; //sum = 8
-  int c0_6tap = 2, c1_6tap = 1, c2_6tap = 1, c3_6tap = 2, c4_6tap = 1, c5_6tap = 1, offset_6tap = 4, shift_6tap = 3; //sum = 8
+  bool isFirstRowOfCtu = (lumaArea.y & ((pu.cs->sps)->getCTUSize() - 1)) == 0;
 
-  switch (pu.chromaFormat)
-  {
-    case CHROMA_422: //overwrite filter coefficient values for 422
-#if !JVET_Q0500_CCLM_REF_PADDING
-      c0_2tap = 1, c1_2tap = 0,                                                     offset_2tap = 0, shift_2tap = 0; //sum = 1
-#endif
-      c0_3tap = 2, c1_3tap = 1, c2_3tap = 1,                                        offset_3tap = 2, shift_3tap = 2; //sum = 4
-      c0_5tap = 0, c1_5tap = 1, c2_5tap = 0, c3_5tap = 0, c4_5tap = 0,              offset_5tap = 0, shift_5tap = 0; //sum = 1
-      c0_6tap = 2, c1_6tap = 1, c2_6tap = 1, c3_6tap = 0, c4_6tap = 0, c5_6tap = 0, offset_6tap = 2, shift_6tap = 2; //sum = 4
-      break;
-
-    case CHROMA_444:  //overwrite filter coefficient values for 422
-#if !JVET_Q0500_CCLM_REF_PADDING
-      c0_2tap = 1, c1_2tap = 0,                                                     offset_2tap = 0, shift_2tap = 0; //sum = 1
-#endif
-      c0_3tap = 1, c1_3tap = 0, c2_3tap = 0,                                        offset_3tap = 0, shift_3tap = 0; //sum = 1
-      c0_5tap = 0, c1_5tap = 1, c2_5tap = 0, c3_5tap = 0, c4_5tap = 0,              offset_5tap = 0, shift_5tap = 0; //sum = 1
-      c0_6tap = 1, c1_6tap = 0, c2_6tap = 0, c3_6tap = 0, c4_6tap = 0, c5_6tap = 0, offset_6tap = 0, shift_6tap = 0; //sum = 1
-      break;
-
-    default:
-      break;
-  }
-
-  if( bAboveAvaillable )
+  if (aboveIsAvailable)
   {
     pDst  = pDst0    - iDstStride;
     int addedAboveRight = 0;
@@ -1463,75 +1421,58 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
     }
     for (int i = 0; i < uiCWidth + addedAboveRight; i++)
     {
-      if (isFirstRowOfCtu)
+      const bool leftPadding = i == 0 && !leftIsAvailable;
+      if (pu.chromaFormat == CHROMA_444)
       {
         piSrc = pRecSrc0 - iRecStride;
-
-        if ((i == 0 && !bLeftAvaillable) || (i == uiCWidth + addedAboveRight - 1 + logSubWidthC))
-        {
-#if JVET_Q0500_CCLM_REF_PADDING
-          pDst[i] = (piSrc[mult * i] * c0_3tap + piSrc[mult * i] * c1_3tap + piSrc[mult * i + 1] * c2_3tap + offset_3tap) >> shift_3tap;          
-#else
-          pDst[i] = piSrc[mult * i];
-#endif
-        }
-        else
-        {
-          pDst[i] = (piSrc[mult * i] * c0_3tap + piSrc[mult * i - 1] * c1_3tap + piSrc[mult * i + 1] * c2_3tap + offset_3tap) >> shift_3tap;
-        }
+        pDst[i] = piSrc[i];
       }
-      else if( pu.cs->sps->getCclmCollocatedChromaFlag() )
+      else if (isFirstRowOfCtu)
+      {
+        piSrc   = pRecSrc0 - iRecStride;
+        pDst[i] = (piSrc[2 * i] * 2 + piSrc[2 * i - (leftPadding ? 0 : 1)] + piSrc[2 * i + 1] + 2) >> 2;
+      }
+      else if (pu.chromaFormat == CHROMA_422)
       {
         piSrc = pRecSrc0 - iRecStride2;
 
-        if ((i == 0 && !bLeftAvaillable) || (i == uiCWidth + addedAboveRight - 1 + logSubWidthC))
-        {
-#if JVET_Q0500_CCLM_REF_PADDING
-          pDst[i] = (piSrc[mult * i - strOffset] * c0_5tap
-                  +  piSrc[mult * i]             * c1_5tap + piSrc[mult * i] * c2_5tap + piSrc[mult * i + 1] * c3_5tap
-                  +  piSrc[mult * i + strOffset] * c4_5tap
-                  +  offset_5tap) >> shift_5tap;
-#else
-          pDst[i] = (piSrc[mult * i] * c0_3tap + piSrc[mult * i - strOffset] * c1_3tap + piSrc[mult * i + strOffset] * c2_3tap + offset_3tap) >> shift_3tap;
-#endif
-        }
-        else
-        {
-          pDst[i] = (piSrc[mult * i - strOffset] * c0_5tap
-                  +  piSrc[mult * i]             * c1_5tap + piSrc[mult * i - 1] * c2_5tap + piSrc[mult * i + 1] * c3_5tap
-                  +  piSrc[mult * i + strOffset] * c4_5tap
-                  +  offset_5tap) >> shift_5tap;
-        }
+        int s = 2;
+        s += piSrc[2 * i] * 2;
+        s += piSrc[2 * i - (leftPadding ? 0 : 1)];
+        s += piSrc[2 * i + 1];
+        pDst[i] = s >> 2;
+      }
+      else if (pu.cs->sps->getCclmCollocatedChromaFlag())
+      {
+        piSrc = pRecSrc0 - iRecStride2;
+
+        int s = 4;
+        s += piSrc[2 * i - iRecStride];
+        s += piSrc[2 * i] * 4;
+        s += piSrc[2 * i - (leftPadding ? 0 : 1)];
+        s += piSrc[2 * i + 1];
+        s += piSrc[2 * i + iRecStride];
+        pDst[i] = s >> 3;
       }
       else
       {
         piSrc = pRecSrc0 - iRecStride2;
-
-        if ((i == 0 && !bLeftAvaillable) || (i == uiCWidth + addedAboveRight - 1 + logSubWidthC))
-        {
-#if JVET_Q0500_CCLM_REF_PADDING
-          pDst[i] = ((piSrc[mult * i]            * c0_6tap + piSrc[mult * i]             * c1_6tap + piSrc[mult * i + 1]             * c2_6tap)
-                  + (piSrc[mult * i + strOffset] * c3_6tap + piSrc[mult * i + strOffset] * c4_6tap + piSrc[mult * i + 1 + strOffset] * c5_6tap)
-                  + offset_6tap) >> shift_6tap;
-#else
-          pDst[i] = (piSrc[mult * i] * c0_2tap + piSrc[mult * i + strOffset] * c1_2tap + offset_2tap) >> shift_2tap;
-#endif
-        }
-        else
-        {
-          pDst[i] = ((piSrc[mult * i]            * c0_6tap + piSrc[mult * i - 1]             * c1_6tap + piSrc[mult * i + 1]             * c2_6tap)
-                  + (piSrc[mult * i + strOffset] * c3_6tap + piSrc[mult * i - 1 + strOffset] * c4_6tap + piSrc[mult * i + 1 + strOffset] * c5_6tap)
-                  + offset_6tap) >> shift_6tap;
-        }
+        int s = 4;
+        s += piSrc[2 * i] * 2;
+        s += piSrc[2 * i + 1];
+        s += piSrc[2 * i - (leftPadding ? 0 : 1)];
+        s += piSrc[2 * i + iRecStride] * 2;
+        s += piSrc[2 * i + 1 + iRecStride];
+        s += piSrc[2 * i + iRecStride - (leftPadding ? 0 : 1)];
+        pDst[i] = s >> 3;
       }
     }
   }
 
-  if( bLeftAvaillable )
+  if (leftIsAvailable)
   {
     pDst  = pDst0    - 1;
-
-    piSrc = pRecSrc0 - 2 - logSubWidthC;
+    piSrc = pRecSrc0 - 1 - logSubWidthC;
 
     int addedLeftBelow = 0;
     if ((curChromaMode == MDLM_L_IDX) || (curChromaMode == MDLM_T_IDX))
@@ -1541,32 +1482,40 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
 
     for (int j = 0; j < uiCHeight + addedLeftBelow; j++)
     {
-      if( pu.cs->sps->getCclmCollocatedChromaFlag() )
+      if (pu.chromaFormat == CHROMA_444)
       {
-        if ((j == 0 && !bAboveAvaillable) || (j == uiCHeight + addedLeftBelow - 1 + logSubWidthC))
-        {
-#if JVET_Q0500_CCLM_REF_PADDING
-          pDst[0] = ( piSrc[1            ] * c0_5tap
-                    + piSrc[1            ] * c1_5tap + piSrc[0] * c2_5tap + piSrc[2] * c3_5tap
-                    + piSrc[1 + strOffset] * c4_5tap
-                    + offset_5tap ) >> shift_5tap;
-#else
-          pDst[0] = ( piSrc[1] * c0_3tap + piSrc[0] * c1_3tap + piSrc[2] * c2_3tap + offset_3tap) >> shift_3tap;
-#endif
-        }
-        else
-        {
-          pDst[0] = ( piSrc[1 - strOffset] * c0_5tap
-                    + piSrc[1            ] * c1_5tap + piSrc[0] * c2_5tap + piSrc[2] * c3_5tap
-                    + piSrc[1 + strOffset] * c4_5tap
-                    + offset_5tap ) >> shift_5tap;
-        }
+        pDst[0] = piSrc[0];
+      }
+      else if (pu.chromaFormat == CHROMA_422)
+      {
+        int s = 2;
+        s += piSrc[0] * 2;
+        s += piSrc[-1];
+        s += piSrc[1];
+        pDst[0] = s >> 2;
+      }
+      else if (pu.cs->sps->getCclmCollocatedChromaFlag())
+      {
+        const bool abovePadding = j == 0 && !aboveIsAvailable;
+
+        int s = 4;
+        s += piSrc[-(abovePadding ? 0 : iRecStride)];
+        s += piSrc[0] * 4;
+        s += piSrc[-1];
+        s += piSrc[1];
+        s += piSrc[iRecStride];
+        pDst[0] = s >> 3;
       }
       else
       {
-        pDst[0] = ((piSrc[1]             * c0_6tap + piSrc[0]         * c1_6tap + piSrc[2]             * c2_6tap)
-                +  (piSrc[1 + strOffset] * c3_6tap + piSrc[strOffset] * c4_6tap + piSrc[2 + strOffset] * c5_6tap)
-                +   offset_6tap) >> shift_6tap;
+        int s = 4;
+        s += piSrc[0] * 2;
+        s += piSrc[1];
+        s += piSrc[-1];
+        s += piSrc[iRecStride] * 2;
+        s += piSrc[iRecStride + 1];
+        s += piSrc[iRecStride - 1];
+        pDst[0] = s >> 3;
       }
 
       piSrc += iRecStride2;
@@ -1579,87 +1528,46 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
   {
     for( int i = 0; i < uiCWidth; i++ )
     {
-      if( pu.cs->sps->getCclmCollocatedChromaFlag() )
+      if (pu.chromaFormat == CHROMA_444)
       {
-        if( i == 0 && !bLeftAvaillable )
-        {
-          if ( j == 0 && !bAboveAvaillable )
-          {
-#if JVET_Q0500_CCLM_REF_PADDING
-            pDst0[i] = (pRecSrc0[mult * i] * c0_5tap
-                     +  pRecSrc0[mult * i] * c1_5tap + pRecSrc0[mult * i] * c2_5tap + pRecSrc0[mult * i + 1] * c3_5tap
-                     +  pRecSrc0[mult * i + strOffset] * c4_5tap
-                     +  offset_5tap) >> shift_5tap;
-#else
-            pDst0[i] = pRecSrc0[mult * i];
-#endif
-          }
-          else
-          {
-#if JVET_Q0500_CCLM_REF_PADDING
-            pDst0[i] = (pRecSrc0[mult * i - strOffset] * c0_5tap
-                     +  pRecSrc0[mult * i] * c1_5tap + pRecSrc0[mult * i] * c2_5tap + pRecSrc0[mult * i + 1] * c3_5tap
-                     +  pRecSrc0[mult * i + strOffset] * c4_5tap
-                     +  offset_5tap) >> shift_5tap;
-#else
-            pDst0[i] = (pRecSrc0[mult * i] * c0_3tap + pRecSrc0[mult * i - strOffset] * c1_3tap + pRecSrc0[mult * i + strOffset] * c2_3tap + offset_3tap) >> shift_3tap;
-#endif
-          }
-        }
-        else if ( j == 0 && !bAboveAvaillable )
-        {
-#if JVET_Q0500_CCLM_REF_PADDING
-          pDst0[i] = (pRecSrc0[mult * i] * c0_5tap
-                   +  pRecSrc0[mult * i] * c1_5tap + pRecSrc0[mult * i - 1] * c2_5tap + pRecSrc0[mult * i + 1] * c3_5tap
-                   +  pRecSrc0[mult * i + strOffset] * c4_5tap
-                   +  offset_5tap) >> shift_5tap;
-#else
-          pDst0[i] = (pRecSrc0[mult * i] * c0_3tap + pRecSrc0[mult * i - 1] * c1_3tap + pRecSrc0[mult * i + 1] * c2_3tap + offset_3tap) >> shift_3tap;
-#endif
-        }
-        else
-        {
-          pDst0[i] = (pRecSrc0[mult * i - strOffset] * c0_5tap
-                   +  pRecSrc0[mult * i]             * c1_5tap + pRecSrc0[mult * i - 1] * c2_5tap + pRecSrc0[mult * i + 1] * c3_5tap
-                   +  pRecSrc0[mult * i + strOffset] * c4_5tap
-                   +  offset_5tap) >> shift_5tap;
-        }
+        pDst0[i] = pRecSrc0[i];
+      }
+      else if (pu.chromaFormat == CHROMA_422)
+      {
+        const bool leftPadding  = i == 0 && !leftIsAvailable;
+
+        int s = 2;
+        s += pRecSrc0[2 * i] * 2;
+        s += pRecSrc0[2 * i - (leftPadding ? 0 : 1)];
+        s += pRecSrc0[2 * i + 1];
+        pDst0[i] = s >> 2;
+      }
+      else if (pu.cs->sps->getCclmCollocatedChromaFlag())
+      {
+        const bool leftPadding  = i == 0 && !leftIsAvailable;
+        const bool abovePadding = j == 0 && !aboveIsAvailable;
+
+        int s = 4;
+        s += pRecSrc0[2 * i - (abovePadding ? 0 : iRecStride)];
+        s += pRecSrc0[2 * i] * 4;
+        s += pRecSrc0[2 * i - (leftPadding ? 0 : 1)];
+        s += pRecSrc0[2 * i + 1];
+        s += pRecSrc0[2 * i + iRecStride];
+        pDst0[i] = s >> 3;
       }
       else
       {
+        CHECK(pu.chromaFormat != CHROMA_420, "Chroma format must be 4:2:0 for vertical filtering");
+        const bool leftPadding = i == 0 && !leftIsAvailable;
 
-        if ((i == 0 && !bLeftAvaillable) || (i == uiCWidth - 1 + logSubWidthC))
-        {
-#if JVET_Q0500_CCLM_REF_PADDING
-          int s = offset_6tap;
-          s += pRecSrc0[mult * i] * c0_6tap;
-          s += pRecSrc0[mult * i + 1] * c1_6tap;
-          s += pRecSrc0[mult * i] * c2_6tap;
-          if (pu.chromaFormat == CHROMA_420)
-          {
-            s += pRecSrc0[mult * i + strOffset] * c3_6tap;
-            s += pRecSrc0[mult * i + 1 + strOffset] * c4_6tap;
-            s += pRecSrc0[mult * i + strOffset] * c5_6tap;
-          }
-          pDst0[i] = s >> shift_6tap;
-#else
-          pDst0[i] = (pRecSrc0[mult * i] * c0_2tap + pRecSrc0[mult * i + strOffset] * c1_2tap + offset_2tap) >> shift_2tap;
-#endif
-        }
-        else
-        {
-          int s = offset_6tap;
-          s += pRecSrc0[mult * i] * c0_6tap;
-          s += pRecSrc0[mult * i + 1] * c1_6tap;
-          s += pRecSrc0[mult * i - 1] * c2_6tap;
-          if (pu.chromaFormat == CHROMA_420)
-          {
-            s += pRecSrc0[mult * i + strOffset] * c3_6tap;
-            s += pRecSrc0[mult * i + 1 + strOffset] * c4_6tap;
-            s += pRecSrc0[mult * i - 1 + strOffset] * c5_6tap;
-          }
-          pDst0[i] = s >> shift_6tap;
-        }
+        int s = 4;
+        s += pRecSrc0[2 * i] * 2;
+        s += pRecSrc0[2 * i + 1];
+        s += pRecSrc0[2 * i - (leftPadding ? 0 : 1)];
+        s += pRecSrc0[2 * i + iRecStride] * 2;
+        s += pRecSrc0[2 * i + 1 + iRecStride];
+        s += pRecSrc0[2 * i + iRecStride - (leftPadding ? 0 : 1)];
+        pDst0[i] = s >> 3;
       }
     }
 
@@ -1890,24 +1798,62 @@ void IntraPrediction::initIntraMip( const PredictionUnit &pu, const CompArea &ar
 
   // prepare input (boundary) data for prediction
   CHECK( m_ipaParam.refFilterFlag, "ERROR: unfiltered refs expected for MIP" );
+#if JVET_R0350_MIP_CHROMA_444_SINGLETREE
+  Pel       *ptrSrc     = getPredictorPtr(area.compID);
+  const int  srcStride  = m_refBufferStride[area.compID];
+  const int  srcHStride = 2;
+
+  m_matrixIntraPred.prepareInputForPred(CPelBuf(ptrSrc, srcStride, srcHStride), area,
+                                        pu.cu->slice->getSPS()->getBitDepth(toChannelType(area.compID)), area.compID);
+#else
   Pel *ptrSrc = getPredictorPtr( COMPONENT_Y );
   const int srcStride  = m_refBufferStride[COMPONENT_Y];
   const int srcHStride = 2;
 
   m_matrixIntraPred.prepareInputForPred( CPelBuf( ptrSrc, srcStride, srcHStride ), area, pu.cu->slice->getSPS()->getBitDepth( CHANNEL_TYPE_LUMA ) );
+#endif
 }
 
 void IntraPrediction::predIntraMip( const ComponentID compId, PelBuf &piPred, const PredictionUnit &pu )
 {
+#if !JVET_R0350_MIP_CHROMA_444_SINGLETREE
   CHECK( compId != COMPONENT_Y, "Error: chroma not supported" );
+#endif
   CHECK( piPred.width > MIP_MAX_WIDTH || piPred.height > MIP_MAX_HEIGHT, "Error: block size not supported for MIP" );
   CHECK( piPred.width != (1 << floorLog2(piPred.width)) || piPred.height != (1 << floorLog2(piPred.height)), "Error: expecting blocks of size 2^M x 2^N" );
 
   // generate mode-specific prediction
+#if JVET_R0350_MIP_CHROMA_444_SINGLETREE
+  uint32_t modeIdx       = MAX_NUM_MIP_MODE;
+  bool     transposeFlag = false;
+  if (compId == COMPONENT_Y)
+  {
+    modeIdx       = pu.intraDir[CHANNEL_TYPE_LUMA];
+    transposeFlag = pu.mipTransposedFlag;
+  }
+  else
+  {
+    const PredictionUnit &coLocatedLumaPU = PU::getCoLocatedLumaPU(pu);
+
+    CHECK(pu.intraDir[CHANNEL_TYPE_CHROMA] != DM_CHROMA_IDX, "Error: MIP is only supported for chroma with DM_CHROMA.");
+    CHECK(!coLocatedLumaPU.cu->mipFlag, "Error: Co-located luma CU should use MIP.");
+
+    modeIdx       = coLocatedLumaPU.intraDir[CHANNEL_TYPE_LUMA];
+    transposeFlag = coLocatedLumaPU.mipTransposedFlag;
+  }
+  const int bitDepth = pu.cu->slice->getSPS()->getBitDepth(toChannelType(compId));
+
+  CHECK(modeIdx >= getNumModesMip(piPred), "Error: Wrong MIP mode index");
+#else
   const int bitDepth = pu.cu->slice->getSPS()->getBitDepth( CHANNEL_TYPE_LUMA );
+#endif
 
   static_vector<int, MIP_MAX_WIDTH* MIP_MAX_HEIGHT> predMip( piPred.width * piPred.height );
+#if JVET_R0350_MIP_CHROMA_444_SINGLETREE
+  m_matrixIntraPred.predBlock(predMip.data(), modeIdx, transposeFlag, bitDepth, compId);
+#else
   m_matrixIntraPred.predBlock( predMip.data(), pu.intraDir[CHANNEL_TYPE_LUMA], pu.mipTransposedFlag, bitDepth );
+#endif
 
   for( int y = 0; y < piPred.height; y++ )
   {
@@ -1943,10 +1889,8 @@ void IntraPrediction::reorderPLT(CodingStructure& cs, Partitioner& partitioner, 
 
     for (curidx = 0; curidx < cu.curPLTSize[compBegin]; curidx++)
     {
-#if JVET_Q0504_PLT_NON444
       if( curPLTpred[curidx] )
         continue;
-#endif
       bool matchTmp = true;
       for (int comp = compBegin; comp < (compBegin + numComp); comp++)
       {
@@ -1963,7 +1907,6 @@ void IntraPrediction::reorderPLT(CodingStructure& cs, Partitioner& partitioner, 
     {
       cu.reuseflag[compBegin][predidx] = true;
       curPLTpred[curidx] = true;
-#if JVET_Q0504_PLT_NON444
       if( cu.isLocalSepTree() )
       {
         cu.reuseflag[COMPONENT_Y][predidx] = true;
@@ -1974,14 +1917,11 @@ void IntraPrediction::reorderPLT(CodingStructure& cs, Partitioner& partitioner, 
       }
       else
       {
-#endif
       for (int comp = compBegin; comp < (compBegin + numComp); comp++)
       {
         curPLTtmp[comp][reusePLTSizetmp] = cs.prevPLT.curPLT[comp][predidx];
       }
-#if JVET_Q0504_PLT_NON444
       }
-#endif
       reusePLTSizetmp++;
       pltSizetmp++;
     }
@@ -1991,7 +1931,6 @@ void IntraPrediction::reorderPLT(CodingStructure& cs, Partitioner& partitioner, 
   {
     if (!curPLTpred[curidx])
     {
-#if JVET_Q0504_PLT_NON444
       if( cu.isLocalSepTree() )
       {
         for( int comp = compBegin; comp < (compBegin + numComp); comp++ )
@@ -2010,21 +1949,17 @@ void IntraPrediction::reorderPLT(CodingStructure& cs, Partitioner& partitioner, 
       }
       else
       {
-#endif
       for (int comp = compBegin; comp < (compBegin + numComp); comp++)
       {
         curPLTtmp[comp][pltSizetmp] = cu.curPLT[comp][curidx];
       }
-#if JVET_Q0504_PLT_NON444
       }
-#endif
       pltSizetmp++;
     }
   }
   assert(pltSizetmp == cu.curPLTSize[compBegin]);
   for (int curidx = 0; curidx < cu.curPLTSize[compBegin]; curidx++)
   {
-#if JVET_Q0504_PLT_NON444
     if( cu.isLocalSepTree() )
     {
       for( int comp = COMPONENT_Y; comp < MAX_NUM_COMPONENT; comp++ )
@@ -2034,14 +1969,11 @@ void IntraPrediction::reorderPLT(CodingStructure& cs, Partitioner& partitioner, 
     }
     else
     {
-#endif
     for (int comp = compBegin; comp < (compBegin + numComp); comp++)
     {
       cu.curPLT[comp][curidx] = curPLTtmp[comp][curidx];
     }
-#if JVET_Q0504_PLT_NON444
     }
-#endif
   }
 }
 //! \}

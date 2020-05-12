@@ -527,6 +527,11 @@ void QuantRDOQ::quant(TransformUnit &tu, const ComponentID &compID, const CCoeff
     useRDOQ &= uiHeight > 2;
   }
 
+#if  JVET_R0110_MIXED_LOSSLESS
+  if (tu.cs->slice->isLossless())
+    useRDOQ = false;
+#endif
+
   if (useRDOQ && (isLuma(compID) || RDOQ_CHROMA))
   {
 #if T0196_SELECTIVE_RDOQ
@@ -629,16 +634,13 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
   const bool   isTransformSkip = (tu.mtsIdx[compID] == MTS_SKIP);
   const double *const pdErrScale = xGetErrScaleCoeffSL(scalingListType, uiLog2BlockWidth, uiLog2BlockHeight, cQP.rem(isTransformSkip));
   const int    *const piQCoef    = getQuantCoeff(scalingListType, cQP.rem(isTransformSkip), uiLog2BlockWidth, uiLog2BlockHeight);
-#if JVET_Q0346_SCALING_LIST_USED_IN_SH
   const bool   disableSMForLFNST = tu.cs->slice->getExplicitScalingListUsed() ? tu.cs->picHeader->getScalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
-#else
-  const bool   disableSMForLFNST = tu.cs->picHeader->getScalingListPresentFlag() ? tu.cs->picHeader->getScalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
-#endif
-#if JVET_Q0784_LFNST_COMBINATION
   const bool   isLfnstApplied = tu.cu->lfnstIdx > 0 && (tu.cu->isSepTree() ? true : isLuma(compID));
-  const bool   enableScalingLists = getUseScalingList(uiWidth, uiHeight, isTransformSkip, isLfnstApplied, disableSMForLFNST);
+#if JVET_R0380_SCALING_MATRIX_DISABLE_YCC_OR_RGB
+  const bool   disableSMForACT = tu.cs->slice->getSPS()->getScalingMatrixForAlternativeColourSpaceDisabledFlag() && (tu.cs->slice->getSPS()->getScalingMatrixDesignatedColourSpaceFlag() == tu.cu->colorTransform);
+  const bool   enableScalingLists = getUseScalingList(uiWidth, uiHeight, isTransformSkip, isLfnstApplied, disableSMForLFNST, disableSMForACT);
 #else
-  const bool   enableScalingLists = getUseScalingList(uiWidth, uiHeight, isTransformSkip, tu.cu->lfnstIdx > 0, disableSMForLFNST);
+  const bool   enableScalingLists = getUseScalingList(uiWidth, uiHeight, isTransformSkip, isLfnstApplied, disableSMForLFNST);
 #endif
   const int    defaultQuantisationCoefficient = g_quantScales[ needSqrtAdjustment ?1:0][cQP.rem(isTransformSkip)];
   const double defaultErrorScale              = xGetErrScaleCoeffNoScalingList(scalingListType, uiLog2BlockWidth, uiLog2BlockHeight, cQP.rem(isTransformSkip));
@@ -647,8 +649,12 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
 
   const TCoeff entropyCodingMinimum = -(1 << maxLog2TrDynamicRange);
   const TCoeff entropyCodingMaximum =  (1 << maxLog2TrDynamicRange) - 1;
-
+  
+#if JVET_R0271_SLICE_LEVEL_DQ_SDH_RRC
+  CoeffCodingContext cctx(tu, compID, tu.cs->slice->getSignDataHidingEnabledFlag());
+#else
   CoeffCodingContext cctx(tu, compID, tu.cs->picHeader->getSignDataHidingEnabledFlag());
+#endif
   const int    iCGSizeM1      = (1 << cctx.log2CGSize()) - 1;
 
   int     iCGLastScanPos      = -1;
@@ -1233,7 +1239,11 @@ void QuantRDOQ::xRateDistOptQuantTS( TransformUnit &tu, const ComponentID &compI
   uint32_t coeffLevels[3];
   double   coeffLevelError[4];
 
+#if JVET_R0271_SLICE_LEVEL_DQ_SDH_RRC
+  CoeffCodingContext cctx( tu, compID, tu.cs->slice->getSignDataHidingEnabledFlag() );
+#else
   CoeffCodingContext cctx( tu, compID, tu.cs->picHeader->getSignDataHidingEnabledFlag() );
+#endif
   const int sbSizeM1    = ( 1 << cctx.log2CGSize() ) - 1;
   double    baseCost    = 0;
   uint32_t  goRiceParam = 0;
@@ -1458,7 +1468,11 @@ void QuantRDOQ::forwardRDPCM( TransformUnit &tu, const ComponentID &compID, cons
   uint32_t coeffLevels[3];
   double   coeffLevelError[4];
 
+#if JVET_R0271_SLICE_LEVEL_DQ_SDH_RRC
+  CoeffCodingContext cctx(tu, compID, tu.cs->slice->getSignDataHidingEnabledFlag());
+#else
   CoeffCodingContext cctx(tu, compID, tu.cs->picHeader->getSignDataHidingEnabledFlag());
+#endif
   const int sbSizeM1 = (1 << cctx.log2CGSize()) - 1;
   double    baseCost = 0;
   uint32_t  goRiceParam = 0;
@@ -1709,7 +1723,7 @@ inline uint32_t QuantRDOQ::xGetCodedLevelTSPred(double&            rd64CodedCost
     dErr = double(levelDouble - (Intermediate_Int(absLevel) << qBits));
     coeffLevelError[errorInd] = dErr * dErr * errorScale;
     int modAbsLevel = absLevel;
-    if (cctx.numCtxBins() >= 4) 
+    if (cctx.numCtxBins() >= 4)
     {
       modAbsLevel = cctx.deriveModCoeff(rightPixel, belowPixel, absLevel, m_bdpcm);
     }
@@ -1743,11 +1757,11 @@ inline int QuantRDOQ::xGetICRateTS( const uint32_t            absLevel,
                                     const bool                useLimitedPrefixLength,
                                     const int                 maxLog2TrDynamicRange  ) const
 {
- 
-  
-  if (cctx.numCtxBins() < 4) // Full by-pass coding 
+
+
+  if (cctx.numCtxBins() < 4) // Full by-pass coding
   {
-    int rate = absLevel ? (1 << SCALE_BITS) : 0; // 1 bit to signal sign of non-zero 
+    int rate = absLevel ? (1 << SCALE_BITS) : 0; // 1 bit to signal sign of non-zero
 
     uint32_t symbol = absLevel;
 
@@ -1854,8 +1868,8 @@ inline int QuantRDOQ::xGetICRateTS( const uint32_t            absLevel,
 
   }
 
-  
-  
+
+
   int rate = fracBitsSign.intBits[sign];
 
   if (absLevel)

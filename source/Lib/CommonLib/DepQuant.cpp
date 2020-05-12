@@ -1573,7 +1573,12 @@ DepQuant::~DepQuant()
 
 void DepQuant::quant( TransformUnit &tu, const ComponentID &compID, const CCoeffBuf &pSrc, TCoeff &uiAbsSum, const QpParam &cQP, const Ctx& ctx )
 {
-  if ( tu.cs->picHeader->getDepQuantEnabledFlag() && (tu.mtsIdx[compID] != MTS_SKIP) )
+  const bool useRegularResidualCoding = tu.cu->slice->getTSResidualCodingDisabledFlag() || tu.mtsIdx[compID] != MTS_SKIP;
+#if JVET_R0271_SLICE_LEVEL_DQ_SDH_RRC
+  if( tu.cs->slice->getDepQuantEnabledFlag() && useRegularResidualCoding )
+#else
+  if( tu.cs->picHeader->getDepQuantEnabledFlag() && useRegularResidualCoding )
+#endif
   {
     //===== scaling matrix ====
     const int         qpDQ            = cQP.Qp(tu.mtsIdx[compID] == MTS_SKIP) + 1;
@@ -1586,16 +1591,13 @@ void DepQuant::quant( TransformUnit &tu, const ComponentID &compID, const CCoeff
     CHECK(scalingListType >= SCALING_LIST_NUM, "Invalid scaling list");
     const uint32_t    log2TrWidth     = floorLog2(width);
     const uint32_t    log2TrHeight    = floorLog2(height);
-#if JVET_Q0346_SCALING_LIST_USED_IN_SH
     const bool        disableSMForLFNST = tu.cs->slice->getExplicitScalingListUsed() ? tu.cs->picHeader->getScalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
-#else
-    const bool        disableSMForLFNST = tu.cs->picHeader->getScalingListPresentFlag() ? tu.cs->picHeader->getScalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
-#endif
-#if JVET_Q0784_LFNST_COMBINATION
     const bool        isLfnstApplied = tu.cu->lfnstIdx > 0 && (tu.cu->isSepTree() ? true : isLuma(compID));
-    const bool        enableScalingLists = getUseScalingList(width, height, (tu.mtsIdx[compID] == MTS_SKIP), isLfnstApplied, disableSMForLFNST);
+#if JVET_R0380_SCALING_MATRIX_DISABLE_YCC_OR_RGB
+    const bool        disableSMForACT = tu.cs->slice->getSPS()->getScalingMatrixForAlternativeColourSpaceDisabledFlag() && (tu.cs->slice->getSPS()->getScalingMatrixDesignatedColourSpaceFlag() == tu.cu->colorTransform);
+    const bool        enableScalingLists = getUseScalingList(width, height, (tu.mtsIdx[compID] == MTS_SKIP), isLfnstApplied, disableSMForLFNST, disableSMForACT);
 #else
-    const bool        enableScalingLists = getUseScalingList(width, height, (tu.mtsIdx[compID] == MTS_SKIP), tu.cu->lfnstIdx > 0, disableSMForLFNST);
+    const bool        enableScalingLists = getUseScalingList(width, height, (tu.mtsIdx[compID] == MTS_SKIP), isLfnstApplied, disableSMForLFNST);
 #endif
     static_cast<DQIntern::DepQuant*>(p)->quant( tu, pSrc, compID, cQP, Quant::m_dLambda, ctx, uiAbsSum, enableScalingLists, Quant::getQuantCoeff(scalingListType, qpRem, log2TrWidth, log2TrHeight) );
   }
@@ -1607,7 +1609,12 @@ void DepQuant::quant( TransformUnit &tu, const ComponentID &compID, const CCoeff
 
 void DepQuant::dequant( const TransformUnit &tu, CoeffBuf &dstCoeff, const ComponentID &compID, const QpParam &cQP )
 {
-  if( tu.cs->picHeader->getDepQuantEnabledFlag() && (tu.mtsIdx[compID] != MTS_SKIP))
+  const bool useRegularResidualCoding = tu.cu->slice->getTSResidualCodingDisabledFlag() || tu.mtsIdx[compID] != MTS_SKIP;
+#if JVET_R0271_SLICE_LEVEL_DQ_SDH_RRC
+  if( tu.cs->slice->getDepQuantEnabledFlag() && useRegularResidualCoding )
+#else
+  if( tu.cs->picHeader->getDepQuantEnabledFlag() && useRegularResidualCoding )
+#endif
   {
     const int         qpDQ            = cQP.Qp(tu.mtsIdx[compID] == MTS_SKIP) + 1;
     const int         qpPer           = qpDQ / 6;
@@ -1619,16 +1626,13 @@ void DepQuant::dequant( const TransformUnit &tu, CoeffBuf &dstCoeff, const Compo
     CHECK(scalingListType >= SCALING_LIST_NUM, "Invalid scaling list");
     const uint32_t    log2TrWidth  = floorLog2(width);
     const uint32_t    log2TrHeight = floorLog2(height);
-#if JVET_Q0346_SCALING_LIST_USED_IN_SH
     const bool disableSMForLFNST = tu.cs->slice->getExplicitScalingListUsed() ? tu.cs->picHeader->getScalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
-#else
-    const bool disableSMForLFNST = tu.cs->picHeader->getScalingListPresentFlag() ? tu.cs->picHeader->getScalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
-#endif
-#if JVET_Q0784_LFNST_COMBINATION
     const bool isLfnstApplied = tu.cu->lfnstIdx > 0 && (tu.cu->isSepTree() ? true : isLuma(compID));
-    const bool enableScalingLists = getUseScalingList(width, height, (tu.mtsIdx[compID] == MTS_SKIP), isLfnstApplied, disableSMForLFNST);
+#if JVET_R0380_SCALING_MATRIX_DISABLE_YCC_OR_RGB
+    const bool disableSMForACT = tu.cs->slice->getSPS()->getScalingMatrixForAlternativeColourSpaceDisabledFlag() && (tu.cs->slice->getSPS()->getScalingMatrixDesignatedColourSpaceFlag() == tu.cu->colorTransform);
+    const bool enableScalingLists = getUseScalingList(width, height, (tu.mtsIdx[compID] == MTS_SKIP), isLfnstApplied, disableSMForLFNST, disableSMForACT);
 #else
-    const bool enableScalingLists = getUseScalingList(width, height, (tu.mtsIdx[compID] == MTS_SKIP), tu.cu->lfnstIdx > 0, disableSMForLFNST);
+    const bool enableScalingLists = getUseScalingList(width, height, (tu.mtsIdx[compID] == MTS_SKIP), isLfnstApplied, disableSMForLFNST);
 #endif
     static_cast<DQIntern::DepQuant*>(p)->dequant( tu, dstCoeff, compID, cQP, enableScalingLists, Quant::getDequantCoeff(scalingListType, qpRem, log2TrWidth, log2TrHeight) );
   }

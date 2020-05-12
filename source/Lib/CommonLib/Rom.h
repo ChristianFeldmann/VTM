@@ -176,6 +176,9 @@ extern const int g_quantInterDefault8x8[8*8];
 
 extern const uint32_t g_scalingListSize [SCALING_LIST_SIZE_NUM];
 extern const uint32_t g_scalingListSizeX[SCALING_LIST_SIZE_NUM];
+#if JVET_R0166_SCALING_LISTS_CHROMA_444
+extern const uint32_t g_scalingListId[SCALING_LIST_SIZE_NUM][SCALING_LIST_NUM];
+#endif
 
 extern MsgLevel g_verbosity;
 
@@ -205,11 +208,6 @@ constexpr uint8_t g_tbMax[257] = { 0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 
 
 //! \}
 
-#if !JVET_Q0806
-extern       uint8_t g_triangleMvStorage[TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_DEPTH - MIN_CU_LOG2 + 1][MAX_CU_SIZE >> MIN_CU_LOG2][MAX_CU_SIZE >> MIN_CU_LOG2];
-// 7-tap/3-tap, direction, 2/4/8/16/32/64/128
-extern int16_t *g_triangleWeights[TRIANGLE_DIR_NUM][MAX_CU_DEPTH - MIN_CU_LOG2 + 2][MAX_CU_DEPTH - MIN_CU_LOG2 + 2];
-#endif
 
 extern bool g_mctsDecCheckEnabled;
 
@@ -217,17 +215,12 @@ class  Mv;
 extern Mv   g_reusedUniMVs[32][32][8][8][2][33];
 extern bool g_isReusedUniMVsFilled[32][32][8][8];
 
-#if JVET_Q0503_Q0712_PLT_ENCODER_IMPROV_BUGFIX
 extern uint16_t g_paletteQuant[57];
-#else
-extern const uint8_t g_paletteQuant[52];
-#endif
 extern uint8_t g_paletteRunTopLut[5];
 extern uint8_t g_paletteRunLeftLut[5];
 
 const int g_IBCBufferSize = 256 * 128;
 
-#if JVET_Q0806
 void initGeoTemplate();
 extern int16_t** g_GeoParams;
 extern int16_t*  g_globalGeoWeights   [GEO_NUM_PRESTORED_MASK];
@@ -236,6 +229,5 @@ extern int16_t   g_weightOffset       [GEO_NUM_PARTITION_MODE][GEO_NUM_CU_SIZE][
 extern int8_t    g_angle2mask         [GEO_NUM_ANGLES];
 extern int8_t    g_Dis[GEO_NUM_ANGLES];
 extern int8_t    g_angle2mirror[GEO_NUM_ANGLES];
-#endif
 #endif  //__TCOMROM__
 

@@ -92,9 +92,7 @@ private:
   uint32_t                    m_uiSliceSegmentIdx;
   Ctx                     m_entropyCodingSyncContextState;      ///< context storage for state of contexts at the wavefront/WPP/entropy-coding-sync second CTU of tile-row
   SliceType               m_encCABACTableIdx;
-#if JVET_Q0501_PALETTE_WPP_INIT_ABOVECTU
   PLTBuf                  m_palettePredictorSyncState;
-#endif
 #if SHARP_LUMA_DELTA_QP || ENABLE_QPA_SUB_CTU
   int                     m_gopID;
 #endif
@@ -130,7 +128,10 @@ public:
   void    precompressSlice    ( Picture* pcPic                                     );      ///< precompress slice for multi-loop slice-level QP opt.
   void    compressSlice       ( Picture* pcPic, const bool bCompressEntireSlice, const bool bFastDeltaQP );      ///< analysis stage of slice
   void    calCostSliceI       ( Picture* pcPic );
-
+  void    calCostPictureI     ( Picture* picture );
+#if JVET_R0110_MIXED_LOSSLESS
+  void    setLosslessSlice(Picture* pcPic, bool b);      ///< Set if the slice is lossless or not
+#endif
   void    encodeSlice         ( Picture* pcPic, OutputBitstream* pcSubstreams, uint32_t &numBinsCoded );
   void    encodeCtus          ( Picture* pcPic, const bool bCompressEntireSlice, const bool bFastDeltaQP, EncLib* pcEncLib );
   void    checkDisFracMmvd    ( Picture* pcPic, uint32_t startCtuTsAddr, uint32_t boundingCtuTsAddr );

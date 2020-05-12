@@ -72,10 +72,6 @@ enum class BlockStatistic {
   IndependentSliceIdx,
   LFNSTIdx,
   JointCbCr,
-#if !REMOVE_PPS_REXT
-  CompAlphaCb,
-  CompAlphaCr,
-#endif
   RDPCM_Y,
   RDPCM_Cb,
   RDPCM_Cr,
@@ -120,15 +116,9 @@ enum class BlockStatistic {
   MMVDMergeIdx,
   CiipFlag,
   SMVDFlag,
-#if !JVET_Q0806
-  TrianglePartitioning,
-  TriangleMVL0, //<< currently only uni-prediction enabled
-  TriangleMVL1, //<< currently only uni-prediction enabled
-#else
   GeoPartitioning,
   GeoMVL0, //<< currently only uni-prediction enabled
   GeoMVL1, //<< currently only uni-prediction enabled
-#endif
   BCWIndex,
 // for dual tree
   // general
@@ -177,10 +167,6 @@ static const std::map<BlockStatistic, std::tuple<std::string, BlockStatisticType
   { BlockStatistic::IndependentSliceIdx,    std::tuple<std::string, BlockStatisticType, std::string>{"IndependentSliceIdx",         BlockStatisticType::Integer,                ""}},
   { BlockStatistic::LFNSTIdx,               std::tuple<std::string, BlockStatisticType, std::string>{"LFNSTIdx",                    BlockStatisticType::Integer,                "[0, 3]"}},
   { BlockStatistic::JointCbCr,              std::tuple<std::string, BlockStatisticType, std::string>{"JointCbCr",                   BlockStatisticType::Flag,                   ""}},
-#if !REMOVE_PPS_REXT
-  { BlockStatistic::CompAlphaCb,            std::tuple<std::string, BlockStatisticType, std::string>{"CompAlphaCb",                 BlockStatisticType::Integer,                ""}},
-  { BlockStatistic::CompAlphaCr,            std::tuple<std::string, BlockStatisticType, std::string>{"CompAlphaCr",                 BlockStatisticType::Integer,                ""}},
-#endif
   { BlockStatistic::RDPCM_Y,                std::tuple<std::string, BlockStatisticType, std::string>{"RDPCM_Y",                     BlockStatisticType::Integer,                "[0, " + std::to_string(NUMBER_OF_RDPCM_MODES) + "]"}},
   { BlockStatistic::RDPCM_Cb,               std::tuple<std::string, BlockStatisticType, std::string>{"RDPCM_Cb",                    BlockStatisticType::Integer,                "[0, " + std::to_string(NUMBER_OF_RDPCM_MODES) + "]"}},
   { BlockStatistic::RDPCM_Cr,               std::tuple<std::string, BlockStatisticType, std::string>{"RDPCM_Cr",                    BlockStatisticType::Integer,                "[0, " + std::to_string(NUMBER_OF_RDPCM_MODES) + "]"}},
@@ -222,15 +208,9 @@ static const std::map<BlockStatistic, std::tuple<std::string, BlockStatisticType
   { BlockStatistic::MMVDMergeIdx,           std::tuple<std::string, BlockStatisticType, std::string>{"MMVDMergeIdx",                BlockStatisticType::Integer,                "[0, 1]"}},
   { BlockStatistic::CiipFlag,            std::tuple<std::string, BlockStatisticType, std::string>{"CiipFlag",                 BlockStatisticType::Flag,                   ""}},
   { BlockStatistic::SMVDFlag,               std::tuple<std::string, BlockStatisticType, std::string>{"SMVDFlag",                    BlockStatisticType::Flag,                   ""}},
-#if !JVET_Q0806
-  { BlockStatistic::TrianglePartitioning,   std::tuple<std::string, BlockStatisticType, std::string>{"TrianglePartitioning",        BlockStatisticType::Line,                   ""}},
-  { BlockStatistic::TriangleMVL0,           std::tuple<std::string, BlockStatisticType, std::string>{"TriangleMVL0",                BlockStatisticType::VectorPolygon,          "Scale: 4"}},
-  { BlockStatistic::TriangleMVL1,           std::tuple<std::string, BlockStatisticType, std::string>{"TriangleMVL1",                BlockStatisticType::VectorPolygon,          "Scale: 4"}},
-#else
   { BlockStatistic::GeoPartitioning,        std::tuple<std::string, BlockStatisticType, std::string>{"GeoPartitioning",             BlockStatisticType::Line,                   ""} },
   { BlockStatistic::GeoMVL0,                std::tuple<std::string, BlockStatisticType, std::string>{"GeoMVL0",                     BlockStatisticType::VectorPolygon,          "Scale: 4"} },
   { BlockStatistic::GeoMVL1,                std::tuple<std::string, BlockStatisticType, std::string>{"GeoMVL1",                     BlockStatisticType::VectorPolygon,          "Scale: 4"} },
-#endif
   { BlockStatistic::BCWIndex,               std::tuple<std::string, BlockStatisticType, std::string>{"BCWIndex",                    BlockStatisticType::Integer,                "[0, 4]"} },
   // for dual tree
   { BlockStatistic::Depth_Chroma,                  std::tuple<std::string, BlockStatisticType, std::string>{"Depth_Chroma",                       BlockStatisticType::Integer,                "[0, 10]"}}, // todo: actual limits?
@@ -252,10 +232,8 @@ void writeBlockStatisticsHeader(const SPS *sps);
 void getAndStoreBlockStatistics(const CodingStructure& cs, const UnitArea& ctuArea);
 void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea);
 void writeAllCodedData(const CodingStructure& cs, const UnitArea& ctuArea);
-#if JVET_Q0806
 class MergeCtx;
 void storeGeoMergeCtx(MergeCtx geoMergeCtx);
-#endif
 #endif
 
 #endif // _DTRACE_BLOCKSTATISTICS_H_

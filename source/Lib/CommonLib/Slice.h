@@ -71,14 +71,12 @@ typedef std::list<Picture*> PicList;
 // Class definition
 // ====================================================================================================================
 
-#if JVET_Q0814_DPB
 struct DpbParameters
 {
   int m_maxDecPicBuffering[MAX_TLAYER] = { 0 };
   int m_numReorderPics[MAX_TLAYER] = { 0 };
   int m_maxLatencyIncreasePlus1[MAX_TLAYER] = { 0 };
 };
-#endif
 
 class ReferencePictureList
 {
@@ -173,7 +171,7 @@ public:
 
   void       setRefMatrixId(uint32_t scalingListId, uint32_t u)               { m_refMatrixId[scalingListId] = u;                         } //!< set reference matrix ID
   uint32_t       getRefMatrixId(uint32_t scalingListId) const                 { return m_refMatrixId[scalingListId];                      } //!< get reference matrix ID
-  
+
   static const int* getScalingListDefaultAddress(uint32_t scalinListId);                                                                           //!< get default matrix coefficient
   void       processDefaultMatrix(uint32_t scalinListId);
 
@@ -191,11 +189,9 @@ public:
   void       codeScalingList(int* scalingList, int scalingListDC, int scalinListId, int& bitsCost);
   void       setScalingListPreditorModeFlag(uint32_t scalingListId, bool bIsPred) { m_scalingListPreditorModeFlag[scalingListId] = bIsPred; }
   bool       getScalingListPreditorModeFlag(uint32_t scalingListId) const { return m_scalingListPreditorModeFlag[scalingListId]; }
-#if JVET_Q0505_CHROAM_QM_SIGNALING_400
   bool       getChromaScalingListPresentFlag() const {return m_chromaScalingListPresentFlag;}
   void       setChromaScalingListPresentFlag( bool flag) { m_chromaScalingListPresentFlag = flag;}
   bool       isLumaScalingList( int scalingListId) const;
-#endif
   void       checkDcOfMatrix();
   bool       xParseScalingList(const std::string &fileName);
   void       setDefaultScalingList();
@@ -236,23 +232,21 @@ private:
   uint32_t         m_refMatrixId                   [30]; //!< RefMatrixID
   bool             m_scalingListPreditorModeFlag   [30]; //!< reference list index
   std::vector<int> m_scalingListCoef               [30]; //!< quantization matrix
-#if JVET_Q0505_CHROAM_QM_SIGNALING_400
   bool             m_chromaScalingListPresentFlag;
-#endif
 };
 
 class ConstraintInfo
 {
+#if !JVET_R0090_VUI
   bool              m_progressiveSourceFlag;
   bool              m_interlacedSourceFlag;
+#endif
   bool              m_nonPackedConstraintFlag;
-#if JVET_Q0114_CONSTRAINT_FLAGS
   bool              m_nonProjectedConstraintFlag;
   bool              m_noResChangeInClvsConstraintFlag;
   bool              m_oneTilePerPicConstraintFlag;
   bool              m_oneSlicePerPicConstraintFlag;
   bool              m_oneSubpicPerPicConstraintFlag;
-#endif
   bool              m_frameOnlyConstraintFlag;
   bool              m_intraOnlyConstraintFlag;
   uint32_t          m_maxBitDepthConstraintIdc;
@@ -260,13 +254,26 @@ class ConstraintInfo
   bool              m_onePictureOnlyConstraintFlag;
   bool              m_lowerBitRateConstraintFlag;
 
+#if JVET_R0286_GCI_CLEANUP
+  bool              m_singleLayerConstraintFlag;
+  bool              m_allLayersIndependentConstraintFlag;
+  bool              m_noMrlConstraintFlag;
+  bool              m_noIspConstraintFlag;
+  bool              m_noMipConstraintFlag;
+  bool              m_noLfnstConstraintFlag;
+  bool              m_noMmvdConstraintFlag;
+  bool              m_noSmvdConstraintFlag;
+  bool              m_noProfConstraintFlag;
+  bool              m_noPaletteConstraintFlag;
+  bool              m_noActConstraintFlag;
+  bool              m_noLmcsConstraintFlag;
+#endif
+
   bool              m_noQtbttDualTreeIntraConstraintFlag;
   bool              m_noPartitionConstraintsOverrideConstraintFlag;
   bool              m_noSaoConstraintFlag;
   bool              m_noAlfConstraintFlag;
-#if JVET_Q0795_CCALF
   bool              m_noCCAlfConstraintFlag;
-#endif
   bool              m_noRefWraparoundConstraintFlag;
   bool              m_noTemporalMvpConstraintFlag;
   bool              m_noSbtmvpConstraintFlag;
@@ -281,11 +288,7 @@ class ConstraintInfo
   bool              m_noIbcConstraintFlag;
   bool              m_noCiipConstraintFlag;
   bool              m_noFPelMmvdConstraintFlag;
-#if !JVET_Q0806
-  bool              m_noTriangleConstraintFlag;
-#else
   bool              m_noGeoConstraintFlag;
-#endif
   bool              m_noLadfConstraintFlag;
   bool              m_noTransformSkipConstraintFlag;
   bool              m_noBDPCMConstraintFlag;
@@ -293,9 +296,7 @@ class ConstraintInfo
   bool              m_noQpDeltaConstraintFlag;
   bool              m_noDepQuantConstraintFlag;
   bool              m_noSignDataHidingConstraintFlag;
-#if JVET_P0124_MIXED_NALU
   bool              m_noMixedNaluTypesInPicConstraintFlag;
-#endif
   bool              m_noTrailConstraintFlag;
   bool              m_noStsaConstraintFlag;
   bool              m_noRaslConstraintFlag;
@@ -307,29 +308,45 @@ class ConstraintInfo
 
 public:
   ConstraintInfo()
+#if !JVET_R0090_VUI
     : m_progressiveSourceFlag (false)
     , m_interlacedSourceFlag (false)
     , m_nonPackedConstraintFlag (false)
-#if JVET_Q0114_CONSTRAINT_FLAGS
+#else
+    : m_nonPackedConstraintFlag (false)
+#endif
     , m_nonProjectedConstraintFlag(false)
     , m_noResChangeInClvsConstraintFlag(false)
     , m_oneTilePerPicConstraintFlag(false)
     , m_oneSlicePerPicConstraintFlag(false)
     , m_oneSubpicPerPicConstraintFlag(false)
-#endif
     , m_frameOnlyConstraintFlag  (false)
     , m_intraOnlyConstraintFlag  (false)
     , m_maxBitDepthConstraintIdc  (  0)
     , m_maxChromaFormatConstraintIdc(CHROMA_420)
     , m_onePictureOnlyConstraintFlag (false)
     , m_lowerBitRateConstraintFlag (false )
+
+#if JVET_R0286_GCI_CLEANUP
+    , m_singleLayerConstraintFlag(false)
+    , m_allLayersIndependentConstraintFlag(false)
+    , m_noMrlConstraintFlag(false)
+    , m_noIspConstraintFlag(false)
+    , m_noMipConstraintFlag(false)
+    , m_noLfnstConstraintFlag(false)
+    , m_noMmvdConstraintFlag(false)
+    , m_noSmvdConstraintFlag(false)
+    , m_noProfConstraintFlag(false)
+    , m_noPaletteConstraintFlag(false)
+    , m_noActConstraintFlag(false)
+    , m_noLmcsConstraintFlag(false)
+#endif
+
     , m_noQtbttDualTreeIntraConstraintFlag(false)
     , m_noPartitionConstraintsOverrideConstraintFlag(false)
     , m_noSaoConstraintFlag      (false)
     , m_noAlfConstraintFlag      (false)
-#if JVET_Q0795_CCALF
     , m_noCCAlfConstraintFlag      (false)
-#endif
     , m_noRefWraparoundConstraintFlag(false)
     , m_noTemporalMvpConstraintFlag(false)
     , m_noSbtmvpConstraintFlag   (false)
@@ -344,11 +361,7 @@ public:
     , m_noIbcConstraintFlag      (false)
     , m_noCiipConstraintFlag  (false)
     , m_noFPelMmvdConstraintFlag (false)
-#if !JVET_Q0806
-    , m_noTriangleConstraintFlag (false)
-#else
     , m_noGeoConstraintFlag      (false)
-#endif
     , m_noLadfConstraintFlag     (false)
     , m_noTransformSkipConstraintFlag(false)
     , m_noBDPCMConstraintFlag    (false)
@@ -356,9 +369,7 @@ public:
     , m_noQpDeltaConstraintFlag  (false)
     , m_noDepQuantConstraintFlag (false)
     , m_noSignDataHidingConstraintFlag(false)
-#if JVET_P0124_MIXED_NALU
     , m_noMixedNaluTypesInPicConstraintFlag(false)
-#endif
     , m_noTrailConstraintFlag (false)
     , m_noStsaConstraintFlag (false)
     , m_noRaslConstraintFlag (false)
@@ -369,11 +380,13 @@ public:
     , m_noApsConstraintFlag (false)
   {}
 
+#if !JVET_R0090_VUI
   bool          getProgressiveSourceFlag() const { return m_progressiveSourceFlag; }
   void          setProgressiveSourceFlag(bool b) { m_progressiveSourceFlag = b; }
 
   bool          getInterlacedSourceFlag() const { return m_interlacedSourceFlag; }
   void          setInterlacedSourceFlag(bool b) { m_interlacedSourceFlag = b; }
+#endif
 
   bool          getNonPackedConstraintFlag() const { return m_nonPackedConstraintFlag; }
   void          setNonPackedConstraintFlag(bool b) { m_nonPackedConstraintFlag = b; }
@@ -387,7 +400,6 @@ public:
   ChromaFormat  getMaxChromaFormatConstraintIdc() const { return m_maxChromaFormatConstraintIdc; }
   void          setMaxChromaFormatConstraintIdc(ChromaFormat fmt) { m_maxChromaFormatConstraintIdc = fmt; }
 
-#if JVET_Q0114_CONSTRAINT_FLAGS
   bool          getNonProjectedConstraintFlag() const { return m_nonProjectedConstraintFlag; }
   void          setNonProjectedConstraintFlag(bool b) { m_nonProjectedConstraintFlag = b; }
 
@@ -402,7 +414,6 @@ public:
 
   bool          getOneSubpicPerPicConstraintFlag() const { return m_oneSubpicPerPicConstraintFlag; }
   void          setOneSubpicPerPicConstraintFlag(bool b) { m_oneSubpicPerPicConstraintFlag = b; }
-#endif
 
   bool          getIntraOnlyConstraintFlag() const { return m_intraOnlyConstraintFlag; }
   void          setIntraOnlyConstraintFlag(bool b) { m_intraOnlyConstraintFlag = b; }
@@ -413,6 +424,33 @@ public:
   bool          getLowerBitRateConstraintFlag() const { return m_lowerBitRateConstraintFlag; }
   void          setLowerBitRateConstraintFlag(bool b) { m_lowerBitRateConstraintFlag = b; }
 
+#if JVET_R0286_GCI_CLEANUP
+  bool          getSingleLayerConstraintFlag() const { return m_singleLayerConstraintFlag; }
+  void          setSingleLayerConstraintFlag(bool b) { m_singleLayerConstraintFlag = b; }
+  bool          getAllLayersIndependentConstraintFlag() const { return m_allLayersIndependentConstraintFlag; }
+  void          setAllLayersIndependentConstraintFlag(bool b) { m_allLayersIndependentConstraintFlag = b; }
+  bool          getNoMrlConstraintFlag() const { return m_noMrlConstraintFlag; }
+  void          setNoMrlConstraintFlag(bool b) { m_noMrlConstraintFlag = b; }
+  bool          getNoIspConstraintFlag() const { return m_noIspConstraintFlag; }
+  void          setNoIspConstraintFlag(bool b) { m_noIspConstraintFlag = b; }
+  bool          getNoMipConstraintFlag() const { return m_noMipConstraintFlag; }
+  void          setNoMipConstraintFlag(bool b) { m_noMipConstraintFlag = b; }
+  bool          getNoLfnstConstraintFlag() const { return m_noLfnstConstraintFlag; }
+  void          setNoLfnstConstraintFlag(bool b) { m_noLfnstConstraintFlag = b; }
+  bool          getNoMmvdConstraintFlag() const { return m_noMmvdConstraintFlag; }
+  void          setNoMmvdConstraintFlag(bool b) { m_noMmvdConstraintFlag = b; }
+  bool          getNoSmvdConstraintFlag() const { return m_noSmvdConstraintFlag; }
+  void          setNoSmvdConstraintFlag(bool b) { m_noSmvdConstraintFlag = b; }
+  bool          getNoProfConstraintFlag() const { return m_noProfConstraintFlag; }
+  void          setNoProfConstraintFlag(bool b) { m_noProfConstraintFlag = b; }
+  bool          getNoPaletteConstraintFlag() const { return m_noPaletteConstraintFlag; }
+  void          setNoPaletteConstraintFlag(bool b) { m_noPaletteConstraintFlag = b; }
+  bool          getNoActConstraintFlag() const { return m_noActConstraintFlag; }
+  void          setNoActConstraintFlag(bool b) { m_noActConstraintFlag = b; }
+  bool          getNoLmcsConstraintFlag() const { return m_noLmcsConstraintFlag; }
+  void          setNoLmcsConstraintFlag(bool b) { m_noLmcsConstraintFlag = b; }
+#endif
+
   bool          getNoQtbttDualTreeIntraConstraintFlag() const { return m_noQtbttDualTreeIntraConstraintFlag; }
   void          setNoQtbttDualTreeIntraConstraintFlag(bool bVal) { m_noQtbttDualTreeIntraConstraintFlag = bVal; }
   bool          getNoPartitionConstraintsOverrideConstraintFlag() const { return m_noPartitionConstraintsOverrideConstraintFlag; }
@@ -421,10 +459,8 @@ public:
   void          setNoSaoConstraintFlag(bool bVal) { m_noSaoConstraintFlag = bVal; }
   bool          getNoAlfConstraintFlag() const { return m_noAlfConstraintFlag; }
   void          setNoAlfConstraintFlag(bool bVal) { m_noAlfConstraintFlag = bVal; }
-#if JVET_Q0795_CCALF
   bool          getNoCCAlfConstraintFlag() const { return m_noCCAlfConstraintFlag; }
   void          setNoCCAlfConstraintFlag(bool val) { m_noCCAlfConstraintFlag = val; }
-#endif
   bool          getNoJointCbCrConstraintFlag() const { return m_noJointCbCrConstraintFlag; }
   void          setNoJointCbCrConstraintFlag(bool bVal) { m_noJointCbCrConstraintFlag = bVal; }
   bool          getNoRefWraparoundConstraintFlag() const { return m_noRefWraparoundConstraintFlag; }
@@ -455,13 +491,8 @@ public:
   void          setNoCiipConstraintFlag(bool bVal) { m_noCiipConstraintFlag = bVal; }
   bool          getNoFPelMmvdConstraintFlag() const { return m_noFPelMmvdConstraintFlag; }
   void          setNoFPelMmvdConstraintFlag(bool bVal) { m_noFPelMmvdConstraintFlag = bVal; }
-#if !JVET_Q0806
-  bool          getNoTriangleConstraintFlag() const { return m_noTriangleConstraintFlag; }
-  void          setNoTriangleConstraintFlag(bool bVal) { m_noTriangleConstraintFlag = bVal; }
-#else
   bool          getNoGeoConstraintFlag() const { return m_noGeoConstraintFlag; }
   void          setNoGeoConstraintFlag(bool bVal) { m_noGeoConstraintFlag = bVal; }
-#endif
   bool          getNoLadfConstraintFlag() const { return m_noLadfConstraintFlag; }
   void          setNoLadfConstraintFlag(bool bVal) { m_noLadfConstraintFlag = bVal; }
   bool          getNoTransformSkipConstraintFlag() const { return m_noTransformSkipConstraintFlag; }
@@ -474,10 +505,8 @@ public:
   void          setNoDepQuantConstraintFlag(bool bVal) { m_noDepQuantConstraintFlag = bVal; }
   bool          getNoSignDataHidingConstraintFlag() const { return m_noSignDataHidingConstraintFlag; }
   void          setNoSignDataHidingConstraintFlag(bool bVal) { m_noSignDataHidingConstraintFlag = bVal; }
-#if JVET_P0124_MIXED_NALU
   bool          getNoMixedNaluTypesInPicConstraintFlag() const    { return m_noMixedNaluTypesInPicConstraintFlag; }
   void          setNoMixedNaluTypesInPicConstraintFlag(bool bVal) { m_noMixedNaluTypesInPicConstraintFlag = bVal; }
-#endif
   bool          getNoTrailConstraintFlag() const { return m_noTrailConstraintFlag; }
   void          setNoTrailConstraintFlag(bool bVal) { m_noTrailConstraintFlag = bVal; }
   bool          getNoStsaConstraintFlag() const { return m_noStsaConstraintFlag; }
@@ -495,10 +524,8 @@ public:
   bool          getNoApsConstraintFlag() const { return m_noApsConstraintFlag; }
   void          setNoApsConstraintFlag(bool bVal) { m_noApsConstraintFlag = bVal; }
 
-#if JVET_Q0117_PARAMETER_SETS_CLEANUP
   friend bool             operator == (const ConstraintInfo& op1, const ConstraintInfo& op2);
   friend bool             operator != (const ConstraintInfo& op1, const ConstraintInfo& op2);
-#endif
 };
 
 class ProfileTierLevel
@@ -540,10 +567,8 @@ public:
 
   Level::Name             getSubLayerLevelIdc(int i) const             { return m_subLayerLevelIdc[i];   }
   void                    setSubLayerLevelIdc(int i, Level::Name x)    { m_subLayerLevelIdc[i] = x;      }
-#if JVET_Q0117_PARAMETER_SETS_CLEANUP
   friend bool             operator == (const ProfileTierLevel& op1, const ProfileTierLevel& op2);
   friend bool             operator != (const ProfileTierLevel& op1, const ProfileTierLevel& op2);
-#endif
 };
 
 
@@ -702,7 +727,7 @@ public:
   uint32_t               getCtuAddrInSlice( int idx ) const   { CHECK(idx >= m_ctuAddrInSlice.size(), "CTU index exceeds number of CTUs in slice."); return m_ctuAddrInSlice[idx]; }
   void                   pushToCtuAddrInSlice( uint32_t u )   { m_ctuAddrInSlice.push_back(u); m_numCtuInSlice++;}
 
-  void  initSliceMap() 
+  void  initSliceMap()
   {
     m_sliceID = 0;
     m_numTilesInSlice = 0;
@@ -710,12 +735,12 @@ public:
     m_ctuAddrInSlice.clear();
   }
 
-  void  addCtusToSlice( uint32_t startX, uint32_t stopX, uint32_t startY, uint32_t stopY, uint32_t picWidthInCtbsY ) 
+  void  addCtusToSlice( uint32_t startX, uint32_t stopX, uint32_t startY, uint32_t stopY, uint32_t picWidthInCtbsY )
   {
     CHECK( startX >= stopX || startY >= stopY, "Invalid slice definition");
-    for( uint32_t ctbY = startY; ctbY < stopY; ctbY++ ) 
+    for( uint32_t ctbY = startY; ctbY < stopY; ctbY++ )
     {
-      for( uint32_t ctbX = startX; ctbX < stopX; ctbX++ ) 
+      for( uint32_t ctbX = startX; ctbX < stopX; ctbX++ )
       {
         m_ctuAddrInSlice.push_back( ctbY * picWidthInCtbsY + ctbX );
         m_numCtuInSlice++;
@@ -732,11 +757,11 @@ private:
   uint32_t         m_sliceHeightInTiles;                //!< slice height in units of tiles
   uint32_t         m_numSlicesInTile;                   //!< number of slices in current tile for the special case of multiple slices inside a single tile
   uint32_t         m_sliceHeightInCtu;                  //!< slice height in units of CTUs for the special case of multiple slices inside a single tile
-  
+
 public:
   RectSlice();
   virtual ~RectSlice();
-  
+
   void             setSliceWidthInTiles( uint32_t u )   { m_sliceWidthInTiles = u;      }
   uint32_t         getSliceWidthInTiles( ) const        { return  m_sliceWidthInTiles;  }
   void             setSliceHeightInTiles( uint32_t u )  { m_sliceHeightInTiles = u;     }
@@ -750,7 +775,6 @@ public:
 
 };
 
-#if JVET_O1143_SUBPIC_BOUNDARY
 class SubPic
 {
 private:
@@ -765,7 +789,7 @@ private:
   uint32_t         m_subPicHeightInLumaSample;                  //!< the height of subpicture in units of luma sample
   uint32_t         m_firstCtuInSubPic;                          //!< the raster scan index of the first CTU in a subpicture
   uint32_t         m_lastCtuInSubPic;                           //!< the raster scan index of the last CTU in a subpicture
-  uint32_t         m_subPicLeft;                                //!< the position of left boundary 
+  uint32_t         m_subPicLeft;                                //!< the position of left boundary
   uint32_t         m_subPicRight;                               //!< the position of right boundary
   uint32_t         m_subPicTop;                                 //!< the position of top boundary
   uint32_t         m_subPicBottom;                              //!< the position of bottom boundary
@@ -773,10 +797,8 @@ private:
 
   bool             m_treatedAsPicFlag;                          //!< whether the subpicture is treated as a picture in the decoding process excluding in-loop filtering operations
   bool             m_loopFilterAcrossSubPicEnabledFlag;         //!< whether in-loop filtering operations may be performed across the boundaries of the subpicture
-#if JVET_Q0044_SLICE_IDX_WITH_SUBPICS
   uint32_t         m_numSlicesInSubPic;                         //!< Number of slices contained in this subpicture
-#endif
-  
+
 public:
   SubPic();
   virtual ~SubPic();
@@ -818,7 +840,7 @@ public:
   void                  addCTUsToSubPic(std::vector<uint32_t> ctuAddrInSlice)
   {
     for (auto ctu:ctuAddrInSlice)
-      m_ctuAddrInSubPic.push_back(ctu);    
+      m_ctuAddrInSubPic.push_back(ctu);
   }
   void  addAllCtusInPicToSubPic(uint32_t startX, uint32_t stopX, uint32_t startY, uint32_t stopY, uint32_t picWidthInCtbsY)
   {
@@ -842,7 +864,6 @@ public:
 
   bool             isFirstCTUinSubPic(uint32_t ctuAddr)    { return  ctuAddr == m_firstCtuInSubPic;  }
   bool              isLastCTUinSubPic(uint32_t ctuAddr)    { return  ctuAddr == m_lastCtuInSubPic;   }
-#if JVET_Q0044_SLICE_IDX_WITH_SUBPICS
   void             setNumSlicesInSubPic( uint32_t val )    { m_numSlicesInSubPic = val; }
   uint32_t         getNumSlicesInSubPic() const            { return m_numSlicesInSubPic; }
   bool             containsCtu(const Position& pos) const
@@ -850,8 +871,6 @@ public:
     return pos.x >= m_subPicCtuTopLeftX && pos.x < m_subPicCtuTopLeftX + m_subPicWidth &&
            pos.y >= m_subPicCtuTopLeftY && pos.y < m_subPicCtuTopLeftY + m_subPicHeight;
   }
-#endif
-#if JVET_Q0397_SUB_PIC_EXTRACT
   bool             containsCtu(int ctuAddr) const
   {
     for (auto & addr : m_ctuAddrInSubPic)
@@ -863,11 +882,8 @@ public:
     }
     return false;
   }
-  #endif
 };
-#endif
 
-#if JVET_Q0117_PARAMETER_SETS_CLEANUP // Rename DPS to DCI (decoding_capability_information)
 class DCI
 {
 private:
@@ -894,33 +910,6 @@ public:
     return true;
   }
 };
-#else
-class DPS
-{
-private:
-  int m_decodingParameterSetId;
-  int m_maxSubLayersMinus1;
-  std::vector<ProfileTierLevel> m_profileTierLevel;
-
-public:
-  DPS()
-    : m_decodingParameterSetId(-1)
-    , m_maxSubLayersMinus1 (0)
-  {};
-
-  virtual ~DPS() {};
-
-  int  getDecodingParameterSetId() const { return m_decodingParameterSetId; }
-  void setDecodingParameterSetId(int val) { m_decodingParameterSetId = val; }
-  int  getMaxSubLayersMinus1() const { return m_maxSubLayersMinus1; }
-  void setMaxSubLayersMinus1(int val) { m_maxSubLayersMinus1 = val; }
-
-  size_t getNumPTLs() const { return m_profileTierLevel.size(); }
-  void  setProfileTierLevel(const std::vector<ProfileTierLevel> &val)   { m_profileTierLevel = val; }
-  const ProfileTierLevel& getProfileTierLevel(int idx) const            { return m_profileTierLevel[idx]; }
-};
-
-#endif
 
 
 class VPS
@@ -942,34 +931,31 @@ private:
   uint32_t              m_directRefLayerIdx[MAX_VPS_LAYERS][MAX_VPS_LAYERS];
   uint32_t              m_generalLayerIdx[MAX_VPS_LAYERS];
 
-#if JVET_Q0786_PTL_only
   uint32_t              m_vpsNumPtls;
   bool                  m_ptPresentFlag[MAX_NUM_OLSS];
   uint32_t              m_ptlMaxTemporalId[MAX_NUM_OLSS];
   std::vector<ProfileTierLevel> m_vpsProfileTierLevel;
   uint32_t              m_olsPtlIdx[MAX_NUM_OLSS];
-#endif
 
-  // stores index ( ilrp_idx within 0 .. NumDirectRefLayers ) of the dependent reference layers 
+  // stores index ( ilrp_idx within 0 .. NumDirectRefLayers ) of the dependent reference layers
   uint32_t              m_interLayerRefIdx[MAX_VPS_LAYERS][MAX_VPS_LAYERS];
   bool                  m_vpsExtensionFlag;
-#if JVET_P0118_HRD_ASPECTS
   bool                  m_vpsGeneralHrdParamsPresentFlag;
   bool                  m_vpsSublayerCpbParamsPresentFlag;
   uint32_t              m_numOlsHrdParamsMinus1;
   uint32_t              m_hrdMaxTid[MAX_NUM_OLSS];
   uint32_t              m_olsHrdIdx[MAX_NUM_OLSS];
   GeneralHrdParams      m_generalHrdParams;
-#endif
-#if JVET_Q0814_DPB
   std::vector<Size>             m_olsDpbPicSize;
   std::vector<int>              m_olsDpbParamsIdx;
   std::vector<std::vector<int>> m_outputLayerIdInOls;
 public:
-#if JVET_P0118_HRD_ASPECTS
   std::vector<std::vector<OlsHrdParams>> m_olsHrdParams;
-#endif
   int                           m_totalNumOLSs;
+#if JVET_R0191_ASPECT3
+  int                           m_numMultiLayeredOlss;
+  uint32_t                      m_multiLayerOlsIdx[MAX_NUM_OLSS];
+#endif
   int                           m_numDpbParams;
   std::vector<DpbParameters>    m_dpbParameters;
   bool                          m_sublayerDpbParamsPresentFlag;
@@ -980,10 +966,6 @@ public:
   std::vector<int>              m_numOutputLayersInOls;
   std::vector<int>              m_numLayersInOls;
   std::vector<std::vector<int>> m_layerIdInOls;
-#elif JVET_P0288_PIC_OUTPUT
-public:
-  int                   m_targetOlsIdx;
-#endif
 
 public:
                     VPS();
@@ -1034,7 +1016,6 @@ public:
   bool              getOlsOutputLayerFlag(uint32_t ols, uint32_t layer) const { return m_vpsOlsOutputLayerFlag[ols][layer]; }
   void              setOlsOutputLayerFlag(uint32_t ols, uint32_t layer, bool t) { m_vpsOlsOutputLayerFlag[ols][layer] = t; }
 
-#if JVET_Q0786_PTL_only
   uint32_t          getNumPtls()                                   const { return m_vpsNumPtls; }
   void              setNumPtls(uint32_t val)                             { m_vpsNumPtls = val; }
 
@@ -1049,11 +1030,9 @@ public:
 
   uint32_t          getOlsPtlIdx(int idx)                          const { return m_olsPtlIdx[idx]; }
   void              setOlsPtlIdx(int idx, uint32_t val)                  { m_olsPtlIdx[idx] = val; }
-#endif
 
   bool              getVPSExtensionFlag() const                          { return m_vpsExtensionFlag;                                 }
   void              setVPSExtensionFlag(bool t)                          { m_vpsExtensionFlag = t;                                    }
-#if JVET_P0118_HRD_ASPECTS
   bool              getVPSGeneralHrdParamsPresentFlag() const { return m_vpsGeneralHrdParamsPresentFlag; }
   void              setVPSGeneralHrdParamsPresentFlag(bool t) { m_vpsGeneralHrdParamsPresentFlag = t; }
   bool              getVPSSublayerCpbParamsPresentFlag() const { return m_vpsSublayerCpbParamsPresentFlag; }
@@ -1064,23 +1043,22 @@ public:
   uint32_t          getHrdMaxTid(int olsIdx)                   const { return m_hrdMaxTid[olsIdx]; }
   void              setHrdMaxTid(int olsIdx, uint32_t val)           { m_hrdMaxTid[olsIdx] = val; }
   uint32_t          getOlsHrdIdx(int olsIdx)                   const { return m_olsHrdIdx[olsIdx]; }
-  void              setOlsHrdIdx(int olsIdx, uint32_t val)           { m_olsHrdIdx[olsIdx] = val; }  
+  void              setOlsHrdIdx(int olsIdx, uint32_t val)           { m_olsHrdIdx[olsIdx] = val; }
 
   OlsHrdParams*          getOlsHrdParameters(int olsIdx) { return &m_olsHrdParams[olsIdx][0]; }
   const OlsHrdParams*    getOlsHrdParameters(int olsIdx) const { return &m_olsHrdParams[olsIdx][0]; }
 
   GeneralHrdParams*          getGeneralHrdParameters() { return &m_generalHrdParams; }
   const GeneralHrdParams*    getGeneralHrdParameters() const { return &m_generalHrdParams; }
-#endif
-#if JVET_P0288_PIC_OUTPUT
   int               getTargetOlsIdx() { return m_targetOlsIdx; }
   void              setTargetOlsIdx(uint32_t t) { m_targetOlsIdx = t; }
-#endif
 
-#if JVET_Q0814_DPB
   int               getMaxDecPicBuffering( int temporalId ) const        { return m_dpbParameters[m_olsDpbParamsIdx[m_targetOlsIdx]].m_maxDecPicBuffering[temporalId]; }
   int               getNumReorderPics( int temporalId ) const            { return m_dpbParameters[m_olsDpbParamsIdx[m_targetOlsIdx]].m_numReorderPics[temporalId]; }
   int               getTotalNumOLSs() const                              { return m_totalNumOLSs; }
+#if JVET_R0191_ASPECT3
+  int               getNumMultiLayeredOlss() const                       { return m_numMultiLayeredOlss; }
+#endif
   Size              getOlsDpbPicSize( int olsIdx ) const                 { return m_olsDpbPicSize[olsIdx];          }
   void              setOlsDpbPicSize( int olsIdx, Size size )            { m_olsDpbPicSize[olsIdx] = size;          }
   void              setOlsDpbPicWidth( int olsIdx, int width )           { m_olsDpbPicSize[olsIdx].width = width;   }
@@ -1088,21 +1066,16 @@ public:
 
   int               getOlsDpbParamsIdx( int olsIdx ) const               { return m_olsDpbParamsIdx[olsIdx];        }
   void              setOlsDpbParamsIdx( int olsIdx, int paramIdx )       { m_olsDpbParamsIdx[olsIdx] = paramIdx;    }
-  
+
   void              deriveOutputLayerSets();
   void              deriveTargetOutputLayerSet( int targetOlsIdx );
-#endif
 
-#if JVET_P0125_SEI_CONSTRAINTS  
   void              setNumLayersInOls(int olsIdx, int numLayers)         { m_numLayersInOls[olsIdx]  = numLayers; }
   int               getNumLayersInOls(int olsIdx)      const             { return m_numLayersInOls[olsIdx]; }
 
   void              setLayerIdInOls  (int olsIdx, int layerIdx, int layerId)    { m_layerIdInOls[olsIdx][layerIdx] = layerId; }
   uint32_t          getLayerIdInOls  (int olsIdx, int layerIdx) const           { return m_layerIdInOls[olsIdx][layerIdx]   ; }
-#endif
-#if JVET_P0118_OLS_EXTRACTION
   std::vector<int>  getLayerIdsInOls(int targetOlsIdx)                    { return m_layerIdInOls[targetOlsIdx];     }
-#endif
 };
 
 class Window
@@ -1124,21 +1097,21 @@ public:
 
   bool getWindowEnabledFlag() const   { return m_enabledFlag;                          }
   int  getWindowLeftOffset() const    { return m_enabledFlag ? m_winLeftOffset : 0;    }
-  void setWindowLeftOffset(int val)   { m_winLeftOffset = val; m_enabledFlag = true;   }
+  void setWindowLeftOffset(int val)   { m_winLeftOffset = val; m_enabledFlag |=  (val!=0);   }
   int  getWindowRightOffset() const   { return m_enabledFlag ? m_winRightOffset : 0;   }
-  void setWindowRightOffset(int val)  { m_winRightOffset = val; m_enabledFlag = true;  }
+  void setWindowRightOffset(int val)  { m_winRightOffset = val; m_enabledFlag |= (val!=0);  }
   int  getWindowTopOffset() const     { return m_enabledFlag ? m_winTopOffset : 0;     }
-  void setWindowTopOffset(int val)    { m_winTopOffset = val; m_enabledFlag = true;    }
+  void setWindowTopOffset(int val)    { m_winTopOffset = val; m_enabledFlag |= (val!=0);    }
   int  getWindowBottomOffset() const  { return m_enabledFlag ? m_winBottomOffset: 0;   }
-  void setWindowBottomOffset(int val) { m_winBottomOffset = val; m_enabledFlag = true; }
+  void setWindowBottomOffset(int val) { m_winBottomOffset = val; m_enabledFlag |= (val!=0); }
 
-  void setWindow(int offsetLeft, int offsetLRight, int offsetLTop, int offsetLBottom)
+  void setWindow(int offsetLeft, int offsetRight, int offsetTop, int offsetBottom)
   {
-    m_enabledFlag     = true;
+    m_enabledFlag     = (offsetLeft || offsetRight || offsetTop || offsetBottom);
     m_winLeftOffset   = offsetLeft;
-    m_winRightOffset  = offsetLRight;
-    m_winTopOffset    = offsetLTop;
-    m_winBottomOffset = offsetLBottom;
+    m_winRightOffset  = offsetRight;
+    m_winTopOffset    = offsetTop;
+    m_winBottomOffset = offsetBottom;
   }
 };
 
@@ -1155,8 +1128,9 @@ private:
   int        m_colourPrimaries;
   int        m_transferCharacteristics;
   int        m_matrixCoefficients;
-#if !JVET_Q0042_VUI
-  bool       m_fieldSeqFlag;
+#if JVET_R0090_VUI
+  bool       m_progressiveSourceFlag;
+  bool       m_interlacedSourceFlag;
 #endif
   bool       m_chromaLocInfoPresentFlag;
   int        m_chromaSampleLocTypeTopField;
@@ -1177,8 +1151,9 @@ public:
     , m_colourPrimaries                   (2)
     , m_transferCharacteristics           (2)
     , m_matrixCoefficients                (2)
-#if !JVET_Q0042_VUI
-    , m_fieldSeqFlag                      (false)
+#if JVET_R0090_VUI
+    , m_progressiveSourceFlag             (false)
+    , m_interlacedSourceFlag              (false)
 #endif
     , m_chromaLocInfoPresentFlag          (false)
     , m_chromaSampleLocTypeTopField       (0)
@@ -1217,9 +1192,12 @@ public:
   int               getMatrixCoefficients() const                          { return m_matrixCoefficients;                   }
   void              setMatrixCoefficients(int i)                           { m_matrixCoefficients = i;                      }
 
-#if !JVET_Q0042_VUI
-  bool              getFieldSeqFlag() const                                { return m_fieldSeqFlag;                         }
-  void              setFieldSeqFlag(bool i)                                { m_fieldSeqFlag = i;                            }
+#if JVET_R0090_VUI
+  bool              getProgressiveSourceFlag() const                       { return m_progressiveSourceFlag; }
+  void              setProgressiveSourceFlag(bool b)                       { m_progressiveSourceFlag = b; }
+
+  bool              getInterlacedSourceFlag() const                        { return m_interlacedSourceFlag; }
+  void              setInterlacedSourceFlag(bool b)                        { m_interlacedSourceFlag = b; }
 #endif
 
   bool              getChromaLocInfoPresentFlag() const                    { return m_chromaLocInfoPresentFlag;             }
@@ -1306,9 +1284,6 @@ class SPS
 {
 private:
   int               m_SPSId;
-#if !JVET_Q0117_PARAMETER_SETS_CLEANUP
-  int               m_decodingParameterSetId;
-#endif
   int               m_VPSId;
 
   bool              m_affineAmvrEnabledFlag;
@@ -1321,43 +1296,30 @@ private:
 
   uint32_t              m_uiMaxTLayers;           // maximum number of temporal layers
 
-#if JVET_P0117_PTL_SCALABILITY
   bool              m_ptlDpbHrdParamsPresentFlag;
   bool              m_SubLayerDpbParamsFlag;
-#endif
 
   // Structure
   uint32_t              m_maxWidthInLumaSamples;
   uint32_t              m_maxHeightInLumaSamples;
-#if JVET_Q0260_CONFORMANCE_WINDOW_IN_SPS
   Window                m_conformanceWindow;
-#endif
-#if JVET_Q0119_CLEANUPS
   bool                  m_subPicInfoPresentFlag;                // indicates the presence of sub-picture info
-#else
-  bool                  m_subPicPresentFlag;                    // indicates the presence of sub-pictures
+  uint32_t              m_numSubPics;                        //!< number of sub-pictures used
+#if JVET_R0156_ASPECT4_SPS_CLEANUP
+  bool                  m_independentSubPicsFlag;
 #endif
-  uint8_t               m_numSubPics;                        //!< number of sub-pictures used
-  uint32_t              m_subPicCtuTopLeftX[MAX_NUM_SUB_PICS];                
-  uint32_t              m_subPicCtuTopLeftY[MAX_NUM_SUB_PICS];                
-  uint32_t              m_SubPicWidth[MAX_NUM_SUB_PICS];                      
-  uint32_t              m_SubPicHeight[MAX_NUM_SUB_PICS];                     
-  bool                  m_subPicTreatedAsPicFlag[MAX_NUM_SUB_PICS];           
-  bool                  m_loopFilterAcrossSubpicEnabledFlag[MAX_NUM_SUB_PICS];
-#if JVET_Q0119_CLEANUPS
+  std::vector<uint32_t> m_subPicCtuTopLeftX;
+  std::vector<uint32_t> m_subPicCtuTopLeftY;
+  std::vector<uint32_t> m_subPicWidth;
+  std::vector<uint32_t> m_subPicHeight;
+  std::vector<bool>     m_subPicTreatedAsPicFlag;
+  std::vector<bool>     m_loopFilterAcrossSubpicEnabledFlag;
   bool                  m_subPicIdMappingExplicitlySignalledFlag;
   bool                  m_subPicIdMappingInSpsFlag;
-#else
-  bool                  m_subPicIdPresentFlag;               //!< indicates the presence of sub-picture IDs
-  bool                  m_subPicIdSignallingPresentFlag;     //!< indicates the presence of sub-picture ID signalling in the SPS
-#endif
   uint32_t              m_subPicIdLen;                       //!< sub-picture ID length in bits
-  uint8_t               m_subPicId[MAX_NUM_SUB_PICS];        //!< sub-picture ID for each sub-picture in the sequence
+  std::vector<uint16_t> m_subPicId;                          //!< sub-picture ID for each sub-picture in the sequence
 
   int               m_log2MinCodingBlockSize;
-#if !JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
-  int               m_log2DiffMaxMinCodingBlockSize;
-#endif
   unsigned    m_CTUSize;
   unsigned    m_partitionOverrideEnalbed;       // enable partition constraints override function
   unsigned    m_minQT[3];   // 0: I slice luma; 1: P/B slice; 2: I slice chroma
@@ -1368,9 +1330,6 @@ private:
   unsigned    m_dualITree;
   uint32_t              m_uiMaxCUWidth;
   uint32_t              m_uiMaxCUHeight;
-#if !JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
-  uint32_t              m_uiMaxCodingDepth; ///< Total CU depth, relative to the smallest possible transform block size.
-#endif
 
   RPLList           m_RPLList0;
   RPLList           m_RPLList1;
@@ -1387,23 +1346,23 @@ private:
   // Tool list
 
   bool              m_transformSkipEnabledFlag;
-#if JVET_Q0183_SPS_TRANSFORM_SKIP_MODE_CONTROL
   int               m_log2MaxTransformSkipBlockSize;
-#endif
-#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
   bool              m_BDPCMEnabledFlag;
-#else
-  int               m_BDPCMEnabled;
-#endif
   bool              m_JointCbCrEnabledFlag;
   // Parameter
   BitDepths         m_bitDepths;
-#if JVET_Q0151_Q0205_ENTRYPOINTS
   bool              m_entropyCodingSyncEnabledFlag;                    //!< Flag for enabling WPP
+#if JVET_R0165_OPTIONAL_ENTRY_POINT
+  bool              m_entryPointPresentFlag;                           //!< Flag for indicating the presence of entry points
+#else
   bool              m_entropyCodingSyncEntryPointPresentFlag;          //!< Flag for indicating the presence of WPP entry points
- #endif
+#endif
   int               m_qpBDOffset[MAX_NUM_CHANNEL_TYPE];
+#if JVET_R0045_TS_MIN_QP_CLEANUP
+  int               m_internalMinusInputBitDepth[MAX_NUM_CHANNEL_TYPE]; //  max(0, internal bitdepth - input bitdepth);                                          }
+#else
   int               m_minQpMinus4[MAX_NUM_CHANNEL_TYPE]; //  QP_internal - QP_input;
+#endif
 
   bool              m_sbtmvpEnabledFlag;
   bool              m_bdofEnabledFlag;
@@ -1412,16 +1371,12 @@ private:
   bool              m_DmvrControlPresentFlag;
   bool              m_ProfControlPresentFlag;
   uint32_t          m_uiBitsForPOC;
-#if JVET_P0116_POC_MSB
   bool              m_pocMsbFlag;
   uint32_t          m_pocMsbLen;
-#endif
-#if JVET_Q0400_EXTRA_BITS
   int               m_numExtraPHBitsBytes;
   int               m_numExtraSHBitsBytes;
   std::vector<bool> m_extraPHBitPresentFlag;
   std::vector<bool> m_extraSHBitPresentFlag;
-#endif
   uint32_t          m_numLongTermRefPicSPS;
   uint32_t          m_ltRefPicPocLsbSps[MAX_NUM_LONG_TERM_REF_PICS];
   bool              m_usedByCurrPicLtSPSFlag[MAX_NUM_LONG_TERM_REF_PICS];
@@ -1434,12 +1389,10 @@ private:
   bool              m_bTemporalIdNestingFlag; // temporal_id_nesting_flag
 
   bool              m_scalingListEnabledFlag;
-#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
+  bool              m_depQuantEnabledFlag;            //!< dependent quantization enabled flag
+  bool              m_signDataHidingEnabledFlag;      //!< sign data hiding enabled flag
   bool              m_virtualBoundariesEnabledFlag;   //!< Enable virtual boundaries tool
   bool              m_virtualBoundariesPresentFlag;   //!< disable loop filtering across virtual boundaries
-#else
-  bool              m_loopFilterAcrossVirtualBoundariesDisabledFlag;   //!< disable loop filtering across virtual boundaries
-#endif
   unsigned          m_numVerVirtualBoundaries;                         //!< number of vertical virtual boundaries
   unsigned          m_numHorVirtualBoundaries;                         //!< number of horizontal virtual boundaries
   unsigned          m_virtualBoundariesPosX[3];                        //!< horizontal position of each vertical virtual boundary
@@ -1448,24 +1401,11 @@ private:
   uint32_t          m_uiMaxLatencyIncreasePlus1[MAX_TLAYER];
 
 
-#if !JVET_P0118_HRD_ASPECTS
-  TimingInfo        m_timingInfo;
-#endif
-#if JVET_P0118_HRD_ASPECTS
   bool              m_generalHrdParametersPresentFlag;
-#else
-  bool              m_hrdParametersPresentFlag;
-#endif
-#if JVET_P0118_HRD_ASPECTS
   GeneralHrdParams m_generalHrdParams;
   OlsHrdParams     m_olsHrdParams[MAX_TLAYER];
-#else
-  HRDParameters     m_hrdParameters;
-#endif
 
-#if JVET_Q0042_VUI
   bool              m_fieldSeqFlag;
-#endif
   bool              m_vuiParametersPresentFlag;
   VUI               m_vuiParameters;
 
@@ -1476,9 +1416,7 @@ private:
   ProfileTierLevel  m_profileTierLevel;
 
   bool              m_alfEnabledFlag;
-#if JVET_Q0795_CCALF
   bool              m_ccalfEnabledFlag;
-#endif
   bool              m_wrapAroundEnabledFlag;
   unsigned          m_wrapAroundOffset;
   unsigned          m_IBCFlag;
@@ -1500,11 +1438,7 @@ private:
   bool              m_PROF;
   bool              m_bcw;                        //
   bool              m_ciip;
-#if !JVET_Q0806
-  bool              m_Triangle;
-#else
   bool              m_Geo;
-#endif
 #if LUMA_ADAPTIVE_DEBLOCKING_FILTER_QP_OFFSET
   bool              m_LadfEnabled;
   int               m_LadfNumIntervals;
@@ -1520,18 +1454,16 @@ private:
   bool              m_rprEnabledFlag;
   bool              m_interLayerPresentFlag;
 
-#if JVET_Q0297_MER
   uint32_t          m_log2ParallelMergeLevelMinus2;
-#endif
-#if JVET_Q0179_SCALING_WINDOW_SIZE_CONSTRAINT
   bool              m_ppsValidFlag[64];
   Size              m_scalingWindowSizeInPPS[64];
-#endif
-#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
   uint32_t          m_maxNumMergeCand;
   uint32_t          m_maxNumAffineMergeCand;
   uint32_t          m_maxNumIBCMergeCand;
   uint32_t          m_maxNumGeoCand;
+#if JVET_R0380_SCALING_MATRIX_DISABLE_YCC_OR_RGB
+  bool              m_scalingMatrixAlternativeColourSpaceDisabledFlag;
+  bool              m_scalingMatrixDesignatedColourSpaceFlag;
 #endif
 public:
 
@@ -1540,10 +1472,6 @@ public:
 
   int                     getSPSId() const                                                                { return m_SPSId;                                                      }
   void                    setSPSId(int i)                                                                 { m_SPSId = i;                                                         }
-#if !JVET_Q0117_PARAMETER_SETS_CLEANUP
-  void                    setDecodingParameterSetId(int val)                                              { m_decodingParameterSetId = val; }
-  int                     getDecodingParameterSetId() const                                               { return m_decodingParameterSetId; }
-#endif
   int                     getVPSId() const                                                                { return m_VPSId; }
   void                    setVPSId(int i)                                                                 { m_VPSId = i; }
 
@@ -1560,49 +1488,58 @@ public:
   uint32_t                getMaxPicWidthInLumaSamples() const                                             { return  m_maxWidthInLumaSamples; }
   void                    setMaxPicHeightInLumaSamples( uint32_t u )                                      { m_maxHeightInLumaSamples = u; }
   uint32_t                getMaxPicHeightInLumaSamples() const                                            { return  m_maxHeightInLumaSamples; }
-#if JVET_Q0260_CONFORMANCE_WINDOW_IN_SPS
   Window&                 getConformanceWindow()                                                          { return  m_conformanceWindow; }
   const Window&           getConformanceWindow() const                                                    { return  m_conformanceWindow; }
   void                    setConformanceWindow( Window& conformanceWindow )                               { m_conformanceWindow = conformanceWindow; }
-#endif
 
-#if JVET_Q0119_CLEANUPS
-  void                    setSubPicInfoPresentFlag(bool b)                                                { m_subPicInfoPresentFlag = b;            }
-  bool                    getSubPicInfoPresentFlag() const                                                { return m_subPicInfoPresentFlag;         }
-#else
-  void                    setSubPicPresentFlag(bool b)                                                    { m_subPicPresentFlag = b;                }
-  bool                    getSubPicPresentFlag() const                                                    { return m_subPicPresentFlag;             }
-#endif
+  void      setSubPicInfoPresentFlag(bool b)                                                { m_subPicInfoPresentFlag = b;            }
+  bool      getSubPicInfoPresentFlag() const                                                { return m_subPicInfoPresentFlag;         }
 
-  void                    setNumSubPics( uint8_t u )                                                      { m_numSubPics = u;                        }
-  uint8_t                 getNumSubPics( ) const                                                          { return  m_numSubPics;                    }
-  void                    setSubPicCtuTopLeftX( int i, uint32_t u )                                       { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-picture index exceeds valid range" ); m_subPicCtuTopLeftX[i] = u;                     }
-  uint32_t                getSubPicCtuTopLeftX( int i ) const                                             { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-picture index exceeds valid range" ); return  m_subPicCtuTopLeftX[i];                 }
-  void                    setSubPicCtuTopLeftY( int i, uint32_t u )                                       { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-picture index exceeds valid range" ); m_subPicCtuTopLeftY[i] = u;                     }
-  uint32_t                getSubPicCtuTopLeftY( int i ) const                                             { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-picture index exceeds valid range" ); return  m_subPicCtuTopLeftY[i];                 }
-  void                    setSubPicWidth( int i, uint32_t u )                                             { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-picture index exceeds valid range" ); m_SubPicWidth[i] = u;                           }
-  uint32_t                getSubPicWidth( int i ) const                                                   { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-picture index exceeds valid range" ); return  m_SubPicWidth[i];                       }
-  void                    setSubPicHeight( int i, uint32_t u )                                            { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-picture index exceeds valid range" ); m_SubPicHeight[i] = u;                          }
-  uint32_t                getSubPicHeight( int i ) const                                                  { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-picture index exceeds valid range" ); return  m_SubPicHeight[i];                      }
-  void                    setSubPicTreatedAsPicFlag( int i, bool u )                                      { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-picture index exceeds valid range" ); m_subPicTreatedAsPicFlag[i] = u;                }
-  bool                    getSubPicTreatedAsPicFlag( int i ) const                                        { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-picture index exceeds valid range" ); return  m_subPicTreatedAsPicFlag[i];            }
-  void                    setLoopFilterAcrossSubpicEnabledFlag( int i, bool u )                           { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-picture index exceeds valid range" ); m_loopFilterAcrossSubpicEnabledFlag[i] = u;     }
-  bool                    getLoopFilterAcrossSubpicEnabledFlag( int i ) const                             { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-picture index exceeds valid range" ); return  m_loopFilterAcrossSubpicEnabledFlag[i]; }
-#if JVET_Q0119_CLEANUPS
+  void      setNumSubPics( uint32_t u )                                                     { CHECK( u >= MAX_NUM_SUB_PICS, "Maximum number of subpictures exceeded" );
+                                                                                              m_numSubPics = u;
+                                                                                              m_subPicCtuTopLeftX.resize(m_numSubPics);
+                                                                                              m_subPicCtuTopLeftY.resize(m_numSubPics);
+                                                                                              m_subPicWidth.resize(m_numSubPics);
+                                                                                              m_subPicHeight.resize(m_numSubPics);
+                                                                                              m_subPicTreatedAsPicFlag.resize(m_numSubPics);
+                                                                                              m_loopFilterAcrossSubpicEnabledFlag.resize(m_numSubPics);
+                                                                                              m_subPicId.resize(m_numSubPics);
+                                                                                            }
+  #if JVET_R0156_ASPECT4_SPS_CLEANUP
+  void      setIndependentSubPicsFlag(bool b)                                                { m_independentSubPicsFlag = b;                    }
+  bool      getIndependentSubPicsFlag() const                                                { return m_independentSubPicsFlag;                 }
+#endif
+  uint32_t  getNumSubPics( ) const                                                          { return  m_numSubPics;                           }
+  void      setSubPicCtuTopLeftX( int i, uint32_t u )                                       { m_subPicCtuTopLeftX[i] = u;                     }
+  uint32_t  getSubPicCtuTopLeftX( int i ) const                                             { return  m_subPicCtuTopLeftX[i];                 }
+  void      setSubPicCtuTopLeftY( int i, uint32_t u )                                       { m_subPicCtuTopLeftY[i] = u;                     }
+  uint32_t  getSubPicCtuTopLeftY( int i ) const                                             { return  m_subPicCtuTopLeftY[i];                 }
+  void      setSubPicWidth( int i, uint32_t u )                                             { m_subPicWidth[i] = u;                           }
+  uint32_t  getSubPicWidth( int i ) const                                                   { return  m_subPicWidth[i];                       }
+  void      setSubPicHeight( int i, uint32_t u )                                            { m_subPicHeight[i] = u;                          }
+  uint32_t  getSubPicHeight( int i ) const                                                  { return  m_subPicHeight[i];                      }
+  void      setSubPicTreatedAsPicFlag( int i, bool u )                                      { m_subPicTreatedAsPicFlag[i] = u;                }
+  bool      getSubPicTreatedAsPicFlag( int i ) const                                        { return  m_subPicTreatedAsPicFlag[i];            }
+  void      setLoopFilterAcrossSubpicEnabledFlag( int i, bool u )                           { m_loopFilterAcrossSubpicEnabledFlag[i] = u;     }
+  bool      getLoopFilterAcrossSubpicEnabledFlag( int i ) const                             { return  m_loopFilterAcrossSubpicEnabledFlag[i]; }
+
+  void      setSubPicCtuTopLeftX                        (const std::vector<uint32_t> &v)   { CHECK(v.size()!=m_numSubPics, "number of vector entries must be equal to numSubPics") ;m_subPicCtuTopLeftX = v; }
+  void      setSubPicCtuTopLeftY                        (const std::vector<uint32_t> &v)   { CHECK(v.size()!=m_numSubPics, "number of vector entries must be equal to numSubPics") ;m_subPicCtuTopLeftY = v; }
+  void      setSubPicWidth                              (const std::vector<uint32_t> &v)   { CHECK(v.size()!=m_numSubPics, "number of vector entries must be equal to numSubPics") ;m_subPicWidth = v; }
+  void      setSubPicHeight                             (const std::vector<uint32_t> &v)   { CHECK(v.size()!=m_numSubPics, "number of vector entries must be equal to numSubPics") ;m_subPicHeight = v; }
+  void      setSubPicTreatedAsPicFlag                   (const std::vector<bool> &v)       { CHECK(v.size()!=m_numSubPics, "number of vector entries must be equal to numSubPics") ;m_subPicTreatedAsPicFlag = v; }
+  void      setLoopFilterAcrossSubpicEnabledFlag        (const std::vector<bool> &v)       { CHECK(v.size()!=m_numSubPics, "number of vector entries must be equal to numSubPics") ;m_loopFilterAcrossSubpicEnabledFlag = v; }
+
+
   void                    setSubPicIdMappingExplicitlySignalledFlag( bool b )                             { m_subPicIdMappingExplicitlySignalledFlag = b;    }
   bool                    getSubPicIdMappingExplicitlySignalledFlag() const                               { return m_subPicIdMappingExplicitlySignalledFlag; }
   void                    setSubPicIdMappingInSpsFlag( bool b )                                           { m_subPicIdMappingInSpsFlag = b;                  }
   bool                    getSubPicIdMappingInSpsFlag() const                                             { return  m_subPicIdMappingInSpsFlag;              }
-#else
-  void                    setSubPicIdPresentFlag( bool b )                                                { m_subPicIdPresentFlag = b;               }
-  bool                    getSubPicIdPresentFlag() const                                                  { return  m_subPicIdPresentFlag;           }
-  void                    setSubPicIdSignallingPresentFlag( bool b )                                      { m_subPicIdSignallingPresentFlag = b;     }
-  bool                    getSubPicIdSignallingPresentFlag() const                                        { return  m_subPicIdSignallingPresentFlag; }
-#endif
   void                    setSubPicIdLen( uint32_t u )                                                    { m_subPicIdLen = u;                       }
   uint32_t                getSubPicIdLen() const                                                          { return  m_subPicIdLen;                   }
-  void                    setSubPicId( int i, uint8_t u )                                                 { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-picture index exceeds valid range" ); m_subPicId[i] = u;     }
-  uint8_t                 getSubPicId( int i ) const                                                      { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-picture index exceeds valid range" ); return  m_subPicId[i]; }
+  void                    setSubPicId( int i, uint16_t u )                                                { m_subPicId[i] = u;     }
+  uint16_t                getSubPicId( int i ) const                                                      { return  m_subPicId[i]; }
+  void                    setSubPicId(const std::vector<uint16_t> &v)                                     { CHECK(v.size()!=m_numSubPics, "number of vector entries must be equal to numSubPics") ; m_subPicId = v; }
 
   uint32_t                getNumLongTermRefPicSPS() const                                                 { return m_numLongTermRefPicSPS;                                       }
   void                    setNumLongTermRefPicSPS(uint32_t val)                                           { m_numLongTermRefPicSPS = val;                                        }
@@ -1615,10 +1552,6 @@ public:
 
   int                     getLog2MinCodingBlockSize() const                                               { return m_log2MinCodingBlockSize;                                     }
   void                    setLog2MinCodingBlockSize(int val)                                              { m_log2MinCodingBlockSize = val;                                      }
-#if !JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
-  int                     getLog2DiffMaxMinCodingBlockSize() const                                        { return m_log2DiffMaxMinCodingBlockSize;                              }
-  void                    setLog2DiffMaxMinCodingBlockSize(int val)                                       { m_log2DiffMaxMinCodingBlockSize = val;                               }
-#endif
   void                    setCTUSize(unsigned    ctuSize)                                                 { m_CTUSize = ctuSize; }
   unsigned                getCTUSize()                                                              const { return  m_CTUSize; }
   void                    setSplitConsOverrideEnabledFlag(bool b)                                         { m_partitionOverrideEnalbed = b; }
@@ -1661,32 +1594,18 @@ public:
   uint32_t                    getMaxCUWidth() const                                                           { return  m_uiMaxCUWidth;                                              }
   void                    setMaxCUHeight( uint32_t u )                                                        { m_uiMaxCUHeight = u;                                                 }
   uint32_t                    getMaxCUHeight() const                                                          { return  m_uiMaxCUHeight;                                             }
-#if !JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
-  void                    setMaxCodingDepth( uint32_t u )                                                     { m_uiMaxCodingDepth = u;                                              }
-  uint32_t                    getMaxCodingDepth() const                                                       { return  m_uiMaxCodingDepth;                                          }
-#endif
   bool                    getTransformSkipEnabledFlag() const                                                 { return m_transformSkipEnabledFlag;                                   }
   void                    setTransformSkipEnabledFlag( bool b )                                               { m_transformSkipEnabledFlag = b;                                      }
-#if JVET_Q0183_SPS_TRANSFORM_SKIP_MODE_CONTROL
   uint32_t                getLog2MaxTransformSkipBlockSize() const                                            { return m_log2MaxTransformSkipBlockSize;                              }
   void                    setLog2MaxTransformSkipBlockSize(uint32_t u)                                        { m_log2MaxTransformSkipBlockSize = u;                                 }
-#endif
-#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
   bool                    getBDPCMEnabledFlag() const                                                         { return m_BDPCMEnabledFlag;                                           }
   void                    setBDPCMEnabledFlag( bool b )                                                       { m_BDPCMEnabledFlag = b;                                              }
-#else
-  int                     getBDPCMEnabled() const                                                             { return m_BDPCMEnabled;                                               }
-  void                    setBDPCMEnabled(int val)                                                            { m_BDPCMEnabled = val;                                                }
-#endif
   void                    setBitsForPOC( uint32_t u )                                                         { m_uiBitsForPOC = u;                                                  }
   uint32_t                    getBitsForPOC() const                                                           { return m_uiBitsForPOC;                                               }
-#if JVET_P0116_POC_MSB
   void                    setPocMsbFlag(bool b)                                                               { m_pocMsbFlag = b;                                                    }
   bool                    getPocMsbFlag() const                                                               { return m_pocMsbFlag;                                                 }
   void                    setPocMsbLen(uint32_t u)                                                            { m_pocMsbLen = u;                                                     }
   uint32_t                getPocMsbLen() const                                                                { return m_pocMsbLen;                                                  }
-#endif
-#if JVET_Q0400_EXTRA_BITS
   void                    setNumExtraPHBitsBytes(int i)                                                       { m_numExtraPHBitsBytes = i;                                           }
   int                     getNumExtraPHBitsBytes() const                                                      { return m_numExtraPHBitsBytes;                                        }
   void                    setNumExtraSHBitsBytes(int i)                                                       { m_numExtraSHBitsBytes = i;                                           }
@@ -1695,7 +1614,6 @@ public:
   const std::vector<bool> getExtraPHBitPresentFlags() const                                                   { return m_extraPHBitPresentFlag;                                      }
   void                    setExtraSHBitPresentFlags(const std::vector<bool> &b)                               { m_extraSHBitPresentFlag = b;                                         }
   const std::vector<bool> getExtraSHBitPresentFlags() const                                                   { return m_extraSHBitPresentFlag;                                      }
-#endif
   void                    setNumReorderPics(int i, uint32_t tlayer)                                           { m_numReorderPics[tlayer] = i;                                        }
   int                     getNumReorderPics(uint32_t tlayer) const                                            { return m_numReorderPics[tlayer];                                     }
   void                    createRPLList0(int numRPL);
@@ -1726,9 +1644,12 @@ public:
   void                    setBitDepth(ChannelType type, int u )                                           { m_bitDepths.recon[type] = u;                                         }
   const BitDepths&        getBitDepths() const                                                            { return m_bitDepths;                                                  }
 
-#if JVET_Q0151_Q0205_ENTRYPOINTS
   bool                    getEntropyCodingSyncEnabledFlag() const                                         { return m_entropyCodingSyncEnabledFlag;                               }
   void                    setEntropyCodingSyncEnabledFlag(bool val)                                       { m_entropyCodingSyncEnabledFlag = val;                                }
+#if JVET_R0165_OPTIONAL_ENTRY_POINT
+  bool                    getEntryPointsPresentFlag() const                                               { return m_entryPointPresentFlag;                                      }
+  void                    setEntryPointsPresentFlag(bool val)                                             { m_entryPointPresentFlag = val;                                       }
+#else
   bool                    getEntropyCodingSyncEntryPointsPresentFlag() const                              { return m_entropyCodingSyncEntryPointPresentFlag;                     }
   void                    setEntropyCodingSyncEntryPointsPresentFlag(bool val)                            { m_entropyCodingSyncEntryPointPresentFlag = val;                      }
 #endif
@@ -1737,18 +1658,21 @@ public:
   int                     getDifferentialLumaChromaBitDepth() const                                       { return int(m_bitDepths.recon[CHANNEL_TYPE_LUMA]) - int(m_bitDepths.recon[CHANNEL_TYPE_CHROMA]); }
   int                     getQpBDOffset(ChannelType type) const                                           { return m_qpBDOffset[type];                                           }
   void                    setQpBDOffset(ChannelType type, int i)                                          { m_qpBDOffset[type] = i;                                              }
+#if JVET_R0045_TS_MIN_QP_CLEANUP
+  int                     getInternalMinusInputBitDepth(ChannelType type) const                           { return m_internalMinusInputBitDepth[type];                                           }
+  void                    setInternalMinusInputBitDepth(ChannelType type, int i)                          { m_internalMinusInputBitDepth[type] = i;                                              }
+#else
   int                     getMinQpPrimeTsMinus4(ChannelType type) const                                         { return m_minQpMinus4[type];                                           }
   void                    setMinQpPrimeTsMinus4(ChannelType type, int i)                                        { m_minQpMinus4[type] = i;                                              }
+#endif
 
   void                    setSAOEnabledFlag(bool bVal)                                                    { m_saoEnabledFlag = bVal;                                                    }
   bool                    getSAOEnabledFlag() const                                                       { return m_saoEnabledFlag;                                                    }
 
   bool                    getALFEnabledFlag() const                                                       { return m_alfEnabledFlag; }
   void                    setALFEnabledFlag( bool b )                                                     { m_alfEnabledFlag = b; }
-#if JVET_Q0795_CCALF
 bool                    getCCALFEnabledFlag() const                                                       { return m_ccalfEnabledFlag; }
 void                    setCCALFEnabledFlag( bool b )                                                     { m_ccalfEnabledFlag = b; }
-#endif
   void                    setJointCbCrEnabledFlag(bool bVal)                                              { m_JointCbCrEnabledFlag = bVal; }
   bool                    getJointCbCrEnabledFlag() const                                                 { return m_JointCbCrEnabledFlag; }
 
@@ -1775,26 +1699,23 @@ void                    setCCALFEnabledFlag( bool b )                           
   uint32_t                getMaxTLayers() const                                                           { return m_uiMaxTLayers; }
   void                    setMaxTLayers( uint32_t uiMaxTLayers )                                          { CHECK( uiMaxTLayers > MAX_TLAYER, "Invalid number T-layers" ); m_uiMaxTLayers = uiMaxTLayers; }
 
-#if JVET_P0117_PTL_SCALABILITY
   bool                    getPtlDpbHrdParamsPresentFlag()  const                                          { return m_ptlDpbHrdParamsPresentFlag;     }
   void                    setPtlDpbHrdParamsPresentFlag(bool b)                                           {        m_ptlDpbHrdParamsPresentFlag = b; }
   bool                    getSubLayerDpbParamsFlag()  const                                               { return m_SubLayerDpbParamsFlag;          }
   void                    setSubLayerDpbParamsFlag(bool b)                                                {        m_SubLayerDpbParamsFlag = b;      }
-#endif
   bool                    getTemporalIdNestingFlag() const                                                { return m_bTemporalIdNestingFlag;                                     }
   void                    setTemporalIdNestingFlag( bool bValue )                                         { m_bTemporalIdNestingFlag = bValue;                                   }
 
   bool                    getScalingListFlag() const                                                      { return m_scalingListEnabledFlag;                                     }
   void                    setScalingListFlag( bool b )                                                    { m_scalingListEnabledFlag  = b;                                       }
-#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG  
+  void                    setDepQuantEnabledFlag(bool b)                                                  { m_depQuantEnabledFlag = b; }
+  bool                    getDepQuantEnabledFlag() const                                                  { return m_depQuantEnabledFlag; }
+  void                    setSignDataHidingEnabledFlag(bool b)                                            { m_signDataHidingEnabledFlag = b; }
+  bool                    getSignDataHidingEnabledFlag() const                                            { return m_signDataHidingEnabledFlag; }
   void                    setVirtualBoundariesEnabledFlag( bool b )                                       { m_virtualBoundariesEnabledFlag = b;                                  }
   bool                    getVirtualBoundariesEnabledFlag() const                                         { return m_virtualBoundariesEnabledFlag;                               }
   void                    setVirtualBoundariesPresentFlag( bool b )                                       { m_virtualBoundariesPresentFlag = b; }
   bool                    getVirtualBoundariesPresentFlag() const                                         { return m_virtualBoundariesPresentFlag; }
-#else 
-  void                    setLoopFilterAcrossVirtualBoundariesDisabledFlag(bool b)                        { m_loopFilterAcrossVirtualBoundariesDisabledFlag = b;                 }
-  bool                    getLoopFilterAcrossVirtualBoundariesDisabledFlag() const                        { return m_loopFilterAcrossVirtualBoundariesDisabledFlag;              }
-#endif
   void                    setNumVerVirtualBoundaries(unsigned u)                                          { m_numVerVirtualBoundaries = u;                                       }
   unsigned                getNumVerVirtualBoundaries() const                                              { return m_numVerVirtualBoundaries;                                    }
   void                    setNumHorVirtualBoundaries(unsigned u)                                          { m_numHorVirtualBoundaries = u;                                       }
@@ -1807,7 +1728,6 @@ void                    setCCALFEnabledFlag( bool b )                           
   void                    setMaxDecPicBuffering( uint32_t ui, uint32_t tlayer )                           { CHECK(tlayer >= MAX_TLAYER, "Invalid T-layer"); m_uiMaxDecPicBuffering[tlayer] = ui;    }
   uint32_t                getMaxLatencyIncreasePlus1(uint32_t tlayer) const                               { return m_uiMaxLatencyIncreasePlus1[tlayer];                          }
   void                    setMaxLatencyIncreasePlus1( uint32_t ui , uint32_t tlayer)                      { m_uiMaxLatencyIncreasePlus1[tlayer] = ui;                            }
-#if JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
   uint32_t                getMaxNumMergeCand() const { return m_maxNumMergeCand; }
   void                    setMaxNumMergeCand(uint32_t u) { m_maxNumMergeCand = u; }
   uint32_t                getMaxNumAffineMergeCand() const { return m_maxNumAffineMergeCand; }
@@ -1816,34 +1736,17 @@ void                    setCCALFEnabledFlag( bool b )                           
   void                    setMaxNumIBCMergeCand(uint32_t u) { m_maxNumIBCMergeCand = u; }
   uint32_t                getMaxNumGeoCand() const { return m_maxNumGeoCand; }
   void                    setMaxNumGeoCand(uint32_t u) { m_maxNumGeoCand = u; }
-#endif
   void                    setAffineAmvrEnabledFlag( bool val )                                            { m_affineAmvrEnabledFlag = val;                                       }
   bool                    getAffineAmvrEnabledFlag() const                                                { return m_affineAmvrEnabledFlag;                                      }
-#if !JVET_P0118_HRD_ASPECTS
-  TimingInfo*             getTimingInfo()                                                                 { return &m_timingInfo; }
-  const TimingInfo*       getTimingInfo() const                                                           { return &m_timingInfo; }
-#endif
-#if JVET_P0118_HRD_ASPECTS
   bool                    getGeneralHrdParametersPresentFlag() const { return m_generalHrdParametersPresentFlag; }
   void                    setGeneralHrdParametersPresentFlag(bool b) { m_generalHrdParametersPresentFlag = b; }
-#else
-  bool                    getHrdParametersPresentFlag() const                                             { return m_hrdParametersPresentFlag; }
-  void                    setHrdParametersPresentFlag(bool b)                                             { m_hrdParametersPresentFlag = b; }
-#endif
-#if JVET_P0118_HRD_ASPECTS
   OlsHrdParams*          getOlsHrdParameters() { return &m_olsHrdParams[0]; }
   const OlsHrdParams*    getOlsHrdParameters() const { return &m_olsHrdParams[0]; }
 
   GeneralHrdParams*          getGeneralHrdParameters() { return &m_generalHrdParams; }
   const GeneralHrdParams*    getGeneralHrdParameters() const { return &m_generalHrdParams; }
-#else
-  HRDParameters*          getHrdParameters()                                                              { return &m_hrdParameters; }
-  const HRDParameters*    getHrdParameters() const                                                        { return &m_hrdParameters; }
-#endif
-#if JVET_Q0042_VUI
   bool                    getFieldSeqFlag() const                                                         { return m_fieldSeqFlag;                         }
   void                    setFieldSeqFlag(bool i)                                                         { m_fieldSeqFlag = i;                            }
-#endif
   bool                    getVuiParametersPresentFlag() const                                             { return m_vuiParametersPresentFlag;                                   }
   void                    setVuiParametersPresentFlag(bool b)                                             { m_vuiParametersPresentFlag = b;                                      }
   VUI*                    getVuiParameters()                                                              { return &m_vuiParameters;                                             }
@@ -1912,13 +1815,8 @@ void                    setCCALFEnabledFlag( bool b )                           
 
   void      setUseCiip         ( bool b )                                        { m_ciip = b; }
   bool      getUseCiip         ()                                      const     { return m_ciip; }
-#if !JVET_Q0806
-  void      setUseTriangle        ( bool b )                                        { m_Triangle = b; }
-  bool      getUseTriangle        ()                                      const     { return m_Triangle; }
-#else
   void      setUseGeo             ( bool b )                                        { m_Geo = b; }
   bool      getUseGeo             ()                                      const     { return m_Geo; }
-#endif
   void      setUseMRL             ( bool b )                                        { m_MRL = b; }
   bool      getUseMRL             ()                                      const     { return m_MRL; }
   void      setUseMIP             ( bool b )                                        { m_MIP = b; }
@@ -1942,56 +1840,20 @@ void                    setCCALFEnabledFlag( bool b )                           
   bool      getInterLayerPresentFlag()                                        const { return m_interLayerPresentFlag; }
   void      setInterLayerPresentFlag( bool b )                                      { m_interLayerPresentFlag = b; }
 
-#if JVET_Q0297_MER
   uint32_t  getLog2ParallelMergeLevelMinus2() const { return m_log2ParallelMergeLevelMinus2; }
   void      setLog2ParallelMergeLevelMinus2(uint32_t mrgLevel) { m_log2ParallelMergeLevelMinus2 = mrgLevel; }
-#endif
-#if JVET_Q0179_SCALING_WINDOW_SIZE_CONSTRAINT
   void          setPPSValidFlag(int i, bool b) { m_ppsValidFlag[i] = b; }
   bool          getPPSValidFlag(int i)         { return m_ppsValidFlag[i]; }
   void          setScalingWindowSizeInPPS(int i, int scWidth, int scHeight) { m_scalingWindowSizeInPPS[i].width = scWidth; m_scalingWindowSizeInPPS[i].height = scHeight;}
   const Size&   getScalingWindowSizeInPPS(int i)                            { return m_scalingWindowSizeInPPS[i]; }
+#if JVET_R0380_SCALING_MATRIX_DISABLE_YCC_OR_RGB
+  void      setScalingMatrixForAlternativeColourSpaceDisabledFlag(bool b)           { m_scalingMatrixAlternativeColourSpaceDisabledFlag = b; }
+  bool      getScalingMatrixForAlternativeColourSpaceDisabledFlag()           const { return m_scalingMatrixAlternativeColourSpaceDisabledFlag; }
+  void      setScalingMatrixDesignatedColourSpaceFlag(bool b)                       { m_scalingMatrixDesignatedColourSpaceFlag = b; }
+  bool      getScalingMatrixDesignatedColourSpaceFlag()                       const { return m_scalingMatrixDesignatedColourSpaceFlag; }
 #endif
 };
 
-#if !REMOVE_PPS_REXT
-/// Reference Picture Lists class
-
-
-/// PPS RExt class
-class PPSRExt // TODO: remove
-{
-private:
-  bool             m_crossComponentPredictionEnabledFlag;
-
-#if !JVET_Q0441_SAO_MOD_12_BIT
-  uint32_t             m_log2SaoOffsetScale[MAX_NUM_CHANNEL_TYPE];
-#endif
-
-public:
-  PPSRExt();
-
-  bool settingsDifferFromDefaults(const bool bTransformSkipEnabledFlag) const
-  {
-#if JVET_Q0441_SAO_MOD_12_BIT
-    return (getCrossComponentPredictionEnabledFlag() );
-#else
-    return (getCrossComponentPredictionEnabledFlag() )
-        || (getLog2SaoOffsetScale(CHANNEL_TYPE_LUMA) !=0 )
-        || (getLog2SaoOffsetScale(CHANNEL_TYPE_CHROMA) !=0 );
-#endif
-  }
-
-  bool                   getCrossComponentPredictionEnabledFlag() const                   { return m_crossComponentPredictionEnabledFlag;   }
-  void                   setCrossComponentPredictionEnabledFlag(bool value)               { m_crossComponentPredictionEnabledFlag = value;  }
-
-#if !JVET_Q0441_SAO_MOD_12_BIT
-  // Now: getPpsRangeExtension().getLog2SaoOffsetScale and getPpsRangeExtension().setLog2SaoOffsetScale
-  uint32_t                   getLog2SaoOffsetScale(ChannelType type) const                    { return m_log2SaoOffsetScale[type];             }
-  void                   setLog2SaoOffsetScale(ChannelType type, uint32_t uiBitShift)         { m_log2SaoOffsetScale[type] = uiBitShift;       }
-#endif
-};
-#endif
 
 /// PPS class
 class PPS
@@ -2001,9 +1863,7 @@ private:
   int              m_SPSId;                    // seq_parameter_set_id
   int              m_picInitQPMinus26;
   bool             m_useDQP;
-#if JVET_Q0420_PPS_CHROMA_TOOL_FLAG
   bool             m_usePPSChromaTool;
-#endif
   bool             m_bSliceChromaQpFlag;       // slicelevel_chroma_qp_flag
 
   int              m_layerId;
@@ -2028,14 +1888,10 @@ private:
   bool             m_bUseWeightPred;                    //!< Use of Weighting Prediction (P_SLICE)
   bool             m_useWeightedBiPred;                 //!< Use of Weighting Bi-Prediction (B_SLICE)
   bool             m_OutputFlagPresentFlag;             //!< Indicates the presence of output_flag in slice header
-  uint8_t          m_numSubPics;                        //!< number of sub-pictures used - must match SPS
-#if JVET_Q0119_CLEANUPS
+  uint32_t         m_numSubPics;                        //!< number of sub-pictures used - must match SPS
   bool             m_subPicIdMappingInPpsFlag;
-#else
-  bool             m_subPicIdSignallingPresentFlag;     //!< indicates the presence of sub-picture ID signalling in the PPS
-#endif
   uint32_t         m_subPicIdLen;                       //!< sub-picture ID length in bits
-  uint8_t          m_subPicId[MAX_NUM_SUB_PICS];        //!< sub-picture ID for each sub-picture in the sequence
+  std::vector<uint16_t> m_subPicId;                     //!< sub-picture ID for each sub-picture in the sequence
   bool             m_noPicPartitionFlag;                //!< no picture partitioning flag - single slice, single tile
   uint8_t          m_log2CtuSize;                       //!< log2 of the CTU size - required to match corresponding value in SPS
   uint8_t          m_ctuSize;                           //!< CTU size
@@ -2048,42 +1904,20 @@ private:
   std::vector<uint32_t> m_tileColWidth;                 //!< tile column widths in units of CTUs
   std::vector<uint32_t> m_tileRowHeight;                //!< tile row heights in units of CTUs
   std::vector<uint32_t> m_tileColBd;                    //!< tile column left-boundaries in units of CTUs
-  std::vector<uint32_t> m_tileRowBd;                    //!< tile row top-boundaries in units of CTUs  
+  std::vector<uint32_t> m_tileRowBd;                    //!< tile row top-boundaries in units of CTUs
   std::vector<uint32_t> m_ctuToTileCol;                 //!< mapping between CTU horizontal address and tile column index
   std::vector<uint32_t> m_ctuToTileRow;                 //!< mapping between CTU vertical address and tile row index
-  bool             m_rectSliceFlag;                     //!< rectangular slice flag  
+  bool             m_rectSliceFlag;                     //!< rectangular slice flag
   bool             m_singleSlicePerSubPicFlag;          //!< single slice per sub-picture flag
   std::vector<uint32_t> m_ctuToSubPicIdx;               //!< mapping between CTU and Sub-picture index
   uint32_t         m_numSlicesInPic;                    //!< number of rectangular slices in the picture (raster-scan slice specified at slice level)
   bool             m_tileIdxDeltaPresentFlag;           //!< tile index delta present flag
   std::vector<RectSlice> m_rectSlices;                  //!< list of rectangular slice signalling parameters
   std::vector<SliceMap>  m_sliceMap;                    //!< list of CTU maps for each slice in the picture
-#if JVET_O1143_SUBPIC_BOUNDARY
   std::vector<SubPic>      m_subPics;                   //!< list of subpictures in the picture
-#endif
   bool             m_loopFilterAcrossTilesEnabledFlag;  //!< loop filtering applied across tiles flag
   bool             m_loopFilterAcrossSlicesEnabledFlag; //!< loop filtering applied across slices flag
-#if !JVET_Q0183_SPS_TRANSFORM_SKIP_MODE_CONTROL
-  int              m_log2MaxTransformSkipBlockSize;
-#endif
-#if !JVET_Q0151_Q0205_ENTRYPOINTS
-  bool             m_entropyCodingSyncEnabledFlag;      //!< Indicates the presence of wavefronts
-#endif
 
-#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
-  bool              m_constantSliceHeaderParamsEnabledFlag;
-  int               m_PPSDepQuantEnabledIdc;
-  int               m_PPSRefPicListSPSIdc0;
-  int               m_PPSRefPicListSPSIdc1;
-  int               m_PPSMvdL1ZeroIdc;
-  int               m_PPSCollocatedFromL0Idc;
-  uint32_t          m_PPSSixMinusMaxNumMergeCandPlus1;
-#if !JVET_Q0806
-  uint32_t          m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1;
-#else
-  uint32_t          m_PPSMaxNumMergeCandMinusMaxNumGeoCandPlus1;
-#endif
-#endif
 
   bool             m_cabacInitPresentFlag;
 
@@ -2094,35 +1928,26 @@ private:
   bool             m_ppsDeblockingFilterDisabledFlag;
   int              m_deblockingFilterBetaOffsetDiv2;    //< beta offset for deblocking filter
   int              m_deblockingFilterTcOffsetDiv2;      //< tc offset for deblocking filter
-#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
   int              m_deblockingFilterCbBetaOffsetDiv2;    //< beta offset for Cb deblocking filter
   int              m_deblockingFilterCbTcOffsetDiv2;      //< tc offset for Cb deblocking filter
   int              m_deblockingFilterCrBetaOffsetDiv2;    //< beta offset for Cr deblocking filter
   int              m_deblockingFilterCrTcOffsetDiv2;      //< tc offset for Cr deblocking filter
-#endif
   bool             m_listsModificationPresentFlag;
 
-#if JVET_Q0819_PH_CHANGES
   bool             m_rplInfoInPhFlag;
   bool             m_dbfInfoInPhFlag;
   bool             m_saoInfoInPhFlag;
   bool             m_alfInfoInPhFlag;
   bool             m_wpInfoInPhFlag;
   bool             m_qpDeltaInfoInPhFlag;
-#endif
-#if SPS_ID_CHECK
   bool             m_mixedNaluTypesInPicFlag;
-#endif
 
   uint32_t         m_picWidthInLumaSamples;
   uint32_t         m_picHeightInLumaSamples;
   Window           m_conformanceWindow;
   Window           m_scalingWindow;
 
-#if !REMOVE_PPS_REXT
-  PPSRExt          m_ppsRangeExtension;
-#endif
-  
+
 public:
   PreCalcValues   *pcv;
 
@@ -2144,16 +1969,14 @@ public:
   void                   setPicInitQPMinus26( int i )                                     { m_picInitQPMinus26 = i;                       }
   bool                   getUseDQP() const                                                { return m_useDQP;                              }
   void                   setUseDQP( bool b )                                              { m_useDQP   = b;                               }
-#if JVET_Q0420_PPS_CHROMA_TOOL_FLAG
   bool                   getPPSChromaToolFlag()                                     const { return  m_usePPSChromaTool;                   }
   void                   setPPSChromaToolFlag(bool b)                                     { m_usePPSChromaTool = b;                       }
-#endif
   bool                   getSliceChromaQpFlag() const                                     { return  m_bSliceChromaQpFlag;                 }
   void                   setSliceChromaQpFlag( bool b )                                   { m_bSliceChromaQpFlag = b;                     }
 
 
   bool                   getJointCbCrQpOffsetPresentFlag() const                          { return m_chromaJointCbCrQpOffsetPresentFlag;   }
-  void                   setJointCbCrQpOffsetPresentFlag(bool b)                          { m_chromaJointCbCrQpOffsetPresentFlag = b;      } 
+  void                   setJointCbCrQpOffsetPresentFlag(bool b)                          { m_chromaJointCbCrQpOffsetPresentFlag = b;      }
 
   void                   setQpOffset(ComponentID compID, int i )
   {
@@ -2213,31 +2036,28 @@ public:
 
   void                   setOutputFlagPresentFlag( bool b )                               { m_OutputFlagPresentFlag = b;                  }
   bool                   getOutputFlagPresentFlag() const                                 { return m_OutputFlagPresentFlag;               }
-  void                   setNumSubPics( uint8_t u )                                       { m_numSubPics = u;                             }
-  uint8_t                getNumSubPics( ) const                                           { return  m_numSubPics;                         }
-#if JVET_Q0119_CLEANUPS
+  void                   setNumSubPics(uint32_t u )                                       { CHECK( u >= MAX_NUM_SUB_PICS, "Maximum number of subpictures exceeded" );
+                                                                                            m_numSubPics = u;
+                                                                                            m_subPicId.resize(m_numSubPics);
+                                                                                          }
+  uint32_t               getNumSubPics( ) const                                           { return  m_numSubPics;                         }
   void                   setSubPicIdMappingInPpsFlag( bool b )                            { m_subPicIdMappingInPpsFlag = b;               }
   bool                   getSubPicIdMappingInPpsFlag() const                              { return m_subPicIdMappingInPpsFlag;            }
-#else
-  void                   setSubPicIdSignallingPresentFlag( bool b )                       { m_subPicIdSignallingPresentFlag = b;          }
-  bool                   getSubPicIdSignallingPresentFlag() const                         { return  m_subPicIdSignallingPresentFlag;      }
-#endif
   void                   setSubPicIdLen( uint32_t u )                                     { m_subPicIdLen = u;                            }
   uint32_t               getSubPicIdLen() const                                           { return  m_subPicIdLen;                        }
-  void                   setSubPicId( int i, uint8_t u )                                  { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-picture index exceeds valid range" ); m_subPicId[i] = u;     }
-  uint8_t                getSubPicId( int i ) const                                       { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-picture index exceeds valid range" ); return  m_subPicId[i]; }
-#if JVET_Q0044_SLICE_IDX_WITH_SUBPICS
+  void                   setSubPicId( int i, uint16_t u )                                 { m_subPicId[i] = u;     }
+  void                   setSubPicId(const std::vector<uint16_t> &v)                      { CHECK(v.size()!=m_numSubPics, "number of vector entries must be equal to numSubPics") ; m_subPicId = v; }
+  uint16_t               getSubPicId( int i ) const                                       { return  m_subPicId[i]; }
   uint32_t               getSubPicIdxFromSubPicId( uint32_t subPicId ) const;
-#endif
   void                   setNoPicPartitionFlag( bool b )                                  { m_noPicPartitionFlag = b;                     }
   bool                   getNoPicPartitionFlag( ) const                                   { return  m_noPicPartitionFlag;                 }
-  void                   setLog2CtuSize( uint8_t u )                                      { m_log2CtuSize = u; m_ctuSize = 1 << m_log2CtuSize; 
-                                                                                            m_picWidthInCtu = (m_picWidthInLumaSamples  + m_ctuSize - 1) / m_ctuSize;  
+  void                   setLog2CtuSize( uint8_t u )                                      { m_log2CtuSize = u; m_ctuSize = 1 << m_log2CtuSize;
+                                                                                            m_picWidthInCtu = (m_picWidthInLumaSamples  + m_ctuSize - 1) / m_ctuSize;
                                                                                             m_picHeightInCtu = (m_picHeightInLumaSamples  + m_ctuSize - 1) / m_ctuSize; }
   uint8_t                getLog2CtuSize( ) const                                          { return  m_log2CtuSize;                        }
   uint8_t                getCtuSize( ) const                                              { return  m_ctuSize;                            }
-  uint8_t                getPicWidthInCtu( ) const                                        { return  m_picWidthInCtu;                      }
-  uint8_t                getPicHeightInCtu( ) const                                       { return  m_picHeightInCtu;                     }
+  uint32_t               getPicWidthInCtu( ) const                                        { return  m_picWidthInCtu;                      }
+  uint32_t               getPicHeightInCtu( ) const                                       { return  m_picHeightInCtu;                     }
   void                   setNumExpTileColumns( uint32_t u )                               { m_numExpTileCols = u;                         }
   uint32_t               getNumExpTileColumns( ) const                                    { return  m_numExpTileCols;                     }
   void                   setNumExpTileRows( uint32_t u )                                  { m_numExpTileRows = u;                         }
@@ -2252,7 +2072,7 @@ public:
   void                   addTileColumnWidth( uint32_t u )                                 { CHECK( m_tileColWidth.size()  >= MAX_TILE_COLS, "Number of tile columns exceeds valid range" ); m_tileColWidth.push_back(u);    }
   void                   addTileRowHeight( uint32_t u )                                   { CHECK( m_tileRowHeight.size() >= MAX_TILE_ROWS, "Number of tile rows exceeds valid range" );    m_tileRowHeight.push_back(u);   }
   uint32_t               getTileColumnWidth( int idx ) const                              { CHECK( idx >= m_tileColWidth.size(), "Tile column index exceeds valid range" );                 return  m_tileColWidth[idx];    }
-  uint32_t               getTileRowHeight( int idx ) const                                { CHECK( idx >= m_tileRowHeight.size(), "Tile row index exceeds valid range" );                   return  m_tileRowHeight[idx];   }  
+  uint32_t               getTileRowHeight( int idx ) const                                { CHECK( idx >= m_tileRowHeight.size(), "Tile row index exceeds valid range" );                   return  m_tileRowHeight[idx];   }
   uint32_t               getTileColumnBd( int idx ) const                                 { CHECK( idx >= m_tileColBd.size(), "Tile column index exceeds valid range" );                    return  m_tileColBd[idx];       }
   uint32_t               getTileRowBd( int idx ) const                                    { CHECK( idx >= m_tileRowBd.size(), "Tile row index exceeds valid range" );                       return  m_tileRowBd[idx];       }
   uint32_t               ctuToTileCol( int ctuX ) const                                   { CHECK( ctuX >= m_ctuToTileCol.size(), "CTU address index exceeds valid range" ); return  m_ctuToTileCol[ctuX];                  }
@@ -2268,11 +2088,7 @@ public:
   bool                   getRectSliceFlag( ) const                                        { return  m_rectSliceFlag;                                                                                                        }
   void                   setSingleSlicePerSubPicFlag( bool b )                            { m_singleSlicePerSubPicFlag = b;                                                                                                 }
   bool                   getSingleSlicePerSubPicFlag( ) const                             { return  m_singleSlicePerSubPicFlag;                                                                                             }
-#if JVET_Q0817
   uint32_t               getCtuToSubPicIdx( int idx ) const                               { CHECK( idx >= m_ctuToSubPicIdx.size(), "CTU address index exceeds valid range" ); CHECK( getNumSubPics() < 1, "Number of subpicture cannot be 0" ); return  m_ctuToSubPicIdx[ idx ]; }
-#else
-  uint32_t               getCtuToSubPicIdx( int idx ) const                               { CHECK( idx >= m_ctuToSubPicIdx.size(), "CTU address index exceeds valid range" ); return  m_ctuToSubPicIdx[idx];                }
-#endif
   void                   setNumSlicesInPic( uint32_t u )                                  { CHECK( u > MAX_SLICES, "Number of slices in picture exceeds valid range" ); m_numSlicesInPic = u;                               }
   uint32_t               getNumSlicesInPic( ) const                                       { return  m_numSlicesInPic;                                                                                                       }
   void                   setTileIdxDeltaPresentFlag( bool b )                             { m_tileIdxDeltaPresentFlag = b;                                                                                                  }
@@ -2295,53 +2111,17 @@ public:
   void                   resetTileSliceInfo();
   void                   initTiles();
   void                   initRectSlices();
-  void                   initRectSliceMap();
-#if JVET_O1143_SUBPIC_BOUNDARY
+  void                   initRectSliceMap(const SPS  *sps);
   std::vector<SubPic>    getSubPics()  const                                              {return m_subPics;          };
-#if JVET_Q0044_SLICE_IDX_WITH_SUBPICS
   SubPic                 getSubPic(uint32_t idx) const                                    { return m_subPics[idx]; }
-#endif
   void                   initSubPic(const SPS &sps);
-  SubPic                 getSubPicFromPos(const Position& pos)  const;
-  SubPic                 getSubPicFromCU (const CodingUnit& cu) const;
-#endif
+  const SubPic&          getSubPicFromPos(const Position& pos)  const;
+  const SubPic&          getSubPicFromCU (const CodingUnit& cu) const;
   void                   initRasterSliceMap( std::vector<uint32_t> sizes );
-  void                   checkSliceMap(); 
+  void                   checkSliceMap();
   SliceMap               getSliceMap( int idx ) const                                     { CHECK( idx >= m_numSlicesInPic, "Slice index exceeds valid range" );    return m_sliceMap[idx];                             }
-#if !JVET_Q0183_SPS_TRANSFORM_SKIP_MODE_CONTROL
-  uint32_t               getLog2MaxTransformSkipBlockSize() const                         { return m_log2MaxTransformSkipBlockSize; }
-  void                   setLog2MaxTransformSkipBlockSize(uint32_t u)                     { m_log2MaxTransformSkipBlockSize = u; }
-#endif
-#if !JVET_Q0151_Q0205_ENTRYPOINTS
-  bool                   getEntropyCodingSyncEnabledFlag() const                          { return m_entropyCodingSyncEnabledFlag;        }
-  void                   setEntropyCodingSyncEnabledFlag(bool val)                        { m_entropyCodingSyncEnabledFlag = val;         }
-#endif
 
 
-#if !JVET_Q0482_REMOVE_CONSTANT_PARAMS
-  bool                    getConstantSliceHeaderParamsEnabledFlag() const                 { return m_constantSliceHeaderParamsEnabledFlag; }
-  void                    setConstantSliceHeaderParamsEnabledFlag(bool b)                 { m_constantSliceHeaderParamsEnabledFlag = b;   }
-  int                     getPPSDepQuantEnabledIdc() const                                { return m_PPSDepQuantEnabledIdc;               }
-  void                    setPPSDepQuantEnabledIdc(int u)                                 { m_PPSDepQuantEnabledIdc = u;                  }
-  int                     getPPSRefPicListSPSIdc( bool b ) const                          { return b==1 ? m_PPSRefPicListSPSIdc1: m_PPSRefPicListSPSIdc0; }
-  int                     getPPSRefPicListSPSIdc0() const                                 { return m_PPSRefPicListSPSIdc0;                }
-  void                    setPPSRefPicListSPSIdc0(int u)                                  { m_PPSRefPicListSPSIdc0 = u;                   }
-  int                     getPPSRefPicListSPSIdc1() const                                 { return m_PPSRefPicListSPSIdc1;                }
-  void                    setPPSRefPicListSPSIdc1(int u)                                  { m_PPSRefPicListSPSIdc1 = u;                   }
-  int                     getPPSMvdL1ZeroIdc() const                                      { return m_PPSMvdL1ZeroIdc;                     }
-  void                    setPPSMvdL1ZeroIdc(int u)                                       { m_PPSMvdL1ZeroIdc = u;                        }
-  int                     getPPSCollocatedFromL0Idc() const                               { return m_PPSCollocatedFromL0Idc;              }
-  void                    setPPSCollocatedFromL0Idc(int u)                                { m_PPSCollocatedFromL0Idc = u;                 }
-  uint32_t                getPPSSixMinusMaxNumMergeCandPlus1() const                      { return m_PPSSixMinusMaxNumMergeCandPlus1;     }
-  void                    setPPSSixMinusMaxNumMergeCandPlus1(uint32_t u)                  { m_PPSSixMinusMaxNumMergeCandPlus1 = u;        }
-#if !JVET_Q0806
-  uint32_t                getPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1() const       { return m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1; }
-  void                    setPPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1(uint32_t u)   { m_PPSMaxNumMergeCandMinusMaxNumTriangleCandPlus1 = u; }
-#else
-  uint32_t                getPPSMaxNumMergeCandMinusMaxNumGeoCandPlus1() const            { return m_PPSMaxNumMergeCandMinusMaxNumGeoCandPlus1; }
-  void                    setPPSMaxNumMergeCandMinusMaxNumGeoCandPlus1(uint32_t u)        { m_PPSMaxNumMergeCandMinusMaxNumGeoCandPlus1 = u; }
-#endif
-#endif
 
   void                   setCabacInitPresentFlag( bool flag )                             { m_cabacInitPresentFlag = flag;                }
   bool                   getCabacInitPresentFlag() const                                  { return m_cabacInitPresentFlag;                }
@@ -2355,7 +2135,6 @@ public:
   int                    getDeblockingFilterBetaOffsetDiv2() const                        { return m_deblockingFilterBetaOffsetDiv2;      } //!< get beta offset for deblocking filter
   void                   setDeblockingFilterTcOffsetDiv2(int val)                         { m_deblockingFilterTcOffsetDiv2 = val;         } //!< set tc offset for deblocking filter
   int                    getDeblockingFilterTcOffsetDiv2() const                          { return m_deblockingFilterTcOffsetDiv2;        } //!< get tc offset for deblocking filter
-#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
   void                   setDeblockingFilterCbBetaOffsetDiv2(int val)                     { m_deblockingFilterCbBetaOffsetDiv2 = val;     } //!< set beta offset for Cb deblocking filter
   int                    getDeblockingFilterCbBetaOffsetDiv2() const                      { return m_deblockingFilterCbBetaOffsetDiv2;    } //!< get beta offset for Cb deblocking filter
   void                   setDeblockingFilterCbTcOffsetDiv2(int val)                       { m_deblockingFilterCbTcOffsetDiv2 = val;       } //!< set tc offset for Cb deblocking filter
@@ -2364,7 +2143,6 @@ public:
   int                    getDeblockingFilterCrBetaOffsetDiv2() const                      { return m_deblockingFilterCrBetaOffsetDiv2;    } //!< get beta offset for Cr deblocking filter
   void                   setDeblockingFilterCrTcOffsetDiv2(int val)                       { m_deblockingFilterCrTcOffsetDiv2 = val;       } //!< set tc offset for Cr deblocking filter
   int                    getDeblockingFilterCrTcOffsetDiv2() const                        { return m_deblockingFilterCrTcOffsetDiv2;      } //!< get tc offset for Cr deblocking filter
-#endif
   bool                   getListsModificationPresentFlag() const                          { return m_listsModificationPresentFlag;        }
   void                   setListsModificationPresentFlag( bool b )                        { m_listsModificationPresentFlag = b;           }
   bool                   getPictureHeaderExtensionPresentFlag() const                     { return m_pictureHeaderExtensionPresentFlag;     }
@@ -2372,7 +2150,6 @@ public:
   bool                   getSliceHeaderExtensionPresentFlag() const                       { return m_sliceHeaderExtensionPresentFlag;     }
   void                   setSliceHeaderExtensionPresentFlag(bool val)                     { m_sliceHeaderExtensionPresentFlag = val;      }
 
-#if JVET_Q0819_PH_CHANGES 
   void                   setRplInfoInPhFlag(bool flag)                                    { m_rplInfoInPhFlag = flag;                     }
   bool                   getRplInfoInPhFlag() const                                       { return m_rplInfoInPhFlag;                     }
   void                   setDbfInfoInPhFlag(bool flag)                                    { m_dbfInfoInPhFlag = flag;                     }
@@ -2385,12 +2162,7 @@ public:
   bool                   getWpInfoInPhFlag() const                                        { return m_wpInfoInPhFlag;                      }
   void                   setQpDeltaInfoInPhFlag(bool flag)                                { m_qpDeltaInfoInPhFlag = flag;                 }
   bool                   getQpDeltaInfoInPhFlag() const                                   { return m_qpDeltaInfoInPhFlag; }
-#endif
 
-#if !REMOVE_PPS_REXT
-  const PPSRExt&         getPpsRangeExtension() const                                     { return m_ppsRangeExtension;                   }
-  PPSRExt&               getPpsRangeExtension()                                           { return m_ppsRangeExtension;                   }
-#endif
 
   void                    setPicWidthInLumaSamples( uint32_t u )                          { m_picWidthInLumaSamples = u; }
   uint32_t                getPicWidthInLumaSamples() const                                { return  m_picWidthInLumaSamples; }
@@ -2405,10 +2177,8 @@ public:
   const Window&           getScalingWindow()                                        const { return  m_scalingWindow; }
   void                    setScalingWindow( Window& scalingWindow )                       { m_scalingWindow = scalingWindow; }
 
-#if SPS_ID_CHECK
   int                     getMixedNaluTypesInPicFlag() const                              { return m_mixedNaluTypesInPicFlag; }
   void                    setMixedNaluTypesInPicFlag( const bool flag )                   { m_mixedNaluTypesInPicFlag = flag; }
-#endif
 };
 
 class APS
@@ -2421,8 +2191,9 @@ private:
   AlfParam               m_alfAPSParam;
   SliceReshapeInfo       m_reshapeAPSInfo;
   ScalingList            m_scalingListApsInfo;
-#if JVET_Q0795_CCALF
   CcAlfFilterParam       m_ccAlfAPSParam;
+#if JVET_R0201_PREFIX_SUFFIX_APS_CLEANUP
+  bool                   m_hasPrefixNalUnitType;
 #endif
 
 public:
@@ -2446,11 +2217,14 @@ public:
   SliceReshapeInfo&      getReshaperAPSInfo()                                             { return m_reshapeAPSInfo;                      }
   void                   setScalingList( ScalingList& scalingListAPSInfo )                { m_scalingListApsInfo = scalingListAPSInfo;    }
   ScalingList&           getScalingList()                                                 { return m_scalingListApsInfo;                  }
-#if JVET_Q0795_CCALF
   void                   setCcAlfAPSParam(CcAlfFilterParam& ccAlfAPSParam)                { m_ccAlfAPSParam = ccAlfAPSParam;              }
   CcAlfFilterParam&      getCcAlfAPSParam()  { return m_ccAlfAPSParam; }
+#if JVET_R0201_PREFIX_SUFFIX_APS_CLEANUP
+  void                   setHasPrefixNalUnitType( bool b )                                { m_hasPrefixNalUnitType = b;                   }
+  bool                   getHasPrefixNalUnitType() const                                  { return m_hasPrefixNalUnitType;                }
 #endif
 };
+
 struct WPScalingParam
 {
   // Explicit weighted prediction parameters parsed in slice header,
@@ -2480,47 +2254,26 @@ class PicHeader
 private:
   bool                        m_valid;                                                  //!< picture header is valid yet or not
   Picture*                    m_pcPic;                                                  //!< pointer to picture structure
-#if JVET_Q0819_PH_CHANGES
   int                         m_pocLsb;                                                 //!< least significant bits of picture order count
-#endif
   bool                        m_nonReferencePictureFlag;                                //!< non-reference picture flag
   bool                        m_gdrOrIrapPicFlag;                                       //!< gdr or irap picture flag
   bool                        m_gdrPicFlag;                                             //!< gradual decoding refresh picture flag
   bool                        m_noOutputOfPriorPicsFlag;                                //!< no output of prior pictures flag
   uint32_t                    m_recoveryPocCnt;                                         //!< recovery POC count
-#if SPS_ID_CHECK
   bool                        m_noOutputBeforeRecoveryFlag;                             //!< NoOutputBeforeRecoveryFlag
   bool                        m_handleCraAsCvsStartFlag;                                //!< HandleCraAsCvsStartFlag
   bool                        m_handleGdrAsCvsStartFlag;                                //!< HandleGdrAsCvsStartFlag
-#endif
   int                         m_spsId;                                                  //!< sequence parameter set ID
   int                         m_ppsId;                                                  //!< picture parameter set ID
-#if JVET_P0116_POC_MSB
   bool                        m_pocMsbPresentFlag;                                      //!< ph_poc_msb_present_flag
   int                         m_pocMsbVal;                                              //!< poc_msb_val
-#endif
-#if !JVET_Q0119_CLEANUPS
-  bool                        m_subPicIdSignallingPresentFlag;                          //!< indicates the presence of sub-picture ID signalling in the SPS
-  uint32_t                    m_subPicIdLen;                                            //!< sub-picture ID length in bits
-  uint8_t                     m_subPicId[MAX_NUM_SUB_PICS];                             //!< sub-picture ID for each sub-picture in the sequence
-#endif
-#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
   bool                        m_virtualBoundariesEnabledFlag;                           //!< loop filtering across virtual boundaries disabled
   bool                        m_virtualBoundariesPresentFlag;                           //!< loop filtering across virtual boundaries disabled
-#else
-  bool                        m_loopFilterAcrossVirtualBoundariesDisabledFlag;          //!< loop filtering across virtual boundaries disabled
-#endif
   unsigned                    m_numVerVirtualBoundaries;                                //!< number of vertical virtual boundaries
   unsigned                    m_numHorVirtualBoundaries;                                //!< number of horizontal virtual boundaries
   unsigned                    m_virtualBoundariesPosX[3];                               //!< horizontal virtual boundary positions
   unsigned                    m_virtualBoundariesPosY[3];                               //!< vertical virtual boundary positions
-#if !JVET_Q0155_COLOUR_ID
-  unsigned                    m_colourPlaneId;                                          //!< 4:4:4 colour plane ID
-#endif
   bool                        m_picOutputFlag;                                          //!< picture output flag
-#if !JVET_Q0819_PH_CHANGES  
-  bool                        m_picRplPresentFlag;                                      //!< reference lists present in picture header or not
-#endif
   const ReferencePictureList
     *m_pRPL0;   //!< pointer to RPL for L0, either in the SPS or the local RPS in the picture header
   const ReferencePictureList* m_pRPL1;                                                  //!< pointer to RPL for L1, either in the SPS or the local RPS in the picture header
@@ -2528,85 +2281,52 @@ private:
   ReferencePictureList        m_localRPL1;                                              //!< RPL for L1 when present in picture header
   int                         m_rpl0Idx;                                                //!< index of used RPL in the SPS or -1 for local RPL in the picture header
   int                         m_rpl1Idx;                                                //!< index of used RPL in the SPS or -1 for local RPL in the picture header
-#if JVET_Q0819_PH_CHANGES
   bool                        m_picInterSliceAllowedFlag;                               //!< inter slice allowed flag in PH
   bool                        m_picIntraSliceAllowedFlag;                               //!< intra slice allowed flag in PH
-#endif
-  bool                        m_splitConsOverrideFlag;                                  //!< partitioning constraint override flag  
+  bool                        m_splitConsOverrideFlag;                                  //!< partitioning constraint override flag
   uint32_t                    m_cuQpDeltaSubdivIntra;                                   //!< CU QP delta maximum subdivision for intra slices
-  uint32_t                    m_cuQpDeltaSubdivInter;                                   //!< CU QP delta maximum subdivision for inter slices 
-  uint32_t                    m_cuChromaQpOffsetSubdivIntra;                            //!< CU chroma QP offset maximum subdivision for intra slices 
-  uint32_t                    m_cuChromaQpOffsetSubdivInter;                            //!< CU chroma QP offset maximum subdivision for inter slices 
+  uint32_t                    m_cuQpDeltaSubdivInter;                                   //!< CU QP delta maximum subdivision for inter slices
+  uint32_t                    m_cuChromaQpOffsetSubdivIntra;                            //!< CU chroma QP offset maximum subdivision for intra slices
+  uint32_t                    m_cuChromaQpOffsetSubdivInter;                            //!< CU chroma QP offset maximum subdivision for inter slices
   bool                        m_enableTMVPFlag;                                         //!< enable temporal motion vector prediction
-#if JVET_Q0482_REMOVE_CONSTANT_PARAMS
   bool                        m_picColFromL0Flag;                                       //!< syntax element collocated_from_l0_flag
-#endif
-#if JVET_Q0259_COLLOCATED_PIC_IN_PH
   uint32_t                    m_colRefIdx;
-#endif
-  bool                        m_mvdL1ZeroFlag;                                          //!< L1 MVD set to zero flag  
-#if !JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
-  uint32_t                    m_maxNumMergeCand;                                        //!< max number of merge candidates
-#endif
+  bool                        m_mvdL1ZeroFlag;                                          //!< L1 MVD set to zero flag
   uint32_t                    m_maxNumAffineMergeCand;                                  //!< max number of sub-block merge candidates
   bool                        m_disFracMMVD;                                            //!< fractional MMVD offsets disabled flag
   bool                        m_disBdofFlag;                                            //!< picture level BDOF disable flag
   bool                        m_disDmvrFlag;                                            //!< picture level DMVR disable flag
   bool                        m_disProfFlag;                                            //!< picture level PROF disable flag
-#if !JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE 
-#if !JVET_Q0806
-  uint32_t                    m_maxNumTriangleCand;                                     //!< max number of triangle merge candidates
-#else
-  uint32_t                    m_maxNumGeoCand;                                          //!< max number of geometric merge candidates
-#endif
-  uint32_t                    m_maxNumIBCMergeCand;                                     //!< max number of IBC merge candidates
-#endif
-  bool                        m_jointCbCrSignFlag;                                      //!< joint Cb/Cr residual sign flag  
-#if JVET_Q0819_PH_CHANGES 
+  bool                        m_jointCbCrSignFlag;                                      //!< joint Cb/Cr residual sign flag
   int                         m_qpDelta;                                                //!< value of Qp delta
-#else
-  bool                        m_saoEnabledPresentFlag;                                  //!< sao enabled flags present in the picture header
-#endif
   bool                        m_saoEnabledFlag[MAX_NUM_CHANNEL_TYPE];                   //!< sao enabled flags for each channel
-#if !JVET_Q0819_PH_CHANGES 
-  bool                        m_alfEnabledPresentFlag;                                  //!< alf enabled flags present in the picture header
-#endif
   bool                        m_alfEnabledFlag[MAX_NUM_COMPONENT];                      //!< alf enabled flags for each component
   int                         m_numAlfAps;                                              //!< number of alf aps active for the picture
   std::vector<int>            m_alfApsId;                                               //!< list of alf aps for the picture
   int                         m_alfChromaApsId;                                         //!< chroma alf aps ID
-#if JVET_Q0358_ALF_NALU_TID_CONSTRAINT
+#if !JVET_R0225_SEPERATE_FLAGS_ALF_CHROMA
   int                         m_alfChromaIdc;                                            //!< alf chroma idc
 #endif
-#if JVET_Q0795_CCALF
   bool m_ccalfEnabledFlag[MAX_NUM_COMPONENT];
   int  m_ccalfCbApsId;
   int  m_ccalfCrApsId;
-#endif
+#if !JVET_R0271_SLICE_LEVEL_DQ_SDH_RRC
   bool                        m_depQuantEnabledFlag;                                    //!< dependent quantization enabled flag
   bool                        m_signDataHidingEnabledFlag;                              //!< sign data hiding enabled flag
-#if !JVET_Q0819_PH_CHANGES  
-  bool                        m_deblockingFilterOverridePresentFlag;                    //!< deblocking filter override controls present in picture header
 #endif
   bool                        m_deblockingFilterOverrideFlag;                           //!< deblocking filter override controls enabled
   bool                        m_deblockingFilterDisable;                                //!< deblocking filter disabled flag
   int                         m_deblockingFilterBetaOffsetDiv2;                         //!< beta offset for deblocking filter
   int                         m_deblockingFilterTcOffsetDiv2;                           //!< tc offset for deblocking filter
-#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
   int                         m_deblockingFilterCbBetaOffsetDiv2;                       //!< beta offset for deblocking filter
   int                         m_deblockingFilterCbTcOffsetDiv2;                         //!< tc offset for deblocking filter
   int                         m_deblockingFilterCrBetaOffsetDiv2;                       //!< beta offset for deblocking filter
   int                         m_deblockingFilterCrTcOffsetDiv2;                         //!< tc offset for deblocking filter
-#endif
   bool                        m_lmcsEnabledFlag;                                        //!< lmcs enabled flag
   int                         m_lmcsApsId;                                              //!< lmcs APS ID
   APS*                        m_lmcsAps;                                                //!< lmcs APS
-  bool                        m_lmcsChromaResidualScaleFlag;                            //!< lmcs chroma residual scale flag  
-#if JVET_Q0346_SCALING_LIST_USED_IN_SH
+  bool                        m_lmcsChromaResidualScaleFlag;                            //!< lmcs chroma residual scale flag
   bool                        m_explicitScalingListEnabledFlag;                         //!< explicit quantization scaling list enabled
-#else
-  bool                        m_scalingListPresentFlag;                                 //!< quantization scaling lists present
-#endif
   int                         m_scalingListApsId;                                       //!< quantization scaling list APS ID
   APS*                        m_scalingListAps;                                         //!< quantization scaling list APS
   unsigned                    m_minQT[3];                                               //!< minimum quad-tree size  0: I slice luma; 1: P/B slice; 2: I slice chroma
@@ -2614,11 +2334,9 @@ private:
   unsigned                    m_maxBTSize[3];                                           //!< maximum BT size
   unsigned                    m_maxTTSize[3];                                           //!< maximum TT size
 
-#if JVET_Q0819_PH_CHANGES  
   WPScalingParam              m_weightPredTable[NUM_REF_PIC_LIST_01][MAX_NUM_REF][MAX_NUM_COMPONENT];   // [REF_PIC_LIST_0 or REF_PIC_LIST_1][refIdx][0:Y, 1:U, 2:V]
   int                         m_numL0Weights;                                           //!< number of weights for L0 list
   int                         m_numL1Weights;                                           //!< number of weights for L1 list
-#endif
 
 public:
                               PicHeader();
@@ -2629,10 +2347,8 @@ public:
   void                        setPic( Picture* p )                                      { m_pcPic = p;                                                                                 }
   Picture*                    getPic()                                                  { return m_pcPic;                                                                              }
   const Picture*              getPic() const                                            { return m_pcPic;                                                                              }
-#if JVET_Q0819_PH_CHANGES
   void                        setPocLsb(int i)                                          { m_pocLsb = i;                                                                                }
   int                         getPocLsb()                                               { return m_pocLsb;                                                                             }
-#endif
   void                        setNonReferencePictureFlag( bool b )                      { m_nonReferencePictureFlag = b;                                                               }
   bool                        getNonReferencePictureFlag() const                        { return m_nonReferencePictureFlag;                                                            }
   void                        setGdrOrIrapPicFlag( bool b )                             { m_gdrOrIrapPicFlag = b;                                                                      }
@@ -2647,27 +2363,12 @@ public:
   uint32_t                    getSPSId() const                                          { return m_spsId;                                                                              }
   void                        setPPSId( uint32_t u )                                    { m_ppsId = u;                                                                                 }
   uint32_t                    getPPSId() const                                          { return m_ppsId;                                                                              }
-#if JVET_P0116_POC_MSB
   void                        setPocMsbPresentFlag(bool b)                              { m_pocMsbPresentFlag = b;                                                                     }
   bool                        getPocMsbPresentFlag() const                              { return m_pocMsbPresentFlag;                                                                  }
   void                        setPocMsbVal(int i)                                       { m_pocMsbVal = i;                                                                             }
   int                         getPocMsbVal()                                            { return m_pocMsbVal;                                                                          }
-#endif
-#if !JVET_Q0119_CLEANUPS
-  void                        setSubPicIdSignallingPresentFlag( bool b )                { m_subPicIdSignallingPresentFlag = b;                                                         }
-  bool                        getSubPicIdSignallingPresentFlag() const                  { return  m_subPicIdSignallingPresentFlag;                                                     }
-  void                        setSubPicIdLen( uint32_t u )                              { m_subPicIdLen = u;                                                                           }
-  uint32_t                    getSubPicIdLen() const                                    { return  m_subPicIdLen;                                                                       }
-  void                        setSubPicId( int i, uint8_t u )                           { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-pic index exceeds valid range" ); m_subPicId[i] = u;      }
-  uint8_t                     getSubPicId( int i ) const                                { CHECK( i >= MAX_NUM_SUB_PICS, "Sub-pic index exceeds valid range" ); return  m_subPicId[i];  }
-#endif
-#if JVET_Q0246_VIRTUAL_BOUNDARY_ENABLE_FLAG 
   void                        setVirtualBoundariesPresentFlag( bool b )                 { m_virtualBoundariesPresentFlag = b;                                                          }
   bool                        getVirtualBoundariesPresentFlag() const                   { return m_virtualBoundariesPresentFlag;                                                       }
-#else
-  void                        setLoopFilterAcrossVirtualBoundariesDisabledFlag(bool b)  { m_loopFilterAcrossVirtualBoundariesDisabledFlag = b;                                         }
-  bool                        getLoopFilterAcrossVirtualBoundariesDisabledFlag() const  { return m_loopFilterAcrossVirtualBoundariesDisabledFlag;                                      }
-#endif
   void                        setNumVerVirtualBoundaries(unsigned u)                    { m_numVerVirtualBoundaries = u;                                                               }
   unsigned                    getNumVerVirtualBoundaries() const                        { return m_numVerVirtualBoundaries;                                                            }
   void                        setNumHorVirtualBoundaries(unsigned u)                    { m_numHorVirtualBoundaries = u;                                                               }
@@ -2676,16 +2377,8 @@ public:
   unsigned                    getVirtualBoundariesPosX(unsigned idx) const              { CHECK( idx >= 3, "boundary index exceeds valid range" ); return m_virtualBoundariesPosX[idx];}
   void                        setVirtualBoundariesPosY(unsigned u, unsigned idx)        { CHECK( idx >= 3, "boundary index exceeds valid range" ); m_virtualBoundariesPosY[idx] = u;   }
   unsigned                    getVirtualBoundariesPosY(unsigned idx) const              { CHECK( idx >= 3, "boundary index exceeds valid range" ); return m_virtualBoundariesPosY[idx];}
-#if !JVET_Q0155_COLOUR_ID
-  void                        setColourPlaneId(unsigned u)                              { m_colourPlaneId = u;                                                                         }
-  unsigned                    getColourPlaneId() const                                  { return m_colourPlaneId;                                                                      }
-#endif
   void                        setPicOutputFlag( bool b )                                { m_picOutputFlag = b;                                                                         }
   bool                        getPicOutputFlag() const                                  { return m_picOutputFlag;                                                                      }
-#if !JVET_Q0819_PH_CHANGES 
-  void                        setPicRplPresentFlag( bool b )                            { m_picRplPresentFlag = b;                                                                     }
-  bool                        getPicRplPresentFlag() const                              { return m_picRplPresentFlag;                                                                  }
-#endif
   void                        setRPL( bool b, const ReferencePictureList *pcRPL)        { if(b==1) { m_pRPL1 = pcRPL; } else { m_pRPL0 = pcRPL; }                                      }
   const ReferencePictureList* getRPL( bool b )                                          { return b==1 ? m_pRPL1 : m_pRPL0;                                                             }
   ReferencePictureList*       getLocalRPL( bool b )                                     { return b==1 ? &m_localRPL1 : &m_localRPL0;                                                   }
@@ -2701,14 +2394,12 @@ public:
   void                        setRPL1idx(int rplIdx)                                    { m_rpl1Idx = rplIdx;                                                                          }
   int                         getRPL0idx() const                                        { return m_rpl0Idx;                                                                            }
   int                         getRPL1idx() const                                        { return m_rpl1Idx;                                                                            }
-#if JVET_Q0819_PH_CHANGES
   void                        setPicInterSliceAllowedFlag(bool b)                       { m_picInterSliceAllowedFlag = b; }
   bool                        getPicInterSliceAllowedFlag() const                       { return m_picInterSliceAllowedFlag; }
   void                        setPicIntraSliceAllowedFlag(bool b)                       { m_picIntraSliceAllowedFlag = b; }
   bool                        getPicIntraSliceAllowedFlag() const                       { return m_picIntraSliceAllowedFlag; }
-#endif 
   void                        setSplitConsOverrideFlag( bool b )                        { m_splitConsOverrideFlag = b;                                                                 }
-  bool                        getSplitConsOverrideFlag() const                          { return m_splitConsOverrideFlag;                                                              }  
+  bool                        getSplitConsOverrideFlag() const                          { return m_splitConsOverrideFlag;                                                              }
   void                        setCuQpDeltaSubdivIntra( uint32_t u )                     { m_cuQpDeltaSubdivIntra = u;                                                                  }
   uint32_t                    getCuQpDeltaSubdivIntra() const                           { return m_cuQpDeltaSubdivIntra;                                                               }
   void                        setCuQpDeltaSubdivInter( uint32_t u )                     { m_cuQpDeltaSubdivInter = u;                                                                  }
@@ -2719,67 +2410,38 @@ public:
   uint32_t                    getCuChromaQpOffsetSubdivInter() const                    { return m_cuChromaQpOffsetSubdivInter;                                                        }
   void                        setEnableTMVPFlag( bool b )                               { m_enableTMVPFlag = b;                                                                        }
   bool                        getEnableTMVPFlag() const                                 { return m_enableTMVPFlag;                                                                     }
-#if JVET_Q0482_REMOVE_CONSTANT_PARAMS
   void                        setPicColFromL0Flag(bool val)                             { m_picColFromL0Flag = val;                                                                     }
   bool                        getPicColFromL0Flag() const                               { return m_picColFromL0Flag;                                                                    }
-#endif
-#if JVET_Q0259_COLLOCATED_PIC_IN_PH
   void                        setColRefIdx( uint32_t refIdx)                             { m_colRefIdx = refIdx;                                                                       }
   uint32_t                    getColRefIdx()                                             { return m_colRefIdx;                                                                         }
-#endif
   void                        setMvdL1ZeroFlag( bool b )                                { m_mvdL1ZeroFlag = b;                                                                         }
-  bool                        getMvdL1ZeroFlag() const                                  { return m_mvdL1ZeroFlag;                                                                      }  
-#if !JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
-  void                        setMaxNumMergeCand(uint32_t val )                         { m_maxNumMergeCand = val;                                                                     }
-  uint32_t                    getMaxNumMergeCand() const                                { return m_maxNumMergeCand;                                                                    }  
-#endif
+  bool                        getMvdL1ZeroFlag() const                                  { return m_mvdL1ZeroFlag;                                                                      }
   void                        setMaxNumAffineMergeCand( uint32_t val )                  { m_maxNumAffineMergeCand = val;                                                               }
   uint32_t                    getMaxNumAffineMergeCand() const                          { return m_maxNumAffineMergeCand;                                                              }
   void                        setDisFracMMVD( bool val )                                { m_disFracMMVD = val;                                                                         }
-  bool                        getDisFracMMVD() const                                    { return m_disFracMMVD;                                                                        }  
+  bool                        getDisFracMMVD() const                                    { return m_disFracMMVD;                                                                        }
   void                        setDisBdofFlag( bool val )                                { m_disBdofFlag = val;                                                                         }
   bool                        getDisBdofFlag() const                                    { return m_disBdofFlag;                                                                        }
   void                        setDisDmvrFlag( bool val )                                { m_disDmvrFlag = val;                                                                         }
   bool                        getDisDmvrFlag() const                                    { return m_disDmvrFlag;                                                                        }
   void                        setDisProfFlag( bool val )                                { m_disProfFlag = val;                                                                         }
   bool                        getDisProfFlag() const                                    { return m_disProfFlag;                                                                        }
-#if !JVET_Q0798_SPS_NUMBER_MERGE_CANDIDATE
-#if !JVET_Q0806
-  void                        setMaxNumTriangleCand(uint32_t b)                         { m_maxNumTriangleCand = b;                                                                    }
-  uint32_t                    getMaxNumTriangleCand() const                             { return m_maxNumTriangleCand;                                                                 }
-#else
-  void                        setMaxNumGeoCand(uint32_t b)                              { m_maxNumGeoCand = b; }
-  uint32_t                    getMaxNumGeoCand() const                                  { return m_maxNumGeoCand; }
-#endif
-  void                        setMaxNumIBCMergeCand( uint32_t b )                       { m_maxNumIBCMergeCand = b;                                                                    }
-  uint32_t                    getMaxNumIBCMergeCand() const                             { return m_maxNumIBCMergeCand;                                                                 } 
-#endif
   void                        setJointCbCrSignFlag( bool b )                            { m_jointCbCrSignFlag = b;                                                                     }
   bool                        getJointCbCrSignFlag() const                              { return m_jointCbCrSignFlag;                                                                  }
-#if JVET_Q0819_PH_CHANGES 
   void                        setQpDelta(int b)                                         { m_qpDelta = b;                                                                               }
   int                         getQpDelta() const                                        { return m_qpDelta;                                                                            }
-#else
-  void                        setSaoEnabledPresentFlag( bool b )                        { m_saoEnabledPresentFlag = b;                                                                 }
-  bool                        getSaoEnabledPresentFlag() const                          { return m_saoEnabledPresentFlag;                                                              }
-#endif
   void                        setSaoEnabledFlag(ChannelType chType, bool b)             { m_saoEnabledFlag[chType] = b;                                                                }
-  bool                        getSaoEnabledFlag(ChannelType chType) const               { return m_saoEnabledFlag[chType];                                                             }  
-#if !JVET_Q0819_PH_CHANGES   
-  void                        setAlfEnabledPresentFlag( bool b )                        { m_alfEnabledPresentFlag = b;                                                                 }
-  bool                        getAlfEnabledPresentFlag() const                          { return m_alfEnabledPresentFlag;                                                              }
-#endif
+  bool                        getSaoEnabledFlag(ChannelType chType) const               { return m_saoEnabledFlag[chType];                                                             }
   void                        setAlfEnabledFlag(ComponentID compId, bool b)             { m_alfEnabledFlag[compId] = b;                                                                }
   bool                        getAlfEnabledFlag(ComponentID compId) const               { return m_alfEnabledFlag[compId];                                                             }
   void                        setNumAlfAps(int i)                                       { m_numAlfAps = i;                                                                             }
   int                         getNumAlfAps() const                                      { return m_numAlfAps;                                                                          }
   void                        setAlfApsIdChroma(int i)                                  { m_alfChromaApsId = i;                                                                        }
   int                         getAlfApsIdChroma() const                                 { return m_alfChromaApsId;                                                                     }
-#if JVET_Q0358_ALF_NALU_TID_CONSTRAINT
+#if !JVET_R0225_SEPERATE_FLAGS_ALF_CHROMA
   void                        setAlfChromaIdc(int i)                                    { m_alfChromaIdc = i;                                                                          }
   int                         getAlfChromaIdc() const                                   { return m_alfChromaIdc;                                                                       }
 #endif
-#if JVET_Q0795_CCALF
   void setCcAlfEnabledFlag(ComponentID compId, bool b) { m_ccalfEnabledFlag[compId] = b; }
   bool getCcAlfEnabledFlag(ComponentID compId) const { return m_ccalfEnabledFlag[compId]; }
 
@@ -2787,24 +2449,20 @@ public:
   int  getCcAlfCbApsId() const { return m_ccalfCbApsId; }
   void setCcAlfCrApsId(int i) { m_ccalfCrApsId = i; }
   int  getCcAlfCrApsId() const { return m_ccalfCrApsId; }
-#endif
+#if !JVET_R0271_SLICE_LEVEL_DQ_SDH_RRC
   void                        setDepQuantEnabledFlag( bool b )                          { m_depQuantEnabledFlag = b;                                                                   }
   bool                        getDepQuantEnabledFlag() const                            { return m_depQuantEnabledFlag;                                                                }  
   void                        setSignDataHidingEnabledFlag( bool b )                    { m_signDataHidingEnabledFlag = b;                                                             }
   bool                        getSignDataHidingEnabledFlag() const                      { return m_signDataHidingEnabledFlag;                                                          }  
-#if !JVET_Q0819_PH_CHANGES 
-  void                        setDeblockingFilterOverridePresentFlag( bool b )          { m_deblockingFilterOverridePresentFlag = b;                                                   }
-  bool                        getDeblockingFilterOverridePresentFlag() const            { return m_deblockingFilterOverridePresentFlag;                                                }
 #endif
   void                        setDeblockingFilterOverrideFlag( bool b )                 { m_deblockingFilterOverrideFlag = b;                                                          }
-  bool                        getDeblockingFilterOverrideFlag() const                   { return m_deblockingFilterOverrideFlag;                                                       }    
-  void                        setDeblockingFilterDisable( bool b )                      { m_deblockingFilterDisable= b;                                                                }  
+  bool                        getDeblockingFilterOverrideFlag() const                   { return m_deblockingFilterOverrideFlag;                                                       }
+  void                        setDeblockingFilterDisable( bool b )                      { m_deblockingFilterDisable= b;                                                                }
   bool                        getDeblockingFilterDisable() const                        { return m_deblockingFilterDisable;                                                            }
-  void                        setDeblockingFilterBetaOffsetDiv2( int i )                { m_deblockingFilterBetaOffsetDiv2 = i;                                                        }  
+  void                        setDeblockingFilterBetaOffsetDiv2( int i )                { m_deblockingFilterBetaOffsetDiv2 = i;                                                        }
   int                         getDeblockingFilterBetaOffsetDiv2()const                  { return m_deblockingFilterBetaOffsetDiv2;                                                     }
-  void                        setDeblockingFilterTcOffsetDiv2( int i )                  { m_deblockingFilterTcOffsetDiv2 = i;                                                          }  
-  int                         getDeblockingFilterTcOffsetDiv2() const                   { return m_deblockingFilterTcOffsetDiv2;                                                       }    
-#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
+  void                        setDeblockingFilterTcOffsetDiv2( int i )                  { m_deblockingFilterTcOffsetDiv2 = i;                                                          }
+  int                         getDeblockingFilterTcOffsetDiv2() const                   { return m_deblockingFilterTcOffsetDiv2;                                                       }
   void                        setDeblockingFilterCbBetaOffsetDiv2( int i )              { m_deblockingFilterCbBetaOffsetDiv2 = i;                                                      }
   int                         getDeblockingFilterCbBetaOffsetDiv2()const                { return m_deblockingFilterCbBetaOffsetDiv2;                                                   }
   void                        setDeblockingFilterCbTcOffsetDiv2( int i )                { m_deblockingFilterCbTcOffsetDiv2 = i;                                                        }
@@ -2813,7 +2471,6 @@ public:
   int                         getDeblockingFilterCrBetaOffsetDiv2()const                { return m_deblockingFilterCrBetaOffsetDiv2;                                                   }
   void                        setDeblockingFilterCrTcOffsetDiv2( int i )                { m_deblockingFilterCrTcOffsetDiv2 = i;                                                        }
   int                         getDeblockingFilterCrTcOffsetDiv2() const                 { return m_deblockingFilterCrTcOffsetDiv2;                                                     }
-#endif
   void                        setLmcsEnabledFlag(bool b)                                { m_lmcsEnabledFlag = b;                                                                       }
   bool                        getLmcsEnabledFlag()                                      { return m_lmcsEnabledFlag;                                                                    }
   const bool                  getLmcsEnabledFlag() const                                { return m_lmcsEnabledFlag;                                                                    }
@@ -2828,21 +2485,15 @@ public:
   APS*                        getScalingListAPS() const                                 { return m_scalingListAps;                                                                     }
   void                        setScalingListAPSId( int id )                             { m_scalingListApsId = id;                                                                     }
   int                         getScalingListAPSId() const                               { return m_scalingListApsId;                                                                   }
-#if JVET_Q0346_SCALING_LIST_USED_IN_SH
   void                        setExplicitScalingListEnabledFlag( bool b )               { m_explicitScalingListEnabledFlag = b;                                                        }
   bool                        getExplicitScalingListEnabledFlag()                       { return m_explicitScalingListEnabledFlag;                                                     }
   const bool                  getExplicitScalingListEnabledFlag() const                 { return m_explicitScalingListEnabledFlag;                                                     }
-#else
-  void                        setScalingListPresentFlag( bool b )                       { m_scalingListPresentFlag = b;                                                                }
-  bool                        getScalingListPresentFlag()                               { return m_scalingListPresentFlag;                                                             }
-  const bool                  getScalingListPresentFlag() const                         { return m_scalingListPresentFlag;                                                             }
-#endif
 
   unsigned*                   getMinQTSizes() const                                     { return (unsigned *)m_minQT;                                                                  }
   unsigned*                   getMaxMTTHierarchyDepths() const                          { return (unsigned *)m_maxMTTHierarchyDepth;                                                   }
   unsigned*                   getMaxBTSizes() const                                     { return (unsigned *)m_maxBTSize;                                                              }
   unsigned*                   getMaxTTSizes() const                                     { return (unsigned *)m_maxTTSize;                                                              }
-  
+
   void                        setMinQTSize(unsigned idx, unsigned minQT)                { m_minQT[idx] = minQT;                                                                        }
   void                        setMaxMTTHierarchyDepth(unsigned idx, unsigned maxMTT)    { m_maxMTTHierarchyDepth[idx] = maxMTT;                                                        }
   void                        setMaxBTSize(unsigned idx, unsigned maxBT)                { m_maxBTSize[idx] = maxBT;                                                                    }
@@ -2852,7 +2503,7 @@ public:
   void                        setMaxMTTHierarchyDepths(unsigned*   maxMTT)              { m_maxMTTHierarchyDepth[0] = maxMTT[0]; m_maxMTTHierarchyDepth[1] = maxMTT[1]; m_maxMTTHierarchyDepth[2] = maxMTT[2]; }
   void                        setMaxBTSizes(unsigned*   maxBT)                          { m_maxBTSize[0] = maxBT[0]; m_maxBTSize[1] = maxBT[1]; m_maxBTSize[2] = maxBT[2];                                     }
   void                        setMaxTTSizes(unsigned*   maxTT)                          { m_maxTTSize[0] = maxTT[0]; m_maxTTSize[1] = maxTT[1]; m_maxTTSize[2] = maxTT[2];                                     }
-    
+
   unsigned                    getMinQTSize(SliceType   slicetype,
                                        ChannelType chType = CHANNEL_TYPE_LUMA) const    { return slicetype == I_SLICE ? (chType == CHANNEL_TYPE_LUMA ? m_minQT[0] : m_minQT[2]) : m_minQT[1];                                              }
   unsigned                    getMaxMTTHierarchyDepth(SliceType   slicetype,
@@ -2861,7 +2512,7 @@ public:
                                        ChannelType chType = CHANNEL_TYPE_LUMA) const    { return slicetype == I_SLICE ? (chType == CHANNEL_TYPE_LUMA ? m_maxBTSize[0] : m_maxBTSize[2]) : m_maxBTSize[1];                                  }
   unsigned                    getMaxTTSize(SliceType   slicetype,
                                        ChannelType chType = CHANNEL_TYPE_LUMA) const    { return slicetype == I_SLICE ? (chType == CHANNEL_TYPE_LUMA ? m_maxTTSize[0] : m_maxTTSize[2]) : m_maxTTSize[1];                                  }
-  
+
   void                        setAlfAPSs(std::vector<int> apsIDs)                       { m_alfApsId.resize(m_numAlfAps);
                                                                                           for (int i = 0; i < m_numAlfAps; i++)
                                                                                           {
@@ -2871,27 +2522,24 @@ public:
 
   std::vector<int>            getAlfAPSs() const                                        { return m_alfApsId; }
 
-#if JVET_Q0819_PH_CHANGES 
   void                        setWpScaling(WPScalingParam *wp)
   {
     memcpy(m_weightPredTable, wp, sizeof(WPScalingParam) * NUM_REF_PIC_LIST_01 * MAX_NUM_REF * MAX_NUM_COMPONENT);
   }
   void                        getWpScaling(RefPicList e, int iRefIdx, WPScalingParam *&wp) const;
   WPScalingParam*             getWpScalingAll()                                        { return (WPScalingParam *) m_weightPredTable; }
+  void                        resetWpScaling();
   void                        setNumL0Weights(int b)                                   { m_numL0Weights = b;                          }
   int                         getNumL0Weights()                                        { return m_numL0Weights;                       }
   void                        setNumL1Weights(int b)                                   { m_numL1Weights = b;                          }
   int                         getNumL1Weights()                                        { return m_numL1Weights;                       }
-#endif
 
-#if SPS_ID_CHECK
   void                        setNoOutputBeforeRecoveryFlag( bool val )                { m_noOutputBeforeRecoveryFlag = val;  }
   bool                        getNoOutputBeforeRecoveryFlag() const                    { return m_noOutputBeforeRecoveryFlag; }
   void                        setHandleCraAsCvsStartFlag( bool val )                   { m_handleCraAsCvsStartFlag = val;     }
   bool                        getHandleCraAsCvsStartFlag() const                       { return m_handleCraAsCvsStartFlag;    }
   void                        setHandleGdrAsCvsStartFlag( bool val )                   { m_handleGdrAsCvsStartFlag = val;     }
   bool                        getHandleGdrAsCvsStartFlag() const                       { return m_handleGdrAsCvsStartFlag;    }
-#endif
 };
 
 /// slice header class
@@ -2915,39 +2563,29 @@ private:
   ReferencePictureList        m_localRPL1;            //< RPL for L1 when present in slice header
   int                         m_rpl0Idx;              //< index of used RPL in the SPS or -1 for local RPL in the slice header
   int                         m_rpl1Idx;              //< index of used RPL in the SPS or -1 for local RPL in the slice header
-#if JVET_Q0155_COLOUR_ID
   int                        m_colourPlaneId;                         //!< 4:4:4 colour plane ID
-#endif
   NalUnitType                m_eNalUnitType;         ///< Nal unit type for the slice
-#if JVET_Q0775_PH_IN_SH
   bool                       m_pictureHeaderInSliceHeader;
-#endif
-#if JVET_Q0118_CLEANUPS
   uint32_t                   m_nuhLayerId;           ///< Nal unit layer id
-#endif
   SliceType                  m_eSliceType;
   int                        m_iSliceQp;
   int                        m_iSliceQpBase;
   bool                       m_ChromaQpAdjEnabled;
-#if JVET_Q0346_LMCS_ENABLE_IN_SH
   bool                       m_lmcsEnabledFlag;
-#endif
-#if JVET_Q0346_SCALING_LIST_USED_IN_SH
   bool                       m_explicitScalingListUsed;
-#endif
   bool                       m_deblockingFilterDisable;
   bool                       m_deblockingFilterOverrideFlag;      //< offsets for deblocking filter inherit from PPS
   int                        m_deblockingFilterBetaOffsetDiv2;    //< beta offset for deblocking filter
   int                        m_deblockingFilterTcOffsetDiv2;      //< tc offset for deblocking filter
-#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
   int                        m_deblockingFilterCbBetaOffsetDiv2;  //< beta offset for deblocking filter
   int                        m_deblockingFilterCbTcOffsetDiv2;    //< tc offset for deblocking filter
   int                        m_deblockingFilterCrBetaOffsetDiv2;  //< beta offset for deblocking filter
   int                        m_deblockingFilterCrTcOffsetDiv2;    //< tc offset for deblocking filter
+#if JVET_R0271_SLICE_LEVEL_DQ_SDH_RRC
+  bool                       m_depQuantEnabledFlag;               //!< dependent quantization enabled flag
+  bool                       m_signDataHidingEnabledFlag;         //!< sign data hiding enabled flag
 #endif
-#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
   bool                       m_tsResidualCodingDisabledFlag;
-#endif
   int                        m_list1IdxToList0Idx[MAX_NUM_REF];
   int                        m_aiNumRefIdx   [NUM_REF_PIC_LIST_01];    //  for multiple reference of current slice
   bool                       m_pendingRasInit;
@@ -2970,9 +2608,6 @@ private:
 
 
   // access channel
-#if !JVET_Q0117_PARAMETER_SETS_CLEANUP
-  const DPS*                 m_dps;
-#endif
   const VPS*                 m_pcVPS;
   const SPS*                 m_pcSPS;
   const PPS*                 m_pcPPS;
@@ -2980,10 +2615,6 @@ private:
   const PicHeader*           m_pcPicHeader;    //!< pointer to picture header structure
   bool                       m_colFromL0Flag;  // collocated picture from List0 flag
 
-#if !SPS_ID_CHECK
-  bool                       m_noIncorrectPicOutputFlag;
-  bool                       m_handleCraAsCvsStartFlag;
-#endif
 
   uint32_t                       m_colRefIdx;
   double                     m_lambdas[MAX_NUM_COMPONENT];
@@ -3006,36 +2637,35 @@ private:
   ClpRngs                    m_clpRngs;
   std::vector<uint32_t>          m_substreamSizes;
   uint32_t                   m_numEntryPoints;
-#if JVET_Q0151_Q0205_ENTRYPOINTS
   uint32_t                   m_numSubstream;
-#endif
 
   bool                       m_cabacInitFlag;
 
   uint32_t                   m_sliceSubPicId;
 
-  
-  
+
+
 
 
   SliceType                  m_encCABACTableIdx;           // Used to transmit table selection across slices.
 
   clock_t                    m_iProcessingStartTime;
   double                     m_dProcessingTime;
-  
+
   int                        m_rpPicOrderCntVal;
   APS*                       m_alfApss[ALF_CTB_MAX_NUM_APS];
   bool                       m_tileGroupAlfEnabledFlag[MAX_NUM_COMPONENT];
   int                        m_tileGroupNumAps;
   std::vector<int>           m_tileGroupLumaApsId;
   int                        m_tileGroupChromaApsId;
-#if JVET_Q0795_CCALF
   bool                       m_tileGroupCcAlfCbEnabledFlag;
   bool                       m_tileGroupCcAlfCrEnabledFlag;
   int                        m_tileGroupCcAlfCbApsId;
   int                        m_tileGroupCcAlfCrApsId;
-#endif
   bool                       m_disableSATDForRd;
+#if JVET_R0110_MIXED_LOSSLESS
+  bool                       m_isLossless;
+#endif
 public:
                               Slice();
   virtual                     ~Slice();
@@ -3045,10 +2675,6 @@ public:
   const PicHeader*            getPicHeader() const                                   { return m_pcPicHeader;                                         }
   int                         getRefIdx4MVPair( RefPicList eCurRefPicList, int nCurRefIdx );
 
-#if !JVET_Q0117_PARAMETER_SETS_CLEANUP
-  void                        setDPS( DPS* dps )                                     { m_dps = dps;                                              }
-  const DPS*                  getDPS() const                                         { return m_dps;                                               }
-#endif
 
   void                        setSPS( const SPS* pcSPS )                             { m_pcSPS = pcSPS;                                              }
   const SPS*                  getSPS() const                                         { return m_pcSPS;                                               }
@@ -3089,34 +2715,24 @@ public:
   bool                        getDeblockingFilterOverrideFlag() const                { return m_deblockingFilterOverrideFlag;                        }
   int                         getDeblockingFilterBetaOffsetDiv2()const               { return m_deblockingFilterBetaOffsetDiv2;                      }
   int                         getDeblockingFilterTcOffsetDiv2() const                { return m_deblockingFilterTcOffsetDiv2;                        }
-#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
   int                         getDeblockingFilterCbBetaOffsetDiv2()const             { return m_deblockingFilterCbBetaOffsetDiv2;                    }
   int                         getDeblockingFilterCbTcOffsetDiv2() const              { return m_deblockingFilterCbTcOffsetDiv2;                      }
   int                         getDeblockingFilterCrBetaOffsetDiv2()const             { return m_deblockingFilterCrBetaOffsetDiv2;                    }
   int                         getDeblockingFilterCrTcOffsetDiv2() const              { return m_deblockingFilterCrTcOffsetDiv2;                      }
-#endif
   bool                        getPendingRasInit() const                              { return m_pendingRasInit;                                      }
   void                        setPendingRasInit( bool val )                          { m_pendingRasInit = val;                                       }
 
-#if JVET_Q0346_LMCS_ENABLE_IN_SH
   void                        setLmcsEnabledFlag(bool b)                              { m_lmcsEnabledFlag = b;                                       }
   bool                        getLmcsEnabledFlag()                                    { return m_lmcsEnabledFlag;                                    }
   const bool                  getLmcsEnabledFlag() const                              { return m_lmcsEnabledFlag;                                    }
-#endif
 
-#if JVET_Q0346_SCALING_LIST_USED_IN_SH
   void                        setExplicitScalingListUsed(bool b)                      { m_explicitScalingListUsed = b;                               }
   bool                        getExplicitScalingListUsed()                            { return m_explicitScalingListUsed;                            }
-#endif
 
   int                         getNumRefIdx( RefPicList e ) const                     { return m_aiNumRefIdx[e];                                      }
   Picture*                    getPic()                                               { return m_pcPic;                                               }
   const Picture*              getPic() const                                         { return m_pcPic;                                               }
-#if JVET_O1143_MV_ACROSS_SUBPIC_BOUNDARY
         Picture*              getRefPic( RefPicList e, int iRefIdx) const            { return m_apcRefPicList[e][iRefIdx];                           }
-#else
-  const Picture*              getRefPic( RefPicList e, int iRefIdx) const            { return m_apcRefPicList[e][iRefIdx];                           }
-#endif
   int                         getRefPOC( RefPicList e, int iRefIdx) const            { return m_aiRefPOCList[e][iRefIdx];                            }
   int                         getDepth() const                                       { return m_iDepth;                                              }
   bool                        getColFromL0Flag() const                               { return m_colFromL0Flag;                                       }
@@ -3127,33 +2743,21 @@ public:
   bool                        getCheckLDC() const                                    { return m_bCheckLDC;                                           }
   int                         getList1IdxToList0Idx( int list1Idx ) const            { return m_list1IdxToList0Idx[list1Idx];                        }
   void                        setPOC( int i )                                        { m_iPOC              = i;                                      }
-#if JVET_Q0775_PH_IN_SH
   bool                        getPictureHeaderInSliceHeader() const                  { return m_pictureHeaderInSliceHeader;                         }
   void                        setPictureHeaderInSliceHeader( bool e )                { m_pictureHeaderInSliceHeader = e;                            }
-#endif
   void                        setNalUnitType( NalUnitType e )                        { m_eNalUnitType      = e;                                      }
   NalUnitType                 getNalUnitType() const                                 { return m_eNalUnitType;                                        }
-#if JVET_Q0118_CLEANUPS
   void                        setNalUnitLayerId( uint32_t i )                        { m_nuhLayerId = i;                                             }
   uint32_t                    getNalUnitLayerId() const                              { return m_nuhLayerId;                                          }
-#endif
   bool                        getRapPicFlag() const;
   bool                        getIdrPicFlag() const                                  { return getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_W_RADL || getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_N_LP; }
   bool                        isIRAP() const { return (getNalUnitType() >= NAL_UNIT_CODED_SLICE_IDR_W_RADL) && (getNalUnitType() <= NAL_UNIT_CODED_SLICE_CRA); }
-#if SPS_ID_CHECK
   // CLVSS PU is either an IRAP PU with NoOutputBeforeRecoveryFlag equal to 1 or a GDR PU with NoOutputBeforeRecoveryFlag equal to 1.
   bool                        isClvssPu() const                                      { return m_eNalUnitType >= NAL_UNIT_CODED_SLICE_IDR_W_RADL && m_eNalUnitType <= NAL_UNIT_CODED_SLICE_GDR && !m_pcPPS->getMixedNaluTypesInPicFlag() && m_pcPicHeader->getNoOutputBeforeRecoveryFlag(); }
-#endif
   bool                        isIDRorBLA() const { return (getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_W_RADL) || (getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_N_LP); }
-#if JVET_P0978_RPL_RESTRICTIONS
   void                        checkCRA(const ReferencePictureList* pRPL0, const ReferencePictureList* pRPL1, const int pocCRA, PicList& rcListPic);
-#else
-  void                        checkCRA(const ReferencePictureList *pRPL0, const ReferencePictureList *pRPL1, int& pocCRA, NalUnitType& associatedIRAPType, PicList& rcListPic);
-#endif
   void                        checkSTSA(PicList& rcListPic);
-#if JVET_P0978_RPL_RESTRICTIONS
   void                        checkRPL(const ReferencePictureList* pRPL0, const ReferencePictureList* pRPL1, const int associatedIRAPDecodingOrderNumber, PicList& rcListPic);
-#endif
   void                        decodingRefreshMarking(int& pocCRA, bool& bRefreshPending, PicList& rcListPic, const bool bEfficientFieldIRAPEnabled);
   void                        setSliceType( SliceType e )                            { m_eSliceType        = e;                                      }
   void                        setSliceQp( int i )                                    { m_iSliceQp          = i;                                      }
@@ -3164,16 +2768,18 @@ public:
   void                        setDeblockingFilterOverrideFlag( bool b )              { m_deblockingFilterOverrideFlag = b;                           }
   void                        setDeblockingFilterBetaOffsetDiv2( int i )             { m_deblockingFilterBetaOffsetDiv2 = i;                         }
   void                        setDeblockingFilterTcOffsetDiv2( int i )               { m_deblockingFilterTcOffsetDiv2 = i;                           }
-#if JVET_Q0121_DEBLOCKING_CONTROL_PARAMETERS
   void                        setDeblockingFilterCbBetaOffsetDiv2( int i )           { m_deblockingFilterCbBetaOffsetDiv2 = i;                         }
   void                        setDeblockingFilterCbTcOffsetDiv2( int i )             { m_deblockingFilterCbTcOffsetDiv2 = i;                           }
   void                        setDeblockingFilterCrBetaOffsetDiv2( int i )           { m_deblockingFilterCrBetaOffsetDiv2 = i;                         }
   void                        setDeblockingFilterCrTcOffsetDiv2( int i )             { m_deblockingFilterCrTcOffsetDiv2 = i;                           }
+#if JVET_R0271_SLICE_LEVEL_DQ_SDH_RRC
+  void                        setDepQuantEnabledFlag( bool b )                       { m_depQuantEnabledFlag = b;                                                                   }
+  bool                        getDepQuantEnabledFlag() const                         { return m_depQuantEnabledFlag;                                                                }  
+  void                        setSignDataHidingEnabledFlag( bool b )                 { m_signDataHidingEnabledFlag = b;                                                             }
+  bool                        getSignDataHidingEnabledFlag() const                   { return m_signDataHidingEnabledFlag;                                                          }  
 #endif
-#if JVET_Q0089_SLICE_LOSSLESS_CODING_CHROMA_BDPCM
   void                        setTSResidualCodingDisabledFlag(bool b) { m_tsResidualCodingDisabledFlag = b; }
   bool                        getTSResidualCodingDisabledFlag() const { return m_tsResidualCodingDisabledFlag; }
-#endif
 
   void                        setNumRefIdx( RefPicList e, int i )                    { m_aiNumRefIdx[e]    = i;                                      }
   void                        setPic( Picture* p )                                   { m_pcPic             = p;                                      }
@@ -3206,10 +2812,8 @@ public:
   bool                        isPocRestrictedByDRAP( int poc, bool precedingDRAPinDecodingOrder );
   bool                        isPOCInRefPicList( const ReferencePictureList *rpl, int poc );
   void                        checkConformanceForDRAP( uint32_t temporalId );
-#if JVET_Q0155_COLOUR_ID
   void                        setColourPlaneId( int id )                             { m_colourPlaneId = id;                                         }
   int                         getColourPlaneId() const                               { return m_colourPlaneId;                                       }
-#endif
 
   void                        setLambdas( const double lambdas[MAX_NUM_COMPONENT] )  { for (int component = 0; component < MAX_NUM_COMPONENT; component++) m_lambdas[component] = lambdas[component]; }
   const double*               getLambdas() const                                     { return m_lambdas;                                             }
@@ -3244,27 +2848,12 @@ public:
   uint32_t                        getTLayer() const                                      { return m_uiTLayer;                                            }
   void                        setTLayer( uint32_t uiTLayer )                             { m_uiTLayer = uiTLayer;                                        }
 
-#if JVET_Q0751_MIXED_NAL_UNIT_TYPES
   void                        checkLeadingPictureRestrictions( PicList& rcListPic, const PPS& pps)                                         const;
-#else
-  void                        checkLeadingPictureRestrictions( PicList& rcListPic )                                         const;
-#endif
   int                         checkThatAllRefPicsAreAvailable(PicList& rcListPic, const ReferencePictureList* pRPL, int rplIdx, bool printErrors, int* refPicIndex, int numActiveRefPics) const;
-#if JVET_Q0751_MIXED_NAL_UNIT_TYPES
   void                        applyReferencePictureListBasedMarking( PicList& rcListPic, const ReferencePictureList *pRPL0, const ReferencePictureList *pRPL1, const int layerId, const PPS& pps )  const;
-#else
-  void                        applyReferencePictureListBasedMarking( PicList& rcListPic, const ReferencePictureList *pRPL0, const ReferencePictureList *pRPL1, const int layerId )  const;
-#endif
   bool                        isTemporalLayerSwitchingPoint( PicList& rcListPic )                                           const;
   bool                        isStepwiseTemporalLayerSwitchingPointCandidate( PicList& rcListPic )                          const;
   int                         checkThatAllRefPicsAreAvailable(PicList& rcListPic, const ReferencePictureList *pRPL, int rplIdx, bool printErrors)                const;
-#if !SPS_ID_CHECK
-  void                        setNoIncorrectPicOutputFlag(bool val)                  { m_noIncorrectPicOutputFlag = val;                             }
-  bool                        getNoIncorrectPicOutputFlag() const                    { return m_noIncorrectPicOutputFlag;                                    }
-
-  void                        setHandleCraAsCvsStartFlag( bool val )                 { m_handleCraAsCvsStartFlag = val;                                   }
-  bool                        getHandleCraAsCvsStartFlag() const                     { return m_handleCraAsCvsStartFlag;                                  }
-#endif
 
   void                        setNumTilesInSlice( uint32_t u )                       { m_sliceMap.setNumTilesInSlice( u );                                       }
   uint32_t                    getNumTilesInSlice() const                             { return m_sliceMap.getNumTilesInSlice();                                   }
@@ -3275,8 +2864,8 @@ public:
   uint32_t                    getNumCtuInSlice() const                               { return m_sliceMap.getNumCtuInSlice();                                     }
   uint32_t                    getCtuAddrInSlice( int idx ) const                     { return m_sliceMap.getCtuAddrInSlice( idx );                               }
   void                        initSliceMap()                                         { m_sliceMap.initSliceMap();                                                }
-  void                        addCtusToSlice( uint32_t startX, uint32_t stopX, 
-                                              uint32_t startY, uint32_t stopY, 
+  void                        addCtusToSlice( uint32_t startX, uint32_t stopX,
+                                              uint32_t startY, uint32_t stopY,
                                               uint32_t picWidthInCtbsY )             { m_sliceMap.addCtusToSlice(startX, stopX, startY, stopY, picWidthInCtbsY); }
   void                        setIndependentSliceIdx( uint32_t i)                        { m_independentSliceIdx = i;                                    }
   uint32_t                        getIndependentSliceIdx() const                         { return  m_independentSliceIdx;                                }
@@ -3293,13 +2882,11 @@ public:
   {
     memcpy(m_weightPredTable, wp, sizeof(WPScalingParam)*NUM_REF_PIC_LIST_01*MAX_NUM_REF*MAX_NUM_COMPONENT);
   }
-#if JVET_Q0819_PH_CHANGES  
   void                        setWpScaling(WPScalingParam *wp)
   {
     memcpy(m_weightPredTable, wp, sizeof(WPScalingParam) * NUM_REF_PIC_LIST_01 * MAX_NUM_REF * MAX_NUM_COMPONENT);
   }
   WPScalingParam *            getWpScalingAll()                                      { return (WPScalingParam *) m_weightPredTable;                  }
-#endif
   void                        getWpScaling( RefPicList e, int iRefIdx, WPScalingParam *&wp) const;
 
   void                        resetWpScaling();
@@ -3314,11 +2901,9 @@ public:
   uint32_t                        getNumberOfSubstreamSizes( )                           { return (uint32_t) m_substreamSizes.size();                        }
   void                        addSubstreamSize( uint32_t size )                          { m_substreamSizes.push_back(size);                             }
   uint32_t                        getSubstreamSize( uint32_t idx )                           { CHECK(idx>=getNumberOfSubstreamSizes(),"Invalid index"); return m_substreamSizes[idx]; }
-#if JVET_Q0151_Q0205_ENTRYPOINTS
   void                        resetNumberOfSubstream()                               { m_numSubstream = 0;                                           }
   uint32_t                    getNumberOfSubstream()                                 { return (uint32_t) m_numSubstream;                             }
   void                        increaseNumberOfSubstream()                            { m_numSubstream++;                                             }
-#endif
 
   void                        setCabacInitFlag( bool val )                           { m_cabacInitFlag = val;                                        } //!< set CABAC initial flag
   bool                        getCabacInitFlag()                               const { return m_cabacInitFlag;                                       } //!< get CABAC initial flag
@@ -3356,7 +2941,6 @@ public:
       m_tileGroupLumaApsId[i] = ApsIDs[i];
     }
   }
-#if JVET_Q0795_CCALF
   void resetTileGroupCcAlCbfEnabledFlag() { m_tileGroupCcAlfCbEnabledFlag = 0; }
   void resetTileGroupCcAlCrfEnabledFlag() { m_tileGroupCcAlfCrEnabledFlag = 0; }
 
@@ -3369,35 +2953,28 @@ public:
   bool getTileGroupCcAlfCrEnabledFlag() { return m_tileGroupCcAlfCrEnabledFlag; }
   int  getTileGroupCcAlfCbApsId() { return m_tileGroupCcAlfCbApsId; }
   int  getTileGroupCcAlfCrApsId() { return m_tileGroupCcAlfCrApsId; }
-#endif
   void                        setDisableSATDForRD(bool b) { m_disableSATDForRd = b; }
   bool                        getDisableSATDForRD() { return m_disableSATDForRd; }
+#if JVET_R0110_MIXED_LOSSLESS
+  void                        setLossless(bool b) { m_isLossless = b; }
+  bool                        isLossless() const { return m_isLossless; }
+#endif
   void                        scaleRefPicList( Picture *scaledRefPic[ ], PicHeader *picHeader, APS** apss, APS* lmcsAps, APS* scalingListAps, const bool isDecoder );
   void                        freeScaledRefPicList( Picture *scaledRefPic[] );
   bool                        checkRPR();
   const std::pair<int, int>&  getScalingRatio( const RefPicList refPicList, const int refIdx )  const { CHECK( refIdx < 0, "Invalid reference index" ); return m_scalingRatio[refPicList][refIdx]; }
-#if JVET_Q0151_Q0205_ENTRYPOINTS
   void                        setNumSubstream( const SPS *sps, const PPS *pps );
   void                        setNumEntryPoints( const SPS *sps, const PPS *pps );
-#else
-  void                        setNumEntryPoints( const PPS *pps );
-#endif
   uint32_t                    getNumEntryPoints( ) const { return m_numEntryPoints;  }
 
-#if JVET_Q0795_CCALF
   CcAlfFilterParam            m_ccAlfFilterParam;
   uint8_t*                    m_ccAlfFilterControl[2];
-#endif
 
 protected:
   Picture*              xGetRefPic( PicList& rcListPic, int poc, const int layerId );
   Picture*              xGetLongTermRefPic( PicList& rcListPic, int poc, bool pocHasMsb, const int layerId );
 public:
-#if JVET_Q0504_PLT_NON444
   std::unordered_map< Position, std::unordered_map< Size, double> > m_mapPltCost[2];
-#else
-  std::unordered_map< Position, std::unordered_map< Size, double> > m_mapPltCost;
-#endif
 private:
 };// END CLASS DEFINITION Slice
 
@@ -3414,34 +2991,19 @@ public:
     , maxCUHeightMask     ( maxCUHeight - 1 )
     , maxCUWidthLog2      ( floorLog2( maxCUWidth  ) )
     , maxCUHeightLog2     ( floorLog2( maxCUHeight ) )
-#if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
     , minCUWidth          ( 1 << MIN_CU_LOG2 )
     , minCUHeight         ( 1 << MIN_CU_LOG2 )
-#else
-    , minCUWidth          ( sps.getMaxCUWidth()  >> sps.getMaxCodingDepth() )
-    , minCUHeight         ( sps.getMaxCUHeight() >> sps.getMaxCodingDepth() )
-#endif
     , minCUWidthLog2      ( floorLog2( minCUWidth  ) )
     , minCUHeightLog2     ( floorLog2( minCUHeight ) )
-#if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
     , partsInCtuWidth     ( maxCUWidth >> MIN_CU_LOG2)
     , partsInCtuHeight    ( maxCUHeight >> MIN_CU_LOG2)
     , partsInCtu          ( partsInCtuWidth * partsInCtuHeight )
-#else
-    , partsInCtuWidth     ( 1 << sps.getMaxCodingDepth() )
-    , partsInCtuHeight    ( 1 << sps.getMaxCodingDepth() )
-    , partsInCtu          ( 1 << (sps.getMaxCodingDepth() << 1) )
-#endif
     , widthInCtus         ( (pps.getPicWidthInLumaSamples () + sps.getMaxCUWidth () - 1) / sps.getMaxCUWidth () )
     , heightInCtus        ( (pps.getPicHeightInLumaSamples() + sps.getMaxCUHeight() - 1) / sps.getMaxCUHeight() )
     , sizeInCtus          ( widthInCtus * heightInCtus )
     , lumaWidth           ( pps.getPicWidthInLumaSamples() )
     , lumaHeight          ( pps.getPicHeightInLumaSamples() )
-#if JVET_Q0468_Q0469_MIN_LUMA_CB_AND_MIN_QT_FIX
     , fastDeltaQPCuMaxSize( Clip3(1u << sps.getLog2MinCodingBlockSize(), sps.getMaxCUHeight(), 32u) )
-#else
-    , fastDeltaQPCuMaxSize( Clip3(sps.getMaxCUHeight() >> (sps.getLog2DiffMaxMinCodingBlockSize()), sps.getMaxCUHeight(), 32u) )
-#endif
     , noChroma2x2         (  false )
     , isEncoder           ( _isEncoder )
     , ISingleTree         ( !sps.getUseDualITree() )
@@ -3500,11 +3062,7 @@ public:
 
 #if ENABLE_TRACING
 void xTraceVPSHeader();
-#if !JVET_Q0117_PARAMETER_SETS_CLEANUP
-void xTraceDPSHeader();
-#else
 void xTraceDCIHeader();
-#endif
 void xTraceSPSHeader();
 void xTracePPSHeader();
 void xTraceAPSHeader();

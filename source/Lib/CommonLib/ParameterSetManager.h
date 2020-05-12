@@ -131,13 +131,27 @@ public:
 
   void checkAuApsContent( APS *aps, std::vector<int>& accessUnitApsNals )
   {
-    int apsId = ( aps->getAPSId() << NUM_APS_TYPE_LEN ) + (int)aps->getAPSType();
+    int apsId = aps->getAPSId() + MAX_NUM_APS * aps->getAPSType();
 
     if( std::find( accessUnitApsNals.begin(), accessUnitApsNals.end(), apsId ) != accessUnitApsNals.end() )
     {
       CHECK( m_paramsetMap.find( apsId ) == m_paramsetMap.end(), "APS does not exist" );
       APS* existedAPS = m_paramsetMap[apsId].parameterSet;
-
+#if JVET_R0201_PREFIX_SUFFIX_APS_CLEANUP
+      bool sameNalUnitType = aps->getHasPrefixNalUnitType() == existedAPS->getHasPrefixNalUnitType();
+      if( aps->getAPSType() == LMCS_APS )
+      {
+        CHECK( sameNalUnitType && aps->getReshaperAPSInfo() != existedAPS->getReshaperAPSInfo(), "All APS NAL units with a particular value of nal_unit_type, a particular value of aps_adaptation_parameter_set_id, and a particular value of aps_params_type within a PU shall have the same content" );
+      }
+      else if( aps->getAPSType() == ALF_APS )
+      {
+        CHECK( sameNalUnitType && aps->getAlfAPSParam() != existedAPS->getAlfAPSParam(), "All APS NAL units with a particular value of nal_unit_type, a particular value of aps_adaptation_parameter_set_id, and a particular value of aps_params_type within a PU shall have the same content" );
+      }
+      else if( aps->getAPSType() == SCALING_LIST_APS )
+      {
+        CHECK( sameNalUnitType && aps->getScalingList() != existedAPS->getScalingList(), "All APS NAL units with a particular value of nal_unit_type, a particular value of aps_adaptation_parameter_set_id, and a particular value of aps_params_type within a PU shall have the same content" );
+      }
+#else
       if( aps->getAPSType() == LMCS_APS )
       {
         CHECK( aps->getReshaperAPSInfo() != existedAPS->getReshaperAPSInfo(), "All APS NAL units with a particular value of adaptation_parameter_set_id and a particular value of aps_params_type within an access unit shall have the same content" );
@@ -150,6 +164,7 @@ public:
       {
         CHECK( aps->getScalingList() != existedAPS->getScalingList(), "All APS NAL units with a particular value of adaptation_parameter_set_id and a particular value of aps_params_type within an access unit shall have the same content" );
       }
+#endif
       else
       {
         CHECK( true, "Wrong APS type" );
@@ -227,14 +242,6 @@ public:
   void           storeVPS(VPS *vps, const std::vector<uint8_t> &naluData)    { m_vpsMap.storePS(vps->getVPSId(), vps, &naluData); }
   VPS*           getVPS( int vpsId )                                         { return m_vpsMap.getPS( vpsId ); };
 
-#if !JVET_Q0117_PARAMETER_SETS_CLEANUP
-  void           storeDPS(DPS *dps, const std::vector<uint8_t> &naluData)    { m_dpsMap.storePS( dps->getDecodingParameterSetId(), dps, &naluData); };
-  // get pointer to existing video parameter set
-  DPS*           getDPS(int dpsId)                                           { return m_dpsMap.getPS(dpsId); };
-  bool           getDPSChangedFlag(int dpsId) const                          { return m_dpsMap.getChangedFlag(dpsId); }
-  void           clearDPSChangedFlag(int dpsId)                              { m_dpsMap.clearChangedFlag(dpsId); }
-  DPS*           getFirstDPS()                                               { return m_dpsMap.getFirstPS(); };
-#endif
   // store sequence parameter set and take ownership of it
   // warning: sps object cannot be used after storing (repeated parameter sets are directly deleted)
   void           storeSPS(SPS *sps, const std::vector<uint8_t> &naluData)    { m_spsMap.storePS( sps->getSPSId(), sps, &naluData); };
@@ -268,24 +275,15 @@ public:
   APS*           getFirstAPS()                                               { return m_apsMap.getFirstPS(); };
   bool           activateAPS(int apsId, int apsType);
   const SPS*     getActiveSPS()const                                         { return m_spsMap.getPS(m_activeSPSId); };
-#if !JVET_Q0117_PARAMETER_SETS_CLEANUP
-  const DPS*     getActiveDPS()const                                         { return m_dpsMap.getPS(m_activeDPSId); };
-#endif
   void           checkAuApsContent( APS *aps, std::vector<int>& accessUnitApsNals ) { m_apsMap.checkAuApsContent( aps, accessUnitApsNals ); }
 
 protected:
   ParameterSetMap<SPS> m_spsMap;
   ParameterSetMap<PPS> m_ppsMap;
   ParameterSetMap<APS> m_apsMap;
-#if !JVET_Q0117_PARAMETER_SETS_CLEANUP
-  ParameterSetMap<DPS> m_dpsMap;
-#endif
   ParameterSetMap<VPS> m_vpsMap;
 
   APS* m_apss[ALF_CTB_MAX_NUM_APS];
-#if !JVET_Q0117_PARAMETER_SETS_CLEANUP
-  int m_activeDPSId; // -1 for nothing active
-#endif
   int m_activeSPSId; // -1 for nothing active
   int m_activeVPSId; // -1 for nothing active
 };

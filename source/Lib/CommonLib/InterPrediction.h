@@ -81,11 +81,7 @@ protected:
   RdCost*              m_pcRdCost;
 
   int                  m_iRefListIdx;
-#if !JVET_Q0806
-  PelStorage           m_triangleBuf;
-#else
   PelStorage           m_geoPartBuf[2];
-#endif
   Mv*                  m_storedMv;
  /*buffers for bilinear Filter data for DMVR refinement*/
   Pel*                 m_cYuvPredTempDMVRL0;
@@ -142,9 +138,6 @@ protected:
   void xCalcBlkGradient         (int sx, int sy, int    *arraysGx2, int     *arraysGxGy, int     *arraysGxdI, int     *arraysGy2, int     *arraysGydI, int     &sGx2, int     &sGy2, int     &sGxGy, int     &sGxdI, int     &sGydI, int width, int height, int unitSize);
   void xWeightedAverage         ( const PredictionUnit& pu, const CPelUnitBuf& pcYuvSrc0, const CPelUnitBuf& pcYuvSrc1, PelUnitBuf& pcYuvDst, const BitDepths& clipBitDepths, const ClpRngs& clpRngs, const bool& bioApplied, const bool lumaOnly = false, const bool chromaOnly = false, PelUnitBuf* yuvDstTmp = NULL );
   void xPredAffineBlk           ( const ComponentID& compID, const PredictionUnit& pu, const Picture* refPic, const Mv* _mv, PelUnitBuf& dstPic, const bool& bi, const ClpRng& clpRng, const bool genChromaMv = false, const std::pair<int, int> scalingRatio = SCALE_1X );
-#if !JVET_Q0806
-  void xWeightedTriangleBlk     ( const PredictionUnit &pu, const uint32_t width, const uint32_t height, const ComponentID compIdx, const bool splitDir, PelUnitBuf& predDst, PelUnitBuf& predSrc0, PelUnitBuf& predSrc1 );
-#endif
 
   static bool xCheckIdenticalMotion( const PredictionUnit& pu );
 
@@ -177,13 +170,8 @@ public:
     , const bool luma = true, const bool chroma = true
   );
 
-#if !JVET_Q0806
-  void    motionCompensation4Triangle( CodingUnit &cu, MergeCtx &triangleMrgCtx, const bool splitDir, const uint8_t candIdx0, const uint8_t candIdx1 );
-  void    weightedTriangleBlk        ( PredictionUnit &pu, const bool splitDir, int32_t channel, PelUnitBuf& predDst, PelUnitBuf& predSrc0, PelUnitBuf& predSrc1 );
-#else
   void    motionCompensationGeo(CodingUnit &cu, MergeCtx &GeoMrgCtx);
   void    weightedGeoBlk(PredictionUnit &pu, const uint8_t splitDir, int32_t channel, PelUnitBuf& predDst, PelUnitBuf& predSrc0, PelUnitBuf& predSrc1);
-#endif
   void xPrefetch(PredictionUnit& pu, PelUnitBuf &pcPad, RefPicList refId, bool forLuma);
   void xPad(PredictionUnit& pu, PelUnitBuf &pcPad, RefPicList refId);
   void xFinalPaddedMCForDMVR(PredictionUnit& pu, PelUnitBuf &pcYuvSrc0, PelUnitBuf &pcYuvSrc1, PelUnitBuf &pcPad0, PelUnitBuf &pcPad1, const bool bioApplied

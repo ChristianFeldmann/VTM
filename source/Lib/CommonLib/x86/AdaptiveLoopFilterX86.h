@@ -313,6 +313,9 @@ static void simdFilter5x5Blk(AlfClassifier **classifier, const PelUnitBuf &recDs
 
   constexpr int SHIFT = AdaptiveLoopFilter::m_NUM_BITS - 1;
   constexpr int ROUND = 1 << (SHIFT - 1);
+#if JVET_R0208_ALF_VB_ROUNDING_FIX
+  const __m128i mmOffset1 = _mm_set1_epi32((1 << ((SHIFT + 3) - 1)) - ROUND);
+#endif
 
   const size_t width  = blk.width;
   const size_t height = blk.height;
@@ -416,7 +419,6 @@ static void simdFilter5x5Blk(AlfClassifier **classifier, const PelUnitBuf &recDs
         process2coeffs(0, pImg3 + 0, pImg4 + 0, pImg1 + 1, pImg2 - 1);
         process2coeffs(1, pImg1 + 0, pImg2 + 0, pImg1 - 1, pImg2 + 1);
         process2coeffs(2, pImg0 + 2, pImg0 - 2, pImg0 + 1, pImg0 - 1);
-#if JVET_Q0150
         bool isNearVBabove = yVb < vbPos && (yVb >= vbPos - 1);
         bool isNearVBbelow = yVb >= vbPos && (yVb <= vbPos);
         if (!(isNearVBabove || isNearVBbelow))
@@ -426,13 +428,14 @@ static void simdFilter5x5Blk(AlfClassifier **classifier, const PelUnitBuf &recDs
         }
         else
         {
+#if JVET_R0208_ALF_VB_ROUNDING_FIX
+          accumA = _mm_srai_epi32(_mm_add_epi32(accumA, mmOffset1), SHIFT + 3);
+          accumB = _mm_srai_epi32(_mm_add_epi32(accumB, mmOffset1), SHIFT + 3);
+#else
           accumA = _mm_srai_epi32(accumA, SHIFT + 3);
           accumB = _mm_srai_epi32(accumB, SHIFT + 3);
-        }
-#else
-        accumA = _mm_srai_epi32(accumA, SHIFT);
-        accumB = _mm_srai_epi32(accumB, SHIFT);
 #endif
+        }
         accumA = _mm_packs_epi32(accumA, accumB);
         accumA = _mm_add_epi16(accumA, cur);
         accumA = _mm_min_epi16(mmMax, _mm_max_epi16(accumA, mmMin));
@@ -512,6 +515,9 @@ static void simdFilter7x7Blk(AlfClassifier **classifier, const PelUnitBuf &recDs
   Pel *      dst = dstBuffer.buf + blkDst.y * dstStride + blkDst.x;
 
   const __m128i mmOffset = _mm_set1_epi32(ROUND);
+#if JVET_R0208_ALF_VB_ROUNDING_FIX
+  const __m128i mmOffset1 = _mm_set1_epi32((1 << ((SHIFT + 3) - 1)) - ROUND);
+#endif
   const __m128i mmMin = _mm_set1_epi16( clpRng.min );
   const __m128i mmMax = _mm_set1_epi16( clpRng.max );
 
@@ -651,7 +657,6 @@ static void simdFilter7x7Blk(AlfClassifier **classifier, const PelUnitBuf &recDs
         process2coeffs(5, pImg0 + 2, pImg0 - 2, pImg0 + 1, pImg0 - 1);
 
 
-#if JVET_Q0150
         bool isNearVBabove = yVb < vbPos && (yVb >= vbPos - 1);
         bool isNearVBbelow = yVb >= vbPos && (yVb <= vbPos);
         if (!(isNearVBabove || isNearVBbelow))
@@ -661,13 +666,14 @@ static void simdFilter7x7Blk(AlfClassifier **classifier, const PelUnitBuf &recDs
         }
         else
         {
+#if JVET_R0208_ALF_VB_ROUNDING_FIX
+          accumA = _mm_srai_epi32(_mm_add_epi32(accumA, mmOffset1), SHIFT + 3);
+          accumB = _mm_srai_epi32(_mm_add_epi32(accumB, mmOffset1), SHIFT + 3);
+#else
           accumA = _mm_srai_epi32(accumA, SHIFT + 3);
           accumB = _mm_srai_epi32(accumB, SHIFT + 3);
+#endif 
         }
-#else
-        accumA = _mm_srai_epi32(accumA, SHIFT);
-        accumB = _mm_srai_epi32(accumB, SHIFT);
-#endif
         accumA = _mm_packs_epi32(accumA, accumB);
         accumA = _mm_add_epi16(accumA, cur);
         accumA = _mm_min_epi16(mmMax, _mm_max_epi16(accumA, mmMin));

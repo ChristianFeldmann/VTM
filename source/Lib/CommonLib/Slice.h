@@ -254,6 +254,21 @@ class ConstraintInfo
   bool              m_onePictureOnlyConstraintFlag;
   bool              m_lowerBitRateConstraintFlag;
 
+#if JVET_R0286_GCI_CLEANUP
+  bool              m_singleLayerConstraintFlag;
+  bool              m_allLayersIndependentConstraintFlag;
+  bool              m_noMrlConstraintFlag;
+  bool              m_noIspConstraintFlag;
+  bool              m_noMipConstraintFlag;
+  bool              m_noLfnstConstraintFlag;
+  bool              m_noMmvdConstraintFlag;
+  bool              m_noSmvdConstraintFlag;
+  bool              m_noProfConstraintFlag;
+  bool              m_noPaletteConstraintFlag;
+  bool              m_noActConstraintFlag;
+  bool              m_noLmcsConstraintFlag;
+#endif
+
   bool              m_noQtbttDualTreeIntraConstraintFlag;
   bool              m_noPartitionConstraintsOverrideConstraintFlag;
   bool              m_noSaoConstraintFlag;
@@ -311,6 +326,22 @@ public:
     , m_maxChromaFormatConstraintIdc(CHROMA_420)
     , m_onePictureOnlyConstraintFlag (false)
     , m_lowerBitRateConstraintFlag (false )
+
+#if JVET_R0286_GCI_CLEANUP
+    , m_singleLayerConstraintFlag(false)
+    , m_allLayersIndependentConstraintFlag(false)
+    , m_noMrlConstraintFlag(false)
+    , m_noIspConstraintFlag(false)
+    , m_noMipConstraintFlag(false)
+    , m_noLfnstConstraintFlag(false)
+    , m_noMmvdConstraintFlag(false)
+    , m_noSmvdConstraintFlag(false)
+    , m_noProfConstraintFlag(false)
+    , m_noPaletteConstraintFlag(false)
+    , m_noActConstraintFlag(false)
+    , m_noLmcsConstraintFlag(false)
+#endif
+
     , m_noQtbttDualTreeIntraConstraintFlag(false)
     , m_noPartitionConstraintsOverrideConstraintFlag(false)
     , m_noSaoConstraintFlag      (false)
@@ -392,6 +423,33 @@ public:
 
   bool          getLowerBitRateConstraintFlag() const { return m_lowerBitRateConstraintFlag; }
   void          setLowerBitRateConstraintFlag(bool b) { m_lowerBitRateConstraintFlag = b; }
+
+#if JVET_R0286_GCI_CLEANUP
+  bool          getSingleLayerConstraintFlag() const { return m_singleLayerConstraintFlag; }
+  void          setSingleLayerConstraintFlag(bool b) { m_singleLayerConstraintFlag = b; }
+  bool          getAllLayersIndependentConstraintFlag() const { return m_allLayersIndependentConstraintFlag; }
+  void          setAllLayersIndependentConstraintFlag(bool b) { m_allLayersIndependentConstraintFlag = b; }
+  bool          getNoMrlConstraintFlag() const { return m_noMrlConstraintFlag; }
+  void          setNoMrlConstraintFlag(bool b) { m_noMrlConstraintFlag = b; }
+  bool          getNoIspConstraintFlag() const { return m_noIspConstraintFlag; }
+  void          setNoIspConstraintFlag(bool b) { m_noIspConstraintFlag = b; }
+  bool          getNoMipConstraintFlag() const { return m_noMipConstraintFlag; }
+  void          setNoMipConstraintFlag(bool b) { m_noMipConstraintFlag = b; }
+  bool          getNoLfnstConstraintFlag() const { return m_noLfnstConstraintFlag; }
+  void          setNoLfnstConstraintFlag(bool b) { m_noLfnstConstraintFlag = b; }
+  bool          getNoMmvdConstraintFlag() const { return m_noMmvdConstraintFlag; }
+  void          setNoMmvdConstraintFlag(bool b) { m_noMmvdConstraintFlag = b; }
+  bool          getNoSmvdConstraintFlag() const { return m_noSmvdConstraintFlag; }
+  void          setNoSmvdConstraintFlag(bool b) { m_noSmvdConstraintFlag = b; }
+  bool          getNoProfConstraintFlag() const { return m_noProfConstraintFlag; }
+  void          setNoProfConstraintFlag(bool b) { m_noProfConstraintFlag = b; }
+  bool          getNoPaletteConstraintFlag() const { return m_noPaletteConstraintFlag; }
+  void          setNoPaletteConstraintFlag(bool b) { m_noPaletteConstraintFlag = b; }
+  bool          getNoActConstraintFlag() const { return m_noActConstraintFlag; }
+  void          setNoActConstraintFlag(bool b) { m_noActConstraintFlag = b; }
+  bool          getNoLmcsConstraintFlag() const { return m_noLmcsConstraintFlag; }
+  void          setNoLmcsConstraintFlag(bool b) { m_noLmcsConstraintFlag = b; }
+#endif
 
   bool          getNoQtbttDualTreeIntraConstraintFlag() const { return m_noQtbttDualTreeIntraConstraintFlag; }
   void          setNoQtbttDualTreeIntraConstraintFlag(bool bVal) { m_noQtbttDualTreeIntraConstraintFlag = bVal; }
@@ -894,6 +952,10 @@ private:
 public:
   std::vector<std::vector<OlsHrdParams>> m_olsHrdParams;
   int                           m_totalNumOLSs;
+#if JVET_R0191_ASPECT3
+  int                           m_numMultiLayeredOlss;
+  uint32_t                      m_multiLayerOlsIdx[MAX_NUM_OLSS];
+#endif
   int                           m_numDpbParams;
   std::vector<DpbParameters>    m_dpbParameters;
   bool                          m_sublayerDpbParamsPresentFlag;
@@ -994,6 +1056,9 @@ public:
   int               getMaxDecPicBuffering( int temporalId ) const        { return m_dpbParameters[m_olsDpbParamsIdx[m_targetOlsIdx]].m_maxDecPicBuffering[temporalId]; }
   int               getNumReorderPics( int temporalId ) const            { return m_dpbParameters[m_olsDpbParamsIdx[m_targetOlsIdx]].m_numReorderPics[temporalId]; }
   int               getTotalNumOLSs() const                              { return m_totalNumOLSs; }
+#if JVET_R0191_ASPECT3
+  int               getNumMultiLayeredOlss() const                       { return m_numMultiLayeredOlss; }
+#endif
   Size              getOlsDpbPicSize( int olsIdx ) const                 { return m_olsDpbPicSize[olsIdx];          }
   void              setOlsDpbPicSize( int olsIdx, Size size )            { m_olsDpbPicSize[olsIdx] = size;          }
   void              setOlsDpbPicWidth( int olsIdx, int width )           { m_olsDpbPicSize[olsIdx].width = width;   }
@@ -1398,6 +1463,10 @@ private:
   uint32_t          m_maxNumAffineMergeCand;
   uint32_t          m_maxNumIBCMergeCand;
   uint32_t          m_maxNumGeoCand;
+#if JVET_R0380_SCALING_MATRIX_DISABLE_YCC_OR_RGB
+  bool              m_scalingMatrixAlternativeColourSpaceDisabledFlag;
+  bool              m_scalingMatrixDesignatedColourSpaceFlag;
+#endif
 public:
 
   SPS();
@@ -1781,6 +1850,12 @@ void                    setCCALFEnabledFlag( bool b )                           
   bool          getPPSValidFlag(int i)         { return m_ppsValidFlag[i]; }
   void          setScalingWindowSizeInPPS(int i, int scWidth, int scHeight) { m_scalingWindowSizeInPPS[i].width = scWidth; m_scalingWindowSizeInPPS[i].height = scHeight;}
   const Size&   getScalingWindowSizeInPPS(int i)                            { return m_scalingWindowSizeInPPS[i]; }
+#if JVET_R0380_SCALING_MATRIX_DISABLE_YCC_OR_RGB
+  void      setScalingMatrixForAlternativeColourSpaceDisabledFlag(bool b)           { m_scalingMatrixAlternativeColourSpaceDisabledFlag = b; }
+  bool      getScalingMatrixForAlternativeColourSpaceDisabledFlag()           const { return m_scalingMatrixAlternativeColourSpaceDisabledFlag; }
+  void      setScalingMatrixDesignatedColourSpaceFlag(bool b)                       { m_scalingMatrixDesignatedColourSpaceFlag = b; }
+  bool      getScalingMatrixDesignatedColourSpaceFlag()                       const { return m_scalingMatrixDesignatedColourSpaceFlag; }
+#endif
 };
 
 
@@ -2605,6 +2680,9 @@ private:
   int                        m_tileGroupCcAlfCbApsId;
   int                        m_tileGroupCcAlfCrApsId;
   bool                       m_disableSATDForRd;
+#if JVET_R0110_MIXED_LOSSLESS
+  bool                       m_isLossless;
+#endif
 public:
                               Slice();
   virtual                     ~Slice();
@@ -2894,6 +2972,10 @@ public:
   int  getTileGroupCcAlfCrApsId() { return m_tileGroupCcAlfCrApsId; }
   void                        setDisableSATDForRD(bool b) { m_disableSATDForRd = b; }
   bool                        getDisableSATDForRD() { return m_disableSATDForRd; }
+#if JVET_R0110_MIXED_LOSSLESS
+  void                        setLossless(bool b) { m_isLossless = b; }
+  bool                        isLossless() const { return m_isLossless; }
+#endif
   void                        scaleRefPicList( Picture *scaledRefPic[ ], PicHeader *picHeader, APS** apss, APS* lmcsAps, APS* scalingListAps, const bool isDecoder );
   void                        freeScaledRefPicList( Picture *scaledRefPic[] );
   bool                        checkRPR();

@@ -135,6 +135,20 @@ protected:
   uint32_t  m_maxBitDepthConstraintIdc;
   uint32_t  m_maxChromaFormatConstraintIdc;
   bool      m_bFrameConstraintFlag;
+#if JVET_R0286_GCI_CLEANUP
+  bool      m_singleLayerConstraintFlag;
+  bool      m_allLayersIndependentConstraintFlag;
+  bool      m_noMrlConstraintFlag;
+  bool      m_noIspConstraintFlag;
+  bool      m_noMipConstraintFlag;
+  bool      m_noLfnstConstraintFlag;
+  bool      m_noMmvdConstraintFlag;
+  bool      m_noSmvdConstraintFlag;
+  bool      m_noProfConstraintFlag;
+  bool      m_noPaletteConstraintFlag;
+  bool      m_noActConstraintFlag;
+  bool      m_noLmcsConstraintFlag;
+#endif
   bool      m_bNoQtbttDualTreeIntraConstraintFlag;
   bool      m_noPartitionConstraintsOverrideConstraintFlag;
   bool      m_bNoSaoConstraintFlag;
@@ -440,6 +454,9 @@ protected:
   bool      m_bUseCbfFastMode;                                ///< flag for using Cbf Fast PU Mode Decision
   bool      m_useEarlySkipDetection;                          ///< flag for using Early SKIP Detection
   bool      m_picPartitionFlag;                               ///< enable picture partitioning (0: single tile, single slice, 1: multiple tiles/slices can be used)
+#if JVET_R0110_MIXED_LOSSLESS
+  std::vector<uint32_t> m_sliceLosslessArray;                    ///< Slice lossless array
+#endif
   std::vector<uint32_t> m_tileColumnWidth;                    ///< tile column widths in units of CTUs (last column width will be repeated uniformly to cover any remaining picture width)
   std::vector<uint32_t> m_tileRowHeight;                      ///< tile row heights in units of CTUs (last row height will be repeated uniformly to cover any remaining picture height)
   bool      m_rasterSliceFlag;                                ///< indicates if using raster-scan or rectangular slices (0: rectangular, 1: raster-scan)
@@ -627,6 +644,10 @@ protected:
   ScalingListMode m_useScalingListId;                         ///< using quantization matrix
   std::string m_scalingListFileName;                          ///< quantization matrix file name
   bool      m_disableScalingMatrixForLfnstBlks;
+#if JVET_R0380_SCALING_MATRIX_DISABLE_YCC_OR_RGB
+  bool      m_disableScalingMatrixForAlternativeColourSpace;
+  bool      m_scalingMatrixDesignatedColourSpace;
+#endif
   CostMode  m_costMode;                                       ///< Cost mode to use
 #if JVET_R0143_TSRCdisableLL
   bool      m_TSRCdisableLL;                                  ///< disable TSRC for lossless
@@ -637,6 +658,9 @@ protected:
   bool      m_DCIEnabled;                                     ///< enable Decoding Capability Information (DCI)
   bool      m_hrdParametersPresentFlag;                       ///< enable generation of HRD parameters
   bool      m_vuiParametersPresentFlag;                       ///< enable generation of VUI parameters
+#if JVET_Q0394_TIMING_SEI
+  bool      m_samePicTimingInAllOLS;                          ///< same picture timing SEI message is used in all OLS
+#endif
   bool      m_aspectRatioInfoPresentFlag;                     ///< Signals whether aspect_ratio_idc is present
   int       m_aspectRatioIdc;                                 ///< aspect_ratio_idc
   int       m_sarWidth;                                       ///< horizontal size of the sample aspect ratio

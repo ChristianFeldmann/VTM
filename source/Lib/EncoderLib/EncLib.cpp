@@ -1081,6 +1081,20 @@ void EncLib::xInitSPS( SPS& sps )
   cinfo->setIntraOnlyConstraintFlag         (m_intraConstraintFlag);
   cinfo->setMaxBitDepthConstraintIdc    (m_maxBitDepthConstraintIdc);
   cinfo->setMaxChromaFormatConstraintIdc((ChromaFormat)m_maxChromaFormatConstraintIdc);
+#if JVET_R0286_GCI_CLEANUP
+  cinfo->setSingleLayerConstraintFlag (m_singleLayerConstraintFlag);
+  cinfo->setAllLayersIndependentConstraintFlag (m_allLayersIndependentConstraintFlag);
+  cinfo->setNoMrlConstraintFlag (m_noMrlConstraintFlag);
+  cinfo->setNoIspConstraintFlag (m_noIspConstraintFlag);
+  cinfo->setNoMipConstraintFlag (m_noMipConstraintFlag);
+  cinfo->setNoLfnstConstraintFlag (m_noLfnstConstraintFlag);
+  cinfo->setNoMmvdConstraintFlag (m_noMmvdConstraintFlag);
+  cinfo->setNoSmvdConstraintFlag (m_noSmvdConstraintFlag);
+  cinfo->setNoProfConstraintFlag (m_noProfConstraintFlag);
+  cinfo->setNoPaletteConstraintFlag (m_noPaletteConstraintFlag);
+  cinfo->setNoActConstraintFlag (m_noActConstraintFlag);
+  cinfo->setNoLmcsConstraintFlag (m_noLmcsConstraintFlag);
+#endif
   cinfo->setNoQtbttDualTreeIntraConstraintFlag(m_bNoQtbttDualTreeIntraConstraintFlag);
   cinfo->setNoPartitionConstraintsOverrideConstraintFlag(m_noPartitionConstraintsOverrideConstraintFlag);
   cinfo->setNoSaoConstraintFlag(m_bNoSaoConstraintFlag);
@@ -1265,6 +1279,10 @@ void EncLib::xInitSPS( SPS& sps )
   }
 
   sps.setScalingListFlag ( (m_useScalingListId == SCALING_LIST_OFF) ? 0 : 1 );
+#if JVET_R0380_SCALING_MATRIX_DISABLE_YCC_OR_RGB
+  sps.setScalingMatrixForAlternativeColourSpaceDisabledFlag( m_disableScalingMatrixForAlternativeColourSpace );
+  sps.setScalingMatrixDesignatedColourSpaceFlag( m_scalingMatrixDesignatedColourSpace );
+#endif
   sps.setALFEnabledFlag( m_alf );
   sps.setCCALFEnabledFlag( m_ccalf );
   sps.setFieldSeqFlag(false);

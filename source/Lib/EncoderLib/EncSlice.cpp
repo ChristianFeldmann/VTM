@@ -628,6 +628,9 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
 
   rpcSlice->setSliceQp           ( iQP );
   rpcSlice->setSliceQpDelta      ( 0 );
+#if JVET_R0110_MIXED_LOSSLESS
+  pcPic->setLossyQPValue(iQP);
+#endif
 #if !W0038_CQP_ADJ
   rpcSlice->setSliceChromaQpDelta( COMPONENT_Cb, 0 );
   rpcSlice->setSliceChromaQpDelta( COMPONENT_Cr, 0 );
@@ -1135,6 +1138,36 @@ void EncSlice::setSearchRange( Slice* pcSlice )
   }
 }
 
+#if JVET_R0110_MIXED_LOSSLESS
+void EncSlice::setLosslessSlice(Picture* pcPic, bool islossless) 
+{
+  Slice* slice = pcPic->slices[getSliceSegmentIdx()];
+  slice->setLossless(islossless);
+
+  if (m_pcCfg->getCostMode() == COST_LOSSLESS_CODING)
+  {
+    if (islossless)
+    {
+      int losslessQp = LOSSLESS_AND_MIXED_LOSSLESS_RD_COST_TEST_QP - ((slice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA) - 8) * 6);
+      slice->setSliceQp(losslessQp); // update the slice/base QPs
+
+#if JVET_R0143_TSRCdisableLL
+     slice->setTSResidualCodingDisabledFlag(m_pcCfg->getTSRCdisableLL() ? true : false);
+#else
+     slice->setTSResidualCodingDisabledFlag(true);
+#endif 
+
+    }
+    else
+    {
+        slice->setSliceQp(pcPic->getLossyQPValue());
+        slice->setTSResidualCodingDisabledFlag(false);
+    }
+  }
+}
+#endif
+
+
 /**
  Multi-loop slice encoding for different slice QP
 
@@ -1233,6 +1266,30 @@ void EncSlice::calCostSliceI(Picture* pcPic) // TODO: this only analyses the fir
 
   }
   m_pcRateCtrl->getRCPic()->setTotalIntraCost(iSumHadSlice);
+}
+
+void EncSlice::calCostPictureI(Picture* picture)
+{
+  double         sumHadPicture = 0;
+  Slice * const  slice = picture->slices[getSliceSegmentIdx()];
+  const PreCalcValues& pcv = *picture->cs->pcv;
+  const SPS     &sps = *(slice->getSPS());
+  const int      shift = sps.getBitDepth(CHANNEL_TYPE_LUMA) - 8;
+  const int      offset = (shift>0) ? (1 << (shift - 1)) : 0;
+
+  for (uint32_t ctuIdx = 0; ctuIdx < picture->m_ctuNums; ctuIdx++)
+  {
+    Position pos((ctuIdx % pcv.widthInCtus) * pcv.maxCUWidth, (ctuIdx / pcv.widthInCtus) * pcv.maxCUHeight);
+
+    const int height = std::min(pcv.maxCUHeight, pcv.lumaHeight - pos.y);
+    const int width = std::min(pcv.maxCUWidth, pcv.lumaWidth - pos.x);
+    const CompArea blk(COMPONENT_Y, pcv.chrFormat, pos, Size(width, height));
+    int sumHad = m_pcCuEncoder->updateCtuDataISlice(picture->getOrigBuf(blk));
+
+    (m_pcRateCtrl->getRCPic()->getLCU(ctuIdx)).m_costIntra = (sumHad + offset) >> shift;
+    sumHadPicture += (m_pcRateCtrl->getRCPic()->getLCU(ctuIdx)).m_costIntra;
+  }
+  m_pcRateCtrl->getRCPic()->setTotalIntraCost(sumHadPicture);
 }
 
 /** \param pcPic   picture class
@@ -1441,6 +1498,9 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
   RdCost*         pRdCost         = pEncLib->getRdCost( PARL_PARAM0( dataId ) );
   EncCfg*         pCfg            = pEncLib;
   RateCtrl*       pRateCtrl       = pEncLib->getRateCtrl();
+#if JVET_R0110_MIXED_LOSSLESS
+  pRdCost->setLosslessRDCost(pcSlice->isLossless());
+#endif
 #if RDOQ_CHROMA_LAMBDA
   pTrQuant    ->setLambdas( pcSlice->getLambdas() );
 #else

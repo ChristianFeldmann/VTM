@@ -1350,7 +1350,6 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
   int logSubHeightC = getChannelTypeScaleY(CHANNEL_TYPE_CHROMA, pu.chromaFormat);
 
   int iRecStride2       = iRecStride << logSubHeightC;
-  const int mult        =          1 << logSubWidthC ;
 
   const CodingUnit& lumaCU = isChroma( pu.chType ) ? *pu.cs->picture->cs->getCU( lumaArea.pos(), CH_L ) : *pu.cu;
   const CodingUnit&     cu = *pu.cu;
@@ -1385,24 +1384,24 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
   int avaiLeftBelowUnits = 0;
   bool  bNeighborFlags[4 * MAX_NUM_PART_IDXS_IN_CTU_WIDTH + 1];
   memset(bNeighborFlags, 0, totalUnits);
-  bool bAboveAvaillable, bLeftAvaillable;
+  bool aboveIsAvailable, leftIsAvailable;
 
   int availlableUnit = isLeftAvailable( isChroma( pu.chType ) ? cu : lumaCU, toChannelType( area.compID ), area.pos(), iLeftUnits, iUnitHeight,
   ( bNeighborFlags + iLeftUnits + leftBelowUnits - 1 ) );
 
-  bLeftAvaillable = availlableUnit == iTUHeightInUnits;
+  leftIsAvailable = availlableUnit == iTUHeightInUnits;
 
   availlableUnit = isAboveAvailable( isChroma( pu.chType ) ? cu : lumaCU, toChannelType( area.compID ), area.pos(), iAboveUnits, iUnitWidth,
   ( bNeighborFlags + iLeftUnits + leftBelowUnits + 1 ) );
 
-  bAboveAvaillable = availlableUnit == iTUWidthInUnits;
+  aboveIsAvailable = availlableUnit == iTUWidthInUnits;
 
-  if (bLeftAvaillable) // if left is not available, then the below left is not available
+  if (leftIsAvailable)   // if left is not available, then the below left is not available
   {
     avaiLeftBelowUnits = isBelowLeftAvailable(isChroma(pu.chType) ? cu : lumaCU, toChannelType(area.compID), area.bottomLeftComp(area.compID), leftBelowUnits, iUnitHeight, (bNeighborFlags + leftBelowUnits - 1));
   }
 
-  if (bAboveAvaillable) // if above is not available, then  the above right is not available.
+  if (aboveIsAvailable)   // if above is not available, then  the above right is not available.
   {
     avaiAboveRightUnits = isAboveRightAvailable(isChroma(pu.chType) ? cu : lumaCU, toChannelType(area.compID), area.topRightComp(area.compID), aboveRightUnits, iUnitWidth, (bNeighborFlags + iLeftUnits + leftBelowUnits + iAboveUnits + 1));
   }
@@ -1410,31 +1409,9 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
   Pel*       pDst  = nullptr;
   Pel const* piSrc = nullptr;
 
-  bool isFirstRowOfCtu = ( lumaArea.y & ((pu.cs->sps)->getCTUSize() - 1) ) == 0;
-  const int strOffset = (CHROMA_444 == pu.chromaFormat) ? 0 : iRecStride;
-  int c0_3tap = 2, c1_3tap = 1, c2_3tap = 1,                                        offset_3tap = 2, shift_3tap = 2; //sum = 4
-  int c0_5tap = 1, c1_5tap = 4, c2_5tap = 1, c3_5tap = 1, c4_5tap = 1,              offset_5tap = 4, shift_5tap = 3; //sum = 8
-  int c0_6tap = 2, c1_6tap = 1, c2_6tap = 1, c3_6tap = 2, c4_6tap = 1, c5_6tap = 1, offset_6tap = 4, shift_6tap = 3; //sum = 8
+  bool isFirstRowOfCtu = (lumaArea.y & ((pu.cs->sps)->getCTUSize() - 1)) == 0;
 
-  switch (pu.chromaFormat)
-  {
-    case CHROMA_422: //overwrite filter coefficient values for 422
-      c0_3tap = 2, c1_3tap = 1, c2_3tap = 1,                                        offset_3tap = 2, shift_3tap = 2; //sum = 4
-      c0_5tap = 0, c1_5tap = 1, c2_5tap = 0, c3_5tap = 0, c4_5tap = 0,              offset_5tap = 0, shift_5tap = 0; //sum = 1
-      c0_6tap = 2, c1_6tap = 1, c2_6tap = 1, c3_6tap = 0, c4_6tap = 0, c5_6tap = 0, offset_6tap = 2, shift_6tap = 2; //sum = 4
-      break;
-
-    case CHROMA_444:  //overwrite filter coefficient values for 422
-      c0_3tap = 1, c1_3tap = 0, c2_3tap = 0,                                        offset_3tap = 0, shift_3tap = 0; //sum = 1
-      c0_5tap = 0, c1_5tap = 1, c2_5tap = 0, c3_5tap = 0, c4_5tap = 0,              offset_5tap = 0, shift_5tap = 0; //sum = 1
-      c0_6tap = 1, c1_6tap = 0, c2_6tap = 0, c3_6tap = 0, c4_6tap = 0, c5_6tap = 0, offset_6tap = 0, shift_6tap = 0; //sum = 1
-      break;
-
-    default:
-      break;
-  }
-
-  if( bAboveAvaillable )
+  if (aboveIsAvailable)
   {
     pDst  = pDst0    - iDstStride;
     int addedAboveRight = 0;
@@ -1444,63 +1421,58 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
     }
     for (int i = 0; i < uiCWidth + addedAboveRight; i++)
     {
-      if (isFirstRowOfCtu)
+      const bool leftPadding = i == 0 && !leftIsAvailable;
+      if (pu.chromaFormat == CHROMA_444)
       {
         piSrc = pRecSrc0 - iRecStride;
-
-        if ((i == 0 && !bLeftAvaillable) || (i == uiCWidth + addedAboveRight - 1 + logSubWidthC))
-        {
-          pDst[i] = (piSrc[mult * i] * c0_3tap + piSrc[mult * i] * c1_3tap + piSrc[mult * i + 1] * c2_3tap + offset_3tap) >> shift_3tap;
-        }
-        else
-        {
-          pDst[i] = (piSrc[mult * i] * c0_3tap + piSrc[mult * i - 1] * c1_3tap + piSrc[mult * i + 1] * c2_3tap + offset_3tap) >> shift_3tap;
-        }
+        pDst[i] = piSrc[i];
       }
-      else if( pu.cs->sps->getCclmCollocatedChromaFlag() )
+      else if (isFirstRowOfCtu)
+      {
+        piSrc   = pRecSrc0 - iRecStride;
+        pDst[i] = (piSrc[2 * i] * 2 + piSrc[2 * i - (leftPadding ? 0 : 1)] + piSrc[2 * i + 1] + 2) >> 2;
+      }
+      else if (pu.chromaFormat == CHROMA_422)
       {
         piSrc = pRecSrc0 - iRecStride2;
 
-        if ((i == 0 && !bLeftAvaillable) || (i == uiCWidth + addedAboveRight - 1 + logSubWidthC))
-        {
-          pDst[i] = (piSrc[mult * i - strOffset] * c0_5tap
-                  +  piSrc[mult * i]             * c1_5tap + piSrc[mult * i] * c2_5tap + piSrc[mult * i + 1] * c3_5tap
-                  +  piSrc[mult * i + strOffset] * c4_5tap
-                  +  offset_5tap) >> shift_5tap;
-        }
-        else
-        {
-          pDst[i] = (piSrc[mult * i - strOffset] * c0_5tap
-                  +  piSrc[mult * i]             * c1_5tap + piSrc[mult * i - 1] * c2_5tap + piSrc[mult * i + 1] * c3_5tap
-                  +  piSrc[mult * i + strOffset] * c4_5tap
-                  +  offset_5tap) >> shift_5tap;
-        }
+        int s = 2;
+        s += piSrc[2 * i] * 2;
+        s += piSrc[2 * i - (leftPadding ? 0 : 1)];
+        s += piSrc[2 * i + 1];
+        pDst[i] = s >> 2;
+      }
+      else if (pu.cs->sps->getCclmCollocatedChromaFlag())
+      {
+        piSrc = pRecSrc0 - iRecStride2;
+
+        int s = 4;
+        s += piSrc[2 * i - iRecStride];
+        s += piSrc[2 * i] * 4;
+        s += piSrc[2 * i - (leftPadding ? 0 : 1)];
+        s += piSrc[2 * i + 1];
+        s += piSrc[2 * i + iRecStride];
+        pDst[i] = s >> 3;
       }
       else
       {
         piSrc = pRecSrc0 - iRecStride2;
-
-        if ((i == 0 && !bLeftAvaillable) || (i == uiCWidth + addedAboveRight - 1 + logSubWidthC))
-        {
-          pDst[i] = ((piSrc[mult * i]            * c0_6tap + piSrc[mult * i]             * c1_6tap + piSrc[mult * i + 1]             * c2_6tap)
-                  + (piSrc[mult * i + strOffset] * c3_6tap + piSrc[mult * i + strOffset] * c4_6tap + piSrc[mult * i + 1 + strOffset] * c5_6tap)
-                  + offset_6tap) >> shift_6tap;
-        }
-        else
-        {
-          pDst[i] = ((piSrc[mult * i]            * c0_6tap + piSrc[mult * i - 1]             * c1_6tap + piSrc[mult * i + 1]             * c2_6tap)
-                  + (piSrc[mult * i + strOffset] * c3_6tap + piSrc[mult * i - 1 + strOffset] * c4_6tap + piSrc[mult * i + 1 + strOffset] * c5_6tap)
-                  + offset_6tap) >> shift_6tap;
-        }
+        int s = 4;
+        s += piSrc[2 * i] * 2;
+        s += piSrc[2 * i + 1];
+        s += piSrc[2 * i - (leftPadding ? 0 : 1)];
+        s += piSrc[2 * i + iRecStride] * 2;
+        s += piSrc[2 * i + 1 + iRecStride];
+        s += piSrc[2 * i + iRecStride - (leftPadding ? 0 : 1)];
+        pDst[i] = s >> 3;
       }
     }
   }
 
-  if( bLeftAvaillable )
+  if (leftIsAvailable)
   {
     pDst  = pDst0    - 1;
-
-    piSrc = pRecSrc0 - 2 - logSubWidthC;
+    piSrc = pRecSrc0 - 1 - logSubWidthC;
 
     int addedLeftBelow = 0;
     if ((curChromaMode == MDLM_L_IDX) || (curChromaMode == MDLM_T_IDX))
@@ -1510,28 +1482,40 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
 
     for (int j = 0; j < uiCHeight + addedLeftBelow; j++)
     {
-      if( pu.cs->sps->getCclmCollocatedChromaFlag() )
+      if (pu.chromaFormat == CHROMA_444)
       {
-        if ((j == 0 && !bAboveAvaillable) || (j == uiCHeight + addedLeftBelow - 1 + logSubWidthC))
-        {
-          pDst[0] = ( piSrc[1            ] * c0_5tap
-                    + piSrc[1            ] * c1_5tap + piSrc[0] * c2_5tap + piSrc[2] * c3_5tap
-                    + piSrc[1 + strOffset] * c4_5tap
-                    + offset_5tap ) >> shift_5tap;
-        }
-        else
-        {
-          pDst[0] = ( piSrc[1 - strOffset] * c0_5tap
-                    + piSrc[1            ] * c1_5tap + piSrc[0] * c2_5tap + piSrc[2] * c3_5tap
-                    + piSrc[1 + strOffset] * c4_5tap
-                    + offset_5tap ) >> shift_5tap;
-        }
+        pDst[0] = piSrc[0];
+      }
+      else if (pu.chromaFormat == CHROMA_422)
+      {
+        int s = 2;
+        s += piSrc[0] * 2;
+        s += piSrc[-1];
+        s += piSrc[1];
+        pDst[0] = s >> 2;
+      }
+      else if (pu.cs->sps->getCclmCollocatedChromaFlag())
+      {
+        const bool abovePadding = j == 0 && !aboveIsAvailable;
+
+        int s = 4;
+        s += piSrc[-(abovePadding ? 0 : iRecStride)];
+        s += piSrc[0] * 4;
+        s += piSrc[-1];
+        s += piSrc[1];
+        s += piSrc[iRecStride];
+        pDst[0] = s >> 3;
       }
       else
       {
-        pDst[0] = ((piSrc[1]             * c0_6tap + piSrc[0]         * c1_6tap + piSrc[2]             * c2_6tap)
-                +  (piSrc[1 + strOffset] * c3_6tap + piSrc[strOffset] * c4_6tap + piSrc[2 + strOffset] * c5_6tap)
-                +   offset_6tap) >> shift_6tap;
+        int s = 4;
+        s += piSrc[0] * 2;
+        s += piSrc[1];
+        s += piSrc[-1];
+        s += piSrc[iRecStride] * 2;
+        s += piSrc[iRecStride + 1];
+        s += piSrc[iRecStride - 1];
+        pDst[0] = s >> 3;
       }
 
       piSrc += iRecStride2;
@@ -1544,71 +1528,46 @@ void IntraPrediction::xGetLumaRecPixels(const PredictionUnit &pu, CompArea chrom
   {
     for( int i = 0; i < uiCWidth; i++ )
     {
-      if( pu.cs->sps->getCclmCollocatedChromaFlag() )
+      if (pu.chromaFormat == CHROMA_444)
       {
-        if( i == 0 && !bLeftAvaillable )
-        {
-          if ( j == 0 && !bAboveAvaillable )
-          {
-            pDst0[i] = (pRecSrc0[mult * i] * c0_5tap
-                     +  pRecSrc0[mult * i] * c1_5tap + pRecSrc0[mult * i] * c2_5tap + pRecSrc0[mult * i + 1] * c3_5tap
-                     +  pRecSrc0[mult * i + strOffset] * c4_5tap
-                     +  offset_5tap) >> shift_5tap;
-          }
-          else
-          {
-            pDst0[i] = (pRecSrc0[mult * i - strOffset] * c0_5tap
-                     +  pRecSrc0[mult * i] * c1_5tap + pRecSrc0[mult * i] * c2_5tap + pRecSrc0[mult * i + 1] * c3_5tap
-                     +  pRecSrc0[mult * i + strOffset] * c4_5tap
-                     +  offset_5tap) >> shift_5tap;
-          }
-        }
-        else if ( j == 0 && !bAboveAvaillable )
-        {
-          pDst0[i] = (pRecSrc0[mult * i] * c0_5tap
-                   +  pRecSrc0[mult * i] * c1_5tap + pRecSrc0[mult * i - 1] * c2_5tap + pRecSrc0[mult * i + 1] * c3_5tap
-                   +  pRecSrc0[mult * i + strOffset] * c4_5tap
-                   +  offset_5tap) >> shift_5tap;
-        }
-        else
-        {
-          pDst0[i] = (pRecSrc0[mult * i - strOffset] * c0_5tap
-                   +  pRecSrc0[mult * i]             * c1_5tap + pRecSrc0[mult * i - 1] * c2_5tap + pRecSrc0[mult * i + 1] * c3_5tap
-                   +  pRecSrc0[mult * i + strOffset] * c4_5tap
-                   +  offset_5tap) >> shift_5tap;
-        }
+        pDst0[i] = pRecSrc0[i];
+      }
+      else if (pu.chromaFormat == CHROMA_422)
+      {
+        const bool leftPadding  = i == 0 && !leftIsAvailable;
+
+        int s = 2;
+        s += pRecSrc0[2 * i] * 2;
+        s += pRecSrc0[2 * i - (leftPadding ? 0 : 1)];
+        s += pRecSrc0[2 * i + 1];
+        pDst0[i] = s >> 2;
+      }
+      else if (pu.cs->sps->getCclmCollocatedChromaFlag())
+      {
+        const bool leftPadding  = i == 0 && !leftIsAvailable;
+        const bool abovePadding = j == 0 && !aboveIsAvailable;
+
+        int s = 4;
+        s += pRecSrc0[2 * i - (abovePadding ? 0 : iRecStride)];
+        s += pRecSrc0[2 * i] * 4;
+        s += pRecSrc0[2 * i - (leftPadding ? 0 : 1)];
+        s += pRecSrc0[2 * i + 1];
+        s += pRecSrc0[2 * i + iRecStride];
+        pDst0[i] = s >> 3;
       }
       else
       {
+        CHECK(pu.chromaFormat != CHROMA_420, "Chroma format must be 4:2:0 for vertical filtering");
+        const bool leftPadding = i == 0 && !leftIsAvailable;
 
-        if ((i == 0 && !bLeftAvaillable) || (i == uiCWidth - 1 + logSubWidthC))
-        {
-          int s = offset_6tap;
-          s += pRecSrc0[mult * i] * c0_6tap;
-          s += pRecSrc0[mult * i + 1] * c1_6tap;
-          s += pRecSrc0[mult * i] * c2_6tap;
-          if (pu.chromaFormat == CHROMA_420)
-          {
-            s += pRecSrc0[mult * i + strOffset] * c3_6tap;
-            s += pRecSrc0[mult * i + 1 + strOffset] * c4_6tap;
-            s += pRecSrc0[mult * i + strOffset] * c5_6tap;
-          }
-          pDst0[i] = s >> shift_6tap;
-        }
-        else
-        {
-          int s = offset_6tap;
-          s += pRecSrc0[mult * i] * c0_6tap;
-          s += pRecSrc0[mult * i + 1] * c1_6tap;
-          s += pRecSrc0[mult * i - 1] * c2_6tap;
-          if (pu.chromaFormat == CHROMA_420)
-          {
-            s += pRecSrc0[mult * i + strOffset] * c3_6tap;
-            s += pRecSrc0[mult * i + 1 + strOffset] * c4_6tap;
-            s += pRecSrc0[mult * i - 1 + strOffset] * c5_6tap;
-          }
-          pDst0[i] = s >> shift_6tap;
-        }
+        int s = 4;
+        s += pRecSrc0[2 * i] * 2;
+        s += pRecSrc0[2 * i + 1];
+        s += pRecSrc0[2 * i - (leftPadding ? 0 : 1)];
+        s += pRecSrc0[2 * i + iRecStride] * 2;
+        s += pRecSrc0[2 * i + 1 + iRecStride];
+        s += pRecSrc0[2 * i + iRecStride - (leftPadding ? 0 : 1)];
+        pDst0[i] = s >> 3;
       }
     }
 

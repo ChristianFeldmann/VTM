@@ -682,11 +682,16 @@ void Slice::checkRPL(const ReferencePictureList* pRPL0, const ReferencePictureLi
     }
     refPicDecodingOrderNumber = pcRefPic->getDecodingOrderNumber();
 
-    // Checking this: "When the current picture is a CRA picture, there shall be no entry in RefPicList[0] or RefPicList[1]
-    // that precedes, in output order or decoding order, any preceding IRAP picture in decoding order (when present)"
+    // Checking this: "When the current picture follows an IRAP picture having the same value of nuh_layer_id in both decoding order 
+    // and output order, there shall be no picture referred to by an active entry in RefPicList[ 0 ] or RefPicList[ 1 ] that 
+    // precedes that IRAP picture in output order or decoding order."
+#if JVET_R0267_IDR_RPL
+    if (m_eNalUnitType == NAL_UNIT_CODED_SLICE_CRA || m_eNalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL || m_eNalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP )
+#else
     if (m_eNalUnitType == NAL_UNIT_CODED_SLICE_CRA)
+#endif
     {
-      CHECK(refPicPOC < irapPOC || refPicDecodingOrderNumber < associatedIRAPDecodingOrderNumber, "CRA picture detected that violate the rule that no entry in RefPicList[] shall precede, in output order or decoding order, any preceding IRAP picture in decoding order (when present).");
+      CHECK(refPicPOC < irapPOC || refPicDecodingOrderNumber < associatedIRAPDecodingOrderNumber, "IRAP picture detected that violate the rule that no entry in RefPicList[] shall precede, in output order or decoding order, any preceding IRAP picture in decoding order (when present).");
     }
 
     // Checking this: "When the current picture is a trailing picture that follows in both decoding orderand output order one
@@ -1027,6 +1032,9 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
   m_tileGroupLumaApsId            = pSrc->m_tileGroupLumaApsId;
   m_tileGroupChromaApsId          = pSrc->m_tileGroupChromaApsId;
   m_disableSATDForRd              = pSrc->m_disableSATDForRd;
+#if JVET_R0110_MIXED_LOSSLESS
+  m_isLossless = pSrc->m_isLossless;
+#endif
 
   if( cpyAlmostAll ) m_encCABACTableIdx  = pSrc->m_encCABACTableIdx;
   for( int i = 0; i < NUM_REF_PIC_LIST_01; i ++ )
@@ -1946,6 +1954,9 @@ VPS::VPS()
   , m_vpsSublayerCpbParamsPresentFlag(false)
   , m_numOlsHrdParamsMinus1(0)
   , m_totalNumOLSs( 0 )
+#if JVET_R0191_ASPECT3
+  , m_numMultiLayeredOlss( 0 )
+#endif
   , m_numDpbParams( 0 )
   , m_sublayerDpbParamsPresentFlag( false )
   , m_targetOlsIdx( -1 )
@@ -1954,6 +1965,7 @@ VPS::VPS()
   {
     m_vpsLayerId[i] = 0;
     m_vpsIndependentLayerFlag[i] = true;
+    m_generalLayerIdx[i] = 0;
     for (int j = 0; j < MAX_VPS_LAYERS; j++)
     {
       m_vpsDirectRefLayerFlag[i][j] = 0;
@@ -2104,7 +2116,9 @@ void VPS::deriveOutputLayerSets()
 
   m_numLayersInOls[0] = 1;
   m_layerIdInOls[0][0] = m_vpsLayerId[0];
-
+#if JVET_R0191_ASPECT3
+  m_numMultiLayeredOlss = 0;
+#endif
   for( int i = 1; i < m_totalNumOLSs; i++ )
   {
     if( m_vpsEachLayerIsAnOlsFlag )
@@ -2133,6 +2147,13 @@ void VPS::deriveOutputLayerSets()
 
       m_numLayersInOls[i] = j;
     }
+#if JVET_R0191_ASPECT3
+    if( m_numLayersInOls[i] > 1 )
+    {
+      m_multiLayerOlsIdx[i] = m_numMultiLayeredOlss;
+      m_numMultiLayeredOlss++;
+    }
+#endif
   }
 }
 
@@ -2488,6 +2509,10 @@ SPS::SPS()
 , m_maxNumAffineMergeCand(AFFINE_MRG_MAX_NUM_CANDS)
 , m_maxNumIBCMergeCand(IBC_MRG_MAX_NUM_CANDS)
 , m_maxNumGeoCand(0)
+#if JVET_R0380_SCALING_MATRIX_DISABLE_YCC_OR_RGB
+, m_scalingMatrixAlternativeColourSpaceDisabledFlag( false )
+, m_scalingMatrixDesignatedColourSpaceFlag( true )
+#endif
 {
   for(int ch=0; ch<MAX_NUM_CHANNEL_TYPE; ch++)
   {
@@ -4027,6 +4052,22 @@ bool             operator == (const ConstraintInfo& op1, const ConstraintInfo& o
   if( op1.m_maxChromaFormatConstraintIdc                 != op2.m_maxChromaFormatConstraintIdc                   ) return false;
   if( op1.m_onePictureOnlyConstraintFlag                 != op2.m_onePictureOnlyConstraintFlag                   ) return false;
   if( op1.m_lowerBitRateConstraintFlag                   != op2.m_lowerBitRateConstraintFlag                     ) return false;
+
+#if JVET_R0286_GCI_CLEANUP
+  if (op1.m_singleLayerConstraintFlag                    != op2.m_singleLayerConstraintFlag                      ) return false;
+  if (op1.m_allLayersIndependentConstraintFlag           != op2.m_allLayersIndependentConstraintFlag             ) return false;
+  if (op1.m_noMrlConstraintFlag                          != op2.m_noMrlConstraintFlag                            ) return false;
+  if (op1.m_noIspConstraintFlag                          != op2.m_noIspConstraintFlag                            ) return false;
+  if (op1.m_noMipConstraintFlag                          != op2.m_noMipConstraintFlag                            ) return false;
+  if (op1.m_noLfnstConstraintFlag                        != op2.m_noLfnstConstraintFlag                          ) return false;
+  if (op1.m_noMmvdConstraintFlag                         != op2.m_noMmvdConstraintFlag                           ) return false;
+  if (op1.m_noSmvdConstraintFlag                         != op2.m_noSmvdConstraintFlag                           ) return false;
+  if (op1.m_noProfConstraintFlag                         != op2.m_noProfConstraintFlag                           ) return false;
+  if (op1.m_noPaletteConstraintFlag                      != op2.m_noPaletteConstraintFlag                        ) return false;
+  if (op1.m_noActConstraintFlag                          != op2.m_noActConstraintFlag                            ) return false;
+  if (op1.m_noLmcsConstraintFlag                         != op2.m_noLmcsConstraintFlag                           ) return false;
+#endif
+
   if( op1.m_noQtbttDualTreeIntraConstraintFlag           != op2.m_noQtbttDualTreeIntraConstraintFlag             ) return false;
   if( op1.m_noPartitionConstraintsOverrideConstraintFlag != op2.m_noPartitionConstraintsOverrideConstraintFlag   ) return false;
   if( op1.m_noSaoConstraintFlag                          != op2.m_noSaoConstraintFlag                            ) return false;

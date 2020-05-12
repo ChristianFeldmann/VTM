@@ -691,6 +691,10 @@ void HLSWriter::codeVUI( const VUI *pcVUI, const SPS* pcSPS )
 #endif
 
 
+#if JVET_R0090_VUI
+  WRITE_FLAG(pcVUI->getProgressiveSourceFlag(),   "vui_general_progressive_source_flag"         );
+  WRITE_FLAG(pcVUI->getInterlacedSourceFlag(),    "vui_general_interlaced_source_flag"          );
+#endif
   WRITE_FLAG(pcVUI->getAspectRatioInfoPresentFlag(),            "vui_aspect_ratio_info_present_flag");
   if (pcVUI->getAspectRatioInfoPresentFlag())
   {
@@ -715,10 +719,6 @@ void HLSWriter::codeVUI( const VUI *pcVUI, const SPS* pcSPS )
     WRITE_CODE(pcVUI->getMatrixCoefficients(), 8,             "vui_matrix_coeffs");
     WRITE_FLAG(pcVUI->getVideoFullRangeFlag(),                "vui_video_full_range_flag");
   }
-#if JVET_R0090_VUI
-  WRITE_FLAG(pcVUI->getProgressiveSourceFlag(),   "general_progressive_source_flag"         );
-  WRITE_FLAG(pcVUI->getInterlacedSourceFlag(),    "general_interlaced_source_flag"          );
-#endif
   WRITE_FLAG(pcVUI->getChromaLocInfoPresentFlag(),              "vui_chroma_loc_info_present_flag");
   if (pcVUI->getChromaLocInfoPresentFlag())
   {
@@ -745,7 +745,7 @@ void HLSWriter::codeGeneralHrdparameters(const GeneralHrdParams * hrd)
   WRITE_CODE(hrd->getTimeScale(), 32, "time_scale");
   WRITE_FLAG(hrd->getGeneralNalHrdParametersPresentFlag() ? 1 : 0, "general_nal_hrd_parameters_present_flag");
   WRITE_FLAG(hrd->getGeneralVclHrdParametersPresentFlag() ? 1 : 0, "general_vcl_hrd_parameters_present_flag");
-  WRITE_FLAG(hrd->getGeneralSamPicTimingInAllOlsFlag() ? 1 : 0, "general_same_pic_timing_in_all_ols_flag");
+  WRITE_FLAG(hrd->getGeneralSamePicTimingInAllOlsFlag() ? 1 : 0, "general_same_pic_timing_in_all_ols_flag");
   WRITE_FLAG(hrd->getGeneralDecodingUnitHrdParamsPresentFlag() ? 1 : 0, "general_decoding_unit_hrd_params_present_flag");
   if (hrd->getGeneralDecodingUnitHrdParamsPresentFlag())
   {
@@ -822,6 +822,13 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   WRITE_CODE(pcSPS->getMaxTLayers() - 1, 3, "sps_max_sub_layers_minus1");
   WRITE_CODE(0,                          4, "sps_reserved_zero_4bits");
   WRITE_FLAG(pcSPS->getPtlDpbHrdParamsPresentFlag(), "sps_ptl_dpb_hrd_params_present_flag");
+
+#if JVET_R0275_SPS_PTL_DBP_HRD
+  if( !pcSPS->getVPSId() )
+  {
+    CHECK( !pcSPS->getPtlDpbHrdParamsPresentFlag(), "When sps_video_parameter_set_id is equal to 0, the value of sps_ptl_dpb_hrd_params_present_flag shall be equal to 1" );
+  }
+#endif
 
   if (pcSPS->getPtlDpbHrdParamsPresentFlag())
   {
@@ -1114,6 +1121,11 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
     WRITE_FLAG( pcSPS->getHorCollocatedChromaFlag() ? 1 : 0, "sps_chroma_horizontal_collocated_flag" );
     WRITE_FLAG( pcSPS->getVerCollocatedChromaFlag() ? 1 : 0, "sps_chroma_vertical_collocated_flag" );
   }
+  else
+  {
+    CHECK(pcSPS->getHorCollocatedChromaFlag() != 1, "Invalid value for horizontal collocated chroma flag");
+    CHECK(pcSPS->getVerCollocatedChromaFlag() != 1, "Invalid value for vertical collocated chroma flag");
+  }
 
   WRITE_FLAG( pcSPS->getUseMTS() ? 1 : 0,                                                      "sps_mts_enabled_flag" );
   if ( pcSPS->getUseMTS() )
@@ -1199,6 +1211,16 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 
   // KJS: remove scaling lists?
   WRITE_FLAG( pcSPS->getScalingListFlag() ? 1 : 0,                                   "sps_scaling_list_enabled_flag" );
+#if JVET_R0380_SCALING_MATRIX_DISABLE_YCC_OR_RGB
+  if (pcSPS->getUseColorTrans() && pcSPS->getScalingListFlag())
+  {
+    WRITE_FLAG(pcSPS->getScalingMatrixForAlternativeColourSpaceDisabledFlag(), "sps_scaling_matrix_for_alternative_colour_space_disabled_flag");
+  }
+  if (pcSPS->getScalingMatrixForAlternativeColourSpaceDisabledFlag())
+  {
+    WRITE_FLAG(pcSPS->getScalingMatrixDesignatedColourSpaceFlag(), "sps_scaling_matrix_designated_colour_space_flag");
+  }
+#endif
   WRITE_FLAG(pcSPS->getDepQuantEnabledFlag(), "sps_dep_quant_enabled_flag");
   if (!pcSPS->getDepQuantEnabledFlag())
   {
@@ -2623,6 +2645,10 @@ void  HLSWriter::codeConstraintInfo  ( const ConstraintInfo* cinfo )
 
   WRITE_CODE(cinfo->getMaxBitDepthConstraintIdc(), 4, "max_bitdepth_constraint_idc" );
   WRITE_CODE(cinfo->getMaxChromaFormatConstraintIdc(), 2, "max_chroma_format_constraint_idc" );
+#if JVET_R0286_GCI_CLEANUP
+  WRITE_FLAG(cinfo->getSingleLayerConstraintFlag(), "single_layer_constraint_flag");
+  WRITE_FLAG(cinfo->getAllLayersIndependentConstraintFlag(), "all_layers_independent_constraint_flag");
+#endif
   WRITE_FLAG(cinfo->getNoResChangeInClvsConstraintFlag(), "no_res_change_in_clvs_constraint_flag");
   WRITE_FLAG(cinfo->getOneTilePerPicConstraintFlag(), "one_tile_per_pic_constraint_flag");
   WRITE_FLAG(cinfo->getOneSlicePerPicConstraintFlag(), "one_slice_per_pic_constraint_flag");
@@ -2634,6 +2660,11 @@ void  HLSWriter::codeConstraintInfo  ( const ConstraintInfo* cinfo )
   WRITE_FLAG(cinfo->getNoAlfConstraintFlag() ? 1 : 0, "no_alf_constraint_flag");
   WRITE_FLAG(cinfo->getNoCCAlfConstraintFlag() ? 1 : 0, "no_ccalf_constraint_flag");
   WRITE_FLAG(cinfo->getNoJointCbCrConstraintFlag() ? 1 : 0, "no_joint_cbcr_constraint_flag");
+#if JVET_R0286_GCI_CLEANUP
+  WRITE_FLAG(cinfo->getNoMrlConstraintFlag() ? 1 : 0, "no_mrl_constraint_flag");
+  WRITE_FLAG(cinfo->getNoIspConstraintFlag() ? 1 : 0, "no_isp_constraint_flag");
+  WRITE_FLAG(cinfo->getNoMipConstraintFlag() ? 1 : 0, "no_mip_constraint_flag");
+#endif
   WRITE_FLAG(cinfo->getNoRefWraparoundConstraintFlag() ? 1 : 0, "no_ref_wraparound_constraint_flag");
   WRITE_FLAG(cinfo->getNoTemporalMvpConstraintFlag() ? 1 : 0, "no_temporal_mvp_constraint_flag");
   WRITE_FLAG(cinfo->getNoSbtmvpConstraintFlag() ? 1 : 0, "no_sbtmvp_constraint_flag");
@@ -2643,7 +2674,15 @@ void  HLSWriter::codeConstraintInfo  ( const ConstraintInfo* cinfo )
   WRITE_FLAG(cinfo->getNoCclmConstraintFlag() ? 1 : 0, "no_cclm_constraint_flag");
   WRITE_FLAG(cinfo->getNoMtsConstraintFlag() ? 1 : 0, "no_mts_constraint_flag");
   WRITE_FLAG(cinfo->getNoSbtConstraintFlag() ? 1 : 0, "no_sbt_constraint_flag");
+#if JVET_R0286_GCI_CLEANUP
+  WRITE_FLAG(cinfo->getNoLfnstConstraintFlag() ? 1 : 0, "no_lfnst_constraint_flag");
+#endif
   WRITE_FLAG(cinfo->getNoAffineMotionConstraintFlag() ? 1 : 0, "no_affine_motion_constraint_flag");
+#if JVET_R0286_GCI_CLEANUP
+  WRITE_FLAG(cinfo->getNoMmvdConstraintFlag() ? 1 : 0, "no_mmvd_constraint_flag");
+  WRITE_FLAG(cinfo->getNoSmvdConstraintFlag() ? 1 : 0, "no_smvd_constraint_flag");
+  WRITE_FLAG(cinfo->getNoProfConstraintFlag() ? 1 : 0, "no_prof_constraint_flag");
+#endif
   WRITE_FLAG(cinfo->getNoBcwConstraintFlag() ? 1 : 0, "no_bcw_constraint_flag");
   WRITE_FLAG(cinfo->getNoIbcConstraintFlag() ? 1 : 0, "no_ibc_constraint_flag");
   WRITE_FLAG(cinfo->getNoCiipConstraintFlag() ? 1 : 0, "no_ciip_constraint_flag");
@@ -2652,6 +2691,11 @@ void  HLSWriter::codeConstraintInfo  ( const ConstraintInfo* cinfo )
   WRITE_FLAG(cinfo->getNoLadfConstraintFlag() ? 1 : 0, "no_ladf_constraint_flag");
   WRITE_FLAG(cinfo->getNoTransformSkipConstraintFlag() ? 1 : 0, "no_transform_skip_constraint_flag");
   WRITE_FLAG(cinfo->getNoBDPCMConstraintFlag() ? 1 : 0, "no_bdpcm_constraint_flag");
+#if JVET_R0286_GCI_CLEANUP
+  WRITE_FLAG(cinfo->getNoPaletteConstraintFlag() ? 1 : 0, "no_palette_constraint_flag");
+  WRITE_FLAG(cinfo->getNoActConstraintFlag() ? 1 : 0, "no_act_constraint_flag");
+  WRITE_FLAG(cinfo->getNoLmcsConstraintFlag() ? 1 : 0, "no_lmcs_constraint_flag");
+#endif
   WRITE_FLAG(cinfo->getNoQpDeltaConstraintFlag() ? 1 : 0, "no_qp_delta_constraint_flag");
   WRITE_FLAG(cinfo->getNoDepQuantConstraintFlag() ? 1 : 0, "no_dep_quant_constraint_flag");
   WRITE_FLAG(cinfo->getNoSignDataHidingConstraintFlag() ? 1 : 0, "no_sign_data_hiding_constraint_flag");

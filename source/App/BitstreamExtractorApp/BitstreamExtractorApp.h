@@ -82,6 +82,9 @@ protected:
   HLSWriter             m_hlSyntaxWriter;
   SEIReader             m_seiReader;
   int                   m_vpsId;
+#if JVET_Q0394_TIMING_SEI
+  bool                  m_removeTimingSEI;
+#endif
 
   PicHeader             m_picHeader;
   int                   m_prevTid0Poc;

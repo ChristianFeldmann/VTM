@@ -214,6 +214,10 @@ void EncApp::xInitLibCfg()
 #endif
   m_cEncLib.setNonPackedConstraintFlag                           ( m_nonPackedConstraintFlag);
   m_cEncLib.setNonProjectedConstraintFlag                        ( m_nonProjectedConstraintFlag );
+#if JVET_R0286_GCI_CLEANUP
+  m_cEncLib.setSingleLayerConstraintFlag                         ( m_singleLayerConstraintFlag );
+  m_cEncLib.setAllLayersIndependentConstraintFlag                ( m_allLayersIndependentConstraintFlag );
+#endif
   m_cEncLib.setNoResChangeInClvsConstraintFlag                   ( m_noResChangeInClvsConstraintFlag );
   m_cEncLib.setOneTilePerPicConstraintFlag                       ( m_oneTilePerPicConstraintFlag );
   m_cEncLib.setOneSlicePerPicConstraintFlag                      ( m_oneSlicePerPicConstraintFlag );
@@ -279,6 +283,19 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setNoCraConstraintFlag                               ( m_iDecodingRefreshType != 1 );
   m_cEncLib.setNoGdrConstraintFlag                               ( false ); // Not yet possible to encode GDR using config parameters
   m_cEncLib.setNoApsConstraintFlag                               ( !m_alf && !m_lmcsEnabled && m_useScalingListId == SCALING_LIST_OFF);
+#if JVET_R0286_GCI_CLEANUP
+  m_cEncLib.setNoMrlConstraintFlag                               ( !m_MRL );
+  m_cEncLib.setNoIspConstraintFlag                               ( !m_ISP );
+  m_cEncLib.setNoMipConstraintFlag                               ( !m_MIP );
+  m_cEncLib.setNoLfnstConstraintFlag                             ( !m_LFNST );
+  m_cEncLib.setNoMmvdConstraintFlag                              ( !m_MMVD );
+  m_cEncLib.setNoSmvdConstraintFlag                              ( !m_SMVD );
+  m_cEncLib.setNoProfConstraintFlag                              ( !m_PROF );
+  m_cEncLib.setNoPaletteConstraintFlag                           ( m_PLTMode == 1 ? false : true );
+  m_cEncLib.setNoActConstraintFlag                               ( !m_useColorTrans );
+  m_cEncLib.setNoLmcsConstraintFlag                              ( !m_lmcsEnabled );
+#endif
+
 
   //====== Coding Structure ========
   m_cEncLib.setIntraPeriod                                       ( m_iIntraPeriod );
@@ -559,6 +576,9 @@ void EncApp::xInitLibCfg()
 
   //====== Parallel Merge Estimation ========
   m_cEncLib.setLog2ParallelMergeLevelMinus2(m_log2ParallelMergeLevel - 2);
+#if JVET_R0110_MIXED_LOSSLESS
+  m_cEncLib.setSliceLosslessArray(m_sliceLosslessArray);
+#endif
 
   //====== Tiles and Slices ========
   m_cEncLib.setNoPicPartitionFlag( !m_picPartitionFlag );
@@ -739,6 +759,16 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setUseScalingListId                                  ( m_useScalingListId  );
   m_cEncLib.setScalingListFileName                               ( m_scalingListFileName );
   m_cEncLib.setDisableScalingMatrixForLfnstBlks                  ( m_disableScalingMatrixForLfnstBlks);
+#if JVET_R0380_SCALING_MATRIX_DISABLE_YCC_OR_RGB
+  if ( m_cEncLib.getUseColorTrans() && m_cEncLib.getUseScalingListId() )
+  {
+    m_cEncLib.setDisableScalingMatrixForAlternativeColourSpace(m_disableScalingMatrixForAlternativeColourSpace);
+  }
+  if ( m_cEncLib.getDisableScalingMatrixForAlternativeColourSpace() )
+  {
+    m_cEncLib.setScalingMatrixDesignatedColourSpace(m_scalingMatrixDesignatedColourSpace);
+  }
+#endif
   m_cEncLib.setDepQuantEnabledFlag                               ( m_depQuantEnabledFlag);
   m_cEncLib.setSignDataHidingEnabledFlag                         ( m_signDataHidingEnabledFlag);
   m_cEncLib.setUseRateCtrl                                       ( m_RCEnableRateControl );
@@ -760,6 +790,9 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setUseRecalculateQPAccordingToLambda                 ( m_recalculateQPAccordingToLambda );
   m_cEncLib.setDCIEnabled                                        ( m_DCIEnabled );
   m_cEncLib.setVuiParametersPresentFlag                          ( m_vuiParametersPresentFlag );
+#if JVET_Q0394_TIMING_SEI
+  m_cEncLib.setSamePicTimingInAllOLS                             (m_samePicTimingInAllOLS);
+#endif
   m_cEncLib.setAspectRatioInfoPresentFlag                        ( m_aspectRatioInfoPresentFlag);
   m_cEncLib.setAspectRatioIdc                                    ( m_aspectRatioIdc );
   m_cEncLib.setSarWidth                                          ( m_sarWidth );

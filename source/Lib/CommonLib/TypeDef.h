@@ -51,11 +51,16 @@
 #include <cassert>
 
 //########### place macros to be removed in next cycle below this line ###############
+
 #define JVET_Q0764_WRAP_AROUND_WITH_RPR                   1 // JVET-Q0764: Combination of wrap around offset and RPR
+
+#define JVET_R0055_HANDLING_NON_EXISTENT_QM               1 // JVET-R0055: infer chroma scaling lists to be all 16 in 4:0:0 by copy mode flag
 
 #define JVET_R0097_MAX_TRSIZE_CONDITIONALY_SIGNALING      1 // JVET-R0097: Aspect 1, If the luma CTB size is not larger than 32, sps_max_luma_transform_size_64_flag is not signalled and inferred to be 0
 
 #define JVET_R0483_SH_TSRC_DISABLED_FLAG_CLEANUP          1 // JVET-R0483 Comb 4: R0049 + R0271, only R0049 method 3 aspect (Skip signaling sh_ts_residual_coding_disabled_flag when sps_transform_skip_enabled_flag = 0, also proposed in R0068, R0097, R0142, R0153) as R0271 has its own macro 
+
+#define JVET_R0380_SCALING_MATRIX_DISABLE_YCC_OR_RGB      1 // JVET-R0380 solution3-3: Disable scaling matrix for blocks coded in alternative colour space.
 
 #define R0091_CONSTRAINT_SLICE_ORDER                      1 // JVET-R0091: constraint slice signalling order to be the same as slice coding order
 
@@ -63,19 +68,30 @@
 
 #define JVET_R0165_OPTIONAL_ENTRY_POINT                   1 // JVET-R0165: Optional entry point offset
 
+#define JVET_R0166_SCALING_LISTS_CHROMA_444               1 // JVET-R0166: Scaling list for Chroma 444
+
+#define JVET_R0191_ASPECT3                                1 // JVET-R0191#3: Modify the upper range of vps_num_dpb_params and num_ols_hrd_params_minus1 to be total number of OLSs minus the number of single-layer OLSs
+                                                            //               Constrain that each PTL, DPB, and HRD params in VPS are referred to at least once
+
 #define R0324_PH_SYNTAX_CONDITION_MODIFY                  1 // JVET-R0324 add conditions on PH syntax to conder whether current pic is bi-predictive picture
 
 #define JVET_R0278_CONSTRAINT                             1 // JVET-R0278: ph_inter_slice_allowed_flag constraint
 
+#define JVET_R0276_REORDERED_SUBPICS                      1 // JVET-R0276: reference picture constraint for reordered sub-pictures
+
 #define JVET_R0130_TC_DERIVATION_BUGFIX                   1 // JVET-R0130: Cleanup of tC derivation for deblocking filter
 
 #define JVET_R0334_PLT_CLEANUP                            1 // JVET-R0334: Disable chroma palette for local dual tree
+
+#define JVET_R0286_GCI_CLEANUP                            1 // JVET-R0286: Sensibility constraints and general constraints on tools
 
 #define JVET_R0090_VUI                                    1 // JVET-R0090: Fix parsing dependencies in VUI syntax
 
 #define JVET_R0205                                        1 // JVET-R0205: Condition presence of inter_layer_ref_pics_present_flag on sps_video_parameter_set_id 
 
 #define JVET_R0277_RPL                                    1 // JVET-R0277: Modified condition for sh_num_ref_idx_active_override_flag, inference for sh_collocated_from_l0_flag equal to 1 for P-slices
+
+#define JVET_R0275_SPS_PTL_DBP_HRD                        1 // JVET-R0275: Modified constraint for sps_ptl_dpb_hrd_params_present_flag
 
 #define JVET_R0186_CLEANUP                                1 // JVET-R0186 aspect 1: Signal the pps_no_pic_partition_flag ahead in the PPS.
 
@@ -86,6 +102,10 @@
 #define JVET_R0094_DPB_TID_OFFSET                         1 // JVET-R0094: DPB output temporal ID offsets
 
 #define JVET_R0437_BS_DERIVATION                          1 // JVET-R0437: fix the bS derivation for palette mode
+
+#define JVET_R0110_MIXED_LOSSLESS                         1 // JVET-R0110: Slice level mixed lossy/lossless coding: encoder only method
+
+#define JVET_R0267_IDR_RPL                                1 // JVET-R0267: Add RPL constraint for IDR picture
 
 #define JVET_R0330_CRS_CLIP_REM                           1 // JVET-R0330: Remove redundant clipping in chroma residual scaling factor derivation
 
@@ -143,7 +163,11 @@
 
 #define JVET_R0045_TS_MIN_QP_CLEANUP                      1 // JVET-R0045: Cleanup for signalling of minimum QP of transform skip
 
+#define JVET_Q0394_TIMING_SEI                             1 // JVET_Q0394: Picture timing for OLSs
+
 #define JVET_R0100                                        1 // JVET-R0100: Proposal 1 DUI Signalling and inference
+
+#define JVET_R0413_HRD_TIMING_INFORMATION                 1   // JVET-R0413: HRD timing parameters signalling
 
 //########### place macros to be be kept below this line ###############
 

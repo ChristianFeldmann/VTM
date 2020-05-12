@@ -253,7 +253,7 @@ double AlfCovariance::calcErrorForCoeffs( const int *clip, const int *coeff, con
   return error / factor;
 }
 
-double AlfCovariance::calcErrorForCcAlfCoeffs(const int* coeff, const int numCoeff, const int bitDepth) const
+double AlfCovariance::calcErrorForCcAlfCoeffs(const int16_t *coeff, const int numCoeff, const int bitDepth) const
 {
   double factor = 1 << (bitDepth - 1);
   double error = 0;
@@ -887,6 +887,9 @@ void EncAdaptiveLoopFilter::ALFProcess(CodingStructure& cs, const double *lambda
 #if ENABLE_QPA
                                        , const double lambdaChromaWeight
 #endif
+#if JVET_R0110_MIXED_LOSSLESS
+                                       , Picture* pcPic, uint32_t numSliceSegments
+#endif
                                       )
 {
   int layerIdx = cs.vps == nullptr ? 0 : cs.vps->getGeneralLayerIdx( cs.slice->getPic()->layerId );
@@ -1048,6 +1051,22 @@ void EncAdaptiveLoopFilter::ALFProcess(CodingStructure& cs, const double *lambda
     , lambdaChromaWeight
 #endif
   );
+
+#if  JVET_R0110_MIXED_LOSSLESS
+  for (int s = 0; s < numSliceSegments; s++)
+  {
+    if (pcPic->slices[s]->isLossless())
+    {
+      for (uint32_t ctuIdx = 0; ctuIdx < pcPic->slices[s]->getNumCtuInSlice(); ctuIdx++)
+      {
+        uint32_t ctuRsAddr = pcPic->slices[s]->getCtuAddrInSlice(ctuIdx);
+        m_ctuEnableFlag[COMPONENT_Y][ctuRsAddr] = 0;
+        m_ctuEnableFlag[COMPONENT_Cb][ctuRsAddr] = 0;
+        m_ctuEnableFlag[COMPONENT_Cr][ctuRsAddr] = 0;
+      }
+    }
+  }
+#endif
 
   alfReconstructor(cs, recYuv);
 
@@ -1864,7 +1883,8 @@ void EncAdaptiveLoopFilter::roundFiltCoeff( int *filterCoeffQuant, double *filte
   }
 }
 
-void EncAdaptiveLoopFilter::roundFiltCoeffCCALF( int *filterCoeffQuant, double *filterCoeff, const int numCoeff, const int factor )
+void EncAdaptiveLoopFilter::roundFiltCoeffCCALF(int16_t *filterCoeffQuant, double *filterCoeff, const int numCoeff,
+                                                const int factor)
 {
   for( int i = 0; i < numCoeff; i++ )
   {
@@ -3289,7 +3309,7 @@ void EncAdaptiveLoopFilter::deriveCcAlfFilterCoeff( ComponentID compID, const Pe
   using Ty = double[MAX_NUM_ALF_LUMA_COEFF];
 
   double filterCoeffDbl[MAX_NUM_CC_ALF_CHROMA_COEFF];
-  int    filterCoeffInt[MAX_NUM_CC_ALF_CHROMA_COEFF];
+  int16_t filterCoeffInt[MAX_NUM_CC_ALF_CHROMA_COEFF];
 
   std::fill_n(filterCoeffInt, MAX_NUM_CC_ALF_CHROMA_COEFF, 0);
 
@@ -3817,8 +3837,10 @@ void EncAdaptiveLoopFilter::deriveCcAlfFilter( CodingStructure& cs, ComponentID 
               for (int x = 0; x < m_buf->width; x += (1 << log2BlockWidth))
               {
                 int ctuIdx = (y >> log2BlockHeight) * m_numCTUsInWidth + (x >> log2BlockWidth);
-                m_trainingDistortion[filterIdx][ctuIdx] = int(m_ctbDistortionUnfilter[compID][ctuIdx] +
-                  m_alfCovarianceCcAlf[compID - 1][0][0][ctuIdx].calcErrorForCcAlfCoeffs((int*)(ccAlfFilterCoeff[filterIdx]), numCoeff, (m_scaleBits + 1)));
+                m_trainingDistortion[filterIdx][ctuIdx] =
+                  int(m_ctbDistortionUnfilter[compID][ctuIdx]
+                      + m_alfCovarianceCcAlf[compID - 1][0][0][ctuIdx].calcErrorForCcAlfCoeffs(
+                        ccAlfFilterCoeff[filterIdx], numCoeff, m_scaleBits + 1));
               }
             }
 #else

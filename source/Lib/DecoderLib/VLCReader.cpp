@@ -597,15 +597,15 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
 #endif
 
 #if JVET_R0188
-        if( ( ( ( tileIdx / pcPPS->getNumTileColumns() ) != pcPPS->getNumTileRows() - 1 ) &&
-          pcPPS->getTileIdxDeltaPresentFlag() ) || ( ( tileIdx % pcPPS->getNumTileColumns() ) == 0 ) ) 
+        if( tileIdx / pcPPS->getNumTileColumns() != pcPPS->getNumTileRows() - 1  &&
+         ( pcPPS->getTileIdxDeltaPresentFlag() || tileIdx % pcPPS->getNumTileColumns() == 0 ) ) 
         {
           READ_UVLC( uiCode, "slice_height_in_tiles_minus1[i]" );
           pcPPS->setSliceHeightInTiles( i, uiCode + 1 );
         }
         else
         {
-          if( ( tileIdx % pcPPS->getNumTileColumns() ) == pcPPS->getNumTileColumns() - 1 )
+          if( ( tileIdx / pcPPS->getNumTileColumns() ) == pcPPS->getNumTileRows() - 1 )
           {
             pcPPS->setSliceHeightInTiles( i, 1 );
           }

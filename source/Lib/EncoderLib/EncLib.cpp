@@ -319,7 +319,8 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
       pps.setWrapAroundOffsetMinusCtbSize       ( ((m_wrapAroundOffset * pps.getPicWidthInLumaSamples() / pps0.getPicWidthInLumaSamples()) / minCbSizeY) - 2 - (sps0.getCTUSize() / minCbSizeY) );
       pps.setWrapAroundOffset                   ( minCbSizeY * (pps.getWrapAroundOffsetMinusCtbSize() + 2 + sps0.getCTUSize() / minCbSizeY) );
     }
-    else {
+    else 
+    {
       pps.setWrapAroundOffsetMinusCtbSize       ( 0 );
       pps.setWrapAroundOffset                   ( 0 );       
     }
@@ -1589,7 +1590,8 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
     pps.setWrapAroundOffsetMinusCtbSize       ( (m_wrapAroundOffset / minCbSizeY) - 2 - (sps.getCTUSize() / minCbSizeY) );
     pps.setWrapAroundOffset                   ( minCbSizeY * (pps.getWrapAroundOffsetMinusCtbSize() + 2 + sps.getCTUSize() / minCbSizeY) );
   }
-  else {
+  else 
+  {
     pps.setWrapAroundOffsetMinusCtbSize       ( 0 );
     pps.setWrapAroundOffset                   ( 0 );       
   }

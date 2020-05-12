@@ -131,7 +131,7 @@ public:
 
   void checkAuApsContent( APS *aps, std::vector<int>& accessUnitApsNals )
   {
-    int apsId = ( aps->getAPSId() << NUM_APS_TYPE_LEN ) + (int)aps->getAPSType();
+    int apsId = aps->getAPSId() + MAX_NUM_APS * aps->getAPSType();
 
     if( std::find( accessUnitApsNals.begin(), accessUnitApsNals.end(), apsId ) != accessUnitApsNals.end() )
     {

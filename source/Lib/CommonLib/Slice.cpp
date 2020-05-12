@@ -688,11 +688,16 @@ void Slice::checkRPL(const ReferencePictureList* pRPL0, const ReferencePictureLi
     }
     refPicDecodingOrderNumber = pcRefPic->getDecodingOrderNumber();
 
-    // Checking this: "When the current picture is a CRA picture, there shall be no entry in RefPicList[0] or RefPicList[1]
-    // that precedes, in output order or decoding order, any preceding IRAP picture in decoding order (when present)"
+    // Checking this: "When the current picture follows an IRAP picture having the same value of nuh_layer_id in both decoding order 
+    // and output order, there shall be no picture referred to by an active entry in RefPicList[ 0 ] or RefPicList[ 1 ] that 
+    // precedes that IRAP picture in output order or decoding order."
+#if JVET_R0267_IDR_RPL
+    if (m_eNalUnitType == NAL_UNIT_CODED_SLICE_CRA || m_eNalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL || m_eNalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP )
+#else
     if (m_eNalUnitType == NAL_UNIT_CODED_SLICE_CRA)
+#endif
     {
-      CHECK(refPicPOC < irapPOC || refPicDecodingOrderNumber < associatedIRAPDecodingOrderNumber, "CRA picture detected that violate the rule that no entry in RefPicList[] shall precede, in output order or decoding order, any preceding IRAP picture in decoding order (when present).");
+      CHECK(refPicPOC < irapPOC || refPicDecodingOrderNumber < associatedIRAPDecodingOrderNumber, "IRAP picture detected that violate the rule that no entry in RefPicList[] shall precede, in output order or decoding order, any preceding IRAP picture in decoding order (when present).");
     }
 
     // Checking this: "When the current picture is a trailing picture that follows in both decoding orderand output order one
@@ -1955,6 +1960,9 @@ VPS::VPS()
   , m_vpsSublayerCpbParamsPresentFlag(false)
   , m_numOlsHrdParamsMinus1(0)
   , m_totalNumOLSs( 0 )
+#if JVET_R0191_ASPECT3
+  , m_numMultiLayeredOlss( 0 )
+#endif
   , m_numDpbParams( 0 )
   , m_sublayerDpbParamsPresentFlag( false )
   , m_targetOlsIdx( -1 )
@@ -2113,7 +2121,9 @@ void VPS::deriveOutputLayerSets()
 
   m_numLayersInOls[0] = 1;
   m_layerIdInOls[0][0] = m_vpsLayerId[0];
-
+#if JVET_R0191_ASPECT3
+  m_numMultiLayeredOlss = 0;
+#endif
   for( int i = 1; i < m_totalNumOLSs; i++ )
   {
     if( m_vpsEachLayerIsAnOlsFlag )
@@ -2142,6 +2152,13 @@ void VPS::deriveOutputLayerSets()
 
       m_numLayersInOls[i] = j;
     }
+#if JVET_R0191_ASPECT3
+    if( m_numLayersInOls[i] > 1 )
+    {
+      m_multiLayerOlsIdx[i] = m_numMultiLayeredOlss;
+      m_numMultiLayeredOlss++;
+    }
+#endif
   }
 }
 

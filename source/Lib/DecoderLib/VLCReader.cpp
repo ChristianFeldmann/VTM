@@ -1134,6 +1134,10 @@ void  HLSyntaxReader::parseVUI(VUI* pcVUI, SPS *pcSPS)
 
   uint32_t  symbol;
 
+#if JVET_R0090_VUI
+  READ_FLAG(symbol,  "vui_general_progressive_source_flag"          ); pcVUI->setProgressiveSourceFlag(symbol ? true : false);
+  READ_FLAG(symbol,  "vui_general_interlaced_source_flag"           ); pcVUI->setInterlacedSourceFlag(symbol ? true : false);
+#endif
   READ_FLAG( symbol, "vui_aspect_ratio_info_present_flag");           pcVUI->setAspectRatioInfoPresentFlag(symbol);
   if (pcVUI->getAspectRatioInfoPresentFlag())
   {
@@ -1161,10 +1165,6 @@ void  HLSyntaxReader::parseVUI(VUI* pcVUI, SPS *pcSPS)
     READ_FLAG(   symbol, "vui_video_full_range_flag");                    pcVUI->setVideoFullRangeFlag(symbol);
   }
 
-#if JVET_R0090_VUI
-  READ_FLAG(symbol,  "general_progressive_source_flag"          ); pcVUI->setProgressiveSourceFlag(symbol ? true : false);
-  READ_FLAG(symbol,  "general_interlaced_source_flag"           ); pcVUI->setInterlacedSourceFlag(symbol ? true : false);
-#endif
   READ_FLAG(     symbol, "vui_chroma_loc_info_present_flag");             pcVUI->setChromaLocInfoPresentFlag(symbol);
   if (pcVUI->getChromaLocInfoPresentFlag())
   {
@@ -1194,7 +1194,7 @@ void HLSyntaxReader::parseGeneralHrdParameters(GeneralHrdParams *hrd)
   READ_FLAG(symbol, "general_nal_hrd_parameters_present_flag");           hrd->setGeneralNalHrdParametersPresentFlag(symbol == 1 ? true : false);
   READ_FLAG(symbol, "general_vcl_hrd_parameters_present_flag");           hrd->setGeneralVclHrdParametersPresentFlag(symbol == 1 ? true : false);
   CHECK((hrd->getGeneralNalHrdParametersPresentFlag() == 0) && (hrd->getGeneralVclHrdParametersPresentFlag() == 0), "general_nal_hrd_params_present_flag and general_vcl_hrd_params_present_flag in each general_hrd_parameters( ) syntax structure shall not be both equal to 0.");
-  READ_FLAG(symbol, "general_same_pic_timing_in_all_ols_flag");           hrd->setGeneralSamPicTimingInAllOlsFlag(symbol == 1 ? true : false);
+  READ_FLAG(symbol, "general_same_pic_timing_in_all_ols_flag");           hrd->setGeneralSamePicTimingInAllOlsFlag(symbol == 1 ? true : false);
   READ_FLAG(symbol, "general_decoding_unit_hrd_params_present_flag");     hrd->setGeneralDecodingUnitHrdParamsPresentFlag(symbol == 1 ? true : false);
   if (hrd->getGeneralDecodingUnitHrdParamsPresentFlag())
   {
@@ -1349,6 +1349,13 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_CODE(4, uiCode, "sps_reserved_zero_4bits");
   CHECK(uiCode != 0, "sps_reserved_zero_4bits not equal to zero");
   READ_FLAG(uiCode, "sps_ptl_dpb_hrd_params_present_flag"); pcSPS->setPtlDpbHrdParamsPresentFlag(uiCode);
+
+#if JVET_R0275_SPS_PTL_DBP_HRD
+  if( !pcSPS->getVPSId() )
+  {
+    CHECK( !pcSPS->getPtlDpbHrdParamsPresentFlag(), "When sps_video_parameter_set_id is equal to 0, the value of sps_ptl_dpb_hrd_params_present_flag shall be equal to 1" );
+  }
+#endif
 
   if (pcSPS->getPtlDpbHrdParamsPresentFlag())
   {
@@ -2215,6 +2222,11 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
 
   pcVPS->deriveOutputLayerSets();
   READ_CODE(8, uiCode, "vps_num_ptls_minus1");        pcVPS->setNumPtls(uiCode + 1);
+#if JVET_R0191_ASPECT3
+  CHECK( uiCode >= pcVPS->getTotalNumOLSs(),"The value of vps_num_ptls_minus1 shall be less than TotalNumOlss");
+  std::vector<bool> isPTLReferred( pcVPS->getNumPtls(), false);
+#endif
+
   for (int i = 0; i < pcVPS->getNumPtls(); i++)
   {
     if(i > 0)
@@ -2268,12 +2280,26 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
 #endif
     else
       pcVPS->setOlsPtlIdx(i, 0);
+#if JVET_R0191_ASPECT3
+    isPTLReferred[pcVPS->getOlsPtlIdx(i)] = true;
+#endif
   }
+#if JVET_R0191_ASPECT3
+  for( int i = 0; i < pcVPS->getNumPtls(); i++ )
+  {
+    CHECK( !isPTLReferred[i],"Each profile_tier_level( ) syntax structure in the VPS shall be referred to by at least one value of vps_ols_ptl_idx[ i ] for i in the range of 0 to TotalNumOlss ? 1, inclusive");
+  }
+#endif
 
   if( !pcVPS->getAllIndependentLayersFlag() )
   {
     READ_UVLC( uiCode, "vps_num_dpb_params" ); pcVPS->m_numDpbParams = uiCode;
   }
+
+#if JVET_R0191_ASPECT3
+  CHECK( pcVPS->m_numDpbParams > pcVPS->getNumMultiLayeredOlss(),"The value of vps_num_dpb_params_minus1 shall be in the range of 0 to NumMultiLayerOlss ? 1, inclusive");
+  std::vector<bool> isDPBParamReferred(pcVPS->m_numDpbParams, false);
+#endif
 
   if( pcVPS->m_numDpbParams > 0 && pcVPS->getMaxSubLayers() > 1 )
   {
@@ -2333,8 +2359,21 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
       {
         READ_UVLC( uiCode, "ols_dpb_params_idx[i]" ); pcVPS->setOlsDpbParamsIdx( i, uiCode );
       }
+#if JVET_R0191_ASPECT3
+      else
+      {
+        pcVPS->setOlsDpbParamsIdx( i, 0 );
+      }
+      isDPBParamReferred[pcVPS->getOlsDpbParamsIdx(i)] = true;
+#endif
     }
   }
+#if JVET_R0191_ASPECT3
+  for( int i = 0; i < pcVPS->m_numDpbParams; i++ )
+  {
+    CHECK( !isDPBParamReferred[i],"Each dpb_parameters( ) syntax structure in the VPS shall be referred to by at least one value of vps_ols_dpb_params_idx[i] for i in the range of 0 to NumMultiLayerOlss ? 1, inclusive");
+  }
+#endif
   if (!pcVPS->getEachLayerIsAnOlsFlag())
   {
     READ_FLAG(uiCode, "vps_general_hrd_params_present_flag");  pcVPS->setVPSGeneralHrdParamsPresentFlag(uiCode);
@@ -2352,7 +2391,12 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
     }
 
     READ_UVLC(uiCode, "num_ols_hrd_params_minus1"); pcVPS->setNumOlsHrdParamsMinus1(uiCode);
+#if JVET_R0191_ASPECT3
+    CHECK( uiCode >= pcVPS->getNumMultiLayeredOlss(),"The value of vps_num_ols_hrd_params_minus1 shall be in the range of 0 to NumMultiLayerOlss ? 1, inclusive");
+    std::vector<bool> isHRDParamReferred( uiCode + 1, false);
+#else
     CHECK(uiCode >= pcVPS->getTotalNumOLSs(),"The value of num_ols_hrd_params_minus1 shall be in the range of 0 to TotalNumOlss - 1, inclusive");
+#endif
     pcVPS->m_olsHrdParams.clear();
     pcVPS->m_olsHrdParams.resize(pcVPS->getNumOlsHrdParamsMinus1(), std::vector<OlsHrdParams>(pcVPS->getMaxSubLayers()));
     for (int i = 0; i <= pcVPS->getNumOlsHrdParamsMinus1(); i++)
@@ -2394,7 +2438,16 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
       {
         pcVPS->setOlsHrdIdx(i, 0);
       }
+#if JVET_R0191_ASPECT3
+      isHRDParamReferred[pcVPS->getOlsHrdIdx(i)] = true;
+#endif
     }
+#if JVET_R0191_ASPECT3
+    for( int i = 0; i <= pcVPS->getNumOlsHrdParamsMinus1(); i++ )
+    {
+      CHECK( !isHRDParamReferred[i], "Each ols_hrd_parameters( ) syntax structure in the VPS shall be referred to by at least one value of vps_ols_hrd_idx[ i ] for i in the range of 1 to NumMultiLayerOlss ? 1, inclusive");
+    }
+#endif
   }
 
   READ_FLAG(uiCode, "vps_extension_flag");

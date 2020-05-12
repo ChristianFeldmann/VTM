@@ -690,6 +690,10 @@ void HLSWriter::codeVUI( const VUI *pcVUI, const SPS* pcSPS )
 #endif
 
 
+#if JVET_R0090_VUI
+  WRITE_FLAG(pcVUI->getProgressiveSourceFlag(),   "vui_general_progressive_source_flag"         );
+  WRITE_FLAG(pcVUI->getInterlacedSourceFlag(),    "vui_general_interlaced_source_flag"          );
+#endif
   WRITE_FLAG(pcVUI->getAspectRatioInfoPresentFlag(),            "vui_aspect_ratio_info_present_flag");
   if (pcVUI->getAspectRatioInfoPresentFlag())
   {
@@ -714,10 +718,6 @@ void HLSWriter::codeVUI( const VUI *pcVUI, const SPS* pcSPS )
     WRITE_CODE(pcVUI->getMatrixCoefficients(), 8,             "vui_matrix_coeffs");
     WRITE_FLAG(pcVUI->getVideoFullRangeFlag(),                "vui_video_full_range_flag");
   }
-#if JVET_R0090_VUI
-  WRITE_FLAG(pcVUI->getProgressiveSourceFlag(),   "general_progressive_source_flag"         );
-  WRITE_FLAG(pcVUI->getInterlacedSourceFlag(),    "general_interlaced_source_flag"          );
-#endif
   WRITE_FLAG(pcVUI->getChromaLocInfoPresentFlag(),              "vui_chroma_loc_info_present_flag");
   if (pcVUI->getChromaLocInfoPresentFlag())
   {
@@ -744,7 +744,7 @@ void HLSWriter::codeGeneralHrdparameters(const GeneralHrdParams * hrd)
   WRITE_CODE(hrd->getTimeScale(), 32, "time_scale");
   WRITE_FLAG(hrd->getGeneralNalHrdParametersPresentFlag() ? 1 : 0, "general_nal_hrd_parameters_present_flag");
   WRITE_FLAG(hrd->getGeneralVclHrdParametersPresentFlag() ? 1 : 0, "general_vcl_hrd_parameters_present_flag");
-  WRITE_FLAG(hrd->getGeneralSamPicTimingInAllOlsFlag() ? 1 : 0, "general_same_pic_timing_in_all_ols_flag");
+  WRITE_FLAG(hrd->getGeneralSamePicTimingInAllOlsFlag() ? 1 : 0, "general_same_pic_timing_in_all_ols_flag");
   WRITE_FLAG(hrd->getGeneralDecodingUnitHrdParamsPresentFlag() ? 1 : 0, "general_decoding_unit_hrd_params_present_flag");
   if (hrd->getGeneralDecodingUnitHrdParamsPresentFlag())
   {
@@ -821,6 +821,13 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   WRITE_CODE(pcSPS->getMaxTLayers() - 1, 3, "sps_max_sub_layers_minus1");
   WRITE_CODE(0,                          4, "sps_reserved_zero_4bits");
   WRITE_FLAG(pcSPS->getPtlDpbHrdParamsPresentFlag(), "sps_ptl_dpb_hrd_params_present_flag");
+
+#if JVET_R0275_SPS_PTL_DBP_HRD
+  if( !pcSPS->getVPSId() )
+  {
+    CHECK( !pcSPS->getPtlDpbHrdParamsPresentFlag(), "When sps_video_parameter_set_id is equal to 0, the value of sps_ptl_dpb_hrd_params_present_flag shall be equal to 1" );
+  }
+#endif
 
   if (pcSPS->getPtlDpbHrdParamsPresentFlag())
   {

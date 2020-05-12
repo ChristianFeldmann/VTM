@@ -354,6 +354,40 @@ void SEIWriter::xWriteSEIPictureTiming(const SEIPictureTiming& sei, const SEIBuf
     WRITE_FLAG( sei.m_cpbAltTimingInfoPresentFlag, "cpb_alt_timing_info_present_flag" );
     if( sei.m_cpbAltTimingInfoPresentFlag )
     {
+#if JVET_R0413_HRD_TIMING_INFORMATION
+      if (bp.m_bpNalCpbParamsPresentFlag)
+      {
+        for (int i = (bp.m_sublayerInitialCpbRemovalDelayPresentFlag ? 0 : bp.m_bpMaxSubLayers - 1); i <= bp.m_bpMaxSubLayers - 1; ++i)
+        {
+          for (int j = 0; j < bp.m_bpCpbCnt; j++)
+          {
+            WRITE_CODE(sei.m_nalCpbAltInitialRemovalDelayDelta[i][j], bp.m_initialCpbRemovalDelayLength,
+                       "nal_cpb_alt_initial_cpb_removal_delay_delta[ i ][ j ]");
+            WRITE_CODE(sei.m_nalCpbAltInitialRemovalOffsetDelta[i][j], bp.m_initialCpbRemovalDelayLength,
+                       "nal_cpb_alt_initial_cpb_removal_offset_delta[ i ][ j ]");
+          }
+          WRITE_CODE(sei.m_nalCpbDelayOffset[i], bp.m_initialCpbRemovalDelayLength, "nal_cpb_delay_offset[ i ]");
+          WRITE_CODE(sei.m_nalDpbDelayOffset[i], bp.m_initialCpbRemovalDelayLength, "nal_dpb_delay_offset[ i ]");
+        }
+      }
+
+      if (bp.m_bpVclCpbParamsPresentFlag)
+      {
+        for (int i = (bp.m_sublayerInitialCpbRemovalDelayPresentFlag ? 0 : bp.m_bpMaxSubLayers - 1);
+             i <= bp.m_bpMaxSubLayers - 1; ++i)
+        {
+          for (int j = 0; j < bp.m_bpCpbCnt; j++)
+          {
+            WRITE_CODE(sei.m_vclCpbAltInitialRemovalDelayDelta[i][j], bp.m_initialCpbRemovalDelayLength,
+                       "vcl_cpb_alt_initial_cpb_removal_delay_delta[ i ][ j ]");
+            WRITE_CODE(sei.m_vclCpbAltInitialRemovalOffsetDelta[i][j], bp.m_initialCpbRemovalDelayLength,
+                       "vcl_cpb_alt_initial_cpb_removal_offset_delta[ i ][ j ]");
+          }
+          WRITE_CODE(sei.m_vclCpbDelayOffset[i], bp.m_initialCpbRemovalDelayLength, "vcl_cpb_delay_offset[ i ]");
+          WRITE_CODE(sei.m_vclDpbDelayOffset[i], bp.m_initialCpbRemovalDelayLength, "vcl_dpb_delay_offset[ i ]");
+        }
+      }
+#else
       for (int i = (bp.m_sublayerInitialCpbRemovalDelayPresentFlag ? 0 : bp.m_bpMaxSubLayers - 1);
            i <= bp.m_bpMaxSubLayers - 1; ++i)
       {
@@ -367,6 +401,7 @@ void SEIWriter::xWriteSEIPictureTiming(const SEIPictureTiming& sei, const SEIBuf
         WRITE_CODE(sei.m_cpbDelayOffset[i], bp.m_initialCpbRemovalDelayLength, "cpb_delay_offset[ i ]");
         WRITE_CODE(sei.m_dpbDelayOffset[i], bp.m_initialCpbRemovalDelayLength, "dpb_delay_offset[ i ]");
       }
+#endif
     }
   }
   for( int i = temporalId; i < bp.m_bpMaxSubLayers - 1; i ++ )

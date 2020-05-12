@@ -658,6 +658,9 @@ protected:
   bool      m_DCIEnabled;                                     ///< enable Decoding Capability Information (DCI)
   bool      m_hrdParametersPresentFlag;                       ///< enable generation of HRD parameters
   bool      m_vuiParametersPresentFlag;                       ///< enable generation of VUI parameters
+#if JVET_Q0394_TIMING_SEI
+  bool      m_samePicTimingInAllOLS;                          ///< same picture timing SEI message is used in all OLS
+#endif
   bool      m_aspectRatioInfoPresentFlag;                     ///< Signals whether aspect_ratio_idc is present
   int       m_aspectRatioIdc;                                 ///< aspect_ratio_idc
   int       m_sarWidth;                                       ///< horizontal size of the sample aspect ratio

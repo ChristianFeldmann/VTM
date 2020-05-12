@@ -69,6 +69,9 @@
 
 #define JVET_R0166_SCALING_LISTS_CHROMA_444               1 // JVET-R0166: Scaling list for Chroma 444
 
+#define JVET_R0191_ASPECT3                                1 // JVET-R0191#3: Modify the upper range of vps_num_dpb_params and num_ols_hrd_params_minus1 to be total number of OLSs minus the number of single-layer OLSs
+                                                            //               Constrain that each PTL, DPB, and HRD params in VPS are referred to at least once
+
 #define R0324_PH_SYNTAX_CONDITION_MODIFY                  1 // JVET-R0324 add conditions on PH syntax to conder whether current pic is bi-predictive picture
 
 #define JVET_R0278_CONSTRAINT                             1 // JVET-R0278: ph_inter_slice_allowed_flag constraint
@@ -87,6 +90,8 @@
 
 #define JVET_R0277_RPL                                    1 // JVET-R0277: Modified condition for sh_num_ref_idx_active_override_flag, inference for sh_collocated_from_l0_flag equal to 1 for P-slices
 
+#define JVET_R0275_SPS_PTL_DBP_HRD                        1 // JVET-R0275: Modified constraint for sps_ptl_dpb_hrd_params_present_flag
+
 #define JVET_R0186_CLEANUP                                1 // JVET-R0186 aspect 1: Signal the pps_no_pic_partition_flag ahead in the PPS.
 
 #define JVET_R0225_SEPERATE_FLAGS_ALF_CHROMA              1 // Use two separate flags (one for Cb, one for Cr) to replace ph_alf_chroma_idc in PH and sh_alf_chroma_idc in SH
@@ -98,6 +103,8 @@
 #define JVET_R0437_BS_DERIVATION                          1 // JVET-R0437: fix the bS derivation for palette mode
 
 #define JVET_R0110_MIXED_LOSSLESS                         1 // JVET-R0110: Slice level mixed lossy/lossless coding: encoder only method
+
+#define JVET_R0267_IDR_RPL                                1 // JVET-R0267: Add RPL constraint for IDR picture
 
 #define JVET_R0330_CRS_CLIP_REM                           1 // JVET-R0330: Remove redundant clipping in chroma residual scaling factor derivation
 
@@ -155,7 +162,11 @@
 
 #define JVET_R0045_TS_MIN_QP_CLEANUP                      1 // JVET-R0045: Cleanup for signalling of minimum QP of transform skip
 
+#define JVET_Q0394_TIMING_SEI                             1 // JVET_Q0394: Picture timing for OLSs
+
 #define JVET_R0100                                        1 // JVET-R0100: Proposal 1 DUI Signalling and inference
+
+#define JVET_R0413_HRD_TIMING_INFORMATION                 1   // JVET-R0413: HRD timing parameters signalling
 
 //########### place macros to be be kept below this line ###############
 

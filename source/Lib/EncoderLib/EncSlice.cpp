@@ -1282,6 +1282,30 @@ void EncSlice::calCostSliceI(Picture* pcPic) // TODO: this only analyses the fir
   m_pcRateCtrl->getRCPic()->setTotalIntraCost(iSumHadSlice);
 }
 
+void EncSlice::calCostPictureI(Picture* picture)
+{
+  double         sumHadPicture = 0;
+  Slice * const  slice = picture->slices[getSliceSegmentIdx()];
+  const PreCalcValues& pcv = *picture->cs->pcv;
+  const SPS     &sps = *(slice->getSPS());
+  const int      shift = sps.getBitDepth(CHANNEL_TYPE_LUMA) - 8;
+  const int      offset = (shift>0) ? (1 << (shift - 1)) : 0;
+
+  for (uint32_t ctuIdx = 0; ctuIdx < picture->m_ctuNums; ctuIdx++)
+  {
+    Position pos((ctuIdx % pcv.widthInCtus) * pcv.maxCUWidth, (ctuIdx / pcv.widthInCtus) * pcv.maxCUHeight);
+
+    const int height = std::min(pcv.maxCUHeight, pcv.lumaHeight - pos.y);
+    const int width = std::min(pcv.maxCUWidth, pcv.lumaWidth - pos.x);
+    const CompArea blk(COMPONENT_Y, pcv.chrFormat, pos, Size(width, height));
+    int sumHad = m_pcCuEncoder->updateCtuDataISlice(picture->getOrigBuf(blk));
+
+    (m_pcRateCtrl->getRCPic()->getLCU(ctuIdx)).m_costIntra = (sumHad + offset) >> shift;
+    sumHadPicture += (m_pcRateCtrl->getRCPic()->getLCU(ctuIdx)).m_costIntra;
+  }
+  m_pcRateCtrl->getRCPic()->setTotalIntraCost(sumHadPicture);
+}
+
 /** \param pcPic   picture class
  */
 void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, const bool bFastDeltaQP )

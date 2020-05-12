@@ -498,6 +498,7 @@ uint32_t BitstreamExtractorApp::decode()
         }
         else
         {
+          pps->initRectSliceMap(sps);
           pps->initSubPic(*sps);
           xPrintSubPicInfo (pps);
           if (m_subPicId >= 0)

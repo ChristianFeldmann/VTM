@@ -4065,7 +4065,9 @@ bool             operator == (const ConstraintInfo& op1, const ConstraintInfo& o
   if( op1.m_noBcwConstraintFlag                          != op2.m_noBcwConstraintFlag                            ) return false;
   if( op1.m_noIbcConstraintFlag                          != op2.m_noIbcConstraintFlag                            ) return false;
   if( op1.m_noCiipConstraintFlag                         != op2.m_noCiipConstraintFlag                           ) return false;
+#if !JVET_R0214_MMVD_SYNTAX_MODIFICATION
   if( op1.m_noFPelMmvdConstraintFlag                     != op2.m_noFPelMmvdConstraintFlag                       ) return false;
+#endif
   if( op1.m_noLadfConstraintFlag                         != op2.m_noLadfConstraintFlag                           ) return false;
   if( op1.m_noTransformSkipConstraintFlag                != op2.m_noTransformSkipConstraintFlag                  ) return false;
   if( op1.m_noBDPCMConstraintFlag                        != op2.m_noBDPCMConstraintFlag                          ) return false;

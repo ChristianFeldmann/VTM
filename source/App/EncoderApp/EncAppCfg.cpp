@@ -115,7 +115,9 @@ EncAppCfg::EncAppCfg()
 , m_bNoBcwConstraintFlag(false)
 , m_noIbcConstraintFlag(false)
 , m_bNoCiipConstraintFlag(false)
+#if !JVET_R0214_MMVD_SYNTAX_MODIFICATION
 , m_noFPelMmvdConstraintFlag(false)
+#endif
 , m_noGeoConstraintFlag(false)
 , m_bNoLadfConstraintFlag(false)
 , m_noTransformSkipConstraintFlag(false)

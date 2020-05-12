@@ -1100,6 +1100,12 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
     WRITE_FLAG(pcSPS->getDmvrControlPresentFlag() ? 1 : 0,                            "sps_dmvr_pic_present_flag");
   }
   WRITE_FLAG(pcSPS->getUseMMVD() ? 1 : 0,                                             "sps_mmvd_enabled_flag");
+#if JVET_R0214_MMVD_SYNTAX_MODIFICATION
+  if (pcSPS->getUseMMVD())
+  {
+    WRITE_FLAG(pcSPS->getFpelMmvdEnabledFlag() ? 1 : 0,                               "sps_mmvd_fullpel_only_flag");
+  }
+#endif
   WRITE_FLAG( pcSPS->getUseISP() ? 1 : 0,                                             "sps_isp_enabled_flag");
   WRITE_FLAG( pcSPS->getUseMRL() ? 1 : 0,                                             "sps_mrl_enabled_flag");
   WRITE_FLAG( pcSPS->getUseMIP() ? 1 : 0,                                             "sps_mip_enabled_flag");
@@ -1164,12 +1170,12 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   }
   // KJS: sps_ciip_enabled_flag
   WRITE_FLAG( pcSPS->getUseCiip() ? 1 : 0,                                                  "sps_ciip_enabled_flag" );
-
+#if !JVET_R0214_MMVD_SYNTAX_MODIFICATION
   if ( pcSPS->getUseMMVD() )
   {
     WRITE_FLAG( pcSPS->getFpelMmvdEnabledFlag() ? 1 : 0,                            "sps_fpel_mmvd_enabled_flag" );
   }
-
+#endif
   if (pcSPS->getMaxNumMergeCand() >= 2)
   {
     WRITE_FLAG(pcSPS->getUseGeo() ? 1 : 0, "sps_gpm_enabled_flag");
@@ -2677,7 +2683,9 @@ void  HLSWriter::codeConstraintInfo  ( const ConstraintInfo* cinfo )
   WRITE_FLAG(cinfo->getNoBcwConstraintFlag() ? 1 : 0, "no_bcw_constraint_flag");
   WRITE_FLAG(cinfo->getNoIbcConstraintFlag() ? 1 : 0, "no_ibc_constraint_flag");
   WRITE_FLAG(cinfo->getNoCiipConstraintFlag() ? 1 : 0, "no_ciip_constraint_flag");
+#if !JVET_R0214_MMVD_SYNTAX_MODIFICATION
   WRITE_FLAG(cinfo->getNoFPelMmvdConstraintFlag() ? 1 : 0, "no_fpel_mmvd_constraint_flag");
+#endif
   WRITE_FLAG(cinfo->getNoGeoConstraintFlag() ? 1 : 0, "no_gpm_constraint_flag");
   WRITE_FLAG(cinfo->getNoLadfConstraintFlag() ? 1 : 0, "no_ladf_constraint_flag");
   WRITE_FLAG(cinfo->getNoTransformSkipConstraintFlag() ? 1 : 0, "no_transform_skip_constraint_flag");

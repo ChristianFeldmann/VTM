@@ -589,12 +589,12 @@ uint32_t BitstreamExtractorApp::decode()
             if (sei->payloadType() == SEI::SCALABLE_NESTING)
             {
               SEIScalableNesting *seiNesting = (SEIScalableNesting *)sei;
-              if (seiNesting->m_nestingOlsFlag == 1)
+              if (seiNesting->m_snOlsFlag == 1)
               {
                 bool targetOlsIdxInNestingAppliedOls = false;
-                for (uint32_t i = 0; i <= seiNesting->m_nestingNumOlssMinus1; i++)
+                for (uint32_t i = 0; i <= seiNesting->m_snNumOlssMinus1; i++)
                 {
-                  if (seiNesting->m_nestingOlsIdx[i] == m_targetOlsIdx)
+                  if (seiNesting->m_snOlsIdx[i] == m_targetOlsIdx)
                   {
                     targetOlsIdxInNestingAppliedOls = true;
                     break;

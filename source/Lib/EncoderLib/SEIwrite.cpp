@@ -492,24 +492,24 @@ void SEIWriter::xWriteSEIDependentRAPIndication(const SEIDependentRAPIndication&
 
 void SEIWriter::xWriteSEIScalableNesting(OutputBitstream& bs, const SEIScalableNesting& sei, const SPS *sps)
 {
-  WRITE_FLAG(sei.m_nestingOlsFlag, "nesting_ols_flag");
-  if (sei.m_nestingOlsFlag)
+  WRITE_FLAG(sei.m_snOlsFlag, "sn_ols_flag");
+  if (sei.m_snOlsFlag)
   {
-    WRITE_UVLC(sei.m_nestingNumOlssMinus1, "nesting_num_olss_minus1");
-    for (uint32_t i = 0; i <= sei.m_nestingNumOlssMinus1; i++)
+    WRITE_UVLC(sei.m_snNumOlssMinus1, "sn_num_olss_minus1");
+    for (uint32_t i = 0; i <= sei.m_snNumOlssMinus1; i++)
     {
-      WRITE_UVLC(sei.m_nestingOlsIdxDeltaMinus1[i], "nesting_ols_idx_delta_minus1[i]");
+      WRITE_UVLC(sei.m_snOlsIdxDeltaMinus1[i], "sn_ols_idx_delta_minus1[i]");
     }
   }
   else
   {
-    WRITE_FLAG(sei.m_nestingAllLayersFlag, "nesting_all_layers_flag");
-    if (!sei.m_nestingAllLayersFlag)
+    WRITE_FLAG(sei.m_snAllLayersFlag, "sn_all_layers_flag");
+    if (!sei.m_snAllLayersFlag)
     {
-      WRITE_UVLC(sei.m_nestingNumLayersMinus1, "nesting_num_layers");
-      for (uint32_t i = 0; i <= sei.m_nestingNumLayersMinus1; i++)
+      WRITE_UVLC(sei.m_snNumLayersMinus1, "sn_num_layers");
+      for (uint32_t i = 0; i <= sei.m_snNumLayersMinus1; i++)
       {
-        WRITE_CODE(sei.m_nestingLayerId[i], 6, "nesting_layer_id");
+        WRITE_CODE(sei.m_snLayerId[i], 6, "sn_layer_id");
       }
     }
   }
@@ -517,7 +517,7 @@ void SEIWriter::xWriteSEIScalableNesting(OutputBitstream& bs, const SEIScalableN
   // byte alignment
   while (m_pcBitIf->getNumberOfWrittenBits() % 8 != 0)
   {
-    WRITE_FLAG(0, "nesting_zero_bit");
+    WRITE_FLAG(0, "sn_zero_bit");
   }
 
   // write nested SEI messages

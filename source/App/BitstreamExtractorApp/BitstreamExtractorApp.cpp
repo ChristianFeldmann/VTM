@@ -46,7 +46,7 @@
 #include "EncoderLib/AnnexBwrite.h"
 
 BitstreamExtractorApp::BitstreamExtractorApp()
-:m_vpsId(-1)
+:m_vpsId(0)
 #if JVET_Q0394_TIMING_SEI
 , m_removeTimingSEI (false)
 #endif
@@ -426,28 +426,27 @@ uint32_t BitstreamExtractorApp::decode()
       if (m_targetOlsIdx >= 0)
       {
         // if there is no VPS nal unit, there shall be one OLS and one layer.
-        if (m_vpsId == -1)
+        if (m_vpsId == 0)
         {
           CHECK(m_targetOlsIdx != 0, "only one OLS and one layer exist, but target olsIdx is not equal to zero");
-          vps = new VPS();
-          vps->setNumLayersInOls(0, 1);
-          vps->setLayerIdInOls(0, 0, nalu.m_nuhLayerId);
         }
-        else
+        // Remove NAL units with nal_unit_type not equal to any of VPS_NUT, DPS_NUT, and EOB_NUT and with nuh_layer_id not included in the list LayerIdInOls[targetOlsIdx].
+        NalUnitType t = nalu.m_nalUnitType;
+        bool isSpecialNalTypes = t == NAL_UNIT_VPS || t == NAL_UNIT_DCI || t == NAL_UNIT_EOB;
+        vps = m_parameterSetManager.getVPS(m_vpsId);
+        if (m_vpsId == 0)
         {
-          // Remove NAL units with nal_unit_type not equal to any of VPS_NUT, DPS_NUT, and EOB_NUT and with nuh_layer_id not included in the list LayerIdInOls[targetOlsIdx].
-          NalUnitType t = nalu.m_nalUnitType;
-          bool isSpecialNalTypes = t == NAL_UNIT_VPS || t == NAL_UNIT_DCI || t == NAL_UNIT_EOB;
-          vps = m_parameterSetManager.getVPS(m_vpsId);
-          uint32_t numOlss = vps->getNumOutputLayerSets();
-          CHECK(m_targetOlsIdx <0  || m_targetOlsIdx >= numOlss, "target Ols shall be in the range of OLSs specified by the VPS");
-          std::vector<int> LayerIdInOls = vps->getLayerIdsInOls(m_targetOlsIdx);
-          bool isIncludedInTargetOls = std::find(LayerIdInOls.begin(), LayerIdInOls.end(), nalu.m_nuhLayerId) != LayerIdInOls.end();
-          writeInpuNalUnitToStream &= (isSpecialNalTypes || isIncludedInTargetOls);
-#if JVET_Q0394_TIMING_SEI
-          m_removeTimingSEI = !vps->getGeneralHrdParameters()->getGeneralSamePicTimingInAllOlsFlag();
-#endif
+          // this initialization can be removed once the dummy VPS is properly initialized in the parameter set manager
+          vps->deriveOutputLayerSets();
         }
+        uint32_t numOlss = vps->getNumOutputLayerSets();
+        CHECK(m_targetOlsIdx <0  || m_targetOlsIdx >= numOlss, "target Ols shall be in the range of OLSs specified by the VPS");
+        std::vector<int> LayerIdInOls = vps->getLayerIdsInOls(m_targetOlsIdx);
+        bool isIncludedInTargetOls = std::find(LayerIdInOls.begin(), LayerIdInOls.end(), nalu.m_nuhLayerId) != LayerIdInOls.end();
+        writeInpuNalUnitToStream &= (isSpecialNalTypes || isIncludedInTargetOls);
+#if JVET_Q0394_TIMING_SEI
+        m_removeTimingSEI = !vps->getGeneralHrdParameters()->getGeneralSamePicTimingInAllOlsFlag();
+#endif
       }
       if( nalu.m_nalUnitType == NAL_UNIT_SPS )
       {
@@ -498,6 +497,21 @@ uint32_t BitstreamExtractorApp::decode()
         }
         else
         {
+          if( pps->getNoPicPartitionFlag() )
+          {
+            pps->resetTileSliceInfo();
+            pps->setLog2CtuSize( ceilLog2(sps->getCTUSize()) );
+            pps->setNumExpTileColumns(1);
+            pps->setNumExpTileRows(1);
+            pps->addTileColumnWidth( pps->getPicWidthInCtu( ) );
+            pps->addTileRowHeight( pps->getPicHeightInCtu( ) );
+            pps->initTiles();
+            pps->setRectSliceFlag( 1 );
+            pps->setNumSlicesInPic( 1 );
+            pps->initRectSlices( );
+            pps->setTileIdxDeltaPresentFlag( 0 );
+            pps->setSliceTileIdx( 0, 0 );
+          }
           pps->initRectSliceMap(sps);
           pps->initSubPic(*sps);
           xPrintSubPicInfo (pps);

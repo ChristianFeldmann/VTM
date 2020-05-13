@@ -718,13 +718,25 @@ void SEIReader::xParseSEIPictureTiming(SEIPictureTiming& sei, uint32_t payloadSi
       {
         sei.m_nalCpbAltInitialRemovalDelayDelta.resize(bp.m_bpMaxSubLayers);
         sei.m_nalCpbAltInitialRemovalOffsetDelta.resize(bp.m_bpMaxSubLayers);
+#if JVET_R0101_SEI_INFERENCE_RULES
+        for (int i = 0; i <= bp.m_bpMaxSubLayers - 1; ++i)
+        {
+          sei.m_nalCpbAltInitialRemovalDelayDelta[i].resize(bp.m_bpCpbCnt, 0);
+          sei.m_nalCpbAltInitialRemovalOffsetDelta[i].resize(bp.m_bpCpbCnt, 0);
+        }
+        sei.m_nalCpbDelayOffset.resize(bp.m_bpMaxSubLayers, 0);
+        sei.m_nalDpbDelayOffset.resize(bp.m_bpMaxSubLayers, 0);
+#else
         sei.m_nalCpbDelayOffset.resize(bp.m_bpMaxSubLayers);
         sei.m_nalDpbDelayOffset.resize(bp.m_bpMaxSubLayers);
+#endif
         for (int i = (bp.m_sublayerInitialCpbRemovalDelayPresentFlag ? 0 : bp.m_bpMaxSubLayers - 1);
              i <= bp.m_bpMaxSubLayers - 1; ++i)
         {
+#if !JVET_R0101_SEI_INFERENCE_RULES
           sei.m_nalCpbAltInitialRemovalDelayDelta[i].resize(bp.m_bpCpbCnt);
           sei.m_nalCpbAltInitialRemovalOffsetDelta[i].resize(bp.m_bpCpbCnt);
+#endif
           for (int j = 0; j < bp.m_bpCpbCnt; j++)
           {
             sei_read_code(pDecodedMessageOutputStream, bp.m_initialCpbRemovalDelayLength, symbol,
@@ -745,13 +757,25 @@ void SEIReader::xParseSEIPictureTiming(SEIPictureTiming& sei, uint32_t payloadSi
       {
         sei.m_vclCpbAltInitialRemovalDelayDelta.resize(bp.m_bpMaxSubLayers);
         sei.m_vclCpbAltInitialRemovalOffsetDelta.resize(bp.m_bpMaxSubLayers);
+#if JVET_R0101_SEI_INFERENCE_RULES
+        for (int i = 0; i <= bp.m_bpMaxSubLayers - 1; ++i)
+        {
+          sei.m_vclCpbAltInitialRemovalDelayDelta[i].resize(bp.m_bpCpbCnt, 0);
+          sei.m_vclCpbAltInitialRemovalOffsetDelta[i].resize(bp.m_bpCpbCnt, 0);
+        }
+        sei.m_vclCpbDelayOffset.resize(bp.m_bpMaxSubLayers, 0);
+        sei.m_vclDpbDelayOffset.resize(bp.m_bpMaxSubLayers, 0);
+#else
         sei.m_vclCpbDelayOffset.resize(bp.m_bpMaxSubLayers);
         sei.m_vclDpbDelayOffset.resize(bp.m_bpMaxSubLayers);
+#endif
         for (int i = (bp.m_sublayerInitialCpbRemovalDelayPresentFlag ? 0 : bp.m_bpMaxSubLayers - 1);
              i <= bp.m_bpMaxSubLayers - 1; ++i)
         {
+#if !JVET_R0101_SEI_INFERENCE_RULES
           sei.m_vclCpbAltInitialRemovalDelayDelta[i].resize(bp.m_bpCpbCnt);
           sei.m_vclCpbAltInitialRemovalOffsetDelta[i].resize(bp.m_bpCpbCnt);
+#endif
           for (int j = 0; j < bp.m_bpCpbCnt; j++)
           {
             sei_read_code(pDecodedMessageOutputStream, bp.m_initialCpbRemovalDelayLength, symbol,

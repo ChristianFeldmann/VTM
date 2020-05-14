@@ -1001,56 +1001,62 @@ void EncLib::xInitVPS( const SPS& sps )
     m_vps->m_dpbMaxTemporalId.resize( m_vps->m_numDpbParams );
   }
 
-  for( int olsIdx = 0; olsIdx < m_vps->m_numOutputLayersInOls.size(); olsIdx++ )
+  for( int olsIdx = 0, dpbIdx = 0; olsIdx < m_vps->m_numOutputLayersInOls.size(); olsIdx++ )
   {
-    if( std::find( m_vps->m_layerIdInOls[olsIdx].begin(), m_vps->m_layerIdInOls[olsIdx].end(), m_layerId ) != m_vps->m_layerIdInOls[olsIdx].end() )
-    {
-      m_vps->setOlsDpbPicWidth( olsIdx, std::max<int>( sps.getMaxPicWidthInLumaSamples(), m_vps->getOlsDpbPicSize( olsIdx ).width ) );
-      m_vps->setOlsDpbPicHeight( olsIdx, std::max<int>( sps.getMaxPicHeightInLumaSamples(), m_vps->getOlsDpbPicSize( olsIdx ).height ) );
-    }
+    if ( m_vps->getNumLayersInOls(olsIdx) > 1 ) { 
+      if( std::find( m_vps->m_layerIdInOls[olsIdx].begin(), m_vps->m_layerIdInOls[olsIdx].end(), m_layerId ) != m_vps->m_layerIdInOls[olsIdx].end() )
+      {
+        m_vps->setOlsDpbPicWidth( olsIdx, std::max<int>( sps.getMaxPicWidthInLumaSamples(), m_vps->getOlsDpbPicSize( olsIdx ).width ) );
+        m_vps->setOlsDpbPicHeight( olsIdx, std::max<int>( sps.getMaxPicHeightInLumaSamples(), m_vps->getOlsDpbPicSize( olsIdx ).height ) );
+      }
 
-    m_vps->setOlsDpbParamsIdx( olsIdx, olsIdx );
+      m_vps->setOlsDpbParamsIdx( olsIdx, dpbIdx );
+      dpbIdx++;
+    }
   }
 
-  for( int i = 0; i < m_vps->m_numDpbParams; i++ )
+  //for( int i = 0; i < m_vps->m_numDpbParams; i++ )
+  for( int i = 0; i < m_vps->m_numOutputLayersInOls.size(); i++ )
   {
-    int olsIdx = i;
+    if ( m_vps->getNumLayersInOls(i) > 1 ) { 
+      int dpbIdx = m_vps->getOlsDpbParamsIdx( i );
 
-    if( m_vps->getMaxSubLayers() == 1 )
-    {
-      // When vps_max_sublayers_minus1 is equal to 0, the value of dpb_max_temporal_id[ i ] is inferred to be equal to 0.
-      m_vps->m_dpbMaxTemporalId[i] = 0;
-    }
-    else
-    {
-      if( m_vps->getAllLayersSameNumSublayersFlag() )
+      if( m_vps->getMaxSubLayers() == 1 )
       {
-        // When vps_max_sublayers_minus1 is greater than 0 and vps_all_layers_same_num_sublayers_flag is equal to 1, the value of dpb_max_temporal_id[ i ] is inferred to be equal to vps_max_sublayers_minus1.
-        m_vps->m_dpbMaxTemporalId[i] = m_vps->getMaxSubLayers() - 1;
+        // When vps_max_sublayers_minus1 is equal to 0, the value of dpb_max_temporal_id[ dpbIdx ] is inferred to be equal to 0.
+        m_vps->m_dpbMaxTemporalId[dpbIdx] = 0;
       }
       else
       {
-        m_vps->m_dpbMaxTemporalId[i] = m_maxTempLayer;
+        if( m_vps->getAllLayersSameNumSublayersFlag() )
+        {
+          // When vps_max_sublayers_minus1 is greater than 0 and vps_all_layers_same_num_sublayers_flag is equal to 1, the value of dpb_max_temporal_id[ dpbIdx ] is inferred to be equal to vps_max_sublayers_minus1.
+          m_vps->m_dpbMaxTemporalId[dpbIdx] = m_vps->getMaxSubLayers() - 1;
+        }
+        else
+        {
+          m_vps->m_dpbMaxTemporalId[dpbIdx] = m_maxTempLayer;
+        }
       }
-    }
+    
+      for( int j = ( m_vps->m_sublayerDpbParamsPresentFlag ? 0 : m_vps->m_dpbMaxTemporalId[dpbIdx] ); j <= m_vps->m_dpbMaxTemporalId[dpbIdx]; j++ )
+      {
+        m_vps->m_dpbParameters[dpbIdx].m_maxDecPicBuffering[j] = profileLevelTierFeatures.getMaxDpbSize( m_vps->getOlsDpbPicSize( i ).width * m_vps->getOlsDpbPicSize( i ).height );
+        m_vps->m_dpbParameters[dpbIdx].m_numReorderPics[j] = m_vps->m_dpbParameters[dpbIdx].m_maxDecPicBuffering[j];
+        m_vps->m_dpbParameters[dpbIdx].m_maxLatencyIncreasePlus1[j] = 0;
+      }
 
-    for( int j = ( m_vps->m_sublayerDpbParamsPresentFlag ? 0 : m_vps->m_dpbMaxTemporalId[i] ); j <= m_vps->m_dpbMaxTemporalId[i]; j++ )
-    {
-      m_vps->m_dpbParameters[i].m_maxDecPicBuffering[j] = profileLevelTierFeatures.getMaxDpbSize( m_vps->getOlsDpbPicSize( olsIdx ).width * m_vps->getOlsDpbPicSize( olsIdx ).height );
-      m_vps->m_dpbParameters[i].m_numReorderPics[j] = m_vps->m_dpbParameters[i].m_maxDecPicBuffering[j];
-      m_vps->m_dpbParameters[i].m_maxLatencyIncreasePlus1[j] = 0;
-    }
+      for( int j = ( m_vps->m_sublayerDpbParamsPresentFlag ? m_vps->m_dpbMaxTemporalId[dpbIdx] : 0 ); j < m_vps->m_dpbMaxTemporalId[dpbIdx]; j++ )
+      {
+        // When max_dec_pic_buffering_minus1[ dpbIdx ] is not present for dpbIdx in the range of 0 to maxSubLayersMinus1 - 1, inclusive, due to subLayerInfoFlag being equal to 0, it is inferred to be equal to max_dec_pic_buffering_minus1[ maxSubLayersMinus1 ].
+        m_vps->m_dpbParameters[dpbIdx].m_maxDecPicBuffering[j] = m_vps->m_dpbParameters[dpbIdx].m_maxDecPicBuffering[m_vps->m_dpbMaxTemporalId[dpbIdx]];
 
-    for( int j = ( m_vps->m_sublayerDpbParamsPresentFlag ? m_vps->m_dpbMaxTemporalId[i] : 0 ); j < m_vps->m_dpbMaxTemporalId[i]; j++ )
-    {
-      // When max_dec_pic_buffering_minus1[ i ] is not present for i in the range of 0 to maxSubLayersMinus1 - 1, inclusive, due to subLayerInfoFlag being equal to 0, it is inferred to be equal to max_dec_pic_buffering_minus1[ maxSubLayersMinus1 ].
-      m_vps->m_dpbParameters[i].m_maxDecPicBuffering[j] = m_vps->m_dpbParameters[i].m_maxDecPicBuffering[m_vps->m_dpbMaxTemporalId[i]];
+        // When max_num_reorder_pics[ dpbIdx ] is not present for dpbIdx in the range of 0 to maxSubLayersMinus1 - 1, inclusive, due to subLayerInfoFlag being equal to 0, it is inferred to be equal to max_num_reorder_pics[ maxSubLayersMinus1 ].
+        m_vps->m_dpbParameters[dpbIdx].m_numReorderPics[j] = m_vps->m_dpbParameters[dpbIdx].m_numReorderPics[m_vps->m_dpbMaxTemporalId[dpbIdx]];
 
-      // When max_num_reorder_pics[ i ] is not present for i in the range of 0 to maxSubLayersMinus1 - 1, inclusive, due to subLayerInfoFlag being equal to 0, it is inferred to be equal to max_num_reorder_pics[ maxSubLayersMinus1 ].
-      m_vps->m_dpbParameters[i].m_numReorderPics[j] = m_vps->m_dpbParameters[i].m_numReorderPics[m_vps->m_dpbMaxTemporalId[i]];
-
-      // When max_latency_increase_plus1[ i ] is not present for i in the range of 0 to maxSubLayersMinus1 - 1, inclusive, due to subLayerInfoFlag being equal to 0, it is inferred to be equal to max_latency_increase_plus1[ maxSubLayersMinus1 ].
-      m_vps->m_dpbParameters[i].m_maxLatencyIncreasePlus1[j] = m_vps->m_dpbParameters[i].m_maxLatencyIncreasePlus1[m_vps->m_dpbMaxTemporalId[i]];
+        // When max_latency_increase_plus1[ dpbIdx ] is not present for dpbIdx in the range of 0 to maxSubLayersMinus1 - 1, inclusive, due to subLayerInfoFlag being equal to 0, it is inferred to be equal to max_latency_increase_plus1[ maxSubLayersMinus1 ].
+        m_vps->m_dpbParameters[dpbIdx].m_maxLatencyIncreasePlus1[j] = m_vps->m_dpbParameters[dpbIdx].m_maxLatencyIncreasePlus1[m_vps->m_dpbMaxTemporalId[dpbIdx]];
+      }
     }
   }
 }

@@ -1347,10 +1347,14 @@ void HLSWriter::codeDCI(const DCI* dci)
 #if ENABLE_TRACING
   xTraceDCIHeader();
 #endif
+#if JVET_R0108_DCI_SIGNALING
+  WRITE_CODE(0, 4, "dci_reserved_zero_4bits");
+#else
   WRITE_CODE(dci->getMaxSubLayersMinus1(), 3, "dci_max_sub_layers_minus1");
   WRITE_CODE(0, 1, "dci_reserved_zero_bit");
+#endif
   uint32_t numPTLs = (uint32_t)dci->getNumPTLs();
-  CHECK(numPTLs < 1, "At least one PTL must be available in DCI");
+  CHECK( (numPTLs < 1) || ( numPTLs > 15), "dci_num_plts_minus1 shall be in the range of 0 - 14");
 
   WRITE_CODE(numPTLs - 1, 4, "dci_num_ptls_minus1");
 

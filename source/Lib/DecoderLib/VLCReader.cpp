@@ -2114,8 +2114,12 @@ void HLSyntaxReader::parseDCI(DCI* dci)
 #endif
   uint32_t  symbol;
 
+#if JVET_R0108_DCI_SIGNALING
+  READ_CODE(4, symbol, "dci_reserved_zero_4bits");
+#else
   READ_CODE(3, symbol, "dci_max_sub_layers_minus1");          dci->setMaxSubLayersMinus1(symbol);
   READ_CODE(1, symbol, "dci_reserved_zero_bit");              CHECK(symbol != 0, "dci_reserved_zero_bit must be equal to zero");
+#endif
 
   uint32_t numPTLs;
   READ_CODE(4, numPTLs, "dci_num_ptls_minus1");

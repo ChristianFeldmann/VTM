@@ -985,10 +985,10 @@ void EncLib::xInitVPS( const SPS& sps )
   m_vps->deriveOutputLayerSets();
   m_vps->deriveTargetOutputLayerSet( m_vps->m_targetOlsIdx );
 
-  // number of the DPB parameters is set equal to the number of OLS
-  if( !m_vps->getAllIndependentLayersFlag() )
+  // number of the DPB parameters is set equal to the number of OLS containing multi layers
+  if( !m_vps->getEachLayerIsAnOlsFlag() )
   {
-    m_vps->m_numDpbParams = m_vps->m_totalNumOLSs;
+    m_vps->m_numDpbParams = m_vps->getNumMultiLayeredOlss();
   }
 
   if( m_vps->m_dpbParameters.size() != m_vps->m_numDpbParams )

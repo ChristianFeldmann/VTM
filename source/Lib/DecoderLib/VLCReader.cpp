@@ -2310,7 +2310,7 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
   }
 
 #if JVET_R0191_ASPECT3
-  CHECK( pcVPS->m_numDpbParams > pcVPS->getNumMultiLayeredOlss(),"The value of vps_num_dpb_params_minus1 shall be in the range of 0 to NumMultiLayerOlss ? 1, inclusive");
+  CHECK( pcVPS->m_numDpbParams > pcVPS->getNumMultiLayeredOlss(),"The value of vps_num_dpb_params_minus1 shall be in the range of 0 to NumMultiLayerOlss - 1, inclusive");
   std::vector<bool> isDPBParamReferred(pcVPS->m_numDpbParams, false);
 #endif
 
@@ -2384,7 +2384,7 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
 #if JVET_R0191_ASPECT3
   for( int i = 0; i < pcVPS->m_numDpbParams; i++ )
   {
-    CHECK( !isDPBParamReferred[i],"Each dpb_parameters( ) syntax structure in the VPS shall be referred to by at least one value of vps_ols_dpb_params_idx[i] for i in the range of 0 to NumMultiLayerOlss ? 1, inclusive");
+    CHECK( !isDPBParamReferred[i],"Each dpb_parameters( ) syntax structure in the VPS shall be referred to by at least one value of vps_ols_dpb_params_idx[i] for i in the range of 0 to NumMultiLayerOlss - 1, inclusive");
   }
 #endif
   if (!pcVPS->getEachLayerIsAnOlsFlag())
@@ -2405,7 +2405,7 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
 
     READ_UVLC(uiCode, "num_ols_hrd_params_minus1"); pcVPS->setNumOlsHrdParamsMinus1(uiCode);
 #if JVET_R0191_ASPECT3
-    CHECK( uiCode >= pcVPS->getNumMultiLayeredOlss(),"The value of vps_num_ols_hrd_params_minus1 shall be in the range of 0 to NumMultiLayerOlss ? 1, inclusive");
+    CHECK( uiCode >= pcVPS->getNumMultiLayeredOlss(),"The value of vps_num_ols_hrd_params_minus1 shall be in the range of 0 to NumMultiLayerOlss - 1, inclusive");
     std::vector<bool> isHRDParamReferred( uiCode + 1, false);
 #else
     CHECK(uiCode >= pcVPS->getTotalNumOLSs(),"The value of num_ols_hrd_params_minus1 shall be in the range of 0 to TotalNumOlss - 1, inclusive");
@@ -2458,7 +2458,7 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
 #if JVET_R0191_ASPECT3
     for( int i = 0; i <= pcVPS->getNumOlsHrdParamsMinus1(); i++ )
     {
-      CHECK( !isHRDParamReferred[i], "Each ols_hrd_parameters( ) syntax structure in the VPS shall be referred to by at least one value of vps_ols_hrd_idx[ i ] for i in the range of 1 to NumMultiLayerOlss ? 1, inclusive");
+      CHECK( !isHRDParamReferred[i], "Each ols_hrd_parameters( ) syntax structure in the VPS shall be referred to by at least one value of vps_ols_hrd_idx[ i ] for i in the range of 1 to NumMultiLayerOlss - 1, inclusive");
     }
 #endif
   }

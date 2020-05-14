@@ -1003,7 +1003,8 @@ void EncLib::xInitVPS( const SPS& sps )
 
   for( int olsIdx = 0, dpbIdx = 0; olsIdx < m_vps->m_numOutputLayersInOls.size(); olsIdx++ )
   {
-    if ( m_vps->getNumLayersInOls(olsIdx) > 1 ) { 
+    if ( m_vps->getNumLayersInOls(olsIdx) > 1 )
+    { 
       if( std::find( m_vps->m_layerIdInOls[olsIdx].begin(), m_vps->m_layerIdInOls[olsIdx].end(), m_layerId ) != m_vps->m_layerIdInOls[olsIdx].end() )
       {
         m_vps->setOlsDpbPicWidth( olsIdx, std::max<int>( sps.getMaxPicWidthInLumaSamples(), m_vps->getOlsDpbPicSize( olsIdx ).width ) );
@@ -1018,7 +1019,8 @@ void EncLib::xInitVPS( const SPS& sps )
   //for( int i = 0; i < m_vps->m_numDpbParams; i++ )
   for( int i = 0; i < m_vps->m_numOutputLayersInOls.size(); i++ )
   {
-    if ( m_vps->getNumLayersInOls(i) > 1 ) { 
+    if ( m_vps->getNumLayersInOls(i) > 1 )
+    { 
       int dpbIdx = m_vps->getOlsDpbParamsIdx( i );
 
       if( m_vps->getMaxSubLayers() == 1 )

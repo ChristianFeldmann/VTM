@@ -144,18 +144,16 @@
 #define JVET_R0233_CCALF_LINE_BUFFER_REDUCTION            1 // JVET-R0233 method 2: Line buffer reduction for CCALF
 
 #define JVET_Q0471_CHROMA_QT_SPLIT                        0 // JVET-Q0471: Chroma QT split, reverted by JVET-R0131
+
 #define JVET_R0208_ALF_VB_ROUNDING_FIX                    1 // JVET-R0208: Rounding offset fix for ALF virtual boundary processing
+
 #define JVET_R0232_CCALF_APS_CONSTRAINT                   1 // JVET-R0232 section 3.2: APS contraint for CCALF
+
 #define JVET_R0210_NUMTILESINSLICE_SIGNALLING             1 // JVET-R0210 section 3.3: Don't signal NumTilesInSlice syntax element when numTilesInPic - slice_address is 1.
-
-
-
-
 
 #define JVET_R0156_ASPECT4_SPS_CLEANUP                    1 // JVET-R0071 #1, R0156 #4, R0284 #1: Condition sps_independent_subpics_flag on "sps_num_subpics_minus1 > 0"
 
 #define JVET_R0156_ASPECT3_SPS_CLEANUP                    1 // Condition sps_sublayer_dpb_params_flag on sps_ptl_dpb_hrd_params_present_flag, in addition to sps_max_sublayer_minus1,	JVET-R0156 proposal 3, JVET-R0170, JVET-R0222 proposal 2
-
 
 #define JVET_R0350_MIP_CHROMA_444_SINGLETREE              1 // JVET-R0350: MIP for chroma in case of 4:4:4 format and single tree
 
@@ -167,7 +165,7 @@
 
 #define JVET_R0100                                        1 // JVET-R0100: Proposal 1 DUI Signalling and inference
 
-#define JVET_R0413_HRD_TIMING_INFORMATION                 1   // JVET-R0413: HRD timing parameters signalling
+#define JVET_R0413_HRD_TIMING_INFORMATION                 1 // JVET-R0413: HRD timing parameters signalling
 
 #define JVET_R0214_MMVD_SYNTAX_MODIFICATION               1 // JVET-R0214: MMVD syntax modifications
 

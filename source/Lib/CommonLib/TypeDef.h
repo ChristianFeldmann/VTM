@@ -172,6 +172,8 @@
 
 #define JVET_R0214_MMVD_SYNTAX_MODIFICATION               1 // JVET-R0214: MMVD syntax modifications
 
+#define JVET_R0101_SEI_INFERENCE_RULES                    1 // JVET-R0101: SEI alternative timing information inference rules (including those from JVET-R0413) 
+
 #define JVET_R0108_DCI_SIGNALING                          1 // JVET-R0108 Proposal 1 DCI signaling changes
 
 //########### place macros to be be kept below this line ###############

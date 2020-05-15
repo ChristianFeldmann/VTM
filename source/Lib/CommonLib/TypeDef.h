@@ -51,6 +51,7 @@
 #include <cassert>
 
 //########### place macros to be removed in next cycle below this line ###############
+#define JVET_R0203_IRAP_LEADING_CONSTRAINT                1 // JVET-R0203: Constraint that IRAP NAL unit type cannot be mixed with RASL_NUT / RADL_NUT
 
 #define JVET_Q0488_SEI_REPETITION_CONSTRAINT              1 // JVET-Q0488: SEI repetition constraint
 

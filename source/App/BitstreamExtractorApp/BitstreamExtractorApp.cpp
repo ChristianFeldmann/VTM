@@ -642,8 +642,12 @@ uint32_t BitstreamExtractorApp::decode()
         }
         ch = 1;
         bitstreamFileOut.write( &ch, 1 );
-        // write input NAL unit
-        bitstreamFileOut.write( (const char*)nalu.getBitstream().getFifo().data(), nalu.getBitstream().getFifo().size() );
+
+        // create output NAL unit
+        OutputNALUnit out (nalu.m_nalUnitType, nalu.m_nuhLayerId, nalu.m_temporalId);
+        out.m_Bitstream.getFIFO() = nalu.getBitstream().getFifo();
+        // write with start code emulation prevention
+        writeNaluContent (bitstreamFileOut, out);
       }
     }
   }

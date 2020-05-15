@@ -147,7 +147,7 @@ void CU::isConformanceILRP(Slice *slice)
     RefPicList  eRefPicList = (iNumRef ? REF_PIC_LIST_1 : REF_PIC_LIST_0);
     for (int iRefIdx = 0; iRefIdx < slice->getNumRefIdx(eRefPicList); iRefIdx++)
     {
-      const Picture* refPic = slice->getRefPic(eRefPicList, iRefIdx);
+      const Picture* refPic = slice->getRefPic(eRefPicList, iRefIdx)->unscaledPic;
 
       if (refPic->cs->pps->getNumSubPics() != slice->getPic()->cs->pps->getNumSubPics())
       {

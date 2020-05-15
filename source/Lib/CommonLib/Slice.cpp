@@ -2401,6 +2401,9 @@ SPSRExt::SPSRExt()
 SPS::SPS()
 : m_SPSId                     (  0)
 , m_VPSId                     ( 0 )
+#if JVET_R0194_CONSTRAINT_PS_SHARING_REFERENCING
+, m_layerId                   ( 0 )
+#endif
 , m_affineAmvrEnabledFlag     ( false )
 , m_DMVR                      ( false )
 , m_MMVD                      ( false )

@@ -51,6 +51,7 @@
 #include <cassert>
 
 //########### place macros to be removed in next cycle below this line ###############
+#define JVET_R0194_CONSTRAINT_PS_SHARING_REFERENCING      1 // JVET-R0194: Constraint that if slice at layer A refer to PS at layer B, then all OLS that contains layer A must contain layer B as well.
 
 #define JVET_R0188                                        1 // JVET-R0188: Signalling slice_width_in_tiles_minus1[i] and slice_height_in_tiles_minus1[i]
 

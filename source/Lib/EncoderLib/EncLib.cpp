@@ -311,6 +311,20 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
     m_noPicPartitionFlag = true;
 
     xInitPPS( pps, sps0 ); // will allocate memory for and initialize pps.pcv inside
+    
+#if JVET_Q0764_WRAP_AROUND_WITH_RPR  
+    if( pps.getWrapAroundEnabledFlag() )
+    {
+      int minCbSizeY = (1 << sps0.getLog2MinCodingBlockSize());
+      pps.setWrapAroundOffsetMinusCtbSize       ( ((m_wrapAroundOffset * pps.getPicWidthInLumaSamples() / pps0.getPicWidthInLumaSamples()) / minCbSizeY) - 2 - (sps0.getCTUSize() / minCbSizeY) );
+      pps.setWrapAroundOffset                   ( minCbSizeY * (pps.getWrapAroundOffsetMinusCtbSize() + 2 + sps0.getCTUSize() / minCbSizeY) );
+    }
+    else 
+    {
+      pps.setWrapAroundOffsetMinusCtbSize       ( 0 );
+      pps.setWrapAroundOffset                   ( 0 );       
+    }
+#endif
   }
 
 #if ER_CHROMA_QP_WCG_PPS
@@ -971,10 +985,10 @@ void EncLib::xInitVPS( const SPS& sps )
   m_vps->deriveOutputLayerSets();
   m_vps->deriveTargetOutputLayerSet( m_vps->m_targetOlsIdx );
 
-  // number of the DPB parameters is set equal to the number of OLS
-  if( !m_vps->getAllIndependentLayersFlag() )
+  // number of the DPB parameters is set equal to the number of OLS containing multi layers
+  if( !m_vps->getEachLayerIsAnOlsFlag() )
   {
-    m_vps->m_numDpbParams = m_vps->m_totalNumOLSs;
+    m_vps->m_numDpbParams = m_vps->getNumMultiLayeredOlss();
   }
 
   if( m_vps->m_dpbParameters.size() != m_vps->m_numDpbParams )
@@ -987,56 +1001,64 @@ void EncLib::xInitVPS( const SPS& sps )
     m_vps->m_dpbMaxTemporalId.resize( m_vps->m_numDpbParams );
   }
 
-  for( int olsIdx = 0; olsIdx < m_vps->m_numOutputLayersInOls.size(); olsIdx++ )
+  for( int olsIdx = 0, dpbIdx = 0; olsIdx < m_vps->m_numOutputLayersInOls.size(); olsIdx++ )
   {
-    if( std::find( m_vps->m_layerIdInOls[olsIdx].begin(), m_vps->m_layerIdInOls[olsIdx].end(), m_layerId ) != m_vps->m_layerIdInOls[olsIdx].end() )
-    {
-      m_vps->setOlsDpbPicWidth( olsIdx, std::max<int>( sps.getMaxPicWidthInLumaSamples(), m_vps->getOlsDpbPicSize( olsIdx ).width ) );
-      m_vps->setOlsDpbPicHeight( olsIdx, std::max<int>( sps.getMaxPicHeightInLumaSamples(), m_vps->getOlsDpbPicSize( olsIdx ).height ) );
-    }
+    if ( m_vps->getNumLayersInOls(olsIdx) > 1 )
+    { 
+      if( std::find( m_vps->m_layerIdInOls[olsIdx].begin(), m_vps->m_layerIdInOls[olsIdx].end(), m_layerId ) != m_vps->m_layerIdInOls[olsIdx].end() )
+      {
+        m_vps->setOlsDpbPicWidth( olsIdx, std::max<int>( sps.getMaxPicWidthInLumaSamples(), m_vps->getOlsDpbPicSize( olsIdx ).width ) );
+        m_vps->setOlsDpbPicHeight( olsIdx, std::max<int>( sps.getMaxPicHeightInLumaSamples(), m_vps->getOlsDpbPicSize( olsIdx ).height ) );
+      }
 
-    m_vps->setOlsDpbParamsIdx( olsIdx, olsIdx );
+      m_vps->setOlsDpbParamsIdx( olsIdx, dpbIdx );
+      dpbIdx++;
+    }
   }
 
-  for( int i = 0; i < m_vps->m_numDpbParams; i++ )
+  //for( int i = 0; i < m_vps->m_numDpbParams; i++ )
+  for( int i = 0; i < m_vps->m_numOutputLayersInOls.size(); i++ )
   {
-    int olsIdx = i;
+    if ( m_vps->getNumLayersInOls(i) > 1 )
+    { 
+      int dpbIdx = m_vps->getOlsDpbParamsIdx( i );
 
-    if( m_vps->getMaxSubLayers() == 1 )
-    {
-      // When vps_max_sublayers_minus1 is equal to 0, the value of dpb_max_temporal_id[ i ] is inferred to be equal to 0.
-      m_vps->m_dpbMaxTemporalId[i] = 0;
-    }
-    else
-    {
-      if( m_vps->getAllLayersSameNumSublayersFlag() )
+      if( m_vps->getMaxSubLayers() == 1 )
       {
-        // When vps_max_sublayers_minus1 is greater than 0 and vps_all_layers_same_num_sublayers_flag is equal to 1, the value of dpb_max_temporal_id[ i ] is inferred to be equal to vps_max_sublayers_minus1.
-        m_vps->m_dpbMaxTemporalId[i] = m_vps->getMaxSubLayers() - 1;
+        // When vps_max_sublayers_minus1 is equal to 0, the value of dpb_max_temporal_id[ dpbIdx ] is inferred to be equal to 0.
+        m_vps->m_dpbMaxTemporalId[dpbIdx] = 0;
       }
       else
       {
-        m_vps->m_dpbMaxTemporalId[i] = m_maxTempLayer;
+        if( m_vps->getAllLayersSameNumSublayersFlag() )
+        {
+          // When vps_max_sublayers_minus1 is greater than 0 and vps_all_layers_same_num_sublayers_flag is equal to 1, the value of dpb_max_temporal_id[ dpbIdx ] is inferred to be equal to vps_max_sublayers_minus1.
+          m_vps->m_dpbMaxTemporalId[dpbIdx] = m_vps->getMaxSubLayers() - 1;
+        }
+        else
+        {
+          m_vps->m_dpbMaxTemporalId[dpbIdx] = m_maxTempLayer;
+        }
       }
-    }
+    
+      for( int j = ( m_vps->m_sublayerDpbParamsPresentFlag ? 0 : m_vps->m_dpbMaxTemporalId[dpbIdx] ); j <= m_vps->m_dpbMaxTemporalId[dpbIdx]; j++ )
+      {
+        m_vps->m_dpbParameters[dpbIdx].m_maxDecPicBuffering[j] = profileLevelTierFeatures.getMaxDpbSize( m_vps->getOlsDpbPicSize( i ).width * m_vps->getOlsDpbPicSize( i ).height );
+        m_vps->m_dpbParameters[dpbIdx].m_numReorderPics[j] = m_vps->m_dpbParameters[dpbIdx].m_maxDecPicBuffering[j];
+        m_vps->m_dpbParameters[dpbIdx].m_maxLatencyIncreasePlus1[j] = 0;
+      }
 
-    for( int j = ( m_vps->m_sublayerDpbParamsPresentFlag ? 0 : m_vps->m_dpbMaxTemporalId[i] ); j <= m_vps->m_dpbMaxTemporalId[i]; j++ )
-    {
-      m_vps->m_dpbParameters[i].m_maxDecPicBuffering[j] = profileLevelTierFeatures.getMaxDpbSize( m_vps->getOlsDpbPicSize( olsIdx ).width * m_vps->getOlsDpbPicSize( olsIdx ).height );
-      m_vps->m_dpbParameters[i].m_numReorderPics[j] = m_vps->m_dpbParameters[i].m_maxDecPicBuffering[j];
-      m_vps->m_dpbParameters[i].m_maxLatencyIncreasePlus1[j] = 0;
-    }
+      for( int j = ( m_vps->m_sublayerDpbParamsPresentFlag ? m_vps->m_dpbMaxTemporalId[dpbIdx] : 0 ); j < m_vps->m_dpbMaxTemporalId[dpbIdx]; j++ )
+      {
+        // When max_dec_pic_buffering_minus1[ dpbIdx ] is not present for dpbIdx in the range of 0 to maxSubLayersMinus1 - 1, inclusive, due to subLayerInfoFlag being equal to 0, it is inferred to be equal to max_dec_pic_buffering_minus1[ maxSubLayersMinus1 ].
+        m_vps->m_dpbParameters[dpbIdx].m_maxDecPicBuffering[j] = m_vps->m_dpbParameters[dpbIdx].m_maxDecPicBuffering[m_vps->m_dpbMaxTemporalId[dpbIdx]];
 
-    for( int j = ( m_vps->m_sublayerDpbParamsPresentFlag ? m_vps->m_dpbMaxTemporalId[i] : 0 ); j < m_vps->m_dpbMaxTemporalId[i]; j++ )
-    {
-      // When max_dec_pic_buffering_minus1[ i ] is not present for i in the range of 0 to maxSubLayersMinus1 - 1, inclusive, due to subLayerInfoFlag being equal to 0, it is inferred to be equal to max_dec_pic_buffering_minus1[ maxSubLayersMinus1 ].
-      m_vps->m_dpbParameters[i].m_maxDecPicBuffering[j] = m_vps->m_dpbParameters[i].m_maxDecPicBuffering[m_vps->m_dpbMaxTemporalId[i]];
+        // When max_num_reorder_pics[ dpbIdx ] is not present for dpbIdx in the range of 0 to maxSubLayersMinus1 - 1, inclusive, due to subLayerInfoFlag being equal to 0, it is inferred to be equal to max_num_reorder_pics[ maxSubLayersMinus1 ].
+        m_vps->m_dpbParameters[dpbIdx].m_numReorderPics[j] = m_vps->m_dpbParameters[dpbIdx].m_numReorderPics[m_vps->m_dpbMaxTemporalId[dpbIdx]];
 
-      // When max_num_reorder_pics[ i ] is not present for i in the range of 0 to maxSubLayersMinus1 - 1, inclusive, due to subLayerInfoFlag being equal to 0, it is inferred to be equal to max_num_reorder_pics[ maxSubLayersMinus1 ].
-      m_vps->m_dpbParameters[i].m_numReorderPics[j] = m_vps->m_dpbParameters[i].m_numReorderPics[m_vps->m_dpbMaxTemporalId[i]];
-
-      // When max_latency_increase_plus1[ i ] is not present for i in the range of 0 to maxSubLayersMinus1 - 1, inclusive, due to subLayerInfoFlag being equal to 0, it is inferred to be equal to max_latency_increase_plus1[ maxSubLayersMinus1 ].
-      m_vps->m_dpbParameters[i].m_maxLatencyIncreasePlus1[j] = m_vps->m_dpbParameters[i].m_maxLatencyIncreasePlus1[m_vps->m_dpbMaxTemporalId[i]];
+        // When max_latency_increase_plus1[ dpbIdx ] is not present for dpbIdx in the range of 0 to maxSubLayersMinus1 - 1, inclusive, due to subLayerInfoFlag being equal to 0, it is inferred to be equal to max_latency_increase_plus1[ maxSubLayersMinus1 ].
+        m_vps->m_dpbParameters[dpbIdx].m_maxLatencyIncreasePlus1[j] = m_vps->m_dpbParameters[dpbIdx].m_maxLatencyIncreasePlus1[m_vps->m_dpbMaxTemporalId[dpbIdx]];
+      }
     }
   }
 }
@@ -1100,7 +1122,9 @@ void EncLib::xInitSPS( SPS& sps )
   cinfo->setNoBcwConstraintFlag(m_bNoBcwConstraintFlag);
   cinfo->setNoIbcConstraintFlag(m_noIbcConstraintFlag);
   cinfo->setNoCiipConstraintFlag(m_bNoCiipConstraintFlag);
+#if !JVET_R0214_MMVD_SYNTAX_MODIFICATION
   cinfo->setNoFPelMmvdConstraintFlag(m_noFPelMmvdConstraintFlag);
+#endif
   cinfo->setNoGeoConstraintFlag(m_noGeoConstraintFlag);
   cinfo->setNoLadfConstraintFlag(m_bNoLadfConstraintFlag);
   cinfo->setNoTransformSkipConstraintFlag(m_noTransformSkipConstraintFlag);
@@ -1212,7 +1236,9 @@ void EncLib::xInitSPS( SPS& sps )
   sps.setPLTMode                            ( m_PLTMode);
   sps.setIBCFlag                            ( m_IBCMode);
   sps.setWrapAroundEnabledFlag                      ( m_wrapAround );
+#if !JVET_Q0764_WRAP_AROUND_WITH_RPR
   sps.setWrapAroundOffset                   ( m_wrapAroundOffset );
+#endif
   // ADD_NEW_TOOL : (encoder lib) set tool enabling flags and associated parameters here
   sps.setUseISP                             ( m_ISP );
   sps.setUseLmcs                            ( m_lmcsEnabled );
@@ -1566,6 +1592,22 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
     pps.setSliceChromaQpFlag(m_chromaCbQpOffsetDualTree != 0 || m_chromaCrQpOffsetDualTree != 0 || m_chromaCbCrQpOffsetDualTree != 0);
   }
 
+#if JVET_Q0764_WRAP_AROUND_WITH_RPR
+  int minCbSizeY = (1 << sps.getLog2MinCodingBlockSize());
+  pps.setWrapAroundEnabledFlag                ( m_wrapAround );
+  if( m_wrapAround )
+  {
+    pps.setWrapAroundOffsetMinusCtbSize       ( (m_wrapAroundOffset / minCbSizeY) - 2 - (sps.getCTUSize() / minCbSizeY) );
+    pps.setWrapAroundOffset                   ( minCbSizeY * (pps.getWrapAroundOffsetMinusCtbSize() + 2 + sps.getCTUSize() / minCbSizeY) );
+  }
+  else 
+  {
+    pps.setWrapAroundOffsetMinusCtbSize       ( 0 );
+    pps.setWrapAroundOffset                   ( 0 );       
+  }
+  CHECK( !sps.getWrapAroundEnabledFlag() && pps.getWrapAroundEnabledFlag(), "When sps_ref_wraparound_enabled_flag is equal to 0, the value of pps_ref_wraparound_enabled_flag shall be equal to 0.");
+  CHECK( (((sps.getCTUSize() / minCbSizeY) + 1) > ((pps.getPicWidthInLumaSamples() / minCbSizeY) - 1)) && pps.getWrapAroundEnabledFlag(), "When the value of CtbSizeY / MinCbSizeY + 1 is greater than pic_width_in_luma_samples / MinCbSizeY - 1, the value of pps_ref_wraparound_enabled_flag shall be equal to 0.");
+#endif
 
   pps.setNoPicPartitionFlag( m_noPicPartitionFlag );
   if( m_noPicPartitionFlag == false )

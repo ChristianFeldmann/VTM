@@ -901,6 +901,17 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
   READ_FLAG(uiCode, "qp_delta_info_in_ph_flag");               pcPPS->setQpDeltaInfoInPhFlag(uiCode ? true : false);
 #endif
 
+#if JVET_Q0764_WRAP_AROUND_WITH_RPR
+  READ_FLAG(uiCode, "pps_ref_wraparound_enabled_flag");           pcPPS->setWrapAroundEnabledFlag( uiCode ? true : false );
+  if (pcPPS->getWrapAroundEnabledFlag())
+  {
+    READ_UVLC(uiCode, "pps_ref_wraparound_offset");               pcPPS->setWrapAroundOffsetMinusCtbSize( uiCode );
+  }
+  else
+  {
+    pcPPS->setWrapAroundOffsetMinusCtbSize( 0 );
+  }
+#endif
 
   READ_FLAG( uiCode, "picture_header_extension_present_flag");
   pcPPS->setPictureHeaderExtensionPresentFlag(uiCode);
@@ -1765,11 +1776,13 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   }
 
   READ_FLAG(uiCode, "sps_ref_wraparound_enabled_flag");                  pcSPS->setWrapAroundEnabledFlag( uiCode ? true : false );
+#if !JVET_Q0764_WRAP_AROUND_WITH_RPR
 
   if (pcSPS->getWrapAroundEnabledFlag())
   {
     READ_UVLC(uiCode, "sps_ref_wraparound_offset");               pcSPS->setWrapAroundOffset((uiCode + 2 + pcSPS->getCTUSize() / (1 << pcSPS->getLog2MinCodingBlockSize()))*(1 << pcSPS->getLog2MinCodingBlockSize()));
   }
+#endif
 
   READ_FLAG( uiCode, "sps_temporal_mvp_enabled_flag" );                  pcSPS->setSPSTemporalMVPEnabledFlag(uiCode);
 
@@ -1802,6 +1815,16 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     pcSPS->setDmvrControlPresentFlag( false );
   }
   READ_FLAG(uiCode, "sps_mmvd_enabled_flag");                        pcSPS->setUseMMVD(uiCode != 0);
+#if JVET_R0214_MMVD_SYNTAX_MODIFICATION
+  if (pcSPS->getUseMMVD())
+  {
+    READ_FLAG(uiCode, "sps_mmvd_fullpel_only_flag");                pcSPS->setFpelMmvdEnabledFlag(uiCode != 0);
+  }
+  else
+  {
+    pcSPS->setFpelMmvdEnabledFlag( false );
+  }
+#endif
   READ_FLAG(uiCode, "sps_isp_enabled_flag");                        pcSPS->setUseISP( uiCode != 0 );
   READ_FLAG(uiCode, "sps_mrl_enabled_flag");                        pcSPS->setUseMRL( uiCode != 0 );
   READ_FLAG(uiCode, "sps_mip_enabled_flag");                        pcSPS->setUseMIP( uiCode != 0 );
@@ -1894,12 +1917,12 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     pcSPS->setMaxNumIBCMergeCand(0);
   // KJS: sps_ciip_enabled_flag
   READ_FLAG( uiCode,     "sps_ciip_enabled_flag" );                           pcSPS->setUseCiip             ( uiCode != 0 );
-
+#if !JVET_R0214_MMVD_SYNTAX_MODIFICATION
   if ( pcSPS->getUseMMVD() )
   {
     READ_FLAG( uiCode,  "sps_fpel_mmvd_enabled_flag" );             pcSPS->setFpelMmvdEnabledFlag ( uiCode != 0 );
   }
-
+#endif
   if (pcSPS->getMaxNumMergeCand() >= 2)
   {
     READ_FLAG(uiCode, "sps_gpm_enabled_flag");
@@ -2091,8 +2114,12 @@ void HLSyntaxReader::parseDCI(DCI* dci)
 #endif
   uint32_t  symbol;
 
+#if JVET_R0108_DCI_SIGNALING
+  READ_CODE(4, symbol, "dci_reserved_zero_4bits");
+#else
   READ_CODE(3, symbol, "dci_max_sub_layers_minus1");          dci->setMaxSubLayersMinus1(symbol);
   READ_CODE(1, symbol, "dci_reserved_zero_bit");              CHECK(symbol != 0, "dci_reserved_zero_bit must be equal to zero");
+#endif
 
   uint32_t numPTLs;
   READ_CODE(4, numPTLs, "dci_num_ptls_minus1");
@@ -2283,7 +2310,7 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
   }
 
 #if JVET_R0191_ASPECT3
-  CHECK( pcVPS->m_numDpbParams > pcVPS->getNumMultiLayeredOlss(),"The value of vps_num_dpb_params_minus1 shall be in the range of 0 to NumMultiLayerOlss ? 1, inclusive");
+  CHECK( pcVPS->m_numDpbParams > pcVPS->getNumMultiLayeredOlss(),"The value of vps_num_dpb_params_minus1 shall be in the range of 0 to NumMultiLayerOlss - 1, inclusive");
   std::vector<bool> isDPBParamReferred(pcVPS->m_numDpbParams, false);
 #endif
 
@@ -2357,7 +2384,7 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
 #if JVET_R0191_ASPECT3
   for( int i = 0; i < pcVPS->m_numDpbParams; i++ )
   {
-    CHECK( !isDPBParamReferred[i],"Each dpb_parameters( ) syntax structure in the VPS shall be referred to by at least one value of vps_ols_dpb_params_idx[i] for i in the range of 0 to NumMultiLayerOlss ? 1, inclusive");
+    CHECK( !isDPBParamReferred[i],"Each dpb_parameters( ) syntax structure in the VPS shall be referred to by at least one value of vps_ols_dpb_params_idx[i] for i in the range of 0 to NumMultiLayerOlss - 1, inclusive");
   }
 #endif
   if (!pcVPS->getEachLayerIsAnOlsFlag())
@@ -2378,7 +2405,7 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
 
     READ_UVLC(uiCode, "num_ols_hrd_params_minus1"); pcVPS->setNumOlsHrdParamsMinus1(uiCode);
 #if JVET_R0191_ASPECT3
-    CHECK( uiCode >= pcVPS->getNumMultiLayeredOlss(),"The value of vps_num_ols_hrd_params_minus1 shall be in the range of 0 to NumMultiLayerOlss ? 1, inclusive");
+    CHECK( uiCode >= pcVPS->getNumMultiLayeredOlss(),"The value of vps_num_ols_hrd_params_minus1 shall be in the range of 0 to NumMultiLayerOlss - 1, inclusive");
     std::vector<bool> isHRDParamReferred( uiCode + 1, false);
 #else
     CHECK(uiCode >= pcVPS->getTotalNumOLSs(),"The value of num_ols_hrd_params_minus1 shall be in the range of 0 to TotalNumOlss - 1, inclusive");
@@ -2431,7 +2458,7 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
 #if JVET_R0191_ASPECT3
     for( int i = 0; i <= pcVPS->getNumOlsHrdParamsMinus1(); i++ )
     {
-      CHECK( !isHRDParamReferred[i], "Each ols_hrd_parameters( ) syntax structure in the VPS shall be referred to by at least one value of vps_ols_hrd_idx[ i ] for i in the range of 1 to NumMultiLayerOlss ? 1, inclusive");
+      CHECK( !isHRDParamReferred[i], "Each ols_hrd_parameters( ) syntax structure in the VPS shall be referred to by at least one value of vps_ols_hrd_idx[ i ] for i in the range of 1 to NumMultiLayerOlss - 1, inclusive");
     }
 #endif
   }
@@ -2700,6 +2727,20 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
 
   pps->initSubPic(*sps);
 
+#if JVET_Q0764_WRAP_AROUND_WITH_RPR
+  // set wraparound offset from PPS and SPS info
+  int minCbSizeY = (1 << sps->getLog2MinCodingBlockSize());
+  CHECK( !sps->getWrapAroundEnabledFlag() && pps->getWrapAroundEnabledFlag(), "When sps_ref_wraparound_enabled_flag is equal to 0, the value of pps_ref_wraparound_enabled_flag shall be equal to 0.");
+  CHECK( (((sps->getCTUSize() / minCbSizeY) + 1) > ((pps->getPicWidthInLumaSamples() / minCbSizeY) - 1)) && pps->getWrapAroundEnabledFlag(), "When the value of CtbSizeY / MinCbSizeY + 1 is greater than pic_width_in_luma_samples / MinCbSizeY - 1, the value of pps_ref_wraparound_enabled_flag shall be equal to 0.");
+  if( pps->getWrapAroundEnabledFlag() )
+  {
+    pps->setWrapAroundOffset( minCbSizeY * (pps->getWrapAroundOffsetMinusCtbSize() + 2 + sps->getCTUSize() / minCbSizeY) );
+  }
+  else
+  {
+    pps->setWrapAroundOffset( 0 );
+  }
+#endif
 
   // virtual boundaries
   if( sps->getVirtualBoundariesEnabledFlag() && !sps->getVirtualBoundariesPresentFlag() )
@@ -4614,7 +4655,9 @@ void HLSyntaxReader::parseConstraintInfo(ConstraintInfo *cinfo)
     CHECK(symbol == 0, "When intra_only_constraint_flag is equal to 1, the value of no_ciip_constraint_flag shall be equal to 1");
   }
 #endif
+#if !JVET_R0214_MMVD_SYNTAX_MODIFICATION
   READ_FLAG(symbol, "no_fpel_mmvd_constraint_flag");               cinfo->setNoFPelMmvdConstraintFlag(symbol > 0 ? true : false);
+#endif
   READ_FLAG(symbol, "no_gpm_constraint_flag");                     cinfo->setNoGeoConstraintFlag(symbol > 0 ? true : false);
 #if JVET_R0286_GCI_CLEANUP
   if (cinfo->getIntraOnlyConstraintFlag() == 1)

@@ -515,6 +515,13 @@ void HLSWriter::codePPS( const PPS* pcPPS )
   }
   WRITE_FLAG(pcPPS->getQpDeltaInfoInPhFlag() ? 1 : 0, "qp_delta_info_in_ph_flag");
 #endif
+#if JVET_Q0764_WRAP_AROUND_WITH_RPR
+  WRITE_FLAG( pcPPS->getWrapAroundEnabledFlag() ? 1 : 0, "pps_ref_wraparound_enabled_flag" );
+  if( pcPPS->getWrapAroundEnabledFlag() )
+  {
+    WRITE_UVLC( pcPPS->getWrapAroundOffsetMinusCtbSize(), "pps_ref_wraparound_offset");
+  }
+#endif
 
   WRITE_FLAG( pcPPS->getPictureHeaderExtensionPresentFlag() ? 1 : 0, "picture_header_extension_present_flag");
   WRITE_FLAG( pcPPS->getSliceHeaderExtensionPresentFlag() ? 1 : 0, "slice_header_extension_present_flag");
@@ -1074,10 +1081,12 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   }
 
   WRITE_FLAG( pcSPS->getWrapAroundEnabledFlag() ? 1 : 0,                              "sps_ref_wraparound_enabled_flag" );
+#if !JVET_Q0764_WRAP_AROUND_WITH_RPR
   if( pcSPS->getWrapAroundEnabledFlag() )
   {
     WRITE_UVLC((pcSPS->getWrapAroundOffset() / (1 << pcSPS->getLog2MinCodingBlockSize())) - 2 - pcSPS->getCTUSize()/(1<<pcSPS->getLog2MinCodingBlockSize()), "sps_ref_wraparound_offset");
   }
+#endif
 
   WRITE_FLAG( pcSPS->getSPSTemporalMVPEnabledFlag()  ? 1 : 0,                        "sps_temporal_mvp_enabled_flag" );
 
@@ -1100,6 +1109,12 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
     WRITE_FLAG(pcSPS->getDmvrControlPresentFlag() ? 1 : 0,                            "sps_dmvr_pic_present_flag");
   }
   WRITE_FLAG(pcSPS->getUseMMVD() ? 1 : 0,                                             "sps_mmvd_enabled_flag");
+#if JVET_R0214_MMVD_SYNTAX_MODIFICATION
+  if (pcSPS->getUseMMVD())
+  {
+    WRITE_FLAG(pcSPS->getFpelMmvdEnabledFlag() ? 1 : 0,                               "sps_mmvd_fullpel_only_flag");
+  }
+#endif
   WRITE_FLAG( pcSPS->getUseISP() ? 1 : 0,                                             "sps_isp_enabled_flag");
   WRITE_FLAG( pcSPS->getUseMRL() ? 1 : 0,                                             "sps_mrl_enabled_flag");
   WRITE_FLAG( pcSPS->getUseMIP() ? 1 : 0,                                             "sps_mip_enabled_flag");
@@ -1164,12 +1179,12 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   }
   // KJS: sps_ciip_enabled_flag
   WRITE_FLAG( pcSPS->getUseCiip() ? 1 : 0,                                                  "sps_ciip_enabled_flag" );
-
+#if !JVET_R0214_MMVD_SYNTAX_MODIFICATION
   if ( pcSPS->getUseMMVD() )
   {
     WRITE_FLAG( pcSPS->getFpelMmvdEnabledFlag() ? 1 : 0,                            "sps_fpel_mmvd_enabled_flag" );
   }
-
+#endif
   if (pcSPS->getMaxNumMergeCand() >= 2)
   {
     WRITE_FLAG(pcSPS->getUseGeo() ? 1 : 0, "sps_gpm_enabled_flag");
@@ -1332,10 +1347,14 @@ void HLSWriter::codeDCI(const DCI* dci)
 #if ENABLE_TRACING
   xTraceDCIHeader();
 #endif
+#if JVET_R0108_DCI_SIGNALING
+  WRITE_CODE(0, 4, "dci_reserved_zero_4bits");
+#else
   WRITE_CODE(dci->getMaxSubLayersMinus1(), 3, "dci_max_sub_layers_minus1");
   WRITE_CODE(0, 1, "dci_reserved_zero_bit");
+#endif
   uint32_t numPTLs = (uint32_t)dci->getNumPTLs();
-  CHECK(numPTLs < 1, "At least one PTL must be available in DCI");
+  CHECK( (numPTLs < 1) || ( numPTLs > 15), "dci_num_plts_minus1 shall be in the range of 0 - 14");
 
   WRITE_CODE(numPTLs - 1, 4, "dci_num_ptls_minus1");
 
@@ -2677,7 +2696,9 @@ void  HLSWriter::codeConstraintInfo  ( const ConstraintInfo* cinfo )
   WRITE_FLAG(cinfo->getNoBcwConstraintFlag() ? 1 : 0, "no_bcw_constraint_flag");
   WRITE_FLAG(cinfo->getNoIbcConstraintFlag() ? 1 : 0, "no_ibc_constraint_flag");
   WRITE_FLAG(cinfo->getNoCiipConstraintFlag() ? 1 : 0, "no_ciip_constraint_flag");
+#if !JVET_R0214_MMVD_SYNTAX_MODIFICATION
   WRITE_FLAG(cinfo->getNoFPelMmvdConstraintFlag() ? 1 : 0, "no_fpel_mmvd_constraint_flag");
+#endif
   WRITE_FLAG(cinfo->getNoGeoConstraintFlag() ? 1 : 0, "no_gpm_constraint_flag");
   WRITE_FLAG(cinfo->getNoLadfConstraintFlag() ? 1 : 0, "no_ladf_constraint_flag");
   WRITE_FLAG(cinfo->getNoTransformSkipConstraintFlag() ? 1 : 0, "no_transform_skip_constraint_flag");

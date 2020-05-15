@@ -287,7 +287,9 @@ class ConstraintInfo
   bool              m_noBcwConstraintFlag;
   bool              m_noIbcConstraintFlag;
   bool              m_noCiipConstraintFlag;
+#if !JVET_R0214_MMVD_SYNTAX_MODIFICATION
   bool              m_noFPelMmvdConstraintFlag;
+#endif
   bool              m_noGeoConstraintFlag;
   bool              m_noLadfConstraintFlag;
   bool              m_noTransformSkipConstraintFlag;
@@ -360,7 +362,9 @@ public:
     , m_noBcwConstraintFlag      (false)
     , m_noIbcConstraintFlag      (false)
     , m_noCiipConstraintFlag  (false)
+#if !JVET_R0214_MMVD_SYNTAX_MODIFICATION
     , m_noFPelMmvdConstraintFlag (false)
+#endif
     , m_noGeoConstraintFlag      (false)
     , m_noLadfConstraintFlag     (false)
     , m_noTransformSkipConstraintFlag(false)
@@ -489,8 +493,10 @@ public:
   void          setNoIbcConstraintFlag(bool bVal) { m_noIbcConstraintFlag = bVal; }
   bool          getNoCiipConstraintFlag() const { return m_noCiipConstraintFlag; }
   void          setNoCiipConstraintFlag(bool bVal) { m_noCiipConstraintFlag = bVal; }
+#if !JVET_R0214_MMVD_SYNTAX_MODIFICATION
   bool          getNoFPelMmvdConstraintFlag() const { return m_noFPelMmvdConstraintFlag; }
   void          setNoFPelMmvdConstraintFlag(bool bVal) { m_noFPelMmvdConstraintFlag = bVal; }
+#endif
   bool          getNoGeoConstraintFlag() const { return m_noGeoConstraintFlag; }
   void          setNoGeoConstraintFlag(bool bVal) { m_noGeoConstraintFlag = bVal; }
   bool          getNoLadfConstraintFlag() const { return m_noLadfConstraintFlag; }
@@ -1418,7 +1424,9 @@ private:
   bool              m_alfEnabledFlag;
   bool              m_ccalfEnabledFlag;
   bool              m_wrapAroundEnabledFlag;
+#if !JVET_Q0764_WRAP_AROUND_WITH_RPR
   unsigned          m_wrapAroundOffset;
+#endif
   unsigned          m_IBCFlag;
   bool              m_useColorTrans;
   unsigned          m_PLTMode;
@@ -1759,8 +1767,10 @@ void                    setCCALFEnabledFlag( bool b )                           
 
   void                    setWrapAroundEnabledFlag(bool b)                                                { m_wrapAroundEnabledFlag = b;                                         }
   bool                    getWrapAroundEnabledFlag() const                                                { return m_wrapAroundEnabledFlag;                                      }
+#if !JVET_Q0764_WRAP_AROUND_WITH_RPR
   void                    setWrapAroundOffset(unsigned offset)                                            { m_wrapAroundOffset = offset;                                         }
   unsigned                getWrapAroundOffset() const                                                     { return m_wrapAroundOffset;                                           }
+#endif
   void                    setUseLmcs(bool b)                                                              { m_lmcsEnabled = b;                                                   }
   bool                    getUseLmcs() const                                                              { return m_lmcsEnabled;                                                }
   void                    setIBCFlag(unsigned IBCFlag)                                                    { m_IBCFlag = IBCFlag; }
@@ -1947,6 +1957,11 @@ private:
   Window           m_conformanceWindow;
   Window           m_scalingWindow;
 
+#if JVET_Q0764_WRAP_AROUND_WITH_RPR
+  bool             m_wrapAroundEnabledFlag;               //< reference wrap around enabled or not
+  unsigned         m_wrapAroundOffsetMinusCtbSize;        //< reference wrap around offset minus ( CtbSizeY / MinCbSizeY ) + 2 in units of MinCbSizeY luma samples
+  unsigned         m_wrapAroundOffset;                    //< reference wrap around offset in luma samples
+#endif
 
 public:
   PreCalcValues   *pcv;
@@ -2034,6 +2049,14 @@ public:
   void                   setUseWP( bool b )                                               { m_bUseWeightPred = b;                         }
   void                   setWPBiPred( bool b )                                            { m_useWeightedBiPred = b;                      }
 
+#if JVET_Q0764_WRAP_AROUND_WITH_RPR
+  void                   setWrapAroundEnabledFlag(bool b)                                 { m_wrapAroundEnabledFlag = b;                  }
+  bool                   getWrapAroundEnabledFlag() const                                 { return m_wrapAroundEnabledFlag;               }  
+  void                   setWrapAroundOffsetMinusCtbSize(unsigned offset)                 { m_wrapAroundOffsetMinusCtbSize = offset;      }
+  unsigned               getWrapAroundOffsetMinusCtbSize() const                          { return m_wrapAroundOffsetMinusCtbSize;        }
+  void                   setWrapAroundOffset(unsigned offset)                             { m_wrapAroundOffset = offset;                  }
+  unsigned               getWrapAroundOffset() const                                      { return m_wrapAroundOffset;                    }
+#endif
   void                   setOutputFlagPresentFlag( bool b )                               { m_OutputFlagPresentFlag = b;                  }
   bool                   getOutputFlagPresentFlag() const                                 { return m_OutputFlagPresentFlag;               }
   void                   setNumSubPics(uint32_t u )                                       { CHECK( u >= MAX_NUM_SUB_PICS, "Maximum number of subpictures exceeded" );

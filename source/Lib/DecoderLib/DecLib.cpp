@@ -937,6 +937,115 @@ void DecLib::checkSEIInAccessUnit()
   }
 }
 
+#if JVET_Q0488_SEI_REPETITION_CONSTRAINT
+#define SEI_REPETITION_CONSTRAINT_LIST_SIZE  21
+
+/**
+ - Count the number of identical SEI messages in the current picture
+ */
+void DecLib::checkSeiInPictureUnit()
+{  
+  std::vector<std::tuple<int, uint32_t, uint8_t*>> seiList;
+
+  // payload types subject to constrained SEI repetition
+  int picUnitRepConSeiList[SEI_REPETITION_CONSTRAINT_LIST_SIZE] = { 0, 1, 19, 45, 129, 132, 133, 137, 144, 145, 147, 148, 149, 150, 153, 154, 155, 156, 168, 203, 204};
+  
+  // extract SEI messages from NAL units
+  for (auto &sei : m_pictureSeiNalus)
+  {
+    InputBitstream bs = sei->getBitstream();
+
+    do
+    {  
+      int payloadType = 0;
+      uint32_t val = 0;
+
+      do
+      {
+        bs.readByte(val);
+        payloadType += val;
+      } while (val==0xFF);
+
+      uint32_t payloadSize = 0;
+      do
+      {
+        bs.readByte(val);
+        payloadSize += val;
+      } while (val==0xFF);
+    
+      uint8_t *payload = new uint8_t[payloadSize];
+      for (uint32_t i = 0; i < payloadSize; i++)
+      {
+        bs.readByte(val);
+        payload[i] = (uint8_t)val;
+      }
+      seiList.push_back(std::tuple<int, uint32_t, uint8_t*>(payloadType, payloadSize, payload));
+    }
+    while (bs.getNumBitsLeft() > 8);
+  }
+
+  // count repeated messages in list
+  for (uint32_t i = 0; i < seiList.size(); i++)
+  {
+    int      k, count = 1;      
+    int      payloadType1 = std::get<0>(seiList[i]);
+    uint32_t payloadSize1 = std::get<1>(seiList[i]);
+    uint8_t  *payload1    = std::get<2>(seiList[i]);
+
+    // only consider SEI payload types in the PicUnitRepConSeiList
+    for(k=0; k<SEI_REPETITION_CONSTRAINT_LIST_SIZE; k++)
+    {
+      if(payloadType1 == picUnitRepConSeiList[k])
+      {
+        break;
+      }
+    }
+    if(k >= SEI_REPETITION_CONSTRAINT_LIST_SIZE)
+    {
+      continue;
+    }
+
+    // compare current SEI message with remaining messages in the list
+    for (uint32_t j = i+1; j < seiList.size(); j++)
+    {
+      int      payloadType2 = std::get<0>(seiList[j]);
+      uint32_t payloadSize2 = std::get<1>(seiList[j]);
+      uint8_t  *payload2    = std::get<2>(seiList[j]);
+      
+      // check for identical SEI type, size, and payload
+      if(payloadType1 == payloadType2 && payloadSize1 == payloadSize2)
+      {
+        if(memcmp(payload1, payload2, payloadSize1*sizeof(uint8_t)) == 0)
+        {
+          count++;
+        }
+      }
+    }    
+    CHECK(count > 4, "There shall be less than or equal to 4 identical sei_payload( ) syntax structures within a picture unit.");
+  }
+
+  // free SEI message list memory
+  for (uint32_t i = 0; i < seiList.size(); i++)
+  {
+    uint8_t *payload = std::get<2>(seiList[i]);
+    delete   payload;
+  }
+  seiList.clear();
+}
+
+/**
+ - Reset list of SEI NAL units from the current picture
+ */
+void DecLib::resetPictureSeiNalus()   
+{
+  while (!m_pictureSeiNalus.empty())
+  {
+    delete m_pictureSeiNalus.front();
+    m_pictureSeiNalus.pop_front();
+  }
+}
+
+#endif
 /**
  - Determine if the first VCL NAL unit of a picture is also the first VCL NAL of an Access Unit
  */
@@ -977,6 +1086,30 @@ bool DecLib::isSliceNaluFirstInAU( bool newPicture, InputNALUnit &nalu )
   // check for different POC
   return (m_apcSlicePilot->getPOC() != m_prevPOC);
 }
+
+#if JVET_R0201_PREFIX_SUFFIX_APS_CLEANUP
+void DecLib::checkAPSInPictureUnit()
+{
+  bool firstVCLFound = false;
+  bool suffixAPSFound = false;
+  for (auto &nalu : m_pictureUnitNals)
+  {
+    if (NALUnit::isVclNalUnitType(nalu))
+    {
+      firstVCLFound = true;
+      CHECK( suffixAPSFound, "When any suffix APS NAL units are present in a PU, they shall follow the last VCL unit of the PU" );
+    }
+    else if (nalu == NAL_UNIT_PREFIX_APS)
+    {
+      CHECK( firstVCLFound, "When any prefix APS NAL units are present in a PU, they shall precede the first VCL unit of the PU");
+    }
+    else if (nalu == NAL_UNIT_SUFFIX_APS)
+    {
+      suffixAPSFound = true;
+    }
+  }
+}
+#endif
 
 void activateAPS(PicHeader* picHeader, Slice* pSlice, ParameterSetManager& parameterSetManager, APS** apss, APS* lmcsAPS, APS* scalingListAPS)
 {
@@ -1396,7 +1529,11 @@ void DecLib::xCheckParameterSetConstraints(const int layerId)
 
   if( sps->getCTUSize() + 2 * ( 1 << sps->getLog2MinCodingBlockSize() ) > pps->getPicWidthInLumaSamples() )
   {
+#if JVET_Q0764_WRAP_AROUND_WITH_RPR
+    CHECK( pps->getWrapAroundEnabledFlag(), "Wraparound shall be disabled when the value of ( CtbSizeY / MinCbSizeY + 1) is greater than or equal to ( pic_width_in_luma_samples / MinCbSizeY - 1 )" );
+#else
     CHECK( sps->getWrapAroundEnabledFlag(), "Wraparound shall be disabled when the value of ( CtbSizeY / MinCbSizeY + 1) is less than or equal to ( pic_width_in_luma_samples / MinCbSizeY - 1 )" );
+#endif
   }
 
   if( vps != nullptr && vps->m_numOutputLayersInOls[vps->m_targetOlsIdx] > 1 )
@@ -1470,6 +1607,7 @@ void DecLib::xCheckParameterSetConstraints(const int layerId)
     CHECK(levelIdcSps > maxLevelIdxDci, "max level signaled in the DCI shall not be less than the level signaled in the SPS");
   }
 
+#if !JVET_R0276_REORDERED_SUBPICS
   // When the current picture is not the first picture of the CLVS, if the value of SubpicId[ i ] is not equal to the value of SubpicId[ i ] of previous picture in decoding order in the same layer,
   // the nal_unit_type for all coded slice NAL units of the the subpicture with subpicture index i shall be in the range of IDR_W_RADL to CRA_NUT, inclusive.
   if( sps->getSubPicInfoPresentFlag() )
@@ -1514,6 +1652,22 @@ void DecLib::xCheckParameterSetConstraints(const int layerId)
       }
     }
   }
+#endif
+
+#if JVET_R0278_CONSTRAINT  
+  if( slice->getPicHeader()->getGdrOrIrapPicFlag() && !slice->getPicHeader()->getGdrPicFlag() && ( !vps || vps->getIndependentLayerFlag( vps->getGeneralLayerIdx( layerId ) ) ) )
+  {
+    CHECK( slice->getPicHeader()->getPicInterSliceAllowedFlag(),
+      "When gdr_or_irap_pic_flag is equal to 1 and gdr_pic_flag is equal to 0 and vps_independent_layer_flag[ GeneralLayerIdx[ nuh_layer_id ] ] is equal to 1, ph_inter_slice_allowed_flag shall be equal to 0" );
+  }
+#endif  
+
+#if JVET_R0275_SPS_PTL_DBP_HRD
+  if( sps->getVPSId() && vps->m_numLayersInOls[vps->m_targetOlsIdx] == 1 )
+  {    
+    CHECK( !sps->getPtlDpbHrdParamsPresentFlag(), "When sps_video_parameter_set_id is greater than 0 and there is an OLS that contains only one layer with nuh_layer_id equal to the nuh_layer_id of the SPS, the value of sps_ptl_dpb_hrd_params_present_flag shall be equal to 1" );
+  }
+#endif
 }
 
 
@@ -1603,7 +1757,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   VPS *vps = m_parameterSetManager.getVPS(sps->getVPSId());
 
 
-  if (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_STSA && vps != nullptr && (vps->getIndependentLayerFlag(nalu.m_nuhLayerId) == 1))
+  if (nalu.m_nalUnitType == NAL_UNIT_CODED_SLICE_STSA && vps != nullptr && (vps->getIndependentLayerFlag(vps->getGeneralLayerIdx(nalu.m_nuhLayerId)) == 1))
   {
     CHECK(nalu.m_temporalId == 0, "TemporalID of STSA picture shall not be zero in independent layers");
   }
@@ -1879,6 +2033,51 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   pcSlice->checkSTSA(m_cListPic);
 
   pcSlice->scaleRefPicList( scaledRefPic, m_pcPic->cs->picHeader, m_parameterSetManager.getAPSs(), m_picHeader.getLmcsAPS(), m_picHeader.getScalingListAPS(), true );
+
+#if JVET_R0276_REORDERED_SUBPICS
+  // For each value of i in the range of 0 to sps_num_subpics_minus1, inclusive, when the value of SubpicIdVal[ i ] of a current picture is not equal to the value of SubpicIdVal[ i ] of a reference picture,
+  // the active entries of the RPLs of the coded slices in the i-th subpicture of the current picture shall not include that reference picture.
+
+  if( sps->getSubPicInfoPresentFlag() )
+  {
+    // store sub-picture IDs with a picture
+    if( m_bFirstSliceInPicture )
+    {
+      pcSlice->getPic()->subPicIDs.clear();
+      for( int subPicIdx = 0; subPicIdx < sps->getNumSubPics(); subPicIdx++ )
+      {
+        pcSlice->getPic()->subPicIDs.push_back( pps->getSubPic( subPicIdx ).getSubPicID() );
+      }
+    }
+
+    if( !pcSlice->isIntra() )
+    {
+      int currentSubPicIdx = NOT_VALID;
+
+      // derive sub-picture index for a slice
+      for( int subPicIdx = 0; subPicIdx < sps->getNumSubPics(); subPicIdx++ )
+      {
+        if( pps->getSubPic( subPicIdx ).getSubPicID() == pcSlice->getSliceSubPicId() )
+        {
+          currentSubPicIdx = subPicIdx;
+          break;
+        }
+      }
+
+      CHECK( currentSubPicIdx == NOT_VALID, "Sub-picture was not found" );
+
+      // check collocated sub-picture ID of each active reference picture
+      for( int refPicList = 0; refPicList < NUM_REF_PIC_LIST_01; refPicList++ )
+      {
+        for( int refIdx = 0; refIdx < pcSlice->getNumRefIdx( RefPicList( refPicList ) ); refIdx++ )
+        {
+          CHECK( currentSubPicIdx >= pcSlice->getRefPic( RefPicList( refPicList ), refIdx )->subPicIDs.size(), "Number of sub-pictures in a reference picture is less then the current slice sub-picture index" );
+          CHECK( pcSlice->getRefPic( RefPicList( refPicList ), refIdx )->subPicIDs[currentSubPicIdx] != pcSlice->getSliceSubPicId(), "A picture with different sub-picture ID of the collocated sub-picture cannot be used as an active reference picture" );
+        }
+      }
+    }
+  }
+#endif
 
     if (!pcSlice->isIntra())
     {
@@ -2169,6 +2368,9 @@ void DecLib::xDecodeAPS(InputNALUnit& nalu)
   m_HLSReader.parseAPS(aps);
   aps->setTemporalId(nalu.m_temporalId);
   aps->setLayerId( nalu.m_nuhLayerId );
+#if JVET_R0201_PREFIX_SUFFIX_APS_CLEANUP
+  aps->setHasPrefixNalUnitType( nalu.m_nalUnitType == NAL_UNIT_PREFIX_APS );
+#endif
   m_parameterSetManager.checkAuApsContent( aps, m_accessUnitApsNals );
 
   // aps will be deleted if it was already stored (and did not changed),
@@ -2181,7 +2383,9 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay, i
   // ignore all NAL units of layers > 0
 
   m_accessUnitNals.push_back( std::pair<NalUnitType, int>( nalu.m_nalUnitType, nalu.m_temporalId ) );
-
+#if JVET_R0201_PREFIX_SUFFIX_APS_CLEANUP
+  m_pictureUnitNals.push_back( nalu.m_nalUnitType );
+#endif
   switch (nalu.m_nalUnitType)
   {
     case NAL_UNIT_VPS:
@@ -2211,11 +2415,17 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay, i
     case NAL_UNIT_PREFIX_SEI:
       // Buffer up prefix SEI messages until SPS of associated VCL is known.
       m_prefixSEINALUs.push_back(new InputNALUnit(nalu));
+#if JVET_Q0488_SEI_REPETITION_CONSTRAINT
+      m_pictureSeiNalus.push_back(new InputNALUnit(nalu));
+#endif
       return false;
 
     case NAL_UNIT_SUFFIX_SEI:
       if (m_pcPic)
       {
+#if JVET_Q0488_SEI_REPETITION_CONSTRAINT
+        m_pictureSeiNalus.push_back(new InputNALUnit(nalu));
+#endif
         m_accessUnitSeiTids.push_back(nalu.m_temporalId);
         const SPS *sps = m_parameterSetManager.getActiveSPS();
         const VPS *vps = m_parameterSetManager.getVPS(sps->getVPSId());
@@ -2375,6 +2585,36 @@ void DecLib::xCheckMixedNalUnit(Slice* pcSlice, SPS *sps, InputNALUnit &nalu)
   {
     CHECK(pcSlice->getPPS()->getNumSlicesInPic() < 2, "mixed nal unit type picture, but with less than 2 slices");
 
+#if JVET_R0203_IRAP_LEADING_CONSTRAINT
+    CHECK( pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR, "picture with mixed NAL unit type cannot have GDR slice");
+
+    //Check that if current slice is IRAP type, the other type of NAL can only be TRAIL_NUT
+    if( pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_W_RADL || pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_N_LP || pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA )
+    {
+      for( int i = 0; i < m_uiSliceSegmentIdx; i++ )
+      {
+        Slice* PreSlice = m_pcPic->slices[i];
+        CHECK( (pcSlice->getNalUnitType() != PreSlice->getNalUnitType()) && (PreSlice->getNalUnitType() != NAL_UNIT_CODED_SLICE_TRAIL), "In a mixed NAL unt type picture, an IRAP slice can be mixed with Trail slice(s) only");
+      }
+    }
+
+    // if this is the last slice of the picture, check whether that there are at least two different NAL unit types in the picture
+    if (pcSlice->getPPS()->getNumSlicesInPic() == (m_uiSliceSegmentIdx + 1))
+    {
+      bool hasDiffTypes = false;
+      for( int i = 1; !hasDiffTypes && i <= m_uiSliceSegmentIdx; i++ )
+      {
+        Slice* slice1 = m_pcPic->slices[i-1];
+        Slice* slice2 = m_pcPic->slices[i];
+        if( slice1->getNalUnitType() != slice2->getNalUnitType())
+        {
+          hasDiffTypes = true;
+        }
+      }
+      CHECK( !hasDiffTypes, "VCL NAL units of the picture shall have two or more different nal_unit_type values");
+    }
+#endif
+
     const unsigned  ctuRsAddr = pcSlice->getCtuAddrInSlice(0);
     const unsigned  ctuXPosInCtus = ctuRsAddr % pcSlice->getPPS()->getPicWidthInCtu();
     const unsigned  ctuYPosInCtus = ctuRsAddr / pcSlice->getPPS()->getPicWidthInCtu();
@@ -2449,6 +2689,7 @@ void DecLib::xCheckMixedNalUnit(Slice* pcSlice, SPS *sps, InputNALUnit &nalu)
         }
       }
     }
+#if !JVET_R0203_IRAP_LEADING_CONSTRAINT
     // if this is the last slice of the picture, check whether the nalu type of the slices meet the nal unit type constraints
     if (pcSlice->getPPS()->getNumSlicesInPic() == (m_uiSliceSegmentIdx + 1))
     {
@@ -2516,6 +2757,7 @@ void DecLib::xCheckMixedNalUnit(Slice* pcSlice, SPS *sps, InputNALUnit &nalu)
         CHECK(!allNalsOK || !foundNalInOtherSet, "disallowed mix of nal unit types");
       }
     }
+#endif
   }
   else // all slices shall have the same nal unit type
   {

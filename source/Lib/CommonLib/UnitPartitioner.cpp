@@ -130,6 +130,13 @@ bool Partitioner::isSepTree( const CodingStructure &cs )
   return treeType != TREE_D || CS::isDualITree( cs );
 }
 
+#if JVET_R0334_PLT_CLEANUP
+bool Partitioner::isLocalSepTree(const CodingStructure &cs)
+{
+  return treeType != TREE_D && !CS::isDualITree(cs);
+}
+#endif
+
 void Partitioner::setCUData( CodingUnit& cu )
 {
   cu.depth       = currDepth;

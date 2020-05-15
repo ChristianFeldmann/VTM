@@ -272,6 +272,13 @@ void Slice::setNumEntryPoints(const SPS *sps, const PPS *pps)
   uint32_t prevCtuAddr, prevCtuX, prevCtuY;
   m_numEntryPoints = 0;
 
+#if JVET_R0165_OPTIONAL_ENTRY_POINT
+  if (!sps->getEntryPointsPresentFlag())
+  {
+    return;
+  }
+#endif
+
   // count the number of CTUs that align with either the start of a tile, or with an entropy coding sync point
   // ignore the first CTU since it doesn't count as an entry point
   for( uint32_t i = 1; i < m_sliceMap.getNumCtuInSlice(); i++ )
@@ -283,7 +290,11 @@ void Slice::setNumEntryPoints(const SPS *sps, const PPS *pps)
     prevCtuX    = (prevCtuAddr % pps->getPicWidthInCtu());
     prevCtuY    = (prevCtuAddr / pps->getPicWidthInCtu());
 
+#if JVET_R0165_OPTIONAL_ENTRY_POINT
+    if (pps->ctuToTileRowBd(ctuY) != pps->ctuToTileRowBd(prevCtuY) || pps->ctuToTileColBd(ctuX) != pps->ctuToTileColBd(prevCtuX) || (ctuY != prevCtuY && sps->getEntropyCodingSyncEnabledFlag()))
+#else
     if (pps->ctuToTileRowBd(ctuY) != pps->ctuToTileRowBd(prevCtuY) || pps->ctuToTileColBd(ctuX) != pps->ctuToTileColBd(prevCtuX) || (ctuY != prevCtuY && sps->getEntropyCodingSyncEntryPointsPresentFlag()))
+#endif
     {
       m_numEntryPoints++;
     }
@@ -483,7 +494,11 @@ void Slice::constructRefPicList(PicList& rcListPic)
       pcRefPic = xGetLongTermRefPic( rcListPic, ltrpPoc, m_localRPL0.getDeltaPocMSBPresentFlag( ii ), m_pcPic->layerId );
       pcRefPic->longTerm = true;
     }
+#if JVET_Q0764_WRAP_AROUND_WITH_RPR  
+    pcRefPic->extendPicBorder( getPPS() );
+#else
     pcRefPic->extendPicBorder();
+#endif
     m_apcRefPicList[REF_PIC_LIST_0][ii] = pcRefPic;
     m_bIsUsedAsLongTerm[REF_PIC_LIST_0][ii] = pcRefPic->longTerm;
   }
@@ -519,7 +534,11 @@ void Slice::constructRefPicList(PicList& rcListPic)
       pcRefPic = xGetLongTermRefPic( rcListPic, ltrpPoc, m_localRPL1.getDeltaPocMSBPresentFlag( ii ), m_pcPic->layerId );
       pcRefPic->longTerm = true;
     }
+#if JVET_Q0764_WRAP_AROUND_WITH_RPR  
+    pcRefPic->extendPicBorder( getPPS() );
+#else
     pcRefPic->extendPicBorder();
+#endif
     m_apcRefPicList[REF_PIC_LIST_1][ii] = pcRefPic;
     m_bIsUsedAsLongTerm[REF_PIC_LIST_1][ii] = pcRefPic->longTerm;
   }
@@ -663,11 +682,16 @@ void Slice::checkRPL(const ReferencePictureList* pRPL0, const ReferencePictureLi
     }
     refPicDecodingOrderNumber = pcRefPic->getDecodingOrderNumber();
 
-    // Checking this: "When the current picture is a CRA picture, there shall be no entry in RefPicList[0] or RefPicList[1]
-    // that precedes, in output order or decoding order, any preceding IRAP picture in decoding order (when present)"
+    // Checking this: "When the current picture follows an IRAP picture having the same value of nuh_layer_id in both decoding order 
+    // and output order, there shall be no picture referred to by an active entry in RefPicList[ 0 ] or RefPicList[ 1 ] that 
+    // precedes that IRAP picture in output order or decoding order."
+#if JVET_R0267_IDR_RPL
+    if (m_eNalUnitType == NAL_UNIT_CODED_SLICE_CRA || m_eNalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL || m_eNalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP )
+#else
     if (m_eNalUnitType == NAL_UNIT_CODED_SLICE_CRA)
+#endif
     {
-      CHECK(refPicPOC < irapPOC || refPicDecodingOrderNumber < associatedIRAPDecodingOrderNumber, "CRA picture detected that violate the rule that no entry in RefPicList[] shall precede, in output order or decoding order, any preceding IRAP picture in decoding order (when present).");
+      CHECK(refPicPOC < irapPOC || refPicDecodingOrderNumber < associatedIRAPDecodingOrderNumber, "IRAP picture detected that violate the rule that no entry in RefPicList[] shall precede, in output order or decoding order, any preceding IRAP picture in decoding order (when present).");
     }
 
     // Checking this: "When the current picture is a trailing picture that follows in both decoding orderand output order one
@@ -1008,6 +1032,9 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
   m_tileGroupLumaApsId            = pSrc->m_tileGroupLumaApsId;
   m_tileGroupChromaApsId          = pSrc->m_tileGroupChromaApsId;
   m_disableSATDForRd              = pSrc->m_disableSATDForRd;
+#if JVET_R0110_MIXED_LOSSLESS
+  m_isLossless = pSrc->m_isLossless;
+#endif
 
   if( cpyAlmostAll ) m_encCABACTableIdx  = pSrc->m_encCABACTableIdx;
   for( int i = 0; i < NUM_REF_PIC_LIST_01; i ++ )
@@ -1927,6 +1954,9 @@ VPS::VPS()
   , m_vpsSublayerCpbParamsPresentFlag(false)
   , m_numOlsHrdParamsMinus1(0)
   , m_totalNumOLSs( 0 )
+#if JVET_R0191_ASPECT3
+  , m_numMultiLayeredOlss( 0 )
+#endif
   , m_numDpbParams( 0 )
   , m_sublayerDpbParamsPresentFlag( false )
   , m_targetOlsIdx( -1 )
@@ -1935,6 +1965,7 @@ VPS::VPS()
   {
     m_vpsLayerId[i] = 0;
     m_vpsIndependentLayerFlag[i] = true;
+    m_generalLayerIdx[i] = 0;
     for (int j = 0; j < MAX_VPS_LAYERS; j++)
     {
       m_vpsDirectRefLayerFlag[i][j] = 0;
@@ -2085,7 +2116,9 @@ void VPS::deriveOutputLayerSets()
 
   m_numLayersInOls[0] = 1;
   m_layerIdInOls[0][0] = m_vpsLayerId[0];
-
+#if JVET_R0191_ASPECT3
+  m_numMultiLayeredOlss = 0;
+#endif
   for( int i = 1; i < m_totalNumOLSs; i++ )
   {
     if( m_vpsEachLayerIsAnOlsFlag )
@@ -2114,6 +2147,13 @@ void VPS::deriveOutputLayerSets()
 
       m_numLayersInOls[i] = j;
     }
+#if JVET_R0191_ASPECT3
+    if( m_numLayersInOls[i] > 1 )
+    {
+      m_multiLayerOlsIdx[i] = m_numMultiLayeredOlss;
+      m_numMultiLayeredOlss++;
+    }
+#endif
   }
 }
 
@@ -2402,7 +2442,11 @@ SPS::SPS()
 , m_BDPCMEnabledFlag          (false)
 , m_JointCbCrEnabledFlag      (false)
 , m_entropyCodingSyncEnabledFlag(false)
+#if JVET_R0165_OPTIONAL_ENTRY_POINT
+, m_entryPointPresentFlag(false)
+#else
 , m_entropyCodingSyncEntryPointPresentFlag(false)
+#endif
 , m_sbtmvpEnabledFlag         (false)
 , m_bdofEnabledFlag           (false)
 , m_fpelMmvdEnabledFlag       ( false )
@@ -2432,7 +2476,9 @@ SPS::SPS()
 , m_vuiParametersPresentFlag  (false)
 , m_vuiParameters             ()
 , m_wrapAroundEnabledFlag     (false)
+#if !JVET_Q0764_WRAP_AROUND_WITH_RPR
 , m_wrapAroundOffset          (  0)
+#endif
 , m_IBCFlag                   (  0)
 , m_PLTMode                   (  0)
 , m_lmcsEnabled               (false)
@@ -2463,6 +2509,10 @@ SPS::SPS()
 , m_maxNumAffineMergeCand(AFFINE_MRG_MAX_NUM_CANDS)
 , m_maxNumIBCMergeCand(IBC_MRG_MAX_NUM_CANDS)
 , m_maxNumGeoCand(0)
+#if JVET_R0380_SCALING_MATRIX_DISABLE_YCC_OR_RGB
+, m_scalingMatrixAlternativeColourSpaceDisabledFlag( false )
+, m_scalingMatrixDesignatedColourSpaceFlag( true )
+#endif
 {
   for(int ch=0; ch<MAX_NUM_CHANNEL_TYPE; ch++)
   {
@@ -2659,6 +2709,11 @@ PPS::PPS()
 , m_mixedNaluTypesInPicFlag          ( false )
 , m_picWidthInLumaSamples(352)
 , m_picHeightInLumaSamples( 288 )
+#if JVET_Q0764_WRAP_AROUND_WITH_RPR
+, m_wrapAroundEnabledFlag            (false)
+, m_wrapAroundOffsetMinusCtbSize     (0)
+, m_wrapAroundOffset                 (0)
+#endif
 , pcv                                (NULL)
 {
   m_ChromaQpAdjTableIncludingNullEntry[0].u.comp.CbOffset = 0; // Array includes entry [0] for the null offset used when cu_chroma_qp_offset_flag=0. This is initialised here and never subsequently changed.
@@ -2849,58 +2904,74 @@ void PPS::initRectSliceMap(const SPS  *sps)
     CHECK(m_numSlicesInPic > MAX_SLICES, "Number of slices in picture exceeds valid range");
     m_sliceMap.resize( m_numSlicesInPic );
 
-    // Q2001 v15 equation 29
-    std::vector<uint32_t> subpicWidthInTiles;
-    std::vector<uint32_t> subpicHeightInTiles;
-    std::vector<uint32_t> subpicHeightLessThanOneTileFlag;
-    subpicWidthInTiles.resize(sps->getNumSubPics());
-    subpicHeightInTiles.resize(sps->getNumSubPics());
-    subpicHeightLessThanOneTileFlag.resize(sps->getNumSubPics());
-    for (uint32_t i = 0; i <sps->getNumSubPics(); i++)
+    if (sps->getNumSubPics() > 1)
     {
-      uint32_t leftX = sps->getSubPicCtuTopLeftX(i);
-      uint32_t rightX = leftX + sps->getSubPicWidth(i) - 1;
-      subpicWidthInTiles[i] = m_ctuToTileCol[rightX] + 1 - m_ctuToTileCol[leftX];
+      // Q2001 v15 equation 29
+      std::vector<uint32_t> subpicWidthInTiles;
+      std::vector<uint32_t> subpicHeightInTiles;
+      std::vector<uint32_t> subpicHeightLessThanOneTileFlag;
+      subpicWidthInTiles.resize(sps->getNumSubPics());
+      subpicHeightInTiles.resize(sps->getNumSubPics());
+      subpicHeightLessThanOneTileFlag.resize(sps->getNumSubPics());
+      for (uint32_t i = 0; i <sps->getNumSubPics(); i++)
+      {
+        uint32_t leftX = sps->getSubPicCtuTopLeftX(i);
+        uint32_t rightX = leftX + sps->getSubPicWidth(i) - 1;
+        subpicWidthInTiles[i] = m_ctuToTileCol[rightX] + 1 - m_ctuToTileCol[leftX];
 
-      uint32_t topY = sps->getSubPicCtuTopLeftY(i);
-      uint32_t bottomY = topY + sps->getSubPicHeight(i) - 1;
-      subpicHeightInTiles[i] = m_ctuToTileRow[bottomY] + 1 - m_ctuToTileRow[topY];
+        uint32_t topY = sps->getSubPicCtuTopLeftY(i);
+        uint32_t bottomY = topY + sps->getSubPicHeight(i) - 1;
+        subpicHeightInTiles[i] = m_ctuToTileRow[bottomY] + 1 - m_ctuToTileRow[topY];
 
-      if (subpicHeightInTiles[i] == 1 && sps->getSubPicHeight(i) < m_tileRowHeight[m_ctuToTileRow[topY]] )
-      {
-        subpicHeightLessThanOneTileFlag[i] = 1;
-      }
-      else
-      {
-        subpicHeightLessThanOneTileFlag[i] = 0;
-      }
-    }
-
-    for( int i = 0; i < m_numSlicesInPic; i++ )
-    {
-      CHECK(m_numSlicesInPic != sps->getNumSubPics(), "in single slice per subpic mode, number of slice and subpic shall be equal");
-      m_sliceMap[ i ].initSliceMap();
-      if (subpicHeightLessThanOneTileFlag[i])
-      {
-        m_sliceMap[i].addCtusToSlice(sps->getSubPicCtuTopLeftX(i), sps->getSubPicCtuTopLeftX(i) + sps->getSubPicWidth(i),
-                                     sps->getSubPicCtuTopLeftY(i), sps->getSubPicCtuTopLeftY(i) + sps->getSubPicHeight(i), m_picWidthInCtu);
-      }
-      else
-      {
-        tileX = m_ctuToTileCol[sps->getSubPicCtuTopLeftX(i)];
-        tileY = m_ctuToTileRow[sps->getSubPicCtuTopLeftY(i)];
-        for (uint32_t j = 0; j< subpicHeightInTiles[i]; j++)
+        if (subpicHeightInTiles[i] == 1 && sps->getSubPicHeight(i) < m_tileRowHeight[m_ctuToTileRow[topY]] )
         {
-          for (uint32_t k = 0; k < subpicWidthInTiles[i]; k++)
+          subpicHeightLessThanOneTileFlag[i] = 1;
+        }
+        else
+        {
+          subpicHeightLessThanOneTileFlag[i] = 0;
+        }
+      }
+
+      for( int i = 0; i < m_numSlicesInPic; i++ )
+      {
+        CHECK(m_numSlicesInPic != sps->getNumSubPics(), "in single slice per subpic mode, number of slice and subpic shall be equal");
+        m_sliceMap[ i ].initSliceMap();
+        if (subpicHeightLessThanOneTileFlag[i])
+        {
+          m_sliceMap[i].addCtusToSlice(sps->getSubPicCtuTopLeftX(i), sps->getSubPicCtuTopLeftX(i) + sps->getSubPicWidth(i),
+                                       sps->getSubPicCtuTopLeftY(i), sps->getSubPicCtuTopLeftY(i) + sps->getSubPicHeight(i), m_picWidthInCtu);
+        }
+        else
+        {
+          tileX = m_ctuToTileCol[sps->getSubPicCtuTopLeftX(i)];
+          tileY = m_ctuToTileRow[sps->getSubPicCtuTopLeftY(i)];
+          for (uint32_t j = 0; j< subpicHeightInTiles[i]; j++)
           {
-            m_sliceMap[i].addCtusToSlice(getTileColumnBd(tileX + k), getTileColumnBd(tileX + k + 1), getTileRowBd(tileY + j), getTileRowBd(tileY + j + 1), m_picWidthInCtu);
+            for (uint32_t k = 0; k < subpicWidthInTiles[i]; k++)
+            {
+              m_sliceMap[i].addCtusToSlice(getTileColumnBd(tileX + k), getTileColumnBd(tileX + k + 1), getTileRowBd(tileY + j), getTileRowBd(tileY + j + 1), m_picWidthInCtu);
+            }
           }
         }
       }
+      subpicWidthInTiles.clear();
+      subpicHeightInTiles.clear();
+      subpicHeightLessThanOneTileFlag.clear();
     }
-    subpicWidthInTiles.clear();
-    subpicHeightInTiles.clear();
-    subpicHeightLessThanOneTileFlag.clear();
+    else
+    {
+      m_sliceMap[0].initSliceMap();
+      for (int tileY=0; tileY<m_numTileRows; tileY++)
+      {
+        for (int tileX=0; tileX<m_numTileCols; tileX++)
+        {
+          m_sliceMap[0].addCtusToSlice(getTileColumnBd(tileX), getTileColumnBd(tileX + 1),
+                                       getTileRowBd(tileY), getTileRowBd(tileY + 1), m_picWidthInCtu);
+        }
+      }
+      m_sliceMap[0].setSliceID(0);
+    }
   }
   else
   {
@@ -3048,6 +3119,10 @@ void PPS::initSubPic(const SPS &sps)
     else
     {
       int numSlicesInSubPic = 0;
+#if R0091_CONSTRAINT_SLICE_ORDER
+      int idxLastSliceInSubpic = -1;
+      int idxFirstSliceAfterSubpic = m_numSlicesInPic;
+#endif
       for (int j = 0; j < m_numSlicesInPic; j++)
       {
         uint32_t ctu = m_sliceMap[j].getCtuAddrInSlice(0);
@@ -3061,8 +3136,20 @@ void PPS::initSubPic(const SPS &sps)
           // add ctus in a slice to the subpicture it belongs to
           m_subPics[i].addCTUsToSubPic(m_sliceMap[j].getCtuAddrList());
 	  numSlicesInSubPic++;
+#if R0091_CONSTRAINT_SLICE_ORDER
+          idxLastSliceInSubpic = j;
+#endif
         }
+#if R0091_CONSTRAINT_SLICE_ORDER
+        else if (idxFirstSliceAfterSubpic == m_numSlicesInPic && idxLastSliceInSubpic != -1)
+        {
+          idxFirstSliceAfterSubpic = j;
+        }
+#endif
       }
+#if R0091_CONSTRAINT_SLICE_ORDER
+      CHECK( idxFirstSliceAfterSubpic < idxLastSliceInSubpic, "The signalling order of slices shall follow the coding order" );
+#endif
       m_subPics[i].setNumSlicesInSubPic(numSlicesInSubPic);
     }
     m_subPics[i].setTreatedAsPicFlag(sps.getSubPicTreatedAsPicFlag(i));
@@ -3870,7 +3957,12 @@ void Slice::scaleRefPicList( Picture *scaledRefPic[ ], PicHeader *picHeader, APS
                                    scaledRefPic[j]->getRecoBuf(), pps->getScalingWindow(),
                                    sps->getChromaFormatIdc(), sps->getBitDepths(), true, downsampling,
                                    sps->getHorCollocatedChromaFlag(), sps->getVerCollocatedChromaFlag() );
+#if JVET_Q0764_WRAP_AROUND_WITH_RPR
+          scaledRefPic[j]->unscaledPic = m_apcRefPicList[refList][rIdx];
+          scaledRefPic[j]->extendPicBorder( getPPS() );
+#else
           scaledRefPic[j]->extendPicBorder();
+#endif
 
           m_scaledRefPicList[refList][rIdx] = scaledRefPic[j];
         }
@@ -3949,8 +4041,10 @@ bool Slice::checkRPR()
 
 bool             operator == (const ConstraintInfo& op1, const ConstraintInfo& op2)
 {
+#if !JVET_R0090_VUI
   if( op1.m_progressiveSourceFlag                        != op2.m_progressiveSourceFlag                          ) return false;
   if( op1.m_interlacedSourceFlag                         != op2.m_interlacedSourceFlag                           ) return false;
+#endif
   if( op1.m_nonPackedConstraintFlag                      != op2.m_nonPackedConstraintFlag                        ) return false;
   if( op1.m_frameOnlyConstraintFlag                      != op2.m_frameOnlyConstraintFlag                        ) return false;
   if( op1.m_intraOnlyConstraintFlag                      != op2.m_intraOnlyConstraintFlag                        ) return false;
@@ -3958,6 +4052,22 @@ bool             operator == (const ConstraintInfo& op1, const ConstraintInfo& o
   if( op1.m_maxChromaFormatConstraintIdc                 != op2.m_maxChromaFormatConstraintIdc                   ) return false;
   if( op1.m_onePictureOnlyConstraintFlag                 != op2.m_onePictureOnlyConstraintFlag                   ) return false;
   if( op1.m_lowerBitRateConstraintFlag                   != op2.m_lowerBitRateConstraintFlag                     ) return false;
+
+#if JVET_R0286_GCI_CLEANUP
+  if (op1.m_singleLayerConstraintFlag                    != op2.m_singleLayerConstraintFlag                      ) return false;
+  if (op1.m_allLayersIndependentConstraintFlag           != op2.m_allLayersIndependentConstraintFlag             ) return false;
+  if (op1.m_noMrlConstraintFlag                          != op2.m_noMrlConstraintFlag                            ) return false;
+  if (op1.m_noIspConstraintFlag                          != op2.m_noIspConstraintFlag                            ) return false;
+  if (op1.m_noMipConstraintFlag                          != op2.m_noMipConstraintFlag                            ) return false;
+  if (op1.m_noLfnstConstraintFlag                        != op2.m_noLfnstConstraintFlag                          ) return false;
+  if (op1.m_noMmvdConstraintFlag                         != op2.m_noMmvdConstraintFlag                           ) return false;
+  if (op1.m_noSmvdConstraintFlag                         != op2.m_noSmvdConstraintFlag                           ) return false;
+  if (op1.m_noProfConstraintFlag                         != op2.m_noProfConstraintFlag                           ) return false;
+  if (op1.m_noPaletteConstraintFlag                      != op2.m_noPaletteConstraintFlag                        ) return false;
+  if (op1.m_noActConstraintFlag                          != op2.m_noActConstraintFlag                            ) return false;
+  if (op1.m_noLmcsConstraintFlag                         != op2.m_noLmcsConstraintFlag                           ) return false;
+#endif
+
   if( op1.m_noQtbttDualTreeIntraConstraintFlag           != op2.m_noQtbttDualTreeIntraConstraintFlag             ) return false;
   if( op1.m_noPartitionConstraintsOverrideConstraintFlag != op2.m_noPartitionConstraintsOverrideConstraintFlag   ) return false;
   if( op1.m_noSaoConstraintFlag                          != op2.m_noSaoConstraintFlag                            ) return false;
@@ -3976,7 +4086,9 @@ bool             operator == (const ConstraintInfo& op1, const ConstraintInfo& o
   if( op1.m_noBcwConstraintFlag                          != op2.m_noBcwConstraintFlag                            ) return false;
   if( op1.m_noIbcConstraintFlag                          != op2.m_noIbcConstraintFlag                            ) return false;
   if( op1.m_noCiipConstraintFlag                         != op2.m_noCiipConstraintFlag                           ) return false;
+#if !JVET_R0214_MMVD_SYNTAX_MODIFICATION
   if( op1.m_noFPelMmvdConstraintFlag                     != op2.m_noFPelMmvdConstraintFlag                       ) return false;
+#endif
   if( op1.m_noLadfConstraintFlag                         != op2.m_noLadfConstraintFlag                           ) return false;
   if( op1.m_noTransformSkipConstraintFlag                != op2.m_noTransformSkipConstraintFlag                  ) return false;
   if( op1.m_noBDPCMConstraintFlag                        != op2.m_noBDPCMConstraintFlag                          ) return false;

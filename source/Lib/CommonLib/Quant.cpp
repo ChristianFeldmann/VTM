@@ -65,7 +65,11 @@
 QpParam::QpParam(const int           qpy,
                  const ComponentID   compID,
                  const int           qpBdOffset,
+#if JVET_R0045_TS_MIN_QP_CLEANUP
+                 const int           internalMinusInputBitDepth,
+#else
                  const int           minQpPrimeTsMinus4,
+#endif
                  const int           chromaQPOffset,
                  const ChromaFormat  chFmt,
                  const int           dqp
@@ -96,7 +100,11 @@ QpParam::QpParam(const int           qpy,
   rems[0]=baseQp%6;
 
   int baseQpTS = baseQp;
+#if JVET_R0045_TS_MIN_QP_CLEANUP
+  baseQpTS = std::max(baseQpTS, 4 + 6 * internalMinusInputBitDepth);
+#else
   baseQpTS = std::max(baseQpTS, 4 + minQpPrimeTsMinus4);
+#endif
 
   Qps[1]  = baseQpTS;
   pers[1] = baseQpTS / 6;
@@ -122,7 +130,11 @@ QpParam::QpParam(const TransformUnit& tu, const ComponentID &compIDX, const int 
 
   const bool useJQP = isChroma(compID) && (abs(TU::getICTMode(tu)) == 2);
   bool applyACTQpoffset = tu.cu->colorTransform && allowACTQpoffset;
+#if JVET_R0045_TS_MIN_QP_CLEANUP
+  *this = QpParam(QP <= -MAX_INT ? tu.cu->qp : QP, useJQP ? JOINT_CbCr : compID, tu.cs->sps->getQpBDOffset(toChannelType(compID)), tu.cs->sps->getInternalMinusInputBitDepth(toChannelType(compID)), chromaQpOffset, tu.chromaFormat, dqp, tu.cs->sps, applyACTQpoffset);
+#else
   *this = QpParam(QP <= -MAX_INT ? tu.cu->qp : QP, useJQP ? JOINT_CbCr : compID, tu.cs->sps->getQpBDOffset(toChannelType(compID)), tu.cs->sps->getMinQpPrimeTsMinus4(toChannelType(compID)), chromaQpOffset, tu.chromaFormat, dqp, tu.cs->sps, applyACTQpoffset);
+#endif
 }
 
 
@@ -371,7 +383,12 @@ void Quant::dequant(const TransformUnit &tu,
   const bool            isTransformSkip = (tu.mtsIdx[compID] == MTS_SKIP);
   const bool            disableSMForLFNST = tu.cs->slice->getExplicitScalingListUsed() ? tu.cs->picHeader->getScalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
   const bool            isLfnstApplied = tu.cu->lfnstIdx > 0 && (tu.cu->isSepTree() ? true : isLuma(compID));
+#if JVET_R0380_SCALING_MATRIX_DISABLE_YCC_OR_RGB
+  const bool            disableSMForACT = tu.cs->slice->getSPS()->getScalingMatrixForAlternativeColourSpaceDisabledFlag() && (tu.cs->slice->getSPS()->getScalingMatrixDesignatedColourSpaceFlag() == tu.cu->colorTransform);
+  const bool            enableScalingLists = getUseScalingList(uiWidth, uiHeight, isTransformSkip, isLfnstApplied, disableSMForLFNST, disableSMForACT);
+#else
   const bool            enableScalingLists = getUseScalingList(uiWidth, uiHeight, isTransformSkip, isLfnstApplied, disableSMForLFNST);
+#endif
   const int             scalingListType    = getScalingListType(tu.cu->predMode, compID);
   const int             channelBitDepth    = sps->getBitDepth(toChannelType(compID));
 
@@ -525,8 +542,15 @@ void Quant::setScalingList(ScalingList *scalingList, const int maxLog2TrDynamicR
   {
     for(uint32_t list = 0; list < SCALING_LIST_NUM; list++)
     {
+#if JVET_R0166_SCALING_LISTS_CHROMA_444
+      if (size == SCALING_LIST_2x2 && list < 4)   // skip 2x2 luma
+#else
       if ((size == SCALING_LIST_2x2 && list < 4) || (size == SCALING_LIST_64x64 && list % (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES) != 0))   // skip 2x2 luma
+#endif
         continue;
+#if JVET_R0166_SCALING_LISTS_CHROMA_444
+      scalingListId = g_scalingListId[size][list];
+#endif
       if (scalingList->getChromaScalingListPresentFlag() || scalingList->isLumaScalingList(scalingListId))
       {
         for(int qp = minimumQp; qp < maximumQp; qp++)
@@ -539,7 +563,9 @@ void Quant::setScalingList(ScalingList *scalingList, const int maxLog2TrDynamicR
       {
          scalingList->processDefaultMatrix(scalingListId);
       }
+#if !JVET_R0166_SCALING_LISTS_CHROMA_444
       scalingListId++;
+#endif
     }
   }
   //based on square result and apply downsample technology
@@ -551,9 +577,15 @@ void Quant::setScalingList(ScalingList *scalingList, const int maxLog2TrDynamicR
       for (uint32_t list = 0; list < SCALING_LIST_NUM; list++) //9
       {
         int largerSide = (sizew > sizeh) ? sizew : sizeh;
+#if !JVET_R0166_SCALING_LISTS_CHROMA_444
         if (largerSide == SCALING_LIST_64x64 && list % (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES) != 0) continue;
+#endif
         if (largerSide < SCALING_LIST_4x4) printf("Rectangle Error !\n");
+#if JVET_R0166_SCALING_LISTS_CHROMA_444
+        recScalingListId = g_scalingListId[largerSide][list];
+#else
         recScalingListId = SCALING_LIST_NUM * (largerSide - 2) + 2 + (list / ((largerSide == SCALING_LIST_64x64) ? 3 : 1));
+#endif
         for (int qp = minimumQp; qp < maximumQp; qp++)
         {
           xSetRecScalingListEnc(scalingList, list, sizew, sizeh, qp, recScalingListId);
@@ -578,13 +610,22 @@ void Quant::setScalingListDec(const ScalingList &scalingList)
   {
     for(uint32_t list = 0; list < SCALING_LIST_NUM; list++)
     {
+#if JVET_R0166_SCALING_LISTS_CHROMA_444
+      if (size == SCALING_LIST_2x2 && list < 4)   // skip 2x2 luma
+#else
       if ((size == SCALING_LIST_2x2 && list < 4) || (size == SCALING_LIST_64x64 && list % (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES) != 0))   // skip 2x2 luma
+#endif
         continue;
+#if JVET_R0166_SCALING_LISTS_CHROMA_444
+      scalingListId = g_scalingListId[size][list];
+#endif
       for(int qp = minimumQp; qp < maximumQp; qp++)
       {
         xSetScalingListDec(scalingList, list, size, qp, scalingListId);
       }
+#if !JVET_R0166_SCALING_LISTS_CHROMA_444
       scalingListId++;
+#endif
     }
   }
   //based on square result and apply downsample technology
@@ -597,9 +638,15 @@ void Quant::setScalingListDec(const ScalingList &scalingList)
       for (uint32_t list = 0; list < SCALING_LIST_NUM; list++) //9
       {
         int largerSide = (sizew > sizeh) ? sizew : sizeh;
+#if !JVET_R0166_SCALING_LISTS_CHROMA_444
         if (largerSide == SCALING_LIST_64x64 && list % (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES) != 0) continue;
+#endif
         if (largerSide < SCALING_LIST_4x4) printf("Rectangle Error !\n");
+#if JVET_R0166_SCALING_LISTS_CHROMA_444
+        recScalingListId = g_scalingListId[largerSide][list];
+#else
         recScalingListId = SCALING_LIST_NUM * (largerSide - 2) + 2 + (list / ((largerSide == SCALING_LIST_64x64) ? 3 : 1));
+#endif
         for (int qp = minimumQp; qp < maximumQp; qp++)
         {
           xSetRecScalingListDec(scalingList, list, sizew, sizeh, qp, recScalingListId);
@@ -983,7 +1030,12 @@ void Quant::quant(TransformUnit &tu, const ComponentID &compID, const CCoeffBuf 
     int *piQuantCoeff = getQuantCoeff(scalingListType, cQP.rem(useTransformSkip), uiLog2TrWidth, uiLog2TrHeight);
     const bool disableSMForLFNST = tu.cs->slice->getExplicitScalingListUsed() ? tu.cs->picHeader->getScalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
     const bool isLfnstApplied = tu.cu->lfnstIdx > 0 && (tu.cu->isSepTree() ? true : isLuma(compID));
+#if JVET_R0380_SCALING_MATRIX_DISABLE_YCC_OR_RGB
+    const bool disableSMForACT = tu.cs->slice->getSPS()->getScalingMatrixForAlternativeColourSpaceDisabledFlag() && (tu.cs->slice->getSPS()->getScalingMatrixDesignatedColourSpaceFlag() == tu.cu->colorTransform);
+    const bool enableScalingLists = getUseScalingList(uiWidth, uiHeight, useTransformSkip, isLfnstApplied, disableSMForLFNST, disableSMForACT);
+#else
     const bool enableScalingLists = getUseScalingList(uiWidth, uiHeight, useTransformSkip, isLfnstApplied, disableSMForLFNST);
+#endif
 
     // for blocks that where width*height != 4^N, the effective scaling applied during transformation cannot be
     // compensated by a bit-shift (the quantised result will be sqrt(2) * larger than required).
@@ -1062,7 +1114,12 @@ bool Quant::xNeedRDOQ(TransformUnit &tu, const ComponentID &compID, const CCoeff
 
   const bool disableSMForLFNST = tu.cs->slice->getExplicitScalingListUsed() ? tu.cs->picHeader->getScalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
   const bool isLfnstApplied = tu.cu->lfnstIdx > 0 && (tu.cu->isSepTree() ? true : isLuma(compID));
+#if JVET_R0380_SCALING_MATRIX_DISABLE_YCC_OR_RGB
+  const bool disableSMForACT = tu.cs->slice->getSPS()->getScalingMatrixForAlternativeColourSpaceDisabledFlag() && (tu.cs->slice->getSPS()->getScalingMatrixDesignatedColourSpaceFlag() == tu.cu->colorTransform);
+  const bool enableScalingLists = getUseScalingList(uiWidth, uiHeight, (useTransformSkip != 0), isLfnstApplied, disableSMForLFNST, disableSMForACT);
+#else
   const bool enableScalingLists = getUseScalingList(uiWidth, uiHeight, (useTransformSkip != 0), isLfnstApplied, disableSMForLFNST);
+#endif
 
   /* for 422 chroma blocks, the effective scaling applied during transformation is not a power of 2, hence it cannot be
     * implemented as a bit-shift (the quantised result will be sqrt(2) * larger than required). Alternatively, adjust the
@@ -1113,7 +1170,12 @@ void Quant::transformSkipQuantOneSample(TransformUnit &tu, const ComponentID &co
   const int            scalingListType                = getScalingListType(tu.cu->predMode, compID);
   const bool           disableSMForLFNST = tu.cs->slice->getExplicitScalingListUsed() ? tu.cs->picHeader->getScalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
   const bool           isLfnstApplied = tu.cu->lfnstIdx > 0 && (tu.cu->isSepTree() ? true : isLuma(compID));
+#if JVET_R0380_SCALING_MATRIX_DISABLE_YCC_OR_RGB
+  const bool           disableSMForACT = tu.cs->slice->getSPS()->getScalingMatrixForAlternativeColourSpaceDisabledFlag() && (tu.cs->slice->getSPS()->getScalingMatrixDesignatedColourSpaceFlag() == tu.cu->colorTransform);
+  const bool           enableScalingLists = getUseScalingList(uiWidth, uiHeight, true, isLfnstApplied, disableSMForLFNST, disableSMForACT);
+#else
   const bool           enableScalingLists = getUseScalingList(uiWidth, uiHeight, true, isLfnstApplied, disableSMForLFNST);
+#endif
   const bool           useTransformSkip = (tu.mtsIdx[compID] == MTS_SKIP);
   const int            defaultQuantisationCoefficient = g_quantScales[0][cQP.rem(useTransformSkip)];
 
@@ -1173,7 +1235,12 @@ void Quant::invTrSkipDeQuantOneSample(TransformUnit &tu, const ComponentID &comp
   const int            scalingListType        = getScalingListType(tu.cu->predMode, compID);
   const bool           disableSMForLFNST = tu.cs->slice->getExplicitScalingListUsed() ? tu.cs->picHeader->getScalingListAPS()->getScalingList().getDisableScalingMatrixForLfnstBlks() : false;
   const bool           isLfnstApplied = tu.cu->lfnstIdx > 0 && (tu.cu->isSepTree() ? true : isLuma(compID));
+#if JVET_R0380_SCALING_MATRIX_DISABLE_YCC_OR_RGB
+  const bool           disableSMForACT = tu.cs->slice->getSPS()->getScalingMatrixForAlternativeColourSpaceDisabledFlag() && (tu.cs->slice->getSPS()->getScalingMatrixDesignatedColourSpaceFlag() == tu.cu->colorTransform);
+  const bool           enableScalingLists = getUseScalingList(uiWidth, uiHeight, true, isLfnstApplied, disableSMForLFNST, disableSMForACT);
+#else
   const bool           enableScalingLists = getUseScalingList(uiWidth, uiHeight, true, isLfnstApplied, disableSMForLFNST);
+#endif
   CHECK(scalingListType >= SCALING_LIST_NUM, "Invalid scaling list");
 
   const bool isTransformSkip = (tu.mtsIdx[compID] == MTS_SKIP);

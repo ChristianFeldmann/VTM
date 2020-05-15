@@ -75,12 +75,13 @@ struct OutputNALUnit : public NALUnit
   OutputBitstream m_Bitstream;
 };
 
-void write(std::ostream& out, OutputNALUnit& nalu);
+void writeNaluWithHeader(std::ostream& out, OutputNALUnit& nalu);
+void writeNaluContent(std::ostream& out, OutputNALUnit& nalu);
 
 inline NALUnitEBSP::NALUnitEBSP(OutputNALUnit& nalu)
   : NALUnit(nalu)
 {
-  write(m_nalUnitData, nalu);
+  writeNaluWithHeader(m_nalUnitData, nalu);
 }
 
 //! \}

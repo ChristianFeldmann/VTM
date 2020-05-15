@@ -281,12 +281,18 @@ public:
     , m_sublayerInitialCpbRemovalDelayPresentFlag(false)
     , m_additionalConcatenationInfoPresentFlag (false)
     , m_maxInitialRemovalDelayForConcatenation (0)
+#if JVET_R0094_DPB_TID_OFFSET
+    , m_sublayerDpbOutputOffsetsPresentFlag (false)
+#endif
     , m_altCpbParamsPresentFlag (false)
     , m_useAltCpbParamsFlag (false)
   {
     ::memset(m_initialCpbRemovalDelay, 0, sizeof(m_initialCpbRemovalDelay));
     ::memset(m_initialCpbRemovalOffset, 0, sizeof(m_initialCpbRemovalOffset));
     ::memset(m_cpbRemovalDelayDelta, 0, sizeof(m_cpbRemovalDelayDelta));
+#if JVET_R0094_DPB_TID_OFFSET
+    ::memset(m_dpbOutputTidOffset, 0, sizeof(m_dpbOutputTidOffset));
+#endif
   }
   virtual ~SEIBufferingPeriod() {}
 
@@ -316,6 +322,10 @@ public:
   bool m_sublayerInitialCpbRemovalDelayPresentFlag;
   bool     m_additionalConcatenationInfoPresentFlag;
   uint32_t m_maxInitialRemovalDelayForConcatenation;
+#if JVET_R0094_DPB_TID_OFFSET
+  bool     m_sublayerDpbOutputOffsetsPresentFlag;
+  uint32_t m_dpbOutputTidOffset      [MAX_TLAYER];
+#endif
   bool     m_altCpbParamsPresentFlag;
   bool     m_useAltCpbParamsFlag;
 };
@@ -357,10 +367,21 @@ public:
   std::vector<uint32_t> m_numNalusInDuMinus1;
   std::vector<uint32_t> m_duCpbRemovalDelayMinus1;
   bool     m_cpbAltTimingInfoPresentFlag;
+#if JVET_R0413_HRD_TIMING_INFORMATION
+  std::vector<std::vector<uint32_t>> m_nalCpbAltInitialRemovalDelayDelta;
+  std::vector<std::vector<uint32_t>> m_nalCpbAltInitialRemovalOffsetDelta;
+  std::vector<uint32_t>              m_nalCpbDelayOffset;
+  std::vector<uint32_t>              m_nalDpbDelayOffset;
+  std::vector<std::vector<uint32_t>> m_vclCpbAltInitialRemovalDelayDelta;
+  std::vector<std::vector<uint32_t>> m_vclCpbAltInitialRemovalOffsetDelta;
+  std::vector<uint32_t>              m_vclCpbDelayOffset;
+  std::vector<uint32_t>              m_vclDpbDelayOffset;
+#else
   std::vector<std::vector<uint32_t>> m_cpbAltInitialCpbRemovalDelayDelta;
   std::vector<std::vector<uint32_t>> m_cpbAltInitialCpbRemovalOffsetDelta;
   std::vector<uint32_t>              m_cpbDelayOffset;
   std::vector<uint32_t>              m_dpbDelayOffset;
+#endif
   int m_ptDisplayElementalPeriodsMinus1;
 };
 
@@ -477,13 +498,13 @@ public:
     deleteSEIs(m_nestedSEIs);
   }
 
-  bool  m_nestingOlsFlag;
-  uint32_t m_nestingNumOlssMinus1;
-  uint32_t m_nestingOlsIdxDeltaMinus1[MAX_NESTING_NUM_LAYER];
-  uint32_t m_nestingOlsIdx[MAX_NESTING_NUM_LAYER];
-  bool  m_nestingAllLayersFlag;                           //value valid if m_nestingOlsFlag == 0
-  uint32_t  m_nestingNumLayersMinus1;                     //value valid if m_nestingOlsFlag == 0 and m_nestingAllLayersFlag == 0
-  uint8_t m_nestingLayerId[MAX_NESTING_NUM_LAYER];        //value valid if m_nestingOlsFlag == 0 and m_nestingAllLayersFlag == 0. This can e.g. be a static array of 64 uint8_t values
+  bool      m_snOlsFlag;
+  uint32_t  m_snNumOlssMinus1;
+  uint32_t  m_snOlsIdxDeltaMinus1[MAX_NESTING_NUM_LAYER];
+  uint32_t  m_snOlsIdx[MAX_NESTING_NUM_LAYER];
+  bool      m_snAllLayersFlag;                      //value valid if m_nestingOlsFlag == 0
+  uint32_t  m_snNumLayersMinus1;                    //value valid if m_nestingOlsFlag == 0 and m_nestingAllLayersFlag == 0
+  uint8_t   m_snLayerId[MAX_NESTING_NUM_LAYER];     //value valid if m_nestingOlsFlag == 0 and m_nestingAllLayersFlag == 0. This can e.g. be a static array of 64 uint8_t values
 
   SEIMessages m_nestedSEIs;
 };

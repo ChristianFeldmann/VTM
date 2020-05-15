@@ -238,9 +238,19 @@ void SEIWriter::xWriteSEIDecodingUnitInfo(const SEIDecodingUnitInfo& sei, const 
   WRITE_UVLC(sei.m_decodingUnitIdx, "decoding_unit_idx");
   if( !bp.m_decodingUnitCpbParamsInPicTimingSeiFlag )
   {
-    for( int i = temporalId; i < bp.m_bpMaxSubLayers - 1; i ++ )
+#if JVET_R0100
+    for (int i = temporalId; i <= bp.m_bpMaxSubLayers - 1; i++)
     {
-      WRITE_FLAG( sei.m_duiSubLayerDelaysPresentFlag[i], "dui_sub_layer_delays_present_flag[i]" );
+      if (i < bp.m_bpMaxSubLayers - 1)
+      {
+#else
+    for (int i = temporalId; i < bp.m_bpMaxSubLayers - 1; i++)
+    {
+#endif
+      WRITE_FLAG(sei.m_duiSubLayerDelaysPresentFlag[i], "dui_sub_layer_delays_present_flag[i]");
+#if JVET_R0100
+      }
+#endif
       if( sei.m_duiSubLayerDelaysPresentFlag[i] )
         WRITE_CODE( sei.m_duSptCpbRemovalDelayIncrement[i], bp.getDuCpbRemovalDelayIncrementLength(), "du_spt_cpb_removal_delay_increment[i]");
     }
@@ -318,6 +328,16 @@ void SEIWriter::xWriteSEIBufferingPeriod(const SEIBufferingPeriod& sei)
       }
     }
   }
+#if JVET_R0094_DPB_TID_OFFSET
+  WRITE_FLAG(sei.m_sublayerDpbOutputOffsetsPresentFlag, "sublayer_dpb_output_offsets_present_flag");
+  if(sei.m_sublayerDpbOutputOffsetsPresentFlag)
+  {
+    for(int i = 0; i < sei.m_bpMaxSubLayers - 1; i++)
+    {
+      WRITE_UVLC( sei.m_dpbOutputTidOffset[i], "dpb_output_tid_offset[i]" );
+    }
+  }
+#endif
   if (sei.m_altCpbParamsPresentFlag)
   {
     WRITE_FLAG(sei.m_useAltCpbParamsFlag, "use_alt_cpb_params_flag");
@@ -334,6 +354,40 @@ void SEIWriter::xWriteSEIPictureTiming(const SEIPictureTiming& sei, const SEIBuf
     WRITE_FLAG( sei.m_cpbAltTimingInfoPresentFlag, "cpb_alt_timing_info_present_flag" );
     if( sei.m_cpbAltTimingInfoPresentFlag )
     {
+#if JVET_R0413_HRD_TIMING_INFORMATION
+      if (bp.m_bpNalCpbParamsPresentFlag)
+      {
+        for (int i = (bp.m_sublayerInitialCpbRemovalDelayPresentFlag ? 0 : bp.m_bpMaxSubLayers - 1); i <= bp.m_bpMaxSubLayers - 1; ++i)
+        {
+          for (int j = 0; j < bp.m_bpCpbCnt; j++)
+          {
+            WRITE_CODE(sei.m_nalCpbAltInitialRemovalDelayDelta[i][j], bp.m_initialCpbRemovalDelayLength,
+                       "nal_cpb_alt_initial_cpb_removal_delay_delta[ i ][ j ]");
+            WRITE_CODE(sei.m_nalCpbAltInitialRemovalOffsetDelta[i][j], bp.m_initialCpbRemovalDelayLength,
+                       "nal_cpb_alt_initial_cpb_removal_offset_delta[ i ][ j ]");
+          }
+          WRITE_CODE(sei.m_nalCpbDelayOffset[i], bp.m_initialCpbRemovalDelayLength, "nal_cpb_delay_offset[ i ]");
+          WRITE_CODE(sei.m_nalDpbDelayOffset[i], bp.m_initialCpbRemovalDelayLength, "nal_dpb_delay_offset[ i ]");
+        }
+      }
+
+      if (bp.m_bpVclCpbParamsPresentFlag)
+      {
+        for (int i = (bp.m_sublayerInitialCpbRemovalDelayPresentFlag ? 0 : bp.m_bpMaxSubLayers - 1);
+             i <= bp.m_bpMaxSubLayers - 1; ++i)
+        {
+          for (int j = 0; j < bp.m_bpCpbCnt; j++)
+          {
+            WRITE_CODE(sei.m_vclCpbAltInitialRemovalDelayDelta[i][j], bp.m_initialCpbRemovalDelayLength,
+                       "vcl_cpb_alt_initial_cpb_removal_delay_delta[ i ][ j ]");
+            WRITE_CODE(sei.m_vclCpbAltInitialRemovalOffsetDelta[i][j], bp.m_initialCpbRemovalDelayLength,
+                       "vcl_cpb_alt_initial_cpb_removal_offset_delta[ i ][ j ]");
+          }
+          WRITE_CODE(sei.m_vclCpbDelayOffset[i], bp.m_initialCpbRemovalDelayLength, "vcl_cpb_delay_offset[ i ]");
+          WRITE_CODE(sei.m_vclDpbDelayOffset[i], bp.m_initialCpbRemovalDelayLength, "vcl_dpb_delay_offset[ i ]");
+        }
+      }
+#else
       for (int i = (bp.m_sublayerInitialCpbRemovalDelayPresentFlag ? 0 : bp.m_bpMaxSubLayers - 1);
            i <= bp.m_bpMaxSubLayers - 1; ++i)
       {
@@ -347,6 +401,7 @@ void SEIWriter::xWriteSEIPictureTiming(const SEIPictureTiming& sei, const SEIBuf
         WRITE_CODE(sei.m_cpbDelayOffset[i], bp.m_initialCpbRemovalDelayLength, "cpb_delay_offset[ i ]");
         WRITE_CODE(sei.m_dpbDelayOffset[i], bp.m_initialCpbRemovalDelayLength, "dpb_delay_offset[ i ]");
       }
+#endif
     }
   }
   for( int i = temporalId; i < bp.m_bpMaxSubLayers - 1; i ++ )
@@ -437,24 +492,24 @@ void SEIWriter::xWriteSEIDependentRAPIndication(const SEIDependentRAPIndication&
 
 void SEIWriter::xWriteSEIScalableNesting(OutputBitstream& bs, const SEIScalableNesting& sei, const SPS *sps)
 {
-  WRITE_FLAG(sei.m_nestingOlsFlag, "nesting_ols_flag");
-  if (sei.m_nestingOlsFlag)
+  WRITE_FLAG(sei.m_snOlsFlag, "sn_ols_flag");
+  if (sei.m_snOlsFlag)
   {
-    WRITE_UVLC(sei.m_nestingNumOlssMinus1, "nesting_num_olss_minus1");
-    for (uint32_t i = 0; i <= sei.m_nestingNumOlssMinus1; i++)
+    WRITE_UVLC(sei.m_snNumOlssMinus1, "sn_num_olss_minus1");
+    for (uint32_t i = 0; i <= sei.m_snNumOlssMinus1; i++)
     {
-      WRITE_UVLC(sei.m_nestingOlsIdxDeltaMinus1[i], "nesting_ols_idx_delta_minus1[i]");
+      WRITE_UVLC(sei.m_snOlsIdxDeltaMinus1[i], "sn_ols_idx_delta_minus1[i]");
     }
   }
   else
   {
-    WRITE_FLAG(sei.m_nestingAllLayersFlag, "nesting_all_layers_flag");
-    if (!sei.m_nestingAllLayersFlag)
+    WRITE_FLAG(sei.m_snAllLayersFlag, "sn_all_layers_flag");
+    if (!sei.m_snAllLayersFlag)
     {
-      WRITE_UVLC(sei.m_nestingNumLayersMinus1, "nesting_num_layers");
-      for (uint32_t i = 0; i <= sei.m_nestingNumLayersMinus1; i++)
+      WRITE_UVLC(sei.m_snNumLayersMinus1, "sn_num_layers");
+      for (uint32_t i = 0; i <= sei.m_snNumLayersMinus1; i++)
       {
-        WRITE_CODE(sei.m_nestingLayerId[i], 6, "nesting_layer_id");
+        WRITE_CODE(sei.m_snLayerId[i], 6, "sn_layer_id");
       }
     }
   }
@@ -462,7 +517,7 @@ void SEIWriter::xWriteSEIScalableNesting(OutputBitstream& bs, const SEIScalableN
   // byte alignment
   while (m_pcBitIf->getNumberOfWrittenBits() % 8 != 0)
   {
-    WRITE_FLAG(0, "nesting_zero_bit");
+    WRITE_FLAG(0, "sn_zero_bit");
   }
 
   // write nested SEI messages

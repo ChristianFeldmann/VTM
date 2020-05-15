@@ -82,7 +82,7 @@ private:
   uint32_t m_timeScale;
   bool     m_generalNalHrdParamsPresentFlag;
   bool     m_generalVclHrdParamsPresentFlag;
-  bool     m_generalSamPicTimingInAllOlsFlag;
+  bool     m_generalSamePicTimingInAllOlsFlag;
   uint32_t m_tickDivisorMinus2;
   bool     m_generalDecodingUnitHrdParamsPresentFlag;
   uint32_t m_bitRateScale;
@@ -94,7 +94,7 @@ public:
   GeneralHrdParams()
     :m_generalNalHrdParamsPresentFlag(false)
     ,m_generalVclHrdParamsPresentFlag(false)
-    ,m_generalSamPicTimingInAllOlsFlag(true)
+    ,m_generalSamePicTimingInAllOlsFlag(true)
     ,m_tickDivisorMinus2                 (0)
     ,m_generalDecodingUnitHrdParamsPresentFlag  (false)
     ,m_bitRateScale                      (0)
@@ -108,7 +108,7 @@ public:
       && m_timeScale == other.m_timeScale
       && m_generalNalHrdParamsPresentFlag == other.m_generalNalHrdParamsPresentFlag
       && m_generalVclHrdParamsPresentFlag == other.m_generalVclHrdParamsPresentFlag
-      && m_generalSamPicTimingInAllOlsFlag == other.m_generalSamPicTimingInAllOlsFlag
+      && m_generalSamePicTimingInAllOlsFlag == other.m_generalSamePicTimingInAllOlsFlag
       && m_generalDecodingUnitHrdParamsPresentFlag == other.m_generalDecodingUnitHrdParamsPresentFlag
       && (m_generalDecodingUnitHrdParamsPresentFlag ? (m_tickDivisorMinus2 == other.m_tickDivisorMinus2): 1)
       && m_bitRateScale == other.m_bitRateScale
@@ -124,7 +124,7 @@ public:
     m_timeScale = input.m_timeScale;
     m_generalNalHrdParamsPresentFlag = input.m_generalNalHrdParamsPresentFlag;
     m_generalVclHrdParamsPresentFlag = input.m_generalVclHrdParamsPresentFlag;
-    m_generalSamPicTimingInAllOlsFlag = input.m_generalSamPicTimingInAllOlsFlag;
+    m_generalSamePicTimingInAllOlsFlag = input.m_generalSamePicTimingInAllOlsFlag;
     m_generalDecodingUnitHrdParamsPresentFlag = input.m_generalDecodingUnitHrdParamsPresentFlag;
     if (input.m_generalDecodingUnitHrdParamsPresentFlag)
     {
@@ -152,8 +152,8 @@ public:
   void      setGeneralVclHrdParametersPresentFlag(bool flag) { m_generalVclHrdParamsPresentFlag = flag; }
   bool      getGeneralVclHrdParametersPresentFlag() const { return m_generalVclHrdParamsPresentFlag; }
 
-  void      setGeneralSamPicTimingInAllOlsFlag(bool flag) { m_generalSamPicTimingInAllOlsFlag = flag; }
-  bool      getGeneralSamPicTimingInAllOlsFlag() const { return m_generalSamPicTimingInAllOlsFlag; }
+  void      setGeneralSamePicTimingInAllOlsFlag(bool flag) { m_generalSamePicTimingInAllOlsFlag = flag; }
+  bool      getGeneralSamePicTimingInAllOlsFlag() const { return m_generalSamePicTimingInAllOlsFlag; }
 
 
   void      setTickDivisorMinus2( uint32_t value )                                     { m_tickDivisorMinus2 = value;                               }

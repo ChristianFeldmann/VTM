@@ -1881,8 +1881,14 @@ bool InterSearch::xRectHashInterEstimation(PredictionUnit& pu, RefPicList& bestR
           currAMVPInfo4Pel.mvCand[mvpIdxTemp].changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
         }
 
+#if JVET_Q0764_WRAP_AROUND_WITH_RPR
+        bool wrap = pu.cu->slice->getRefPic(eRefPicList, refIdx)->isWrapAroundEnabled( pu.cs->pps );
+        const Pel* refBufStart = pu.cu->slice->getRefPic(eRefPicList, refIdx)->getRecoBuf(wrap).get(COMPONENT_Y).buf;
+        const int refStride = pu.cu->slice->getRefPic(eRefPicList, refIdx)->getRecoBuf(wrap).get(COMPONENT_Y).stride;
+#else
         const Pel* refBufStart = pu.cu->slice->getRefPic(eRefPicList, refIdx)->getRecoBuf(pu.cs->sps->getWrapAroundEnabledFlag()).get(COMPONENT_Y).buf;
         const int refStride = pu.cu->slice->getRefPic(eRefPicList, refIdx)->getRecoBuf(pu.cs->sps->getWrapAroundEnabledFlag()).get(COMPONENT_Y).stride;
+#endif
         m_cDistParam.cur.stride = refStride;
 
         m_pcRdCost->selectMotionLambda( );
@@ -2079,8 +2085,14 @@ bool InterSearch::xHashInterEstimation(PredictionUnit& pu, RefPicList& bestRefPi
           currAMVPInfo4Pel.mvCand[mvpIdxTemp].changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
         }
 
+#if JVET_Q0764_WRAP_AROUND_WITH_RPR
+        bool wrap = pu.cu->slice->getRefPic(eRefPicList, refIdx)->isWrapAroundEnabled( pu.cs->pps );
+        const Pel* refBufStart = pu.cu->slice->getRefPic(eRefPicList, refIdx)->getRecoBuf(wrap).get(COMPONENT_Y).buf;
+        const int refStride = pu.cu->slice->getRefPic(eRefPicList, refIdx)->getRecoBuf(wrap).get(COMPONENT_Y).stride;
+#else
         const Pel* refBufStart = pu.cu->slice->getRefPic(eRefPicList, refIdx)->getRecoBuf(pu.cs->sps->getWrapAroundEnabledFlag()).get(COMPONENT_Y).buf;
         const int refStride = pu.cu->slice->getRefPic(eRefPicList, refIdx)->getRecoBuf(pu.cs->sps->getWrapAroundEnabledFlag()).get(COMPONENT_Y).stride;
+#endif
 
         m_cDistParam.cur.stride = refStride;
 
@@ -3328,7 +3340,12 @@ void InterSearch::xMotionEstimation(PredictionUnit& pu, PelUnitBuf& origBuf, Ref
 
   m_lumaClpRng = pu.cs->slice->clpRng( COMPONENT_Y );
 
+#if JVET_Q0764_WRAP_AROUND_WITH_RPR
+  bool wrap =  pu.cu->slice->getRefPic(eRefPicList, iRefIdxPred)->isWrapAroundEnabled( pu.cs->pps );
+  CPelBuf buf = pu.cu->slice->getRefPic(eRefPicList, iRefIdxPred)->getRecoBuf(pu.blocks[COMPONENT_Y], wrap);
+#else
   CPelBuf buf = pu.cu->slice->getRefPic(eRefPicList, iRefIdxPred)->getRecoBuf(pu.blocks[COMPONENT_Y], pu.cs->sps->getWrapAroundEnabledFlag());
+#endif
 
   IntTZSearchStruct cStruct;
   cStruct.pcPatternKey  = pcPatternKey;
@@ -6533,7 +6550,11 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
 
       uint8_t nNumTransformCands = 1 + ( tsAllowed ? 1 : 0 ) + ( mtsAllowed ? 4 : 0 ); // DCT + TS + 4 MTS = 6 tests
       std::vector<TrMode> trModes;
+#if JVET_R0110_MIXED_LOSSLESS      
+      if (m_pcEncCfg->getCostMode() == COST_LOSSLESS_CODING && slice.isLossless())
+#else
       if (m_pcEncCfg->getCostMode() == COST_LOSSLESS_CODING)
+#endif
       {
         nNumTransformCands = 0;
       }
@@ -6570,8 +6591,11 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
 #endif
         }
       }
-
+#if JVET_R0110_MIXED_LOSSLESS      
+      if (colorTransFlag && (m_pcEncCfg->getCostMode() != COST_LOSSLESS_CODING || !slice.isLossless()))
+#else     
       if (colorTransFlag && (m_pcEncCfg->getCostMode() != COST_LOSSLESS_CODING))
+#endif
       {
         m_pcTrQuant->lambdaAdjustColorTrans(true);
         m_pcRdCost->lambdaAdjustColorTrans(true, compID);
@@ -6588,7 +6612,11 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
           m_CABACEstimator->resetBits();
 
           {
-            if( !( m_pcEncCfg->getCostMode() == COST_LOSSLESS_CODING ) )
+#if JVET_R0110_MIXED_LOSSLESS            
+            if (!(m_pcEncCfg->getCostMode() == COST_LOSSLESS_CODING && slice.isLossless()))
+#else
+            if( !( m_pcEncCfg->getCostMode() == COST_LOSSLESS_CODING) )
+#endif
             {
             if (bestTU.mtsIdx[compID] == MTS_SKIP && m_pcEncCfg->getUseTransformSkipFast())
             {
@@ -6636,7 +6664,11 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
               m_pcTrQuant->transformNxN( tu, compID, cQP, &trModes, m_pcEncCfg->getMTSInterMaxCand() );
               tu.mtsIdx[compID] = trModes[0].first;
             }
+#if JVET_R0110_MIXED_LOSSLESS            
+            if (!(m_pcEncCfg->getCostMode() == COST_LOSSLESS_CODING && slice.isLossless() && tu.mtsIdx[compID] == 0))
+#else
             if( !( m_pcEncCfg->getCostMode() == COST_LOSSLESS_CODING && tu.mtsIdx[compID] == 0 ) )
+#endif
             {
               m_pcTrQuant->transformNxN( tu, compID, cQP, currAbsSum, m_CABACEstimator->getCtx(), true );
             }
@@ -6684,8 +6716,11 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
           {
             *puiZeroDist += nonCoeffDist; // initialized with zero residual distortion
           }
-
+#if JVET_R0110_MIXED_LOSSLESS          
+          if (m_pcEncCfg->getCostMode() == COST_LOSSLESS_CODING && slice.isLossless() && tu.mtsIdx[compID] == 0)
+#else
           if( m_pcEncCfg->getCostMode() == COST_LOSSLESS_CODING && tu.mtsIdx[compID] == 0 )
+#endif
           {
             currAbsSum = 0;
           }
@@ -6784,8 +6819,11 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
         // copy component
         tu.copyComponentFrom( bestTU, compID );
         csFull->getResiBuf( compArea ).copyFrom( saveCS.getResiBuf( compArea ) );
-
+#if JVET_R0110_MIXED_LOSSLESS        
+      if (colorTransFlag && (m_pcEncCfg->getCostMode() != COST_LOSSLESS_CODING || !slice.isLossless()))
+#else
       if (colorTransFlag && (m_pcEncCfg->getCostMode() != COST_LOSSLESS_CODING))
+#endif
       {
         m_pcTrQuant->lambdaAdjustColorTrans(false);
         m_pcRdCost->lambdaAdjustColorTrans(false, compID);
@@ -6887,8 +6925,11 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
         tu.mtsIdx[codeCompId]  = trModes[modeId].first;
         tu.mtsIdx[otherCompId] = MTS_DCT2_DCT2;
         int         codedCbfMask = 0;
-
+#if JVET_R0110_MIXED_LOSSLESS 
+        if (colorTransFlag && (m_pcEncCfg->getCostMode() != COST_LOSSLESS_CODING || !slice.isLossless()))
+#else
         if (colorTransFlag && (m_pcEncCfg->getCostMode() != COST_LOSSLESS_CODING))
+#endif
         {
           m_pcTrQuant->lambdaAdjustColorTrans(true);
           m_pcTrQuant->selectLambda(codeCompId);
@@ -7026,8 +7067,11 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
           }
         }
 
-
+#if JVET_R0110_MIXED_LOSSLESS        
+        if (colorTransFlag && (m_pcEncCfg->getCostMode() != COST_LOSSLESS_CODING || !slice.isLossless()))
+#else
         if (colorTransFlag && (m_pcEncCfg->getCostMode() != COST_LOSSLESS_CODING))
+#endif
         {
           m_pcTrQuant->lambdaAdjustColorTrans(false);
         }
@@ -7182,7 +7226,7 @@ void InterSearch::xEstimateInterResidualQT(CodingStructure &cs, Partitioner &par
 
       if( bCheckFull && anyCbfSet && csSplit->cost < csFull->cost )
       {
-        cs.useSubStructure( *csSplit, partitioner.chType, currArea, false, false, false, true );
+        cs.useSubStructure( *csSplit, partitioner.chType, currArea, false, false, false, true, true );
         cs.cost = csSplit->cost;
       }
     }
@@ -7753,7 +7797,11 @@ void InterSearch::xClipMv( Mv& rcMv, const Position& pos, const struct Size& siz
     verMax = ((curSubPic.getSubPicBottom() + 1) + offset -  (int)pos.y - 1) << mvShift;
     verMin = (-(int)sps.getMaxCUHeight() - offset - ((int)pos.y - curSubPic.getSubPicTop()) + 1) << mvShift;
   }
+#if JVET_Q0764_WRAP_AROUND_WITH_RPR
+  if( pps.getWrapAroundEnabledFlag() )
+#else
   if( sps.getWrapAroundEnabledFlag() )
+#endif
   {
     int horMax = ( pps.getPicWidthInLumaSamples() + sps.getMaxCUWidth() - size.width + offset - (int)pos.x - 1 ) << mvShift;
     int horMin = ( -( int ) sps.getMaxCUWidth()                                      - offset - ( int ) pos.x + 1 ) << mvShift;

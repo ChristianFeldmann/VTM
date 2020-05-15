@@ -1568,9 +1568,16 @@ bool EncModeCtrlMTnoRQT::tryMode( const EncTestMode& encTestmode, const CodingSt
   }
   else if (encTestmode.type == ETM_PALETTE)
   {
+#if JVET_R0334_PLT_CLEANUP
+    if (partitioner.currArea().lumaSize().width > 64 || partitioner.currArea().lumaSize().height > 64
+        || ((partitioner.currArea().lumaSize().width * partitioner.currArea().lumaSize().height <= 16) && (isLuma(partitioner.chType)) )
+        || ((partitioner.currArea().chromaSize().width * partitioner.currArea().chromaSize().height <= 16) && (!isLuma(partitioner.chType)) && partitioner.isSepTree(cs) ) 
+      || (partitioner.isLocalSepTree(cs)  && (!isLuma(partitioner.chType)) ) )
+#else
     if (partitioner.currArea().lumaSize().width > 64 || partitioner.currArea().lumaSize().height > 64
         || ((partitioner.currArea().lumaSize().width * partitioner.currArea().lumaSize().height <= 16) && (isLuma(partitioner.chType)) )
         || ((partitioner.currArea().chromaSize().width * partitioner.currArea().chromaSize().height <= 16) && (!isLuma(partitioner.chType)) && partitioner.isSepTree(cs) ) )
+#endif    
     {
       return false;
     }

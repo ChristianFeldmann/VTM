@@ -172,6 +172,9 @@ protected:
   bool            m_skipSbtAll;                         // to skip all SBT modes for the current PU
   uint8_t         m_histBestSbt;                        // historical best SBT mode for PU of certain SSE values
   uint8_t         m_histBestMtsIdx;                     // historical best MTS idx  for PU of certain SSE values
+#if JVET_R0058
+  bool            m_bMvClipInSubPic;
+#endif
 
 public:
   InterSearch();
@@ -317,6 +320,9 @@ public:
   void resetSavedAffineMotion();
   void storeAffineMotion( Mv acAffineMv[2][3], int16_t affineRefIdx[2], EAffineModel affineType, int bcwIdx );
   bool searchBv(PredictionUnit& pu, int xPos, int yPos, int width, int height, int picWidth, int picHeight, int xBv, int yBv, int ctuSize);
+#if JVET_R0058
+  void setMvClipInSubPic(bool bFlag) { m_bMvClipInSubPic = bFlag; }
+#endif
 protected:
 
   /// sub-function for motion vector refinement used in fractional-pel accuracy

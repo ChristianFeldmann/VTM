@@ -130,7 +130,16 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
 
   DTRACE( g_trace_ctx, D_HEADER, "=========== POC: %d ===========\n", slice->getPOC() );
 
-
+#if JVET_R0058
+  if (slice->getSliceType() != I_SLICE && slice->getRefPic(REF_PIC_LIST_0, 0)->cs->pps->getNumSubPics() > 1)
+  {
+    clipMv = clipMvInSubpic;
+  }
+  else
+  {
+    clipMv = clipMvInPic;
+  }
+#endif
   // for every CTU in the slice segment...
   unsigned subStrmId = 0;
   for( unsigned ctuIdx = 0; ctuIdx < slice->getNumCtuInSlice(); ctuIdx++ )
@@ -162,7 +171,11 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
         for (int idx = 0; idx < n; idx++)
         {
           Picture *refPic = slice->getRefPic((RefPicList)rlist, idx);
+#if JVET_R0058
+          if (!refPic->getSubPicSaved() && refPic->unscaledPic->cs->pps->getNumSubPics() > 1)
+#else
           if (!refPic->getSubPicSaved())
+#endif
           {
             refPic->saveSubPicBorder(refPic->getPOC(), subPicX, subPicY, subPicWidth, subPicHeight);
             refPic->extendSubPicBorder(refPic->getPOC(), subPicX, subPicY, subPicWidth, subPicHeight);

@@ -1382,6 +1382,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ( "MaxSublayers",                                   m_maxSublayers,                               1, "Max number of Sublayers")
   ( "AllLayersSameNumSublayersFlag",                  m_allLayersSameNumSublayersFlag,           true, "All layers same num sublayersflag")
   ( "AllIndependentLayersFlag",                       m_allIndependentLayersFlag,                true, "All layers are independent layer")
+#if JVET_R0058
+  ("AllowablePredDirection",                          m_predDirectionArray, string(""),                "prediction directions allowed for i-th temporal layer")
+#endif
   ( "LayerId%d",                                      m_layerId,                    0, MAX_VPS_LAYERS, "Max number of Sublayers")
   ( "NumRefLayers%d",                                 m_numRefLayers,               0, MAX_VPS_LAYERS, "Number of direct reference layer index of i-th layer")
   ( "RefLayerIdx%d",                                  m_refLayerIdxStr,    string(""), MAX_VPS_LAYERS, "Reference layer index(es)")
@@ -1425,13 +1428,21 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   po::ErrorReporter err;
   const list<const char*>& argv_unhandled = po::scanArgv(opts, argc, (const char**) argv, err);
 
+#if JVET_R0058
+  m_resChangeInClvsEnabled = m_scalingRatioHor != 1.0 || m_scalingRatioVer != 1.0;
+#else
   m_rprEnabled = m_scalingRatioHor != 1.0 || m_scalingRatioVer != 1.0;
+#endif
   if( m_fractionOfFrames != 1.0 )
   {
     m_framesToBeEncoded = int( m_framesToBeEncoded * m_fractionOfFrames );
   }
 
-  if( m_rprEnabled && !m_switchPocPeriod )
+#if JVET_R0058
+  if (m_resChangeInClvsEnabled && !m_switchPocPeriod)
+#else
+  if (m_rprEnabled && !m_switchPocPeriod)
+#endif
   {
     m_switchPocPeriod = m_iFrameRate / 2 / m_iGOPSize * m_iGOPSize;
   }
@@ -1628,7 +1639,11 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     }
 
     CHECK( m_subPicIdLen > 16, "SubPicIdLen must not exceed 16 bits" );
-    CHECK( m_rprEnabled, "RPR and subpictures cannot be enabled together" );
+#if JVET_R0058
+    CHECK(m_resChangeInClvsEnabled, "resolution change in CLVS and subpictures cannot be enabled together");
+#else
+    CHECK(m_rprEnabled, "RPR and subpictures cannot be enabled together");
+#endif
   }
 
   if (m_cfgSubpictureLevelInfoSEI.m_enabled)
@@ -3828,7 +3843,11 @@ void EncAppCfg::xPrintParameter()
   msg( VERBOSE, "NumWppThreads:%d+%d ", m_numWppThreads, m_numWppExtraLines );
   msg( VERBOSE, "EnsureWppBitEqual:%d ", m_ensureWppBitEqual );
 
-  if( m_rprEnabled )
+#if JVET_R0058
+  if (m_resChangeInClvsEnabled)
+#else
+  if (m_rprEnabled)
+#endif
   {
     msg( VERBOSE, "RPR:(%1.2lfx, %1.2lfx)|%d ", m_scalingRatioHor, m_scalingRatioVer, m_switchPocPeriod );
   }

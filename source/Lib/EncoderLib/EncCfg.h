@@ -757,7 +757,11 @@ protected:
 #endif
   double      m_scalingRatioHor;
   double      m_scalingRatioVer;
+#if JVET_R0058
+  bool        m_resChangeInClvsEnabled;
+#else
   bool        m_rprEnabled;
+#endif
   int         m_switchPocPeriod;
   int         m_upscaledOutput;
   int         m_numRefLayers[MAX_VPS_LAYERS];
@@ -1929,8 +1933,13 @@ public:
 #endif
 
   void        setScalingRatio( double hor, double ver )              { m_scalingRatioHor = hor, m_scalingRatioVer = ver;  }
-  void        setRPREnabled( bool b )                                { m_rprEnabled = b;    }
+#if JVET_R0058
+  void        setResChangeInClvsEnabled(bool b)                      { m_resChangeInClvsEnabled = b; }
+  bool        isResChangeInClvsEnabled()                        const { return m_resChangeInClvsEnabled; }
+#else
+  void        setRPREnabled(bool b) { m_rprEnabled = b; }
   bool        isRPREnabled()                                   const { return m_rprEnabled; }
+#endif
   void        setSwitchPocPeriod( int p )                            { m_switchPocPeriod = p;}
   void        setUpscaledOutput( int b )                             { m_upscaledOutput = b; }
   int         getUpscaledOutput()                              const { return m_upscaledOutput; }

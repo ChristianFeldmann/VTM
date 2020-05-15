@@ -928,6 +928,9 @@ private:
   uint32_t              m_vpsLayerId[MAX_VPS_LAYERS];
   bool                  m_vpsAllLayersSameNumSubLayersFlag;
   bool                  m_vpsAllIndependentLayersFlag;
+#if JVET_R0058
+  uint32_t              m_vpsCfgPredDirection[MAX_VPS_SUBLAYERS];
+#endif
   bool                  m_vpsIndependentLayerFlag[MAX_VPS_LAYERS];
   bool                  m_vpsDirectRefLayerFlag[MAX_VPS_LAYERS][MAX_VPS_LAYERS];
   bool                  m_vpsEachLayerIsAnOlsFlag;
@@ -994,6 +997,10 @@ public:
 
   bool              getAllIndependentLayersFlag() const { return m_vpsAllIndependentLayersFlag; }
   void              setAllIndependentLayersFlag(bool t) { m_vpsAllIndependentLayersFlag = t; }
+#if JVET_R0058
+  uint32_t          getPredDirection(uint32_t tmplayer) const { return m_vpsCfgPredDirection[tmplayer]; }
+  void              setPredDirection(uint32_t tmplayer, uint32_t t) { m_vpsCfgPredDirection[tmplayer] = t; }
+#endif
 
   bool              getIndependentLayerFlag(uint32_t layerIdx) const { return m_vpsIndependentLayerFlag[layerIdx]; }
   void              setIndependentLayerFlag(uint32_t layerIdx, bool t) { m_vpsIndependentLayerFlag[layerIdx] = t; }
@@ -1460,6 +1467,9 @@ private:
   bool              m_SubLayerCbpParametersPresentFlag;
 
   bool              m_rprEnabledFlag;
+#if JVET_R0058
+  bool              m_resChangeInClvsEnabledFlag;
+#endif
   bool              m_interLayerPresentFlag;
 
   uint32_t          m_log2ParallelMergeLevelMinus2;
@@ -1849,6 +1859,10 @@ void                    setCCALFEnabledFlag( bool b )                           
   void      setRprEnabledFlag( bool flag )                                          { m_rprEnabledFlag = flag; }
   bool      getInterLayerPresentFlag()                                        const { return m_interLayerPresentFlag; }
   void      setInterLayerPresentFlag( bool b )                                      { m_interLayerPresentFlag = b; }
+#if JVET_R0058
+  bool      getResChangeInClvsEnabledFlag()                               const     { return m_resChangeInClvsEnabledFlag; }
+  void      setResChangeInClvsEnabledFlag(bool flag)                                { m_resChangeInClvsEnabledFlag = flag; }
+#endif
 
   uint32_t  getLog2ParallelMergeLevelMinus2() const { return m_log2ParallelMergeLevelMinus2; }
   void      setLog2ParallelMergeLevelMinus2(uint32_t mrgLevel) { m_log2ParallelMergeLevelMinus2 = mrgLevel; }

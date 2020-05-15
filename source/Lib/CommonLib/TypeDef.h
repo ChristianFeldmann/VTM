@@ -51,6 +51,7 @@
 #include <cassert>
 
 //########### place macros to be removed in next cycle below this line ###############
+#define JVET_R0058                                        1 // JVET-R0058: the combination of RPR, subpictures, and scalability 
 
 #define JVET_Q0764_WRAP_AROUND_WITH_RPR                   1 // JVET-Q0764: Combination of wrap around offset and RPR
 

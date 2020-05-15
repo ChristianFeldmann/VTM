@@ -282,8 +282,11 @@ public:
                std::list<PelUnitBuf*>& rcListPicYuvRecOut,
                int& iNumEncoded, bool isTff );
 
-
-  void printSummary( bool isField ) { m_cGOPEncoder.printOutSummary( m_uiNumAllPicCoded, isField, m_printMSEBasedSequencePSNR, m_printSequenceMSE, m_printHexPsnr, m_rprEnabled, m_spsMap.getFirstPS()->getBitDepths() ); }
+#if JVET_R0058
+  void printSummary(bool isField) { m_cGOPEncoder.printOutSummary(m_uiNumAllPicCoded, isField, m_printMSEBasedSequencePSNR, m_printSequenceMSE, m_printHexPsnr, m_resChangeInClvsEnabled, m_spsMap.getFirstPS()->getBitDepths()); }
+#else
+  void printSummary(bool isField) { m_cGOPEncoder.printOutSummary(m_uiNumAllPicCoded, isField, m_printMSEBasedSequencePSNR, m_printSequenceMSE, m_printHexPsnr, m_rprEnabled, m_spsMap.getFirstPS()->getBitDepths()); }
+#endif
 
   int getLayerId() const { return m_layerId; }
   VPS* getVPS()          { return m_vps;     }

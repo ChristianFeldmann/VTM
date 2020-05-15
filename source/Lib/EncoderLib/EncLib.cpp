@@ -260,7 +260,11 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
   // initialize APS
   xInitRPL(sps0, isFieldCoding);
 
-  if( m_rprEnabled )
+#if JVET_R0058
+  if (m_resChangeInClvsEnabled)
+#else
+  if (m_rprEnabled)
+#endif
   {
     PPS &pps = *( m_ppsMap.allocatePS( ENC_PPS_ID_RPR ) );
     Window& inputScalingWindow = pps0.getScalingWindow();
@@ -443,7 +447,11 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
   {
     xInitScalingLists( sps0, aps0 );
   }
-  if( m_rprEnabled )
+#if JVET_R0058
+  if (m_resChangeInClvsEnabled)
+#else
+  if (m_rprEnabled)
+#endif
   {
     xInitScalingLists( sps0, *m_apsMap.getPS( ENC_PPS_ID_RPR ) );
   }
@@ -624,8 +632,11 @@ bool EncLib::encodePrep( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYu
       ppsID += ( getSwitchPOC() != -1 && ( m_iPOCLast + 1 >= getSwitchPOC() ) ? 1 : 0 );
     }
 #endif
-
+#if JVET_R0058
+    if( m_resChangeInClvsEnabled && m_intraPeriod == -1 )
+#else
     if( m_rprEnabled && m_intraPeriod == -1 )
+#endif
     {
       const int poc = m_iPOCLast + ( m_compositeRefEnabled ? 2 : 1 );
 
@@ -649,7 +660,11 @@ bool EncLib::encodePrep( bool flush, PelStorage* pcPicYuvOrg, PelStorage* cPicYu
     const PPS *pPPS = ( ppsID < 0 ) ? m_ppsMap.getFirstPS() : m_ppsMap.getPS( ppsID );
     const SPS *pSPS = m_spsMap.getPS( pPPS->getSPSId() );
 
-    if( m_rprEnabled )
+#if JVET_R0058
+    if (m_resChangeInClvsEnabled)
+#else
+    if (m_rprEnabled)
+#endif
     {
       pcPicCurr->M_BUFS( 0, PIC_ORIGINAL_INPUT ).getBuf( COMPONENT_Y ).copyFrom( pcPicYuvOrg->getBuf( COMPONENT_Y ) );
       pcPicCurr->M_BUFS( 0, PIC_ORIGINAL_INPUT ).getBuf( COMPONENT_Cb ).copyFrom( pcPicYuvOrg->getBuf( COMPONENT_Cb ) );
@@ -944,7 +959,11 @@ void EncLib::xGetNewPicBuffer ( std::list<PelUnitBuf*>& rcListPicYuvRecOut, Pict
   {
     rpcPic = new Picture;
     rpcPic->create( sps.getChromaFormatIdc(), Size( pps.getPicWidthInLumaSamples(), pps.getPicHeightInLumaSamples() ), sps.getMaxCUWidth(), sps.getMaxCUWidth() + 16, false, m_layerId );
-    if( m_rprEnabled )
+#if JVET_R0058
+    if (m_resChangeInClvsEnabled)
+#else
+    if (m_rprEnabled)
+#endif
     {
       const PPS &pps0 = *m_ppsMap.getPS(0);
       rpcPic->M_BUFS(0, PIC_ORIGINAL_INPUT).create(sps.getChromaFormatIdc(), Area(Position(), Size(pps0.getPicWidthInLumaSamples(), pps0.getPicHeightInLumaSamples())));
@@ -1156,7 +1175,11 @@ void EncLib::xInitSPS( SPS& sps )
   sps.setVPSId( m_vps->getVPSId() );
   sps.setMaxPicWidthInLumaSamples( m_iSourceWidth );
   sps.setMaxPicHeightInLumaSamples( m_iSourceHeight );
+#if JVET_R0058
+  if (m_resChangeInClvsEnabled)
+#else
   if (m_rprEnabled)
+#endif
   {
     int maxPicWidth = std::max(m_iSourceWidth, (int)((double)m_iSourceWidth / m_scalingRatioHor + 0.5));
     int maxPicHeight = std::max(m_iSourceHeight, (int)((double)m_iSourceHeight / m_scalingRatioVer + 0.5));
@@ -1423,12 +1446,20 @@ void EncLib::xInitSPS( SPS& sps )
 
   sps.setInterLayerPresentFlag( m_layerId > 0 && m_vps->getMaxLayers() > 1 && !m_vps->getAllIndependentLayersFlag() && !m_vps->getIndependentLayerFlag( m_vps->getGeneralLayerIdx( m_layerId ) ) );
   CHECK( m_vps->getIndependentLayerFlag( m_vps->getGeneralLayerIdx( m_layerId ) ) && sps.getInterLayerPresentFlag(), " When vps_independent_layer_flag[GeneralLayerIdx[nuh_layer_id ]]  is equal to 1, the value of inter_layer_ref_pics_present_flag shall be equal to 0." );
-
-  sps.setRprEnabledFlag( m_rprEnabled || sps.getInterLayerPresentFlag() );
+#if JVET_R0058
+  sps.setResChangeInClvsEnabledFlag(m_resChangeInClvsEnabled);
+  sps.setRprEnabledFlag((m_resChangeInClvsEnabled) || sps.getInterLayerPresentFlag());
+#else
+  sps.setRprEnabledFlag(m_rprEnabled || sps.getInterLayerPresentFlag());
+#endif
 
   sps.setLog2ParallelMergeLevelMinus2( m_log2ParallelMergeLevelMinus2 );
 
-  CHECK( sps.getRprEnabledFlag() && sps.getVirtualBoundariesEnabledFlag(), "when the value of res_change_in_clvs_allowed_flag is equal to 1, the value of sps_virtual_boundaries_present_flag shall be equal to 0" );
+#if JVET_R0058
+  CHECK(sps.getResChangeInClvsEnabledFlag() && sps.getVirtualBoundariesEnabledFlag(), "when the value of res_change_in_clvs_allowed_flag is equal to 1, the value of sps_virtual_boundaries_present_flag shall be equal to 0");
+#else
+  CHECK(sps.getRprEnabledFlag() && sps.getVirtualBoundariesEnabledFlag(), "when the value of res_change_in_clvs_allowed_flag is equal to 1, the value of sps_virtual_boundaries_present_flag shall be equal to 0");
+#endif
 }
 
 void EncLib::xInitHrdParameters(SPS &sps)

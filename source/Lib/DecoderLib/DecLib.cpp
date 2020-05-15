@@ -1962,8 +1962,12 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
       {
         for( int refIdx = 0; refIdx < pcSlice->getNumRefIdx( RefPicList( refPicList ) ); refIdx++ )
         {
-          CHECK( currentSubPicIdx >= pcSlice->getRefPic( RefPicList( refPicList ), refIdx )->subPicIDs.size(), "Number of sub-pictures in a reference picture is less then the current slice sub-picture index" );
-          CHECK( pcSlice->getRefPic( RefPicList( refPicList ), refIdx )->subPicIDs[currentSubPicIdx] != pcSlice->getSliceSubPicId(), "A picture with different sub-picture ID of the collocated sub-picture cannot be used as an active reference picture" );
+          Picture* refPic = pcSlice->getRefPic( RefPicList( refPicList ), refIdx );
+          if( refPic->layerId == nalu.m_nuhLayerId )
+          {
+            CHECK( currentSubPicIdx >= refPic->subPicIDs.size(), "Number of sub-pictures in a reference picture is less then the current slice sub-picture index" );
+            CHECK( refPic->subPicIDs[currentSubPicIdx] != pcSlice->getSliceSubPicId(), "A picture with different sub-picture ID of the collocated sub-picture cannot be used as an active reference picture" );
+          }
         }
       }
     }

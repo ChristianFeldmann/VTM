@@ -366,10 +366,25 @@ void HLSWriter::codePPS( const PPS* pcPPS )
       for( int i = 0; i < pcPPS->getNumSlicesInPic()-1; i++ )
       {
         // complete tiles within a single slice
+#if JVET_R0188
+        if( ( pcPPS->getSliceTileIdx( i ) % pcPPS->getNumTileColumns() ) != pcPPS->getNumTileColumns() - 1 )
+        {
+          WRITE_UVLC( pcPPS->getSliceWidthInTiles( i ) - 1, "slice_width_in_tiles_minus1[i]" );
+        }
+#else
         if( pcPPS->getNumTileColumns() > 1 )
         {
-        WRITE_UVLC( pcPPS->getSliceWidthInTiles( i ) - 1,  "slice_width_in_tiles_minus1[i]" );
+          WRITE_UVLC( pcPPS->getSliceWidthInTiles( i ) - 1,  "slice_width_in_tiles_minus1[i]" );
         }
+#endif
+
+#if JVET_R0188
+        if( pcPPS->getSliceTileIdx( i ) / pcPPS->getNumTileColumns() != pcPPS->getNumTileRows() - 1 &&
+          ( pcPPS->getTileIdxDeltaPresentFlag() || pcPPS->getSliceTileIdx( i ) % pcPPS->getNumTileColumns() == 0 ) )
+        {
+           WRITE_UVLC( pcPPS->getSliceHeightInTiles( i ) - 1, "slice_height_in_tiles_minus1[i]" );
+        }
+#else
         if( pcPPS->getTileIdxDeltaPresentFlag() || ( (pcPPS->getSliceTileIdx( i ) % pcPPS->getNumTileColumns()) == 0 ) )
         {
           if( pcPPS->getNumTileRows() > 1 )
@@ -377,6 +392,7 @@ void HLSWriter::codePPS( const PPS* pcPPS )
            WRITE_UVLC( pcPPS->getSliceHeightInTiles( i ) - 1, "slice_height_in_tiles_minus1[i]" );
           }
         }
+#endif
 
         // multiple slices within a single tile special case
         if( pcPPS->getSliceWidthInTiles(i) == 1 && pcPPS->getSliceHeightInTiles(i) == 1 && pcPPS->getTileRowHeight(pcPPS->getSliceTileIdx(i) / pcPPS->getNumTileColumns()) > 1 )

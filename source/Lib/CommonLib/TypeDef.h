@@ -52,6 +52,8 @@
 
 //########### place macros to be removed in next cycle below this line ###############
 
+#define JVET_R0162_WRAPAROUND_OFFSET_SIGNALING            1 // JVET-R0162 proposal 1 : signal "picture width minus wraparound offset" instead of "wraparound offset"
+
 #define JVET_R0188                                        1 // JVET-R0188: Signalling slice_width_in_tiles_minus1[i] and slice_height_in_tiles_minus1[i]
 
 #define JVET_R0203_IRAP_LEADING_CONSTRAINT                1 // JVET-R0203: Constraint that IRAP NAL unit type cannot be mixed with RASL_NUT / RADL_NUT

@@ -1668,19 +1668,19 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
   pps.setLoopFilterAcrossSlicesEnabledFlag( m_bLFCrossSliceBoundaryFlag );
 
 #if JVET_R0078_DISABLE_CHROMA_DBF_OFFSET_SINGALLING
-  bool bChromaQPOffsetNotZero = false;
+  bool chromaQPOffsetNotZero = false;
   if( pps.getQpOffset(COMPONENT_Cb) != 0 || pps.getQpOffset(COMPONENT_Cr) != 0 || pps.getJointCbCrQpOffsetPresentFlag() || pps.getSliceChromaQpFlag() || pps.getCuChromaQpOffsetListEnabledFlag() )
   {
-    bChromaQPOffsetNotZero = true;
+    chromaQPOffsetNotZero = true;
   }
-  bool bChromaDbfOffsetNotSameAsLuma = true;
+  bool chromaDbfOffsetNotSameAsLuma = true;
   if( pps.getDeblockingFilterCbBetaOffsetDiv2() == pps.getDeblockingFilterBetaOffsetDiv2() && pps.getDeblockingFilterCrBetaOffsetDiv2() == pps.getDeblockingFilterBetaOffsetDiv2()
      && pps.getDeblockingFilterCbTcOffsetDiv2() == pps.getDeblockingFilterTcOffsetDiv2() && pps.getDeblockingFilterCrTcOffsetDiv2() == pps.getDeblockingFilterTcOffsetDiv2() )
   {
-    bChromaDbfOffsetNotSameAsLuma = false;
+    chromaDbfOffsetNotSameAsLuma = false;
   }
   const uint32_t chromaArrayType = (int)sps.getSeparateColourPlaneFlag() ? 0 : sps.getChromaFormatIdc();
-  if( ( chromaArrayType != CHROMA_400 ) && ( bChromaQPOffsetNotZero || bChromaDbfOffsetNotSameAsLuma ) )
+  if( ( chromaArrayType != CHROMA_400 ) && ( chromaQPOffsetNotZero || chromaDbfOffsetNotSameAsLuma ) )
   {
     pps.setPPSChromaToolFlag(true);
   }

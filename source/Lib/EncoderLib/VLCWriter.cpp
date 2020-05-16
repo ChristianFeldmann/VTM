@@ -535,7 +535,11 @@ void HLSWriter::codePPS( const PPS* pcPPS )
   WRITE_FLAG( pcPPS->getWrapAroundEnabledFlag() ? 1 : 0, "pps_ref_wraparound_enabled_flag" );
   if( pcPPS->getWrapAroundEnabledFlag() )
   {
+#if JVET_R0162_WRAPAROUND_OFFSET_SIGNALING
+    WRITE_UVLC(pcPPS->getPicWidthMinusWrapAroundOffset(), "pps_pic_width_minus_wraparound_offset");
+#else
     WRITE_UVLC( pcPPS->getWrapAroundOffsetMinusCtbSize(), "pps_ref_wraparound_offset");
+#endif
   }
 #endif
 

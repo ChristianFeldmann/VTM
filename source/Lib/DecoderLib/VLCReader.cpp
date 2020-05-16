@@ -938,11 +938,20 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
   READ_FLAG(uiCode, "pps_ref_wraparound_enabled_flag");           pcPPS->setWrapAroundEnabledFlag( uiCode ? true : false );
   if (pcPPS->getWrapAroundEnabledFlag())
   {
-    READ_UVLC(uiCode, "pps_ref_wraparound_offset");               pcPPS->setWrapAroundOffsetMinusCtbSize( uiCode );
+    READ_UVLC(uiCode, "pps_ref_wraparound_offset");               
+#if JVET_R0162_WRAPAROUND_OFFSET_SIGNALING
+    pcPPS->setPicWidthMinusWrapAroundOffset(uiCode);
+#else
+    pcPPS->setWrapAroundOffsetMinusCtbSize( uiCode );
+#endif
   }
   else
   {
+#if JVET_R0162_WRAPAROUND_OFFSET_SIGNALING
+    pcPPS->setPicWidthMinusWrapAroundOffset(0);
+#else
     pcPPS->setWrapAroundOffsetMinusCtbSize( 0 );
+#endif
   }
 #endif
 
@@ -2804,7 +2813,12 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   CHECK( (((sps->getCTUSize() / minCbSizeY) + 1) > ((pps->getPicWidthInLumaSamples() / minCbSizeY) - 1)) && pps->getWrapAroundEnabledFlag(), "When the value of CtbSizeY / MinCbSizeY + 1 is greater than pic_width_in_luma_samples / MinCbSizeY - 1, the value of pps_ref_wraparound_enabled_flag shall be equal to 0.");
   if( pps->getWrapAroundEnabledFlag() )
   {
+#if JVET_R0162_WRAPAROUND_OFFSET_SIGNALING
+    CHECK((pps->getPicWidthMinusWrapAroundOffset() > (pps->getPicWidthInLumaSamples() / minCbSizeY - sps->getCTUSize() / minCbSizeY - 2)), "pps_pic_width_minus_wraparound_ofsfet shall be less than or equal to pps_pic_width_in_luma_samples/MinCbSizeY - CtbSizeY/MinCbSizeY-2");
+    pps->setWrapAroundOffset(minCbSizeY * (pps->getPicWidthInLumaSamples()/minCbSizeY- pps->getPicWidthMinusWrapAroundOffset()));
+#else
     pps->setWrapAroundOffset( minCbSizeY * (pps->getWrapAroundOffsetMinusCtbSize() + 2 + sps->getCTUSize() / minCbSizeY) );
+#endif
   }
   else
   {

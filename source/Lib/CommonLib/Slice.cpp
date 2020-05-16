@@ -2711,7 +2711,11 @@ PPS::PPS()
 , m_picHeightInLumaSamples( 288 )
 #if JVET_Q0764_WRAP_AROUND_WITH_RPR
 , m_wrapAroundEnabledFlag            (false)
+#if JVET_R0162_WRAPAROUND_OFFSET_SIGNALING
+, m_picWidthMinusWrapAroundOffset    (0)
+#else
 , m_wrapAroundOffsetMinusCtbSize     (0)
+#endif
 , m_wrapAroundOffset                 (0)
 #endif
 , pcv                                (NULL)

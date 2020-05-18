@@ -185,6 +185,8 @@
 
 #define JVET_R0107_VPS_SIGNALING                          1 // JVET-R017: Proposal 2 VPS signaling change and updated inference rule
 
+#define JVET_R0103_DU_SIGNALLING                          1 // JVET-R0103: Proposal 1 decoding unit signalling change
+
 //########### place macros to be be kept below this line ###############
 
 #define JVET_R0164_MEAN_SCALED_SATD                       1 // JVET-R0164: Use a mean scaled version of SATD in encoder decisions

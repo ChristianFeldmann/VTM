@@ -895,6 +895,10 @@ void SEIReader::xParseSEIPictureTiming(SEIPictureTiming& sei, uint32_t payloadSi
     sei.m_numNalusInDuMinus1.resize(sei.m_numDecodingUnitsMinus1 + 1 );
     sei.m_duCpbRemovalDelayMinus1.resize( (sei.m_numDecodingUnitsMinus1 + 1) * bp.m_bpMaxSubLayers );
 
+#if JVET_R0103_DU_SIGNALLING
+    if (sei.m_numDecodingUnitsMinus1 > 0)
+    {
+#endif
     sei_read_flag( pDecodedMessageOutputStream, symbol, "du_common_cpb_removal_delay_flag" );
     sei.m_duCommonCpbRemovalDelayFlag = symbol;
     if( sei.m_duCommonCpbRemovalDelayFlag )
@@ -924,6 +928,13 @@ void SEIReader::xParseSEIPictureTiming(SEIPictureTiming& sei, uint32_t payloadSi
         }
       }
     }
+#if JVET_R0103_DU_SIGNALLING
+    }
+    else
+    {
+    sei.m_duCommonCpbRemovalDelayFlag = 0;
+    }
+#endif
   }
   sei_read_uvlc( pDecodedMessageOutputStream, symbol,    "pt_display_elemental_periods_minus1" );
   sei.m_ptDisplayElementalPeriodsMinus1 = symbol;

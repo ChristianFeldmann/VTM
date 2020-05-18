@@ -439,27 +439,27 @@ void SEIWriter::xWriteSEIPictureTiming(const SEIPictureTiming& sei, const SEIBuf
     if (sei.m_numDecodingUnitsMinus1 > 0)
     {
 #endif
-    WRITE_FLAG( sei.m_duCommonCpbRemovalDelayFlag, "du_commmon_cpb_removal_delay_flag" );
-    if( sei.m_duCommonCpbRemovalDelayFlag )
-    {
-      for( int i = temporalId; i < bp.m_bpMaxSubLayers - 1; i ++ )
+      WRITE_FLAG( sei.m_duCommonCpbRemovalDelayFlag, "du_commmon_cpb_removal_delay_flag" );
+      if( sei.m_duCommonCpbRemovalDelayFlag )
       {
-        if( sei.m_ptSubLayerDelaysPresentFlag[i] )
-          WRITE_CODE( sei.m_duCommonCpbRemovalDelayMinus1[i], bp.m_duCpbRemovalDelayIncrementLength, "du_common_cpb_removal_delay_increment_minus1[i]" );
-      }
-    }
-    for( int i = 0; i <= sei.m_numDecodingUnitsMinus1; i ++ )
-    {
-      WRITE_UVLC( sei.m_numNalusInDuMinus1[i], "num_nalus_in_du_minus1[i]" );
-      if( !sei.m_duCommonCpbRemovalDelayFlag && i < sei.m_numDecodingUnitsMinus1 )
-      {
-        for( int j = temporalId; j < bp.m_bpMaxSubLayers - 1; j ++ )
+        for( int i = temporalId; i < bp.m_bpMaxSubLayers - 1; i ++ )
         {
-          if( sei.m_ptSubLayerDelaysPresentFlag[j] )
-            WRITE_CODE( sei.m_duCpbRemovalDelayMinus1[i * bp.m_bpMaxSubLayers + j], bp.m_duCpbRemovalDelayIncrementLength, "du_cpb_removal_delay_increment_minus1[i][j]" );
+          if( sei.m_ptSubLayerDelaysPresentFlag[i] )
+            WRITE_CODE( sei.m_duCommonCpbRemovalDelayMinus1[i], bp.m_duCpbRemovalDelayIncrementLength, "du_common_cpb_removal_delay_increment_minus1[i]" );
         }
       }
-    }
+      for( int i = 0; i <= sei.m_numDecodingUnitsMinus1; i ++ )
+      {
+        WRITE_UVLC( sei.m_numNalusInDuMinus1[i], "num_nalus_in_du_minus1[i]" );
+        if( !sei.m_duCommonCpbRemovalDelayFlag && i < sei.m_numDecodingUnitsMinus1 )
+        {
+          for( int j = temporalId; j < bp.m_bpMaxSubLayers - 1; j ++ )
+          {
+            if( sei.m_ptSubLayerDelaysPresentFlag[j] )
+              WRITE_CODE( sei.m_duCpbRemovalDelayMinus1[i * bp.m_bpMaxSubLayers + j], bp.m_duCpbRemovalDelayIncrementLength, "du_cpb_removal_delay_increment_minus1[i][j]" );
+          }
+        }
+      }
 #if JVET_R0103_DU_SIGNALLING
     }
 #endif

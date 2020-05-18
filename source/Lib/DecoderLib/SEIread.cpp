@@ -899,40 +899,40 @@ void SEIReader::xParseSEIPictureTiming(SEIPictureTiming& sei, uint32_t payloadSi
     if (sei.m_numDecodingUnitsMinus1 > 0)
     {
 #endif
-    sei_read_flag( pDecodedMessageOutputStream, symbol, "du_common_cpb_removal_delay_flag" );
-    sei.m_duCommonCpbRemovalDelayFlag = symbol;
-    if( sei.m_duCommonCpbRemovalDelayFlag )
-    {
-      for( int i = temporalId; i < bp.m_bpMaxSubLayers - 1; i ++ )
+      sei_read_flag( pDecodedMessageOutputStream, symbol, "du_common_cpb_removal_delay_flag" );
+      sei.m_duCommonCpbRemovalDelayFlag = symbol;
+      if( sei.m_duCommonCpbRemovalDelayFlag )
       {
-        if( sei.m_ptSubLayerDelaysPresentFlag[i] )
+        for( int i = temporalId; i < bp.m_bpMaxSubLayers - 1; i ++ )
         {
-          sei_read_code( pDecodedMessageOutputStream, bp.getDuCpbRemovalDelayIncrementLength(), symbol, "du_common_cpb_removal_delay_increment_minus1[i]" );
-          sei.m_duCommonCpbRemovalDelayMinus1[i] = symbol;
-        }
-      }
-    }
-    for( int i = 0; i <= sei.m_numDecodingUnitsMinus1; i ++ )
-    {
-      sei_read_uvlc( pDecodedMessageOutputStream, symbol, "num_nalus_in_du_minus1[i]" );
-      sei.m_numNalusInDuMinus1[i] = symbol;
-      if( !sei.m_duCommonCpbRemovalDelayFlag && i < sei.m_numDecodingUnitsMinus1 )
-      {
-        for( int j = temporalId; j < bp.m_bpMaxSubLayers - 1; j ++ )
-        {
-          if( sei.m_ptSubLayerDelaysPresentFlag[j] )
+          if( sei.m_ptSubLayerDelaysPresentFlag[i] )
           {
-            sei_read_code( pDecodedMessageOutputStream, bp.getDuCpbRemovalDelayIncrementLength(), symbol, "du_cpb_removal_delay_increment_minus1[i][j]" );
-            sei.m_duCpbRemovalDelayMinus1[i * bp.m_bpMaxSubLayers + j] = symbol;
+            sei_read_code( pDecodedMessageOutputStream, bp.getDuCpbRemovalDelayIncrementLength(), symbol, "du_common_cpb_removal_delay_increment_minus1[i]" );
+            sei.m_duCommonCpbRemovalDelayMinus1[i] = symbol;
           }
         }
       }
-    }
+      for( int i = 0; i <= sei.m_numDecodingUnitsMinus1; i ++ )
+      {
+        sei_read_uvlc( pDecodedMessageOutputStream, symbol, "num_nalus_in_du_minus1[i]" );
+        sei.m_numNalusInDuMinus1[i] = symbol;
+        if( !sei.m_duCommonCpbRemovalDelayFlag && i < sei.m_numDecodingUnitsMinus1 )
+        {
+          for( int j = temporalId; j < bp.m_bpMaxSubLayers - 1; j ++ )
+          {
+            if( sei.m_ptSubLayerDelaysPresentFlag[j] )
+            {
+              sei_read_code( pDecodedMessageOutputStream, bp.getDuCpbRemovalDelayIncrementLength(), symbol, "du_cpb_removal_delay_increment_minus1[i][j]" );
+              sei.m_duCpbRemovalDelayMinus1[i * bp.m_bpMaxSubLayers + j] = symbol;
+            }
+          }
+        }
+      }
 #if JVET_R0103_DU_SIGNALLING
     }
     else
     {
-    sei.m_duCommonCpbRemovalDelayFlag = 0;
+      sei.m_duCommonCpbRemovalDelayFlag = 0;
     }
 #endif
   }

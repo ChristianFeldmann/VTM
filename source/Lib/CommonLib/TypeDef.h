@@ -51,6 +51,7 @@
 #include <cassert>
 
 //########### place macros to be removed in next cycle below this line ###############
+#define JVET_R0194_CONSTRAINT_PS_SHARING_REFERENCING      1 // JVET-R0194: Constraint that if slice at layer A refer to PS at layer B, then all OLS that contains layer A must contain layer B as well.
 
 #define JVET_R0162_WRAPAROUND_OFFSET_SIGNALING            1 // JVET-R0162 proposal 1 : signal "picture width minus wraparound offset" instead of "wraparound offset"
 

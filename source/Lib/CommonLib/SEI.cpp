@@ -52,11 +52,11 @@ void xTraceSEIMessageType( SEI::PayloadType payloadType )
 }
 #endif
 
-SEIMessages getSeisByType(SEIMessages &seiList, SEI::PayloadType seiType)
+SEIMessages getSeisByType(const SEIMessages &seiList, SEI::PayloadType seiType)
 {
   SEIMessages result;
 
-  for (SEIMessages::iterator it=seiList.begin(); it!=seiList.end(); it++)
+  for (SEIMessages::const_iterator it=seiList.begin(); it!=seiList.end(); it++)
   {
     if ((*it)->payloadType() == seiType)
     {

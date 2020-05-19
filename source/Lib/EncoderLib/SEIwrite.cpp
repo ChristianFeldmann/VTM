@@ -492,7 +492,12 @@ void SEIWriter::xWriteSEIDependentRAPIndication(const SEIDependentRAPIndication&
 
 void SEIWriter::xWriteSEIScalableNesting(OutputBitstream& bs, const SEIScalableNesting& sei, const SPS *sps)
 {
+  CHECK (sei.m_nestedSEIs.size()<1, "There must be at lease one SEI message nested in the scalable nesting SEI.")
+
   WRITE_FLAG(sei.m_snOlsFlag, "sn_ols_flag");
+#if JVET_Q0397_SCAL_NESTING
+  WRITE_FLAG(sei.m_snSubpicFlag, "sn_subpic_flag");
+#endif
   if (sei.m_snOlsFlag)
   {
     WRITE_UVLC(sei.m_snNumOlssMinus1, "sn_num_olss_minus1");
@@ -513,6 +518,20 @@ void SEIWriter::xWriteSEIScalableNesting(OutputBitstream& bs, const SEIScalableN
       }
     }
   }
+#if JVET_Q0397_SCAL_NESTING
+  if (sei.m_snSubpicFlag)
+  {
+    WRITE_UVLC( sei.m_snNumSubpics - 1, "sn_num_subpics_minus1");
+    CHECK(sei.m_snSubpicIdLen < 1, "sn_subpic_id_len_minus1 must be >= 0");
+    WRITE_UVLC( sei.m_snSubpicIdLen - 1, "sn_subpic_id_len_minus1");
+    for (uint32_t i = 0; i < sei.m_snNumSubpics; i++)
+    {
+      WRITE_CODE(sei.m_snSubpicId[i], sei.m_snSubpicIdLen, "sn_subpic_id[i]");
+    }
+  }
+#endif
+
+  WRITE_UVLC( (uint32_t)sei.m_nestedSEIs.size() - 1, "sn_num_seis_minus1");
 
   // byte alignment
   while (m_pcBitIf->getNumberOfWrittenBits() % 8 != 0)
@@ -520,9 +539,15 @@ void SEIWriter::xWriteSEIScalableNesting(OutputBitstream& bs, const SEIScalableN
     WRITE_FLAG(0, "sn_zero_bit");
   }
 
+  SEIMessages bufferingPeriod = getSeisByType(sei.m_nestedSEIs, SEI::BUFFERING_PERIOD);
+  if (!bufferingPeriod.empty())
+  {
+    SEIBufferingPeriod *bp = (SEIBufferingPeriod*)bufferingPeriod.front();
+    m_nestingHrd.setBufferingPeriodSEI(bp);
+  }
+
   // write nested SEI messages
-  HRD hrd;
-  writeSEImessages(bs, sei.m_nestedSEIs, sps, hrd, true, 0);
+  writeSEImessages(bs, sei.m_nestedSEIs, sps, m_nestingHrd, true, 0);
 }
 
 void SEIWriter::xWriteSEIFramePacking(const SEIFramePacking& sei)

@@ -464,6 +464,9 @@ void SEIReader::xParseSEIScalableNesting(SEIScalableNesting& sei, const NalUnitT
   output_sei_message_header(sei, decodedMessageOutputStream, payloadSize);
 
   sei_read_flag(decodedMessageOutputStream, symbol, "sn_ols_flag"); sei.m_snOlsFlag = symbol;
+#if JVET_Q0397_SCAL_NESTING
+  sei_read_flag(decodedMessageOutputStream, symbol, "sn_subpic_flag"); sei.m_snSubpicFlag = symbol;
+#endif
   if (sei.m_snOlsFlag)
   {
     sei_read_uvlc(decodedMessageOutputStream, symbol, "sn_num_olss_minus1"); sei.m_snNumOlssMinus1 = symbol;
@@ -511,6 +514,21 @@ void SEIReader::xParseSEIScalableNesting(SEIScalableNesting& sei, const NalUnitT
       }
     }
   }
+#if JVET_Q0397_SCAL_NESTING
+  if (sei.m_snSubpicFlag)
+  {
+    sei_read_uvlc(decodedMessageOutputStream, symbol, "sn_num_subpics_minus1"); sei.m_snNumSubpics = symbol + 1;
+    sei_read_uvlc(decodedMessageOutputStream, symbol, "sn_subpic_id_len_minus1"); sei.m_snSubpicIdLen = symbol + 1;
+    sei.m_snSubpicId.resize(sei.m_snNumSubpics);
+    for (uint32_t i = 0; i < sei.m_snNumSubpics; i++)
+    {
+      sei_read_code(decodedMessageOutputStream, sei.m_snSubpicIdLen, symbol, "sn_subpic_id[i]"); sei.m_snSubpicId[i] = symbol;
+    }
+  }
+#endif
+
+  sei_read_uvlc(decodedMessageOutputStream, symbol, "sn_num_seis_minus1"); sei.m_snNumSEIs = symbol + 1;
+  CHECK (sei.m_snNumSEIs > 64, "The value of sn_num_seis_minus1 shall be in the range of 0 to 63");
 
   // byte alignment
   while (m_pcBitstream->getNumBitsRead() % 8 != 0)
@@ -518,7 +536,21 @@ void SEIReader::xParseSEIScalableNesting(SEIScalableNesting& sei, const NalUnitT
     sei_read_flag(decodedMessageOutputStream, symbol, "sn_zero_bit");
   }
 
-  bool containBPorPTorDUI     = false;
+  // read nested SEI messages
+  for (int32_t i=0; i<sei.m_snNumSEIs; i++)
+  {
+    SEIMessages tmpSEIs;
+    xReadSEImessage(tmpSEIs, nalUnitType, nuhLayerId, 0, vps, sps, m_nestedHrd, decodedMessageOutputStream);
+    if (tmpSEIs.front()->payloadType() == SEI::BUFFERING_PERIOD)
+    {
+      SEIBufferingPeriod *bp = (SEIBufferingPeriod*) tmpSEIs.front();
+      m_nestedHrd.setBufferingPeriodSEI(bp);
+    }
+    sei.m_nestedSEIs.push_back(tmpSEIs.front());
+    tmpSEIs.clear();
+  }
+
+  bool containBPorPTorDUI   = false;
   bool containNoBPorPTorDUI = false;
   for (auto nestedsei : sei.m_nestedSEIs)
   {
@@ -531,13 +563,7 @@ void SEIReader::xParseSEIScalableNesting(SEIScalableNesting& sei, const NalUnitT
       containNoBPorPTorDUI = true;
     }
   }
-  CHECK(containBPorPTorDUI && containNoBPorPTorDUI, "nested SEI cannot have timing-related SEI and none-timing-related SEI at the same time");
-  // read nested SEI messages
-  do
-  {
-    HRD hrd;
-    xReadSEImessage(sei.m_nestedSEIs, nalUnitType, nuhLayerId, 0, vps, sps, hrd, decodedMessageOutputStream);
-  } while (m_pcBitstream->getNumBitsLeft() > 8);
+  CHECK(containBPorPTorDUI && containNoBPorPTorDUI, "Scalable Nesting SEI cannot contain timing-related SEI and none-timing-related SEIs at the same time");
 
   if (decodedMessageOutputStream)
   {

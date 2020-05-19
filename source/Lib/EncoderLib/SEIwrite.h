@@ -80,6 +80,8 @@ protected:
   void xWriteSEIContentColourVolume(const SEIContentColourVolume &sei);
   void xWriteSEIpayloadData(OutputBitstream &bs, const SEI& sei, const SPS *sps, HRD &hrd, const uint32_t temporalId);
   void xWriteByteAlign();
+protected:
+  HRD m_nestingHrd;
 };
 
 //! \}

@@ -1684,6 +1684,10 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
   {
     pps.setPPSChromaToolFlag(true);
   }
+  else
+  {
+    pps.setPPSChromaToolFlag(false);
+  }
 #endif
 
   int histogram[MAX_NUM_REF + 1];

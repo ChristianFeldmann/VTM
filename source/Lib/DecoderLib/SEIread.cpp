@@ -1365,8 +1365,11 @@ void SEIReader::xParseSEISubpictureLevelInfo(SEISubpicureLevelInfo& sei, uint32_
 {
   output_sei_message_header(sei, pDecodedMessageOutputStream, payloadSize);
   uint32_t val;
-  sei_read_code( pDecodedMessageOutputStream,   3,  val,    "num_ref_levels_minus1" );            sei.m_numRefLevels  = val + 1;
-  sei_read_flag( pDecodedMessageOutputStream,       val,    "explicit_fraction_present_flag" );   sei.m_explicitFractionPresentFlag = val;
+  sei_read_code( pDecodedMessageOutputStream,   3,  val,    "sli_num_ref_levels_minus1" );            sei.m_numRefLevels  = val + 1;
+#if JVET_Q0404_CBR_SUBPIC
+  sei_read_flag( pDecodedMessageOutputStream,       val,    "sli_cbr_constraint_flag" );              sei.m_cbrConstraintFlag = val;
+#endif
+  sei_read_flag( pDecodedMessageOutputStream,       val,    "sli_explicit_fraction_present_flag" );   sei.m_explicitFractionPresentFlag = val;
   if (sei.m_explicitFractionPresentFlag)
   {
     sei_read_uvlc(pDecodedMessageOutputStream,      val,    "sli_num_subpics_minus1");             sei.m_numSubpics = val + 1;
@@ -1384,14 +1387,14 @@ void SEIReader::xParseSEISubpictureLevelInfo(SEISubpicureLevelInfo& sei, uint32_
 
   for( int i = 0; i  <  sei.m_numRefLevels; i++ )
   {
-    sei_read_code( pDecodedMessageOutputStream,   8,  val,    "ref_level_idc[i]" );         sei.m_refLevelIdc[i]  = (Level::Name) val;
+    sei_read_code( pDecodedMessageOutputStream,   8,  val,    "sli_ref_level_idc[i]" );         sei.m_refLevelIdc[i]  = (Level::Name) val;
     if( sei.m_explicitFractionPresentFlag )
     {
       sei.m_refLevelFraction[i].resize(sei.m_numSubpics);
 
       for( int j = 0; j  <  sei.m_numSubpics; j++ )
       {
-        sei_read_code( pDecodedMessageOutputStream,   8,  val,    "ref_level_fraction_minus1[i][j]" );  sei.m_refLevelFraction[i][j]= val;
+        sei_read_code( pDecodedMessageOutputStream,   8,  val,    "sli_ref_level_fraction_minus1[i][j]" );  sei.m_refLevelFraction[i][j]= val;
       }
     }
   }

@@ -1543,6 +1543,7 @@ void DecLib::xCheckParameterSetConstraints(const int layerId)
 
       CHECK( currentSubPicIdx == NOT_VALID, "Sub-picture was not found" );
       CHECK( !previousSubPicIds.count( layerId ), "Sub-picture information of the previously decoded picture was not stored" );
+      
       if( previousSubPicIds[layerId][currentSubPicIdx] != slice->getSliceSubPicId() )
       {
         CHECK( !slice->isIRAP(), "For reordered sub-pictures, the slice NAL shall be in the range of IDR_W_RADL to CRA_NUT, inclusive" )

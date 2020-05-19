@@ -430,6 +430,7 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
 
   // slice type
   SliceType eSliceType;
+
   eSliceType=B_SLICE;
   if (m_pcCfg->getIntraPeriod() > 0 )
   {
@@ -1378,6 +1379,7 @@ void EncSlice::compressSlice( Picture* pcPic, const bool bCompressEntireSlice, c
     }
   }
 #endif // ENABLE_QPA
+
   bool checkPLTRatio = m_pcCfg->getIntraPeriod() != 1 && pcSlice->isIRAP();
   if (checkPLTRatio)
   {

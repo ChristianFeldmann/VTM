@@ -136,7 +136,7 @@ bool CU::getRprScaling( const SPS* sps, const PPS* curPPS, Picture* refPic, int&
 }
 
 #if JVET_R0058
-void CU::isConformanceILRP(Slice *slice)
+void CU::checkConformanceILRP(Slice *slice)
 {
   const int numRefList = (slice->getSliceType() == B_SLICE) ? (2) : (1);
 
@@ -152,7 +152,8 @@ void CU::isConformanceILRP(Slice *slice)
       if (refPic->cs->pps->getNumSubPics() != slice->getPic()->cs->pps->getNumSubPics())
       {
         isAllRefSameSubpicLayout = false;
-        goto outloopCon1;
+        iNumRef = numRefList;
+        break;
       }
       else
       {
@@ -164,13 +165,14 @@ void CU::isConformanceILRP(Slice *slice)
             || refPic->cs->pps->getSubPic(i).getSubPicCtuTopLeftY() != slice->getPic()->cs->pps->getSubPic(i).getSubPicCtuTopLeftY())
           {
             isAllRefSameSubpicLayout = false;
-            goto outloopCon1;
+            iRefIdx = slice->getNumRefIdx(eRefPicList);
+            iNumRef = numRefList;
+            break;
           }
         }
       }
     }
   }
-outloopCon1:
 
   //constraint 2: The picture referred to by each active entry in RefPicList[ 0 ] or RefPicList[ 1 ] is an ILRP for which the value of sps_num_subpics_minus1 is equal to 0
   if (!isAllRefSameSubpicLayout)

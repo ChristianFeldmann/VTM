@@ -1370,6 +1370,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     READ_FLAG(     uiCode, "separate_colour_plane_flag");        CHECK(uiCode != 0, "separate_colour_plane_flag shall be equal to 0");
     pcSPS->setSeparateColourPlaneFlag( uiCode != 0 );
   }
+
 #if JVET_R0058
   READ_FLAG(uiCode, "ref_pic_resampling_enabled_flag");          pcSPS->setRprEnabledFlag(uiCode);
   if (uiCode)
@@ -1383,6 +1384,7 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 #else
   READ_FLAG( uiCode, "res_change_in_clvs_allowed_flag" );        pcSPS->setRprEnabledFlag( uiCode );
 #endif
+
   if (pcSPS->getProfileTierLevel()->getConstraintInfo()->getNoResChangeInClvsConstraintFlag())
   {
     CHECK(uiCode != 0, "When no_res_change_in_clvs_constraint_flag is equal to 1, res_change_in_clvs_allowed_flag shall be equal to 0");

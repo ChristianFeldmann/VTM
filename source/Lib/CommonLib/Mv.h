@@ -292,6 +292,7 @@ void clipMv ( Mv& rcMv, const struct Position& pos,
             , const class PPS& pps
 );
 #endif
+
 bool wrapClipMv( Mv& rcMv, const Position& pos,
                  const struct Size& size,
                  const SPS *sps

@@ -127,6 +127,7 @@ void EncApp::xInitLibCfg()
     if (i > 0 && !vps.getAllIndependentLayersFlag())
     {
       vps.setIndependentLayerFlag( i, m_numRefLayers[i] ? false : true );
+
       if (!vps.getIndependentLayerFlag(i))
       {
         for (int j = 0, k = 0; j < i; j++)

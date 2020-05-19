@@ -1409,8 +1409,8 @@ void InterSearch::xSetIntraSearchRange(PredictionUnit& pu, int iRoiWidth, int iR
   rcMvSrchRngLT <<= 2;
   rcMvSrchRngRB <<= 2;
 #if JVET_R0058
-  bool temp = m_bMvClipInSubPic;
-  m_bMvClipInSubPic = true;
+  bool temp = m_clipMvInSubPic;
+  m_clipMvInSubPic = true;
 #endif
   xClipMv(rcMvSrchRngLT, pu.cu->lumaPos(),
          pu.cu->lumaSize(),
@@ -1423,7 +1423,7 @@ void InterSearch::xSetIntraSearchRange(PredictionUnit& pu, int iRoiWidth, int iR
       , *pu.cs->pps
   );
 #if JVET_R0058
-  m_bMvClipInSubPic = temp;
+  m_clipMvInSubPic = temp;
 #endif
   rcMvSrchRngLT >>= 2;
   rcMvSrchRngRB >>= 2;
@@ -3510,6 +3510,7 @@ void InterSearch::xMotionEstimation(PredictionUnit& pu, PelUnitBuf& origBuf, Ref
 }
 
 
+
 void InterSearch::xSetSearchRange ( const PredictionUnit& pu,
                                     const Mv& cMvPred,
                                     const int iSrchRng,
@@ -3520,6 +3521,7 @@ void InterSearch::xSetSearchRange ( const PredictionUnit& pu,
   const int iMvShift = MV_FRACTIONAL_BITS_INTERNAL;
   Mv cFPMvPred = cMvPred;
   clipMv( cFPMvPred, pu.cu->lumaPos(), pu.cu->lumaSize(), *pu.cs->sps, *pu.cs->pps );
+  
   Mv mvTL(cFPMvPred.getHor() - (iSrchRng << iMvShift), cFPMvPred.getVer() - (iSrchRng << iMvShift));
   Mv mvBR(cFPMvPred.getHor() + (iSrchRng << iMvShift), cFPMvPred.getVer() + (iSrchRng << iMvShift));
 
@@ -7791,7 +7793,7 @@ void InterSearch::xClipMv( Mv& rcMv, const Position& pos, const struct Size& siz
   int verMin = ( -( int ) sps.getMaxCUHeight()   - offset - ( int ) pos.y + 1 ) << mvShift;
   const SubPic &curSubPic = pps.getSubPicFromPos(pos);
 #if JVET_R0058
-  if (curSubPic.getTreatedAsPicFlag() && m_bMvClipInSubPic)
+  if (curSubPic.getTreatedAsPicFlag() && m_clipMvInSubPic)
 #else
   if (curSubPic.getTreatedAsPicFlag())
 #endif

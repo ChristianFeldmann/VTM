@@ -1547,6 +1547,7 @@ void DecLib::xCheckParameterSetConstraints(const int layerId)
       {
         CHECK( !slice->isIRAP(), "For reordered sub-pictures, the slice NAL shall be in the range of IDR_W_RADL to CRA_NUT, inclusive" )
       }
+
       // store PPS ID to have sub-picture info for the next pictures when last rectangular slice in the picture is encountered
       if( slice->getSliceID() + 1 == pps->getNumSlicesInPic() )
       {
@@ -1940,7 +1941,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
 #if JVET_R0058
   if (m_pcPic->cs->vps && !m_pcPic->cs->vps->getIndependentLayerFlag(m_pcPic->cs->vps->getGeneralLayerIdx(nalu.m_nuhLayerId)) && m_pcPic->cs->pps->getNumSubPics() > 1)
   {
-    CU::isConformanceILRP(pcSlice);
+    CU::checkConformanceILRP(pcSlice);
   }
 #endif
 

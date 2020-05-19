@@ -2255,7 +2255,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     int layerIdx = vps == nullptr ? 0 : vps->getGeneralLayerIdx(pcPic->layerId);
     if (vps && !vps->getIndependentLayerFlag(layerIdx) && pcPic->cs->pps->getNumSubPics() > 1)
     {
-      CU::isConformanceILRP(pcSlice);
+      CU::checkConformanceILRP(pcSlice);
     }
 #endif
 
@@ -2733,12 +2733,12 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         if (pcSlice->getSliceType() != I_SLICE && pcSlice->getRefPic(REF_PIC_LIST_0, 0)->unscaledPic->cs->pps->getNumSubPics() > 1)
         {
           clipMv = clipMvInSubpic;
-          m_pcEncLib->getInterSearch()->setMvClipInSubPic(true);
+          m_pcEncLib->getInterSearch()->setClipMvInSubPic(true);
         }
         else
         {
           clipMv = clipMvInPic;
-          m_pcEncLib->getInterSearch()->setMvClipInSubPic(false);
+          m_pcEncLib->getInterSearch()->setClipMvInSubPic(false);
         }
 #endif
 

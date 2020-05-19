@@ -1553,6 +1553,7 @@ public:
   void                    setSubPicId( int i, uint16_t u )                                                { m_subPicId[i] = u;     }
   uint16_t                getSubPicId( int i ) const                                                      { return  m_subPicId[i]; }
   void                    setSubPicId(const std::vector<uint16_t> &v)                                     { CHECK(v.size()!=m_numSubPics, "number of vector entries must be equal to numSubPics") ; m_subPicId = v; }
+  const std::vector<uint16_t> getSubPicIds() const                                                        { return  m_subPicId; }
 
   uint32_t                getNumLongTermRefPicSPS() const                                                 { return m_numLongTermRefPicSPS;                                       }
   void                    setNumLongTermRefPicSPS(uint32_t val)                                           { m_numLongTermRefPicSPS = val;                                        }
@@ -2085,6 +2086,7 @@ public:
   void                   setSubPicId( int i, uint16_t u )                                 { m_subPicId[i] = u;     }
   void                   setSubPicId(const std::vector<uint16_t> &v)                      { CHECK(v.size()!=m_numSubPics, "number of vector entries must be equal to numSubPics") ; m_subPicId = v; }
   uint16_t               getSubPicId( int i ) const                                       { return  m_subPicId[i]; }
+  const std::vector<uint16_t> getSubPicIds() const                                        { return  m_subPicId; }
   uint32_t               getSubPicIdxFromSubPicId( uint32_t subPicId ) const;
   void                   setNoPicPartitionFlag( bool b )                                  { m_noPicPartitionFlag = b;                     }
   bool                   getNoPicPartitionFlag( ) const                                   { return  m_noPicPartitionFlag;                 }

@@ -478,7 +478,7 @@ public:
 typedef std::list<SEI*> SEIMessages;
 
 /// output a selection of SEI messages by payload type. Ownership stays in original message list.
-SEIMessages getSeisByType(SEIMessages &seiList, SEI::PayloadType seiType);
+SEIMessages getSeisByType(const SEIMessages &seiList, SEI::PayloadType seiType);
 
 /// remove a selection of SEI messages by payload type from the original list and return them in a new list.
 SEIMessages extractSeisByType(SEIMessages &seiList, SEI::PayloadType seiType);
@@ -491,7 +491,20 @@ class SEIScalableNesting : public SEI
 public:
   PayloadType payloadType() const { return SCALABLE_NESTING; }
 
-  SEIScalableNesting() {}
+  SEIScalableNesting()
+  : m_snOlsFlag (false)
+#if JVET_Q0397_SCAL_NESTING
+  , m_snSubpicFlag (false)
+#endif
+  , m_snNumOlssMinus1 (0)
+  , m_snAllLayersFlag (false)
+  , m_snNumLayersMinus1 (0)
+#if JVET_Q0397_SCAL_NESTING
+  , m_snNumSubpics (1)
+  , m_snSubpicIdLen (0)
+#endif
+  , m_snNumSEIs(0)
+  {}
 
   virtual ~SEIScalableNesting()
   {
@@ -499,12 +512,21 @@ public:
   }
 
   bool      m_snOlsFlag;
+#if JVET_Q0397_SCAL_NESTING
+  bool      m_snSubpicFlag;
+#endif
   uint32_t  m_snNumOlssMinus1;
   uint32_t  m_snOlsIdxDeltaMinus1[MAX_NESTING_NUM_LAYER];
   uint32_t  m_snOlsIdx[MAX_NESTING_NUM_LAYER];
   bool      m_snAllLayersFlag;                      //value valid if m_nestingOlsFlag == 0
   uint32_t  m_snNumLayersMinus1;                    //value valid if m_nestingOlsFlag == 0 and m_nestingAllLayersFlag == 0
   uint8_t   m_snLayerId[MAX_NESTING_NUM_LAYER];     //value valid if m_nestingOlsFlag == 0 and m_nestingAllLayersFlag == 0. This can e.g. be a static array of 64 uint8_t values
+#if JVET_Q0397_SCAL_NESTING
+  uint32_t  m_snNumSubpics;
+  uint8_t   m_snSubpicIdLen;
+  std::vector<uint16_t> m_snSubpicId;
+#endif
+  uint32_t  m_snNumSEIs;
 
   SEIMessages m_nestedSEIs;
 };

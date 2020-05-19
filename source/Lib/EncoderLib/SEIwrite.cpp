@@ -435,27 +435,34 @@ void SEIWriter::xWriteSEIPictureTiming(const SEIPictureTiming& sei, const SEIBuf
   if( bp.m_bpDecodingUnitHrdParamsPresentFlag && bp.m_decodingUnitCpbParamsInPicTimingSeiFlag )
   {
     WRITE_UVLC( sei.m_numDecodingUnitsMinus1, "num_decoding_units_minus1" );
-    WRITE_FLAG( sei.m_duCommonCpbRemovalDelayFlag, "du_commmon_cpb_removal_delay_flag" );
-    if( sei.m_duCommonCpbRemovalDelayFlag )
+#if JVET_R0103_DU_SIGNALLING
+    if (sei.m_numDecodingUnitsMinus1 > 0)
     {
-      for( int i = temporalId; i < bp.m_bpMaxSubLayers - 1; i ++ )
+#endif
+      WRITE_FLAG( sei.m_duCommonCpbRemovalDelayFlag, "du_commmon_cpb_removal_delay_flag" );
+      if( sei.m_duCommonCpbRemovalDelayFlag )
       {
-        if( sei.m_ptSubLayerDelaysPresentFlag[i] )
-          WRITE_CODE( sei.m_duCommonCpbRemovalDelayMinus1[i], bp.m_duCpbRemovalDelayIncrementLength, "du_common_cpb_removal_delay_increment_minus1[i]" );
-      }
-    }
-    for( int i = 0; i <= sei.m_numDecodingUnitsMinus1; i ++ )
-    {
-      WRITE_UVLC( sei.m_numNalusInDuMinus1[i], "num_nalus_in_du_minus1[i]" );
-      if( !sei.m_duCommonCpbRemovalDelayFlag && i < sei.m_numDecodingUnitsMinus1 )
-      {
-        for( int j = temporalId; j < bp.m_bpMaxSubLayers - 1; j ++ )
+        for( int i = temporalId; i < bp.m_bpMaxSubLayers - 1; i ++ )
         {
-          if( sei.m_ptSubLayerDelaysPresentFlag[j] )
-            WRITE_CODE( sei.m_duCpbRemovalDelayMinus1[i * bp.m_bpMaxSubLayers + j], bp.m_duCpbRemovalDelayIncrementLength, "du_cpb_removal_delay_increment_minus1[i][j]" );
+          if( sei.m_ptSubLayerDelaysPresentFlag[i] )
+            WRITE_CODE( sei.m_duCommonCpbRemovalDelayMinus1[i], bp.m_duCpbRemovalDelayIncrementLength, "du_common_cpb_removal_delay_increment_minus1[i]" );
         }
       }
+      for( int i = 0; i <= sei.m_numDecodingUnitsMinus1; i ++ )
+      {
+        WRITE_UVLC( sei.m_numNalusInDuMinus1[i], "num_nalus_in_du_minus1[i]" );
+        if( !sei.m_duCommonCpbRemovalDelayFlag && i < sei.m_numDecodingUnitsMinus1 )
+        {
+          for( int j = temporalId; j < bp.m_bpMaxSubLayers - 1; j ++ )
+          {
+            if( sei.m_ptSubLayerDelaysPresentFlag[j] )
+              WRITE_CODE( sei.m_duCpbRemovalDelayMinus1[i * bp.m_bpMaxSubLayers + j], bp.m_duCpbRemovalDelayIncrementLength, "du_cpb_removal_delay_increment_minus1[i][j]" );
+          }
+        }
+      }
+#if JVET_R0103_DU_SIGNALLING
     }
+#endif
   }
   WRITE_UVLC( sei.m_ptDisplayElementalPeriodsMinus1,          "pt_display_elemental_periods_minus1" );
 }
@@ -492,24 +499,24 @@ void SEIWriter::xWriteSEIDependentRAPIndication(const SEIDependentRAPIndication&
 
 void SEIWriter::xWriteSEIScalableNesting(OutputBitstream& bs, const SEIScalableNesting& sei, const SPS *sps)
 {
-  WRITE_FLAG(sei.m_nestingOlsFlag, "nesting_ols_flag");
-  if (sei.m_nestingOlsFlag)
+  WRITE_FLAG(sei.m_snOlsFlag, "sn_ols_flag");
+  if (sei.m_snOlsFlag)
   {
-    WRITE_UVLC(sei.m_nestingNumOlssMinus1, "nesting_num_olss_minus1");
-    for (uint32_t i = 0; i <= sei.m_nestingNumOlssMinus1; i++)
+    WRITE_UVLC(sei.m_snNumOlssMinus1, "sn_num_olss_minus1");
+    for (uint32_t i = 0; i <= sei.m_snNumOlssMinus1; i++)
     {
-      WRITE_UVLC(sei.m_nestingOlsIdxDeltaMinus1[i], "nesting_ols_idx_delta_minus1[i]");
+      WRITE_UVLC(sei.m_snOlsIdxDeltaMinus1[i], "sn_ols_idx_delta_minus1[i]");
     }
   }
   else
   {
-    WRITE_FLAG(sei.m_nestingAllLayersFlag, "nesting_all_layers_flag");
-    if (!sei.m_nestingAllLayersFlag)
+    WRITE_FLAG(sei.m_snAllLayersFlag, "sn_all_layers_flag");
+    if (!sei.m_snAllLayersFlag)
     {
-      WRITE_UVLC(sei.m_nestingNumLayersMinus1, "nesting_num_layers");
-      for (uint32_t i = 0; i <= sei.m_nestingNumLayersMinus1; i++)
+      WRITE_UVLC(sei.m_snNumLayersMinus1, "sn_num_layers");
+      for (uint32_t i = 0; i <= sei.m_snNumLayersMinus1; i++)
       {
-        WRITE_CODE(sei.m_nestingLayerId[i], 6, "nesting_layer_id");
+        WRITE_CODE(sei.m_snLayerId[i], 6, "sn_layer_id");
       }
     }
   }
@@ -517,7 +524,7 @@ void SEIWriter::xWriteSEIScalableNesting(OutputBitstream& bs, const SEIScalableN
   // byte alignment
   while (m_pcBitIf->getNumberOfWrittenBits() % 8 != 0)
   {
-    WRITE_FLAG(0, "nesting_zero_bit");
+    WRITE_FLAG(0, "sn_zero_bit");
   }
 
   // write nested SEI messages
@@ -730,8 +737,11 @@ void SEIWriter::xWriteSEISubpictureLevelInfo(const SEISubpicureLevelInfo &sei)
   {
     CHECK(sei.m_numRefLevels != (int)sei.m_refLevelFraction.size(), "SEISubpicureLevelInfo: numRefLevels must be equal to the number of fractions");
   }
-  WRITE_CODE( (uint32_t)sei.m_numRefLevels - 1, 3,                            "num_ref_levels_minus1");
-  WRITE_FLAG(           sei.m_explicitFractionPresentFlag,                    "explicit_fraction_present_flag");
+  WRITE_CODE( (uint32_t)sei.m_numRefLevels - 1, 3,                            "sli_num_ref_levels_minus1");
+#if JVET_Q0404_CBR_SUBPIC
+  WRITE_FLAG(           sei.m_cbrConstraintFlag,                              "sli_cbr_constraint_flag");
+#endif
+  WRITE_FLAG(           sei.m_explicitFractionPresentFlag,                    "sli_explicit_fraction_present_flag");
   if (sei.m_explicitFractionPresentFlag)
   {
     WRITE_UVLC(         sei.m_numSubpics -1 ,                                 "sli_num_subpics_minus1");
@@ -743,13 +753,13 @@ void SEIWriter::xWriteSEISubpictureLevelInfo(const SEISubpicureLevelInfo &sei)
 
   for (int i=0; i<sei.m_numRefLevels; i++)
   {
-    WRITE_CODE( (uint32_t)sei.m_refLevelIdc[i], 8,                            "ref_level_idc[i]");
+    WRITE_CODE( (uint32_t)sei.m_refLevelIdc[i], 8,                            "sli_ref_level_idc[i]");
     if (sei.m_explicitFractionPresentFlag)
     {
       CHECK(sei.m_numSubpics != (int)sei.m_refLevelFraction[i].size(),        "SEISubpicureLevelInfo: number of fractions differs from number of subpictures");
       for (int j = 0; j < sei.m_numSubpics; j++)
       {
-        WRITE_CODE( (uint32_t)sei.m_refLevelFraction[i][j], 8,                "ref_level_fraction_minus1[i][j]");
+        WRITE_CODE( (uint32_t)sei.m_refLevelFraction[i][j], 8,                "sli_ref_level_fraction_minus1[i][j]");
       }
     }
   }

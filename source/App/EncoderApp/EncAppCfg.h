@@ -167,7 +167,9 @@ protected:
   bool      m_bNoBcwConstraintFlag;
   bool      m_noIbcConstraintFlag;
   bool      m_bNoCiipConstraintFlag;
+#if !JVET_R0214_MMVD_SYNTAX_MODIFICATION
   bool      m_noFPelMmvdConstraintFlag;
+#endif
   bool      m_noGeoConstraintFlag;
   bool      m_bNoLadfConstraintFlag;
   bool      m_noTransformSkipConstraintFlag;
@@ -455,7 +457,8 @@ protected:
   bool      m_useEarlySkipDetection;                          ///< flag for using Early SKIP Detection
   bool      m_picPartitionFlag;                               ///< enable picture partitioning (0: single tile, single slice, 1: multiple tiles/slices can be used)
 #if JVET_R0110_MIXED_LOSSLESS
-  std::vector<uint32_t> m_sliceLosslessArray;                    ///< Slice lossless array
+  bool      m_mixedLossyLossless;                             ///< enable mixed lossy/lossless coding
+  std::vector<uint16_t> m_sliceLosslessArray;                 ///< Slice lossless array
 #endif
   std::vector<uint32_t> m_tileColumnWidth;                    ///< tile column widths in units of CTUs (last column width will be repeated uniformly to cover any remaining picture width)
   std::vector<uint32_t> m_tileRowHeight;                      ///< tile row heights in units of CTUs (last row height will be repeated uniformly to cover any remaining picture height)

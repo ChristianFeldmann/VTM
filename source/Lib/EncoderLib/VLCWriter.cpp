@@ -366,10 +366,25 @@ void HLSWriter::codePPS( const PPS* pcPPS )
       for( int i = 0; i < pcPPS->getNumSlicesInPic()-1; i++ )
       {
         // complete tiles within a single slice
+#if JVET_R0188
+        if( ( pcPPS->getSliceTileIdx( i ) % pcPPS->getNumTileColumns() ) != pcPPS->getNumTileColumns() - 1 )
+        {
+          WRITE_UVLC( pcPPS->getSliceWidthInTiles( i ) - 1, "slice_width_in_tiles_minus1[i]" );
+        }
+#else
         if( pcPPS->getNumTileColumns() > 1 )
         {
-        WRITE_UVLC( pcPPS->getSliceWidthInTiles( i ) - 1,  "slice_width_in_tiles_minus1[i]" );
+          WRITE_UVLC( pcPPS->getSliceWidthInTiles( i ) - 1,  "slice_width_in_tiles_minus1[i]" );
         }
+#endif
+
+#if JVET_R0188
+        if( pcPPS->getSliceTileIdx( i ) / pcPPS->getNumTileColumns() != pcPPS->getNumTileRows() - 1 &&
+          ( pcPPS->getTileIdxDeltaPresentFlag() || pcPPS->getSliceTileIdx( i ) % pcPPS->getNumTileColumns() == 0 ) )
+        {
+           WRITE_UVLC( pcPPS->getSliceHeightInTiles( i ) - 1, "slice_height_in_tiles_minus1[i]" );
+        }
+#else
         if( pcPPS->getTileIdxDeltaPresentFlag() || ( (pcPPS->getSliceTileIdx( i ) % pcPPS->getNumTileColumns()) == 0 ) )
         {
           if( pcPPS->getNumTileRows() > 1 )
@@ -377,6 +392,7 @@ void HLSWriter::codePPS( const PPS* pcPPS )
            WRITE_UVLC( pcPPS->getSliceHeightInTiles( i ) - 1, "slice_height_in_tiles_minus1[i]" );
           }
         }
+#endif
 
         // multiple slices within a single tile special case
         if( pcPPS->getSliceWidthInTiles(i) == 1 && pcPPS->getSliceHeightInTiles(i) == 1 && pcPPS->getTileRowHeight(pcPPS->getSliceTileIdx(i) / pcPPS->getNumTileColumns()) > 1 )
@@ -520,6 +536,17 @@ void HLSWriter::codePPS( const PPS* pcPPS )
     WRITE_FLAG(pcPPS->getWpInfoInPhFlag() ? 1 : 0, "wp_info_in_ph_flag");
   }
   WRITE_FLAG(pcPPS->getQpDeltaInfoInPhFlag() ? 1 : 0, "qp_delta_info_in_ph_flag");
+#endif
+#if JVET_Q0764_WRAP_AROUND_WITH_RPR
+  WRITE_FLAG( pcPPS->getWrapAroundEnabledFlag() ? 1 : 0, "pps_ref_wraparound_enabled_flag" );
+  if( pcPPS->getWrapAroundEnabledFlag() )
+  {
+#if JVET_R0162_WRAPAROUND_OFFSET_SIGNALING
+    WRITE_UVLC(pcPPS->getPicWidthMinusWrapAroundOffset(), "pps_pic_width_minus_wraparound_offset");
+#else
+    WRITE_UVLC( pcPPS->getWrapAroundOffsetMinusCtbSize(), "pps_ref_wraparound_offset");
+#endif
+  }
 #endif
 
   WRITE_FLAG( pcPPS->getPictureHeaderExtensionPresentFlag() ? 1 : 0, "picture_header_extension_present_flag");
@@ -1080,10 +1107,12 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   }
 
   WRITE_FLAG( pcSPS->getWrapAroundEnabledFlag() ? 1 : 0,                              "sps_ref_wraparound_enabled_flag" );
+#if !JVET_Q0764_WRAP_AROUND_WITH_RPR
   if( pcSPS->getWrapAroundEnabledFlag() )
   {
     WRITE_UVLC((pcSPS->getWrapAroundOffset() / (1 << pcSPS->getLog2MinCodingBlockSize())) - 2 - pcSPS->getCTUSize()/(1<<pcSPS->getLog2MinCodingBlockSize()), "sps_ref_wraparound_offset");
   }
+#endif
 
   WRITE_FLAG( pcSPS->getSPSTemporalMVPEnabledFlag()  ? 1 : 0,                        "sps_temporal_mvp_enabled_flag" );
 
@@ -1106,6 +1135,12 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
     WRITE_FLAG(pcSPS->getDmvrControlPresentFlag() ? 1 : 0,                            "sps_dmvr_pic_present_flag");
   }
   WRITE_FLAG(pcSPS->getUseMMVD() ? 1 : 0,                                             "sps_mmvd_enabled_flag");
+#if JVET_R0214_MMVD_SYNTAX_MODIFICATION
+  if (pcSPS->getUseMMVD())
+  {
+    WRITE_FLAG(pcSPS->getFpelMmvdEnabledFlag() ? 1 : 0,                               "sps_mmvd_fullpel_only_flag");
+  }
+#endif
   WRITE_FLAG( pcSPS->getUseISP() ? 1 : 0,                                             "sps_isp_enabled_flag");
   WRITE_FLAG( pcSPS->getUseMRL() ? 1 : 0,                                             "sps_mrl_enabled_flag");
   WRITE_FLAG( pcSPS->getUseMIP() ? 1 : 0,                                             "sps_mip_enabled_flag");
@@ -1170,12 +1205,12 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   }
   // KJS: sps_ciip_enabled_flag
   WRITE_FLAG( pcSPS->getUseCiip() ? 1 : 0,                                                  "sps_ciip_enabled_flag" );
-
+#if !JVET_R0214_MMVD_SYNTAX_MODIFICATION
   if ( pcSPS->getUseMMVD() )
   {
     WRITE_FLAG( pcSPS->getFpelMmvdEnabledFlag() ? 1 : 0,                            "sps_fpel_mmvd_enabled_flag" );
   }
-
+#endif
   if (pcSPS->getMaxNumMergeCand() >= 2)
   {
     WRITE_FLAG(pcSPS->getUseGeo() ? 1 : 0, "sps_gpm_enabled_flag");
@@ -1338,10 +1373,14 @@ void HLSWriter::codeDCI(const DCI* dci)
 #if ENABLE_TRACING
   xTraceDCIHeader();
 #endif
+#if JVET_R0108_DCI_SIGNALING
+  WRITE_CODE(0, 4, "dci_reserved_zero_4bits");
+#else
   WRITE_CODE(dci->getMaxSubLayersMinus1(), 3, "dci_max_sub_layers_minus1");
   WRITE_CODE(0, 1, "dci_reserved_zero_bit");
+#endif
   uint32_t numPTLs = (uint32_t)dci->getNumPTLs();
-  CHECK(numPTLs < 1, "At least one PTL must be available in DCI");
+  CHECK( (numPTLs < 1) || ( numPTLs > 15), "dci_num_plts_minus1 shall be in the range of 0 - 14");
 
   WRITE_CODE(numPTLs - 1, 4, "dci_num_ptls_minus1");
 
@@ -1416,7 +1455,11 @@ void HLSWriter::codeVPS(const VPS* pcVPS)
   {
     if(i > 0)
       WRITE_FLAG(pcVPS->getPtPresentFlag(i), "pt_present_flag");
+#if JVET_R0107_VPS_SIGNALING
+    if (!pcVPS->getAllLayersSameNumSublayersFlag())
+#else
     if(pcVPS->getMaxSubLayers() > 1 && !pcVPS->getAllLayersSameNumSublayersFlag())
+#endif
       WRITE_CODE(pcVPS->getPtlMaxTemporalId(i) ,3, "ptl_max_temporal_id");
   }
   int cnt = 0;
@@ -1452,6 +1495,16 @@ void HLSWriter::codeVPS(const VPS* pcVPS)
 
   for( int i = 0; i < pcVPS->m_numDpbParams; i++ )
   {
+#if JVET_R0107_VPS_SIGNALING
+    if (!pcVPS->getAllLayersSameNumSublayersFlag())
+    {
+      WRITE_CODE(pcVPS->m_dpbMaxTemporalId[i], 3, "dpb_max_temporal_id[i]");
+    }
+    else
+    {
+      CHECK(pcVPS->m_dpbMaxTemporalId[i] != pcVPS->getMaxSubLayers() - 1, "When vps_all_layers_same_num_sublayers_flag is equal to 1, the value of dpb_max_temporal_id[ i ] is inferred to be equal to vps_max_sublayers_minus1");
+    }
+#else
     if( pcVPS->getMaxSubLayers() == 1 )
     {
       CHECK( pcVPS->m_dpbMaxTemporalId[i] != 0, "When vps_max_sublayers_minus1 is equal to 0, the value of dpb_max_temporal_id[ i ] is inferred to be equal to 0" );
@@ -1467,6 +1520,7 @@ void HLSWriter::codeVPS(const VPS* pcVPS)
         WRITE_CODE( pcVPS->m_dpbMaxTemporalId[i], 3, "dpb_max_temporal_id[i]" );
       }
     }
+#endif
 
     for( int j = ( pcVPS->m_sublayerDpbParamsPresentFlag ? 0 : pcVPS->m_dpbMaxTemporalId[i] ); j <= pcVPS->m_dpbMaxTemporalId[i]; j++ )
     {
@@ -1476,17 +1530,28 @@ void HLSWriter::codeVPS(const VPS* pcVPS)
     }
   }
 
+#if JVET_R0099_DPB_HRD_PARAMETERS_SIGNALLING
+  for( int i = 1; i < pcVPS->m_numMultiLayeredOlss; i++) 
+  {
+#else
   for( int i = 0; i < pcVPS->getTotalNumOLSs(); i++ )
   {
     if( pcVPS->m_numLayersInOls[i] > 1 )
     {
+#endif
       WRITE_UVLC( pcVPS->getOlsDpbPicSize( i ).width, "ols_dpb_pic_width[i]" );
       WRITE_UVLC( pcVPS->getOlsDpbPicSize( i ).height, "ols_dpb_pic_height[i]" );
+#if JVET_R0099_DPB_HRD_PARAMETERS_SIGNALLING
+      if( (pcVPS->m_numDpbParams > 1) && (pcVPS->m_numDpbParams != pcVPS->m_numMultiLayeredOlss) )
+#else
       if( pcVPS->m_numDpbParams > 1 )
+#endif
       {
         WRITE_UVLC( pcVPS->getOlsDpbParamsIdx( i ), "ols_dpb_params_idx[i]" );
       }
+#if !JVET_R0099_DPB_HRD_PARAMETERS_SIGNALLING
     }
+#endif
   }
   if (!pcVPS->getEachLayerIsAnOlsFlag())
   {
@@ -1502,13 +1567,26 @@ void HLSWriter::codeVPS(const VPS* pcVPS)
     WRITE_UVLC(pcVPS->getNumOlsHrdParamsMinus1(), "num_ols_hrd_params_minus1");
     for (int i = 0; i <= pcVPS->getNumOlsHrdParamsMinus1(); i++)
     {
+#if JVET_R0107_VPS_SIGNALING
+      if (!pcVPS->getAllLayersSameNumSublayersFlag())
+#else
       if (((pcVPS->getMaxSubLayers()-1) > 0) && (!pcVPS->getAllLayersSameNumSublayersFlag()))
+#endif
       {
         WRITE_CODE(pcVPS->getHrdMaxTid(i), 3, "hrd_max_tid[i]");
       }
       uint32_t firstSublayer = pcVPS->getVPSSublayerCpbParamsPresentFlag() ? 0 : pcVPS->getHrdMaxTid(i);
       codeOlsHrdParameters(pcVPS->getGeneralHrdParameters(), pcVPS->getOlsHrdParameters(i),firstSublayer, pcVPS->getHrdMaxTid(i));
     }
+#if JVET_R0099_DPB_HRD_PARAMETERS_SIGNALLING
+    if ((pcVPS->getNumOlsHrdParamsMinus1() > 0) && ((pcVPS->getNumOlsHrdParamsMinus1() + 1) != pcVPS->m_numMultiLayeredOlss))
+    {
+      for (int i = 0; i < pcVPS->m_numMultiLayeredOlss; i++)
+      {
+        WRITE_UVLC(pcVPS->getOlsHrdIdx(i), "ols_hrd_idx[i]");
+      }
+    }
+#else
     if (((pcVPS->getNumOlsHrdParamsMinus1() + 1)!= pcVPS->getTotalNumOLSs()) && (pcVPS->getNumOlsHrdParamsMinus1() > 0))
     {
       for (int i=1; i < pcVPS->getTotalNumOLSs();i++)
@@ -1519,6 +1597,7 @@ void HLSWriter::codeVPS(const VPS* pcVPS)
         }
       }
     }
+#endif
   }
 
   WRITE_FLAG(0, "vps_extension_flag");
@@ -2697,7 +2776,9 @@ void  HLSWriter::codeConstraintInfo  ( const ConstraintInfo* cinfo )
   WRITE_FLAG(cinfo->getNoBcwConstraintFlag() ? 1 : 0, "no_bcw_constraint_flag");
   WRITE_FLAG(cinfo->getNoIbcConstraintFlag() ? 1 : 0, "no_ibc_constraint_flag");
   WRITE_FLAG(cinfo->getNoCiipConstraintFlag() ? 1 : 0, "no_ciip_constraint_flag");
+#if !JVET_R0214_MMVD_SYNTAX_MODIFICATION
   WRITE_FLAG(cinfo->getNoFPelMmvdConstraintFlag() ? 1 : 0, "no_fpel_mmvd_constraint_flag");
+#endif
   WRITE_FLAG(cinfo->getNoGeoConstraintFlag() ? 1 : 0, "no_gpm_constraint_flag");
   WRITE_FLAG(cinfo->getNoLadfConstraintFlag() ? 1 : 0, "no_ladf_constraint_flag");
   WRITE_FLAG(cinfo->getNoTransformSkipConstraintFlag() ? 1 : 0, "no_transform_skip_constraint_flag");

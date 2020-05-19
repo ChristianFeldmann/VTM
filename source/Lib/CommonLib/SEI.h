@@ -498,13 +498,13 @@ public:
     deleteSEIs(m_nestedSEIs);
   }
 
-  bool  m_nestingOlsFlag;
-  uint32_t m_nestingNumOlssMinus1;
-  uint32_t m_nestingOlsIdxDeltaMinus1[MAX_NESTING_NUM_LAYER];
-  uint32_t m_nestingOlsIdx[MAX_NESTING_NUM_LAYER];
-  bool  m_nestingAllLayersFlag;                           //value valid if m_nestingOlsFlag == 0
-  uint32_t  m_nestingNumLayersMinus1;                     //value valid if m_nestingOlsFlag == 0 and m_nestingAllLayersFlag == 0
-  uint8_t m_nestingLayerId[MAX_NESTING_NUM_LAYER];        //value valid if m_nestingOlsFlag == 0 and m_nestingAllLayersFlag == 0. This can e.g. be a static array of 64 uint8_t values
+  bool      m_snOlsFlag;
+  uint32_t  m_snNumOlssMinus1;
+  uint32_t  m_snOlsIdxDeltaMinus1[MAX_NESTING_NUM_LAYER];
+  uint32_t  m_snOlsIdx[MAX_NESTING_NUM_LAYER];
+  bool      m_snAllLayersFlag;                      //value valid if m_nestingOlsFlag == 0
+  uint32_t  m_snNumLayersMinus1;                    //value valid if m_nestingOlsFlag == 0 and m_nestingAllLayersFlag == 0
+  uint8_t   m_snLayerId[MAX_NESTING_NUM_LAYER];     //value valid if m_nestingOlsFlag == 0 and m_nestingAllLayersFlag == 0. This can e.g. be a static array of 64 uint8_t values
 
   SEIMessages m_nestedSEIs;
 };
@@ -634,12 +634,18 @@ public:
   SEISubpicureLevelInfo()
   : m_numRefLevels(0)
   , m_explicitFractionPresentFlag (false)
+#if JVET_Q0404_CBR_SUBPIC
+  , m_cbrConstraintFlag (false)
+#endif
   , m_numSubpics(0)
   {}
   virtual ~SEISubpicureLevelInfo() {}
 
   int       m_numRefLevels;
   bool      m_explicitFractionPresentFlag;
+#if JVET_Q0404_CBR_SUBPIC
+  bool      m_cbrConstraintFlag;
+#endif
   int       m_numSubpics;
   std::vector<Level::Name>      m_refLevelIdc;
   std::vector<std::vector<int>> m_refLevelFraction;

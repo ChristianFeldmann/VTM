@@ -508,7 +508,11 @@ void Slice::constructRefPicList(PicList& rcListPic)
       pcRefPic = xGetLongTermRefPic( rcListPic, ltrpPoc, m_localRPL0.getDeltaPocMSBPresentFlag( ii ), m_pcPic->layerId );
       pcRefPic->longTerm = true;
     }
+#if JVET_Q0764_WRAP_AROUND_WITH_RPR  
+    pcRefPic->extendPicBorder( getPPS() );
+#else
     pcRefPic->extendPicBorder();
+#endif
     m_apcRefPicList[REF_PIC_LIST_0][ii] = pcRefPic;
     m_bIsUsedAsLongTerm[REF_PIC_LIST_0][ii] = pcRefPic->longTerm;
   }
@@ -544,7 +548,11 @@ void Slice::constructRefPicList(PicList& rcListPic)
       pcRefPic = xGetLongTermRefPic( rcListPic, ltrpPoc, m_localRPL1.getDeltaPocMSBPresentFlag( ii ), m_pcPic->layerId );
       pcRefPic->longTerm = true;
     }
+#if JVET_Q0764_WRAP_AROUND_WITH_RPR  
+    pcRefPic->extendPicBorder( getPPS() );
+#else
     pcRefPic->extendPicBorder();
+#endif
     m_apcRefPicList[REF_PIC_LIST_1][ii] = pcRefPic;
     m_bIsUsedAsLongTerm[REF_PIC_LIST_1][ii] = pcRefPic->longTerm;
   }
@@ -1971,6 +1979,7 @@ VPS::VPS()
   {
     m_vpsLayerId[i] = 0;
     m_vpsIndependentLayerFlag[i] = true;
+    m_generalLayerIdx[i] = 0;
     for (int j = 0; j < MAX_VPS_LAYERS; j++)
     {
       m_vpsDirectRefLayerFlag[i][j] = 0;
@@ -2406,6 +2415,9 @@ SPSRExt::SPSRExt()
 SPS::SPS()
 : m_SPSId                     (  0)
 , m_VPSId                     ( 0 )
+#if JVET_R0194_CONSTRAINT_PS_SHARING_REFERENCING
+, m_layerId                   ( 0 )
+#endif
 , m_affineAmvrEnabledFlag     ( false )
 , m_DMVR                      ( false )
 , m_MMVD                      ( false )
@@ -2481,7 +2493,9 @@ SPS::SPS()
 , m_vuiParametersPresentFlag  (false)
 , m_vuiParameters             ()
 , m_wrapAroundEnabledFlag     (false)
+#if !JVET_Q0764_WRAP_AROUND_WITH_RPR
 , m_wrapAroundOffset          (  0)
+#endif
 , m_IBCFlag                   (  0)
 , m_PLTMode                   (  0)
 , m_lmcsEnabled               (false)
@@ -2715,6 +2729,15 @@ PPS::PPS()
 , m_mixedNaluTypesInPicFlag          ( false )
 , m_picWidthInLumaSamples(352)
 , m_picHeightInLumaSamples( 288 )
+#if JVET_Q0764_WRAP_AROUND_WITH_RPR
+, m_wrapAroundEnabledFlag            (false)
+#if JVET_R0162_WRAPAROUND_OFFSET_SIGNALING
+, m_picWidthMinusWrapAroundOffset    (0)
+#else
+, m_wrapAroundOffsetMinusCtbSize     (0)
+#endif
+, m_wrapAroundOffset                 (0)
+#endif
 , pcv                                (NULL)
 {
   m_ChromaQpAdjTableIncludingNullEntry[0].u.comp.CbOffset = 0; // Array includes entry [0] for the null offset used when cu_chroma_qp_offset_flag=0. This is initialised here and never subsequently changed.
@@ -3958,7 +3981,12 @@ void Slice::scaleRefPicList( Picture *scaledRefPic[ ], PicHeader *picHeader, APS
                                    scaledRefPic[j]->getRecoBuf(), pps->getScalingWindow(),
                                    sps->getChromaFormatIdc(), sps->getBitDepths(), true, downsampling,
                                    sps->getHorCollocatedChromaFlag(), sps->getVerCollocatedChromaFlag() );
+#if JVET_Q0764_WRAP_AROUND_WITH_RPR
+          scaledRefPic[j]->unscaledPic = m_apcRefPicList[refList][rIdx];
+          scaledRefPic[j]->extendPicBorder( getPPS() );
+#else
           scaledRefPic[j]->extendPicBorder();
+#endif
 
           m_scaledRefPicList[refList][rIdx] = scaledRefPic[j];
         }
@@ -4082,7 +4110,9 @@ bool             operator == (const ConstraintInfo& op1, const ConstraintInfo& o
   if( op1.m_noBcwConstraintFlag                          != op2.m_noBcwConstraintFlag                            ) return false;
   if( op1.m_noIbcConstraintFlag                          != op2.m_noIbcConstraintFlag                            ) return false;
   if( op1.m_noCiipConstraintFlag                         != op2.m_noCiipConstraintFlag                           ) return false;
+#if !JVET_R0214_MMVD_SYNTAX_MODIFICATION
   if( op1.m_noFPelMmvdConstraintFlag                     != op2.m_noFPelMmvdConstraintFlag                       ) return false;
+#endif
   if( op1.m_noLadfConstraintFlag                         != op2.m_noLadfConstraintFlag                           ) return false;
   if( op1.m_noTransformSkipConstraintFlag                != op2.m_noTransformSkipConstraintFlag                  ) return false;
   if( op1.m_noBDPCMConstraintFlag                        != op2.m_noBDPCMConstraintFlag                          ) return false;

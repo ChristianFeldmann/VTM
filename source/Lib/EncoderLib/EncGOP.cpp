@@ -2667,7 +2667,12 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     {
       DTRACE_UPDATE( g_trace_ctx, ( std::make_pair( "poc", pocCurr ) ) );
 #if JVET_R0110_MIXED_LOSSLESS
-      const std::vector<uint32_t> sliceLosslessArray = *(m_pcCfg->getSliceLosslessArray());
+      const std::vector<uint16_t> sliceLosslessArray = *(m_pcCfg->getSliceLosslessArray());
+      bool mixedLossyLossless = m_pcCfg->getMixedLossyLossless();
+      if (m_pcCfg->getCostMode() == COST_LOSSLESS_CODING)
+      {
+        pcPic->fillSliceLossyLosslessArray(sliceLosslessArray, mixedLossyLossless);
+      }
 #endif
 
       for(uint32_t sliceIdx = 0; sliceIdx < pcPic->cs->pps->getNumSlicesInPic(); sliceIdx++ )
@@ -2716,7 +2721,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         bool isLossless = false;
         if (m_pcCfg->getCostMode() == COST_LOSSLESS_CODING)
         {
-          isLossless = (sliceLosslessArray[sliceIdx] != 0);
+          isLossless = pcPic->losslessSlice(sliceIdx);
         }
         m_pcSliceEncoder->setLosslessSlice(pcPic, isLossless);
 #endif
@@ -4734,7 +4739,11 @@ void EncGOP::updateCompositeReference(Slice* pcSlice, PicList& rcListPic, int po
   // Update background reference
   if (pcSlice->isIRAP())//(pocCurr == 0)
   {
+#if JVET_Q0764_WRAP_AROUND_WITH_RPR  
+    curPic->extendPicBorder( pcSlice->getPPS() );
+#else
     curPic->extendPicBorder();
+#endif
     curPic->setBorderExtension(true);
 
     m_picBg->getRecoBuf().copyFrom(curPic->getRecoBuf());
@@ -4773,15 +4782,27 @@ void EncGOP::updateCompositeReference(Slice* pcSlice, PicList& rcListPic, int po
       }
     }
     m_picBg->setBorderExtension(false);
+#if JVET_Q0764_WRAP_AROUND_WITH_RPR  
+    m_picBg->extendPicBorder( pcSlice->getPPS() );
+#else
     m_picBg->extendPicBorder();
+#endif
     m_picBg->setBorderExtension(true);
 
+#if JVET_Q0764_WRAP_AROUND_WITH_RPR  
+    curPic->extendPicBorder( pcSlice->getPPS() );
+#else
     curPic->extendPicBorder();
+#endif
     curPic->setBorderExtension(true);
     m_picOrig->getOrigBuf().copyFrom(curPic->getOrigBuf());
 
     m_picBg->setBorderExtension(false);
+#if JVET_Q0764_WRAP_AROUND_WITH_RPR  
+    m_picBg->extendPicBorder( pcSlice->getPPS() );
+#else
     m_picBg->extendPicBorder();
+#endif
     m_picBg->setBorderExtension(true);
   }
 }

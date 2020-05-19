@@ -53,6 +53,18 @@
 //########### place macros to be removed in next cycle below this line ###############
 #define JVET_R0078_DISABLE_CHROMA_DBF_OFFSET_SINGALLING   1 // JVET-R0078: disable chroma DBF offset signalling
 
+#define JVET_R0194_CONSTRAINT_PS_SHARING_REFERENCING      1 // JVET-R0194: Constraint that if slice at layer A refer to PS at layer B, then all OLS that contains layer A must contain layer B as well.
+
+#define JVET_R0162_WRAPAROUND_OFFSET_SIGNALING            1 // JVET-R0162 proposal 1 : signal "picture width minus wraparound offset" instead of "wraparound offset"
+
+#define JVET_R0188                                        1 // JVET-R0188: Signalling slice_width_in_tiles_minus1[i] and slice_height_in_tiles_minus1[i]
+
+#define JVET_R0203_IRAP_LEADING_CONSTRAINT                1 // JVET-R0203: Constraint that IRAP NAL unit type cannot be mixed with RASL_NUT / RADL_NUT
+
+#define JVET_Q0488_SEI_REPETITION_CONSTRAINT              1 // JVET-Q0488: SEI repetition constraint
+
+#define JVET_Q0764_WRAP_AROUND_WITH_RPR                   1 // JVET-Q0764: Combination of wrap around offset and RPR
+
 #define JVET_R0055_HANDLING_NON_EXISTENT_QM               1 // JVET-R0055: infer chroma scaling lists to be all 16 in 4:0:0 by copy mode flag
 
 #define JVET_R0097_MAX_TRSIZE_CONDITIONALY_SIGNALING      1 // JVET-R0097: Aspect 1, If the luma CTB size is not larger than 32, sps_max_luma_transform_size_64_flag is not signalled and inferred to be 0
@@ -143,18 +155,16 @@
 #define JVET_R0233_CCALF_LINE_BUFFER_REDUCTION            1 // JVET-R0233 method 2: Line buffer reduction for CCALF
 
 #define JVET_Q0471_CHROMA_QT_SPLIT                        0 // JVET-Q0471: Chroma QT split, reverted by JVET-R0131
+
 #define JVET_R0208_ALF_VB_ROUNDING_FIX                    1 // JVET-R0208: Rounding offset fix for ALF virtual boundary processing
+
 #define JVET_R0232_CCALF_APS_CONSTRAINT                   1 // JVET-R0232 section 3.2: APS contraint for CCALF
+
 #define JVET_R0210_NUMTILESINSLICE_SIGNALLING             1 // JVET-R0210 section 3.3: Don't signal NumTilesInSlice syntax element when numTilesInPic - slice_address is 1.
-
-
-
-
 
 #define JVET_R0156_ASPECT4_SPS_CLEANUP                    1 // JVET-R0071 #1, R0156 #4, R0284 #1: Condition sps_independent_subpics_flag on "sps_num_subpics_minus1 > 0"
 
 #define JVET_R0156_ASPECT3_SPS_CLEANUP                    1 // Condition sps_sublayer_dpb_params_flag on sps_ptl_dpb_hrd_params_present_flag, in addition to sps_max_sublayer_minus1,	JVET-R0156 proposal 3, JVET-R0170, JVET-R0222 proposal 2
-
 
 #define JVET_R0350_MIP_CHROMA_444_SINGLETREE              1 // JVET-R0350: MIP for chroma in case of 4:4:4 format and single tree
 
@@ -164,9 +174,25 @@
 
 #define JVET_Q0394_TIMING_SEI                             1 // JVET_Q0394: Picture timing for OLSs
 
+#define JVET_Q0404_CBR_SUBPIC                             1 // JVET_Q0404: Constant bitrate extraction for subpictures
+
 #define JVET_R0100                                        1 // JVET-R0100: Proposal 1 DUI Signalling and inference
 
-#define JVET_R0413_HRD_TIMING_INFORMATION                 1   // JVET-R0413: HRD timing parameters signalling
+#define JVET_R0413_HRD_TIMING_INFORMATION                 1 // JVET-R0413: HRD timing parameters signalling
+
+#define JVET_R0214_MMVD_SYNTAX_MODIFICATION               1 // JVET-R0214: MMVD syntax modifications
+
+#define JVET_R0101_SEI_INFERENCE_RULES                    1 // JVET-R0101: SEI alternative timing information inference rules (including those from JVET-R0413) 
+
+#define JVET_R0108_DCI_SIGNALING                          1 // JVET-R0108 Proposal 1 DCI signaling changes
+
+#define JVET_R0112_SEMANTICS_CLEANUP                      1 // JVET-R0112: Picture header semantics cleanup for gdr_or_irap_flag
+
+#define JVET_R0107_VPS_SIGNALING                          1 // JVET-R017: Proposal 2 VPS signaling change and updated inference rule
+
+#define JVET_R0103_DU_SIGNALLING                          1 // JVET-R0103: Proposal 1 decoding unit signalling change
+
+#define JVET_R0099_DPB_HRD_PARAMETERS_SIGNALLING          1   // JVET-R0099: DPB and HRD parameter signalling for OLS
 
 //########### place macros to be be kept below this line ###############
 

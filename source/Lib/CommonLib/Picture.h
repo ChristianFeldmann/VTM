@@ -144,7 +144,12 @@ struct Picture : public UnitArea
          PelUnitBuf getBuf(const UnitArea &unit,     const PictureType &type);
   const CPelUnitBuf getBuf(const UnitArea &unit,     const PictureType &type) const;
 
+#if JVET_Q0764_WRAP_AROUND_WITH_RPR  
+  void extendPicBorder( const PPS *pps );
+  void extendWrapBorder( const PPS *pps );
+#else
   void extendPicBorder();
+#endif
   void finalInit( const VPS* vps, const SPS& sps, const PPS& pps, PicHeader *picHeader, APS** alfApss, APS* lmcsAps, APS* scalingListAps );
 
   int  getPOC()                               const { return poc; }
@@ -158,6 +163,8 @@ struct Picture : public UnitArea
 #if JVET_R0110_MIXED_LOSSLESS
   void setLossyQPValue(int i)                 { m_lossyQP = i; }
   int getLossyQPValue()                       const { return m_lossyQP; }
+  void      fillSliceLossyLosslessArray(std::vector<uint16_t> sliceLosslessArray, bool mixedLossyLossless);
+  bool      losslessSlice(uint32_t sliceIdx)  const { return m_lossylosslessSliceArray[sliceIdx]; }
 #endif
 
   int           getSpliceIdx(uint32_t idx) const { return m_spliceIdx[idx]; }
@@ -197,6 +204,10 @@ public:
   bool getSubPicSaved()          { return m_isSubPicBorderSaved; }
   void setSubPicSaved(bool bVal) { m_isSubPicBorderSaved = bVal; }
   bool m_bIsBorderExtended;
+#if JVET_Q0764_WRAP_AROUND_WITH_RPR
+  bool m_wrapAroundValid;
+  unsigned m_wrapAroundOffset;
+#endif
   bool referenced;
   bool reconstructed;
   bool neededForOutput;
@@ -218,6 +229,7 @@ public:
   int  m_ctuNums;
 #if JVET_R0110_MIXED_LOSSLESS
   int m_lossyQP;
+  std::vector<bool> m_lossylosslessSliceArray;
 #endif
   bool interLayerRefPicFlag;
 
@@ -253,6 +265,9 @@ public:
                                                                                                getScalingWindow().getWindowRightOffset()  != pps->getScalingWindow().getWindowRightOffset() ||
                                                                                                getScalingWindow().getWindowTopOffset()    != pps->getScalingWindow().getWindowTopOffset()   ||
                                                                                                getScalingWindow().getWindowBottomOffset() != pps->getScalingWindow().getWindowBottomOffset(); }
+#if JVET_Q0764_WRAP_AROUND_WITH_RPR
+  bool               isWrapAroundEnabled( const PPS* pps ) const                     { return  pps->getWrapAroundEnabledFlag() && !isRefScaled( pps ); }
+#endif
 
   void         allocateNewSlice();
   Slice        *swapSliceObject(Slice * p, uint32_t i);

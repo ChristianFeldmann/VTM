@@ -1859,6 +1859,7 @@ void EncSlice::encodeSlice   ( Picture* pcPic, OutputBitstream* pcSubstreams, ui
     {
       if (ctuIdx != 0) // if it is the first CTU, then the entropy coder has already been reset
       {
+        numBinsCoded += m_CABACWriter->getNumBins();
         m_CABACWriter->initCtxModels( *pcSlice );
         cs.resetPrevPLT(cs.prevPLT);
       }
@@ -1868,6 +1869,7 @@ void EncSlice::encodeSlice   ( Picture* pcPic, OutputBitstream* pcSubstreams, ui
       // Synchronize cabac probabilities with upper CTU if it's available and at the start of a line.
       if (ctuIdx != 0) // if it is the first CTU, then the entropy coder has already been reset
       {
+        numBinsCoded += m_CABACWriter->getNumBins();
         m_CABACWriter->initCtxModels( *pcSlice );
         cs.resetPrevPLT(cs.prevPLT);
       }
@@ -1933,7 +1935,7 @@ void EncSlice::encodeSlice   ( Picture* pcPic, OutputBitstream* pcSubstreams, ui
   {
     m_encCABACTableIdx = pcSlice->getSliceType();
   }
-  numBinsCoded = m_CABACWriter->getNumBins();
+  numBinsCoded += m_CABACWriter->getNumBins();
 
 }
 

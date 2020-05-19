@@ -1524,17 +1524,28 @@ void HLSWriter::codeVPS(const VPS* pcVPS)
     }
   }
 
+#if JVET_R0099_DPB_HRD_PARAMETERS_SIGNALLING
+  for( int i = 1; i < pcVPS->m_numMultiLayeredOlss; i++) 
+  {
+#else
   for( int i = 0; i < pcVPS->getTotalNumOLSs(); i++ )
   {
     if( pcVPS->m_numLayersInOls[i] > 1 )
     {
+#endif
       WRITE_UVLC( pcVPS->getOlsDpbPicSize( i ).width, "ols_dpb_pic_width[i]" );
       WRITE_UVLC( pcVPS->getOlsDpbPicSize( i ).height, "ols_dpb_pic_height[i]" );
+#if JVET_R0099_DPB_HRD_PARAMETERS_SIGNALLING
+      if( (pcVPS->m_numDpbParams > 1) && (pcVPS->m_numDpbParams != pcVPS->m_numMultiLayeredOlss) )
+#else
       if( pcVPS->m_numDpbParams > 1 )
+#endif
       {
         WRITE_UVLC( pcVPS->getOlsDpbParamsIdx( i ), "ols_dpb_params_idx[i]" );
       }
+#if !JVET_R0099_DPB_HRD_PARAMETERS_SIGNALLING
     }
+#endif
   }
   if (!pcVPS->getEachLayerIsAnOlsFlag())
   {
@@ -1561,6 +1572,15 @@ void HLSWriter::codeVPS(const VPS* pcVPS)
       uint32_t firstSublayer = pcVPS->getVPSSublayerCpbParamsPresentFlag() ? 0 : pcVPS->getHrdMaxTid(i);
       codeOlsHrdParameters(pcVPS->getGeneralHrdParameters(), pcVPS->getOlsHrdParameters(i),firstSublayer, pcVPS->getHrdMaxTid(i));
     }
+#if JVET_R0099_DPB_HRD_PARAMETERS_SIGNALLING
+    if ((pcVPS->getNumOlsHrdParamsMinus1() > 0) && ((pcVPS->getNumOlsHrdParamsMinus1() + 1) != pcVPS->m_numMultiLayeredOlss))
+    {
+      for (int i = 0; i < pcVPS->m_numMultiLayeredOlss; i++)
+      {
+        WRITE_UVLC(pcVPS->getOlsHrdIdx(i), "ols_hrd_idx[i]");
+      }
+    }
+#else
     if (((pcVPS->getNumOlsHrdParamsMinus1() + 1)!= pcVPS->getTotalNumOLSs()) && (pcVPS->getNumOlsHrdParamsMinus1() > 0))
     {
       for (int i=1; i < pcVPS->getTotalNumOLSs();i++)
@@ -1571,6 +1591,7 @@ void HLSWriter::codeVPS(const VPS* pcVPS)
         }
       }
     }
+#endif
   }
 
   WRITE_FLAG(0, "vps_extension_flag");

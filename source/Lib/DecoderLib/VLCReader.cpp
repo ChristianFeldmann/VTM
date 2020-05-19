@@ -2427,10 +2427,15 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
   }
 
 
+#if JVET_R0099_DPB_HRD_PARAMETERS_SIGNALLING
+  for (int i = 1; i < pcVPS->m_numMultiLayeredOlss; i++)
+  {
+#else
   for( int i = 0; i < pcVPS->getTotalNumOLSs(); i++ )
   {
     if( pcVPS->m_numLayersInOls[i] > 1 )
     {
+#endif
       READ_UVLC( uiCode, "ols_dpb_pic_width[i]" ); pcVPS->setOlsDpbPicWidth( i, uiCode );
       READ_UVLC( uiCode, "ols_dpb_pic_height[i]" ); pcVPS->setOlsDpbPicHeight( i, uiCode );
       if( pcVPS->m_numDpbParams > 1 )
@@ -2438,13 +2443,26 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
         READ_UVLC( uiCode, "ols_dpb_params_idx[i]" ); pcVPS->setOlsDpbParamsIdx( i, uiCode );
       }
 #if JVET_R0191_ASPECT3
+#if JVET_R0099_DPB_HRD_PARAMETERS_SIGNALLING
+      else if (pcVPS->m_numDpbParams == 0)
+      {
+        pcVPS->setOlsDpbParamsIdx(i, 0);
+      }
+      else
+      {
+        pcVPS->setOlsDpbParamsIdx(i, i);
+      }
+#else
       else
       {
         pcVPS->setOlsDpbParamsIdx( i, 0 );
       }
+#endif
       isDPBParamReferred[pcVPS->getOlsDpbParamsIdx(i)] = true;
 #endif
+#if !JVET_R0099_DPB_HRD_PARAMETERS_SIGNALLING
     }
+#endif
   }
 #if JVET_R0191_ASPECT3
   for( int i = 0; i < pcVPS->m_numDpbParams; i++ )
@@ -2506,6 +2524,27 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
       uint32_t firstSublayer = pcVPS->getVPSSublayerCpbParamsPresentFlag() ? 0 : pcVPS->getHrdMaxTid(i);
       parseOlsHrdParameters(pcVPS->getGeneralHrdParameters(),pcVPS->getOlsHrdParameters(i), firstSublayer, pcVPS->getHrdMaxTid(i));
     }
+#if JVET_R0099_DPB_HRD_PARAMETERS_SIGNALLING
+    for (int i = 0; i < pcVPS->m_numMultiLayeredOlss; i++) 
+    {
+      if (((pcVPS->getNumOlsHrdParamsMinus1() + 1) != pcVPS->m_numMultiLayeredOlss) && (pcVPS->getNumOlsHrdParamsMinus1() > 0))
+      {
+        READ_UVLC(uiCode, "ols_hrd_idx[i]"); pcVPS->setOlsHrdIdx(i, uiCode);
+        CHECK(uiCode > pcVPS->getNumOlsHrdParamsMinus1(), "The value of ols_hrd_idx[[ i ] shall be in the range of 0 to num_ols_hrd_params_minus1, inclusive.");
+      }
+      else if (pcVPS->getNumOlsHrdParamsMinus1() == 0)
+      {
+        pcVPS->setOlsHrdIdx(i, 0);
+      }
+      else
+      {
+        pcVPS->setOlsHrdIdx(i, i);
+      }
+#if JVET_R0191_ASPECT3
+      isHRDParamReferred[pcVPS->getOlsHrdIdx(i)] = true;
+#endif
+    }
+#else
     for (int i = 1; i < pcVPS->getTotalNumOLSs(); i++)
     {
       if (((pcVPS->getNumOlsHrdParamsMinus1() + 1) != pcVPS->getTotalNumOLSs()) && (pcVPS->getNumOlsHrdParamsMinus1() > 0))
@@ -2528,6 +2567,7 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
       isHRDParamReferred[pcVPS->getOlsHrdIdx(i)] = true;
 #endif
     }
+#endif
 #if JVET_R0191_ASPECT3
     for( int i = 0; i <= pcVPS->getNumOlsHrdParamsMinus1(); i++ )
     {

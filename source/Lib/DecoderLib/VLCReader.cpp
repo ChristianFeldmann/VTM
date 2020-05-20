@@ -1840,6 +1840,16 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   }
 #endif
 
+#if JVET_R0184_WRAPAROUND_SUBPICS
+  if (pcSPS->getWrapAroundEnabledFlag())
+  {
+    for (int i = 0; i < pcSPS->getNumSubPics(); i++)
+    {
+      CHECK(pcSPS->getSubPicTreatedAsPicFlag(i) && (pcSPS->getSubPicWidth(i) != (pcSPS->getMaxPicWidthInLumaSamples() + pcSPS->getCTUSize() - 1) / pcSPS->getCTUSize()), "sps_ref_wraparound_enabled_flag cannot be equal to 1 when there is at least one subpicture with SubPicTreatedAsPicFlag equal to 1 and the subpicture’s width is not equal to picture’s width");
+    }
+  }
+#endif
+
   READ_FLAG( uiCode, "sps_temporal_mvp_enabled_flag" );                  pcSPS->setSPSTemporalMVPEnabledFlag(uiCode);
 
   if ( pcSPS->getSPSTemporalMVPEnabledFlag() )

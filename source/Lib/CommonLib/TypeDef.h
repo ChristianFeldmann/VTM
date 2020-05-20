@@ -51,6 +51,8 @@
 #include <cassert>
 
 //########### place macros to be removed in next cycle below this line ###############
+#define JVET_R0184_WRAPAROUND_SUBPICS                     1 // JVET-R0184: Wraparound for subpictures
+
 #define JVET_R0078_DISABLE_CHROMA_DBF_OFFSET_SINGALLING   1 // JVET-R0078: disable chroma DBF offset signalling
 
 #define JVET_R0194_CONSTRAINT_PS_SHARING_REFERENCING      1 // JVET-R0194: Constraint that if slice at layer A refer to PS at layer B, then all OLS that contains layer A must contain layer B as well.

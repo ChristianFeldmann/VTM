@@ -62,16 +62,16 @@ void clipMvInPic ( Mv& rcMv, const struct Position& pos, const struct Size& size
     return;
   }
 
-  int iMvShift = MV_FRACTIONAL_BITS_INTERNAL;
-  int iOffset = 8;
-  int iHorMax = (pps.getPicWidthInLumaSamples() + iOffset - (int)pos.x - 1) << iMvShift;
-  int iHorMin = (-(int)sps.getMaxCUWidth() - iOffset - (int)pos.x + 1) << iMvShift;
+  int mvShift = MV_FRACTIONAL_BITS_INTERNAL;
+  int offset = 8;
+  int horMax = (pps.getPicWidthInLumaSamples() + offset - (int)pos.x - 1) << mvShift;
+  int horMin = (-(int)sps.getMaxCUWidth() - offset - (int)pos.x + 1) << mvShift;
 
-  int iVerMax = (pps.getPicHeightInLumaSamples() + iOffset - (int)pos.y - 1) << iMvShift;
-  int iVerMin = (-(int)sps.getMaxCUHeight() - iOffset - (int)pos.y + 1) << iMvShift;
+  int verMax = (pps.getPicHeightInLumaSamples() + offset - (int)pos.y - 1) << mvShift;
+  int verMin = (-(int)sps.getMaxCUHeight() - offset - (int)pos.y + 1) << mvShift;
 
-  rcMv.setHor(std::min(iHorMax, std::max(iHorMin, rcMv.getHor())));
-  rcMv.setVer(std::min(iVerMax, std::max(iVerMin, rcMv.getVer())));
+  rcMv.setHor(std::min(horMax, std::max(horMin, rcMv.getHor())));
+  rcMv.setVer(std::min(verMax, std::max(verMin, rcMv.getVer())));
 }
 
 void clipMvInSubpic ( Mv& rcMv, const struct Position& pos, const struct Size& size, const class SPS& sps, const class PPS& pps )
@@ -82,24 +82,24 @@ void clipMvInSubpic ( Mv& rcMv, const struct Position& pos, const struct Size& s
     return;
   }
 
-  int iMvShift = MV_FRACTIONAL_BITS_INTERNAL;
-  int iOffset = 8;
-  int iHorMax = (pps.getPicWidthInLumaSamples() + iOffset - (int)pos.x - 1) << iMvShift;
-  int iHorMin = (-(int)sps.getMaxCUWidth() - iOffset - (int)pos.x + 1) << iMvShift;
+  int mvShift = MV_FRACTIONAL_BITS_INTERNAL;
+  int offset = 8;
+  int horMax = (pps.getPicWidthInLumaSamples() + offset - (int)pos.x - 1) << mvShift;
+  int horMin = (-(int)sps.getMaxCUWidth() - offset - (int)pos.x + 1) << mvShift;
 
-  int iVerMax = (pps.getPicHeightInLumaSamples() + iOffset - (int)pos.y - 1) << iMvShift;
-  int iVerMin = (-(int)sps.getMaxCUHeight() - iOffset - (int)pos.y + 1) << iMvShift;
+  int verMax = (pps.getPicHeightInLumaSamples() + offset - (int)pos.y - 1) << mvShift;
+  int verMin = (-(int)sps.getMaxCUHeight() - offset - (int)pos.y + 1) << mvShift;
   const SubPic& curSubPic = pps.getSubPicFromPos(pos);
   if (curSubPic.getTreatedAsPicFlag())
   {
-    iHorMax = ((curSubPic.getSubPicRight() + 1) + iOffset - (int)pos.x - 1) << iMvShift;
-    iHorMin = (-(int)sps.getMaxCUWidth() - iOffset - ((int)pos.x - curSubPic.getSubPicLeft()) + 1) << iMvShift;
+    horMax = ((curSubPic.getSubPicRight() + 1) + offset - (int)pos.x - 1) << mvShift;
+    horMin = (-(int)sps.getMaxCUWidth() - offset - ((int)pos.x - curSubPic.getSubPicLeft()) + 1) << mvShift;
 
-    iVerMax = ((curSubPic.getSubPicBottom() + 1) + iOffset - (int)pos.y - 1) << iMvShift;
-    iVerMin = (-(int)sps.getMaxCUHeight() - iOffset - ((int)pos.y - curSubPic.getSubPicTop()) + 1) << iMvShift;
+    verMax = ((curSubPic.getSubPicBottom() + 1) + offset - (int)pos.y - 1) << mvShift;
+    verMin = (-(int)sps.getMaxCUHeight() - offset - ((int)pos.y - curSubPic.getSubPicTop()) + 1) << mvShift;
   }
-  rcMv.setHor(std::min(iHorMax, std::max(iHorMin, rcMv.getHor())));
-  rcMv.setVer(std::min(iVerMax, std::max(iVerMin, rcMv.getVer())));
+  rcMv.setHor(std::min(horMax, std::max(horMin, rcMv.getHor())));
+  rcMv.setVer(std::min(verMax, std::max(verMin, rcMv.getVer())));
 }
 #else
 void clipMv( Mv& rcMv, const Position& pos, const struct Size& size, const SPS& sps, const PPS& pps )

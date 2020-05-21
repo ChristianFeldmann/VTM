@@ -476,7 +476,11 @@ void InterPrediction::xPredInterUni(const PredictionUnit& pu, const RefPicList& 
 
   if( !pu.cu->affine )
   {
+#if JVET_R0058
+    if (!isIBC)
+#else
     if( !isIBC && pu.cu->slice->getRefPic( eRefPicList, iRefIdx )->isRefScaled( pu.cs->pps ) == false )
+#endif
     {
 #if JVET_Q0764_WRAP_AROUND_WITH_RPR
       if( !pu.cs->pps->getWrapAroundEnabledFlag() )
@@ -1095,7 +1099,9 @@ void InterPrediction::xPredAffineBlk(const ComponentID &compID, const Prediction
         {
           wrapRef = false;
           m_storedMv[h / AFFINE_MIN_BLOCK_SIZE * MVBUFFER_SIZE + w / AFFINE_MIN_BLOCK_SIZE].set(iMvScaleTmpHor, iMvScaleTmpVer);
-          if( refPic->isRefScaled( pu.cs->pps ) == false )
+#if !JVET_R0058
+          if (refPic->isRefScaled(pu.cs->pps) == false)
+#endif
           {
             clipMv(tmpMv, pu.lumaPos(), pu.lumaSize(), *pu.cs->sps, *pu.cs->pps);
             iMvScaleTmpHor = tmpMv.getHor();
@@ -1119,7 +1125,9 @@ void InterPrediction::xPredAffineBlk(const ComponentID &compID, const Prediction
         else
         {
           wrapRef = false;
-          if( refPic->isRefScaled( pu.cs->pps ) == false )
+#if !JVET_R0058
+          if (refPic->isRefScaled(pu.cs->pps) == false)
+#endif
           {
             clipMv(curMv, pu.lumaPos(), pu.lumaSize(), *pu.cs->sps, *pu.cs->pps);
           }

@@ -874,7 +874,15 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 
   const uint32_t chromaArrayType = separate_colour_plane_flag ? 0 : format;
 
+#if JVET_R0058
+  WRITE_FLAG(pcSPS->getRprEnabledFlag(), "ref_pic_resampling_enabled_flag");
+  if (pcSPS->getRprEnabledFlag())
+  {
+    WRITE_FLAG(pcSPS->getResChangeInClvsEnabledFlag(), "res_change_in_clvs_allowed_flag");
+  }
+#else
   WRITE_FLAG( pcSPS->getRprEnabledFlag(), "res_change_in_clvs_allowed_flag" );
+#endif
 
   WRITE_UVLC( pcSPS->getMaxPicWidthInLumaSamples(), "pic_width_max_in_luma_samples" );
   WRITE_UVLC( pcSPS->getMaxPicHeightInLumaSamples(), "pic_height_max_in_luma_samples" );

@@ -1408,6 +1408,10 @@ void InterSearch::xSetIntraSearchRange(PredictionUnit& pu, int iRoiWidth, int iR
 
   rcMvSrchRngLT <<= 2;
   rcMvSrchRngRB <<= 2;
+#if JVET_R0058
+  bool temp = m_clipMvInSubPic;
+  m_clipMvInSubPic = true;
+#endif
   xClipMv(rcMvSrchRngLT, pu.cu->lumaPos(),
          pu.cu->lumaSize(),
          sps
@@ -1418,6 +1422,9 @@ void InterSearch::xSetIntraSearchRange(PredictionUnit& pu, int iRoiWidth, int iR
          sps
       , *pu.cs->pps
   );
+#if JVET_R0058
+  m_clipMvInSubPic = temp;
+#endif
   rcMvSrchRngLT >>= 2;
   rcMvSrchRngRB >>= 2;
 }
@@ -3253,6 +3260,7 @@ Distortion InterSearch::xGetTemplateCost( const PredictionUnit& pu,
 
   const Picture* picRef = pu.cu->slice->getRefPic( eRefPicList, iRefIdx );
   clipMv( cMvCand, pu.cu->lumaPos(), pu.cu->lumaSize(), *pu.cs->sps, *pu.cs->pps );
+
   // prediction pattern
   const bool bi = pu.cu->slice->testWeightPred() && pu.cu->slice->getSliceType()==P_SLICE;
 
@@ -3397,6 +3405,7 @@ void InterSearch::xMotionEstimation(PredictionUnit& pu, PelUnitBuf& origBuf, Ref
 
     Mv bestInitMv = (bBi ? rcMv : rcMvPred);
     Mv cTmpMv = bestInitMv;
+
     clipMv( cTmpMv, pu.cu->lumaPos(), pu.cu->lumaSize(), *pu.cs->sps, *pu.cs->pps );
     cTmpMv.changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_INT);
     m_cDistParam.cur.buf = cStruct.piRefY + (cTmpMv.ver * cStruct.iRefStride) + cTmpMv.hor;
@@ -3436,9 +3445,7 @@ void InterSearch::xMotionEstimation(PredictionUnit& pu, PelUnitBuf& origBuf, Ref
 
     if( !bQTBTMV )
     {
-      xSetSearchRange(pu, bestInitMv, iSrchRng, cStruct.searchRange
-        , cStruct
-      );
+      xSetSearchRange(pu, bestInitMv, iSrchRng, cStruct.searchRange, cStruct);
     }
     xPatternSearch( cStruct, rcMv, ruiCost);
   }
@@ -3514,7 +3521,7 @@ void InterSearch::xSetSearchRange ( const PredictionUnit& pu,
   const int iMvShift = MV_FRACTIONAL_BITS_INTERNAL;
   Mv cFPMvPred = cMvPred;
   clipMv( cFPMvPred, pu.cu->lumaPos(), pu.cu->lumaSize(), *pu.cs->sps, *pu.cs->pps );
-
+  
   Mv mvTL(cFPMvPred.getHor() - (iSrchRng << iMvShift), cFPMvPred.getVer() - (iSrchRng << iMvShift));
   Mv mvBR(cFPMvPred.getHor() + (iSrchRng << iMvShift), cFPMvPred.getVer() + (iSrchRng << iMvShift));
 
@@ -3778,9 +3785,7 @@ void InterSearch::xTZSearch( const PredictionUnit& pu,
     // set search range
     Mv currBestMv(cStruct.iBestX, cStruct.iBestY );
     currBestMv <<= MV_FRACTIONAL_BITS_INTERNAL;
-    xSetSearchRange(pu, currBestMv, m_iSearchRange >> (bFastSettings ? 1 : 0), sr
-      , cStruct
-    );
+    xSetSearchRange(pu, currBestMv, m_iSearchRange >> (bFastSettings ? 1 : 0), sr, cStruct);
   }
   if (m_pcEncCfg->getUseHashME() && (m_currRefPicList == 0 || pu.cu->slice->getList1IdxToList0Idx(m_currRefPicIndex) < 0))
   {
@@ -4012,6 +4017,7 @@ void InterSearch::xTZSearchSelective( const PredictionUnit& pu,
   int   iStartX                 = 0;
   int   iStartY                 = 0;
   int   iDist                   = 0;
+
   clipMv( rcMv, pu.cu->lumaPos(), pu.cu->lumaSize(), *pu.cs->sps, *pu.cs->pps );
   rcMv.changePrecision(MV_PRECISION_INTERNAL, MV_PRECISION_QUARTER);
   rcMv.divideByPowerOf2(2);
@@ -4084,9 +4090,7 @@ void InterSearch::xTZSearchSelective( const PredictionUnit& pu,
     // set search range
     Mv currBestMv(cStruct.iBestX, cStruct.iBestY );
     currBestMv <<= 2;
-    xSetSearchRange( pu, currBestMv, m_iSearchRange, sr
-      , cStruct
-    );
+    xSetSearchRange( pu, currBestMv, m_iSearchRange, sr, cStruct );
   }
   if (m_pcEncCfg->getUseHashME() && (m_currRefPicList == 0 || pu.cu->slice->getList1IdxToList0Idx(m_currRefPicIndex) < 0))
   {
@@ -5756,7 +5760,6 @@ void InterSearch::xAffineMotionEstimation( PredictionUnit& pu,
             acMvTemp[j].set(centerMv[j].getHor() + (testPos[i][0] << mvShift), centerMv[j].getVer() + (testPos[i][1] << mvShift));
             clipMv( acMvTemp[j], pu.cu->lumaPos(), pu.cu->lumaSize(), *pu.cs->sps, *pu.cs->pps );
             xPredAffineBlk(COMPONENT_Y, pu, refPic, acMvTemp, predBuf, false, pu.cu->slice->clpRng(COMPONENT_Y));
-
             Distortion costTemp = m_pcRdCost->getDistPart(predBuf.Y(), pBuf->Y(), pu.cs->sps->getBitDepth(CHANNEL_TYPE_LUMA), COMPONENT_Y, distFunc);
             uint32_t bitsTemp = ruiBits;
             bitsTemp += xCalcAffineMVBits(pu, acMvTemp, acMvPred);
@@ -7789,7 +7792,11 @@ void InterSearch::xClipMv( Mv& rcMv, const Position& pos, const struct Size& siz
   int verMax = ( pps.getPicHeightInLumaSamples() + offset - (int)pos.y - 1 ) << mvShift;
   int verMin = ( -( int ) sps.getMaxCUHeight()   - offset - ( int ) pos.y + 1 ) << mvShift;
   const SubPic &curSubPic = pps.getSubPicFromPos(pos);
+#if JVET_R0058
+  if (curSubPic.getTreatedAsPicFlag() && m_clipMvInSubPic)
+#else
   if (curSubPic.getTreatedAsPicFlag())
+#endif
   {
     horMax = ((curSubPic.getSubPicRight() + 1)  + offset - (int)pos.x - 1) << mvShift;
     horMin = (-(int)sps.getMaxCUWidth()  - offset - ((int)pos.x - curSubPic.getSubPicLeft()) + 1) << mvShift;

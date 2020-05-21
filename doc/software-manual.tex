@@ -1108,6 +1108,18 @@ Specifies the maximum number of temporal sublayers to signal in the VPS
 Specifies the value of vps_all_layers_same_num_sublayers_flag in the VPS
 \\
 
+\Option{AllowablePredDirection} &
+%\ShortOption{\None} &
+\Default{""} &
+Specifies a list of values of the allowable prediction directions for dependent layers. The number of entries is equal to the number of temporal layers.
+\par
+\begin{tabular}{cp{0.45\textwidth}}
+0 & Both inter-layer and intra-layer preditions are allowed for the speficied temporal layer. \\
+1 & Only inter-layer predition is allowed for the speficied temporal layer. \\
+2 & Only intra-layer predition is allowed for the speficied temporal layer. \\
+\end{tabular}
+\\
+
 \Option{LayerId\emph{i}} &
 %\ShortOption{\None} &
 \Default{0} &

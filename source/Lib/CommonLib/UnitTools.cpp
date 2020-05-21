@@ -135,6 +135,63 @@ bool CU::getRprScaling( const SPS* sps, const PPS* curPPS, Picture* refPic, int&
   return refPic->isRefScaled( curPPS );
 }
 
+#if JVET_R0058
+void CU::checkConformanceILRP(Slice *slice)
+{
+  const int numRefList = (slice->getSliceType() == B_SLICE) ? (2) : (1);
+
+  //constraint 1: The picture referred to by each active entry in RefPicList[ 0 ] or RefPicList[ 1 ] has the same subpicture layout as the current picture 
+  bool isAllRefSameSubpicLayout = true;
+  for (int refList = 0; refList < numRefList; refList++) // loop over l0 and l1
+  {
+    RefPicList  eRefPicList = (refList ? REF_PIC_LIST_1 : REF_PIC_LIST_0);
+    for (int refIdx = 0; refIdx < slice->getNumRefIdx(eRefPicList); refIdx++)
+    {
+      const Picture* refPic = slice->getRefPic(eRefPicList, refIdx)->unscaledPic;
+
+      if (refPic->cs->pps->getNumSubPics() != slice->getPic()->cs->pps->getNumSubPics())
+      {
+        isAllRefSameSubpicLayout = false;
+        refList = numRefList;
+        break;
+      }
+      else
+      {
+        for (int i = 0; i < slice->getPic()->cs->pps->getNumSubPics(); i++)
+        {
+          if (refPic->cs->pps->getSubPic(i).getSubPicWidthInCTUs() != slice->getPic()->cs->pps->getSubPic(i).getSubPicWidthInCTUs()
+            || refPic->cs->pps->getSubPic(i).getSubPicHeightInCTUs() != slice->getPic()->cs->pps->getSubPic(i).getSubPicHeightInCTUs()
+            || refPic->cs->pps->getSubPic(i).getSubPicCtuTopLeftX() != slice->getPic()->cs->pps->getSubPic(i).getSubPicCtuTopLeftX()
+            || refPic->cs->pps->getSubPic(i).getSubPicCtuTopLeftY() != slice->getPic()->cs->pps->getSubPic(i).getSubPicCtuTopLeftY())
+          {
+            isAllRefSameSubpicLayout = false;
+            refIdx = slice->getNumRefIdx(eRefPicList);
+            refList = numRefList;
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  //constraint 2: The picture referred to by each active entry in RefPicList[ 0 ] or RefPicList[ 1 ] is an ILRP for which the value of sps_num_subpics_minus1 is equal to 0
+  if (!isAllRefSameSubpicLayout)
+  {
+    for (int refList = 0; refList < numRefList; refList++) // loop over l0 and l1
+    {
+      RefPicList  eRefPicList = (refList ? REF_PIC_LIST_1 : REF_PIC_LIST_0);
+      for (int refIdx = 0; refIdx < slice->getNumRefIdx(eRefPicList); refIdx++)
+      {
+        const Picture* refPic = slice->getRefPic(eRefPicList, refIdx)->unscaledPic;
+        CHECK(!(refPic->layerId != slice->getPic()->layerId && refPic->cs->pps->getNumSubPics() == 1), "The inter-layer reference shall contain a single subpicture or have same subpicture layout with the current picture");
+      }
+    }
+  }
+
+  return;
+}
+#endif
+
 bool CU::isIntra(const CodingUnit &cu)
 {
   return cu.predMode == MODE_INTRA;

@@ -51,6 +51,57 @@ void roundAffineMv( int& mvx, int& mvy, int nShift )
   mvy = (mvy + nOffset - (mvy >= 0)) >> nShift;
 }
 
+#if JVET_R0058
+void (*clipMv) ( Mv& rcMv, const struct Position& pos, const struct Size& size, const class SPS& sps, const class PPS& pps );
+
+void clipMvInPic ( Mv& rcMv, const struct Position& pos, const struct Size& size, const class SPS& sps, const class PPS& pps )
+{
+  if (sps.getWrapAroundEnabledFlag())
+  {
+    wrapClipMv(rcMv, pos, size, &sps, &pps);
+    return;
+  }
+
+  int mvShift = MV_FRACTIONAL_BITS_INTERNAL;
+  int offset = 8;
+  int horMax = (pps.getPicWidthInLumaSamples() + offset - (int)pos.x - 1) << mvShift;
+  int horMin = (-(int)sps.getMaxCUWidth() - offset - (int)pos.x + 1) << mvShift;
+
+  int verMax = (pps.getPicHeightInLumaSamples() + offset - (int)pos.y - 1) << mvShift;
+  int verMin = (-(int)sps.getMaxCUHeight() - offset - (int)pos.y + 1) << mvShift;
+
+  rcMv.setHor(std::min(horMax, std::max(horMin, rcMv.getHor())));
+  rcMv.setVer(std::min(verMax, std::max(verMin, rcMv.getVer())));
+}
+
+void clipMvInSubpic ( Mv& rcMv, const struct Position& pos, const struct Size& size, const class SPS& sps, const class PPS& pps )
+{
+  if (sps.getWrapAroundEnabledFlag())
+  {
+    wrapClipMv(rcMv, pos, size, &sps, &pps);
+    return;
+  }
+
+  int mvShift = MV_FRACTIONAL_BITS_INTERNAL;
+  int offset = 8;
+  int horMax = (pps.getPicWidthInLumaSamples() + offset - (int)pos.x - 1) << mvShift;
+  int horMin = (-(int)sps.getMaxCUWidth() - offset - (int)pos.x + 1) << mvShift;
+
+  int verMax = (pps.getPicHeightInLumaSamples() + offset - (int)pos.y - 1) << mvShift;
+  int verMin = (-(int)sps.getMaxCUHeight() - offset - (int)pos.y + 1) << mvShift;
+  const SubPic& curSubPic = pps.getSubPicFromPos(pos);
+  if (curSubPic.getTreatedAsPicFlag())
+  {
+    horMax = ((curSubPic.getSubPicRight() + 1) + offset - (int)pos.x - 1) << mvShift;
+    horMin = (-(int)sps.getMaxCUWidth() - offset - ((int)pos.x - curSubPic.getSubPicLeft()) + 1) << mvShift;
+
+    verMax = ((curSubPic.getSubPicBottom() + 1) + offset - (int)pos.y - 1) << mvShift;
+    verMin = (-(int)sps.getMaxCUHeight() - offset - ((int)pos.y - curSubPic.getSubPicTop()) + 1) << mvShift;
+  }
+  rcMv.setHor(std::min(horMax, std::max(horMin, rcMv.getHor())));
+  rcMv.setVer(std::min(verMax, std::max(verMin, rcMv.getVer())));
+}
+#else
 void clipMv( Mv& rcMv, const Position& pos, const struct Size& size, const SPS& sps, const PPS& pps )
 {
 #if JVET_Q0764_WRAP_AROUND_WITH_RPR
@@ -82,6 +133,7 @@ void clipMv( Mv& rcMv, const Position& pos, const struct Size& size, const SPS& 
   rcMv.setHor( std::min( iHorMax, std::max( iHorMin, rcMv.getHor() ) ) );
   rcMv.setVer( std::min( iVerMax, std::max( iVerMin, rcMv.getVer() ) ) );
 }
+#endif
 
 bool wrapClipMv( Mv& rcMv, const Position& pos, const struct Size& size, const SPS *sps, const PPS *pps )
 {

@@ -661,10 +661,24 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
       {
         rpcSlice->setDeblockingFilterBetaOffsetDiv2( m_pcCfg->getGOPEntry(iGOPid).m_betaOffsetDiv2 + m_pcCfg->getLoopFilterBetaOffset()  );
         rpcSlice->setDeblockingFilterTcOffsetDiv2( m_pcCfg->getGOPEntry(iGOPid).m_tcOffsetDiv2 + m_pcCfg->getLoopFilterTcOffset() );
-        rpcSlice->setDeblockingFilterCbBetaOffsetDiv2( m_pcCfg->getGOPEntry(iGOPid).m_CbBetaOffsetDiv2 + m_pcCfg->getLoopFilterCbBetaOffset()  );
-        rpcSlice->setDeblockingFilterCbTcOffsetDiv2( m_pcCfg->getGOPEntry(iGOPid).m_CbTcOffsetDiv2 + m_pcCfg->getLoopFilterCbTcOffset() );
-        rpcSlice->setDeblockingFilterCrBetaOffsetDiv2( m_pcCfg->getGOPEntry(iGOPid).m_CrBetaOffsetDiv2 + m_pcCfg->getLoopFilterCrBetaOffset()  );
-        rpcSlice->setDeblockingFilterCrTcOffsetDiv2( m_pcCfg->getGOPEntry(iGOPid).m_CrTcOffsetDiv2 + m_pcCfg->getLoopFilterCrTcOffset() );
+#if JVET_R0078_DISABLE_CHROMA_DBF_OFFSET_SINGALLING
+        if( rpcSlice->getPPS()->getPPSChromaToolFlag() )
+        {
+#endif
+          rpcSlice->setDeblockingFilterCbBetaOffsetDiv2( m_pcCfg->getGOPEntry(iGOPid).m_CbBetaOffsetDiv2 + m_pcCfg->getLoopFilterCbBetaOffset() );
+          rpcSlice->setDeblockingFilterCbTcOffsetDiv2( m_pcCfg->getGOPEntry(iGOPid).m_CbTcOffsetDiv2 + m_pcCfg->getLoopFilterCbTcOffset() );
+          rpcSlice->setDeblockingFilterCrBetaOffsetDiv2( m_pcCfg->getGOPEntry(iGOPid).m_CrBetaOffsetDiv2 + m_pcCfg->getLoopFilterCrBetaOffset() );
+          rpcSlice->setDeblockingFilterCrTcOffsetDiv2( m_pcCfg->getGOPEntry(iGOPid).m_CrTcOffsetDiv2 + m_pcCfg->getLoopFilterCrTcOffset() );
+#if JVET_R0078_DISABLE_CHROMA_DBF_OFFSET_SINGALLING
+        }
+        else
+        {
+          rpcSlice->setDeblockingFilterCbBetaOffsetDiv2( rpcSlice->getDeblockingFilterBetaOffsetDiv2() );
+          rpcSlice->setDeblockingFilterCbTcOffsetDiv2( rpcSlice->getDeblockingFilterTcOffsetDiv2() );
+          rpcSlice->setDeblockingFilterCrBetaOffsetDiv2( rpcSlice->getDeblockingFilterBetaOffsetDiv2() );
+          rpcSlice->setDeblockingFilterCrTcOffsetDiv2( rpcSlice->getDeblockingFilterTcOffsetDiv2() );
+        }
+#endif
       }
       else
       {
@@ -1849,6 +1863,7 @@ void EncSlice::encodeSlice   ( Picture* pcPic, OutputBitstream* pcSubstreams, ui
     {
       if (ctuIdx != 0) // if it is the first CTU, then the entropy coder has already been reset
       {
+        numBinsCoded += m_CABACWriter->getNumBins();
         m_CABACWriter->initCtxModels( *pcSlice );
         cs.resetPrevPLT(cs.prevPLT);
       }
@@ -1858,6 +1873,7 @@ void EncSlice::encodeSlice   ( Picture* pcPic, OutputBitstream* pcSubstreams, ui
       // Synchronize cabac probabilities with upper CTU if it's available and at the start of a line.
       if (ctuIdx != 0) // if it is the first CTU, then the entropy coder has already been reset
       {
+        numBinsCoded += m_CABACWriter->getNumBins();
         m_CABACWriter->initCtxModels( *pcSlice );
         cs.resetPrevPLT(cs.prevPLT);
       }
@@ -1923,7 +1939,7 @@ void EncSlice::encodeSlice   ( Picture* pcPic, OutputBitstream* pcSubstreams, ui
   {
     m_encCABACTableIdx = pcSlice->getSliceType();
   }
-  numBinsCoded = m_CABACWriter->getNumBins();
+  numBinsCoded += m_CABACWriter->getNumBins();
 
 }
 

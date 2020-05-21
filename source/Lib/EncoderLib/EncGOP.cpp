@@ -741,7 +741,11 @@ void EncGOP::xCreatePerPictureSEIMessages (int picInGOP, SEIMessages& seiMessage
 
 }
 
+#if JVET_Q0397_SCAL_NESTING
+void EncGOP::xCreateScalableNestingSEI(SEIMessages& seiMessages, SEIMessages& nestedSeiMessages, const std::vector<uint16_t>& subpicIDs)
+#else
 void EncGOP::xCreateScalableNestingSEI(SEIMessages& seiMessages, SEIMessages& nestedSeiMessages)
+#endif
 {
   SEIMessages tmpMessages;
   while (!nestedSeiMessages.empty())
@@ -750,7 +754,11 @@ void EncGOP::xCreateScalableNestingSEI(SEIMessages& seiMessages, SEIMessages& ne
     nestedSeiMessages.pop_front();
     tmpMessages.push_back(sei);
     SEIScalableNesting *nestingSEI = new SEIScalableNesting();
+#if JVET_Q0397_SCAL_NESTING
+    m_seiEncoder.initSEIScalableNesting(nestingSEI, tmpMessages, subpicIDs);
+#else
     m_seiEncoder.initSEIScalableNesting(nestingSEI, tmpMessages);
+#endif
     seiMessages.push_back(nestingSEI);
     tmpMessages.clear();
   }
@@ -2675,7 +2683,12 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     {
       DTRACE_UPDATE( g_trace_ctx, ( std::make_pair( "poc", pocCurr ) ) );
 #if JVET_R0110_MIXED_LOSSLESS
-      const std::vector<uint32_t> sliceLosslessArray = *(m_pcCfg->getSliceLosslessArray());
+      const std::vector<uint16_t> sliceLosslessArray = *(m_pcCfg->getSliceLosslessArray());
+      bool mixedLossyLossless = m_pcCfg->getMixedLossyLossless();
+      if (m_pcCfg->getCostMode() == COST_LOSSLESS_CODING)
+      {
+        pcPic->fillSliceLossyLosslessArray(sliceLosslessArray, mixedLossyLossless);
+      }
 #endif
 
       for(uint32_t sliceIdx = 0; sliceIdx < pcPic->cs->pps->getNumSlicesInPic(); sliceIdx++ )
@@ -2724,7 +2737,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         bool isLossless = false;
         if (m_pcCfg->getCostMode() == COST_LOSSLESS_CODING)
         {
-          isLossless = (sliceLosslessArray[sliceIdx] != 0);
+          isLossless = pcPic->losslessSlice(sliceIdx);
         }
         m_pcSliceEncoder->setLosslessSlice(pcPic, isLossless);
 #endif
@@ -3343,7 +3356,38 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
       if (m_pcCfg->getScalableNestingSEIEnabled())
       {
+#if JVET_Q0397_SCAL_NESTING
+        const SPS* sps = pcSlice->getSPS();
+        const PPS* pps = pcSlice->getPPS();
+
+        std::vector<uint16_t> subpicIDs;
+        if (sps->getSubPicInfoPresentFlag())
+        {
+          if(sps->getSubPicIdMappingExplicitlySignalledFlag())
+          {
+            if(sps->getSubPicIdMappingInSpsFlag())
+            {
+              subpicIDs = sps->getSubPicIds();
+            }
+            else
+            {
+              subpicIDs = pps->getSubPicIds();
+            }
+          }
+          else
+          {
+            const int numSubPics = sps->getNumSubPics();
+            subpicIDs.resize(numSubPics);
+            for (int i = 0 ; i < numSubPics; i++)
+            {
+              subpicIDs[i] = (uint16_t) i;
+            }
+          }
+        }
+        xCreateScalableNestingSEI(leadingSeiMessages, nestedSeiMessages, subpicIDs);
+#else
         xCreateScalableNestingSEI(leadingSeiMessages, nestedSeiMessages);
+#endif
       }
 
       xWriteLeadingSEIMessages( leadingSeiMessages, duInfoSeiMessages, accessUnit, pcSlice->getTLayer(), pcSlice->getSPS(), duData );

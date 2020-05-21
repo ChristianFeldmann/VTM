@@ -1298,7 +1298,9 @@ class SPS
 private:
   int               m_SPSId;
   int               m_VPSId;
-
+#if JVET_R0194_CONSTRAINT_PS_SHARING_REFERENCING
+  int               m_layerId;
+#endif
   bool              m_affineAmvrEnabledFlag;
   bool              m_DMVR;
   bool              m_MMVD;
@@ -1492,7 +1494,10 @@ public:
   void                    setSPSId(int i)                                                                 { m_SPSId = i;                                                         }
   int                     getVPSId() const                                                                { return m_VPSId; }
   void                    setVPSId(int i)                                                                 { m_VPSId = i; }
-
+#if JVET_R0194_CONSTRAINT_PS_SHARING_REFERENCING
+  void                    setLayerId( int i )                                                             { m_layerId = i;                                                       }
+  int                     getLayerId() const                                                              { return m_layerId;                                                    }
+#endif
   ChromaFormat            getChromaFormatIdc () const                                                     { return m_chromaFormatIdc;                                            }
   void                    setChromaFormatIdc (ChromaFormat i)                                             { m_chromaFormatIdc = i;                                               }
   void                    setSeparateColourPlaneFlag ( bool b )                                           { m_separateColourPlaneFlag = b;                                       }
@@ -1558,6 +1563,7 @@ public:
   void                    setSubPicId( int i, uint16_t u )                                                { m_subPicId[i] = u;     }
   uint16_t                getSubPicId( int i ) const                                                      { return  m_subPicId[i]; }
   void                    setSubPicId(const std::vector<uint16_t> &v)                                     { CHECK(v.size()!=m_numSubPics, "number of vector entries must be equal to numSubPics") ; m_subPicId = v; }
+  const std::vector<uint16_t> getSubPicIds() const                                                        { return  m_subPicId; }
 
   uint32_t                getNumLongTermRefPicSPS() const                                                 { return m_numLongTermRefPicSPS;                                       }
   void                    setNumLongTermRefPicSPS(uint32_t val)                                           { m_numLongTermRefPicSPS = val;                                        }
@@ -1973,7 +1979,11 @@ private:
 
 #if JVET_Q0764_WRAP_AROUND_WITH_RPR
   bool             m_wrapAroundEnabledFlag;               //< reference wrap around enabled or not
+#if JVET_R0162_WRAPAROUND_OFFSET_SIGNALING
+  unsigned         m_picWidthMinusWrapAroundOffset;          // <pic_width_in_minCbSizeY - wraparound_offset_in_minCbSizeY
+#else
   unsigned         m_wrapAroundOffsetMinusCtbSize;        //< reference wrap around offset minus ( CtbSizeY / MinCbSizeY ) + 2 in units of MinCbSizeY luma samples
+#endif
   unsigned         m_wrapAroundOffset;                    //< reference wrap around offset in luma samples
 #endif
 
@@ -2066,8 +2076,13 @@ public:
 #if JVET_Q0764_WRAP_AROUND_WITH_RPR
   void                   setWrapAroundEnabledFlag(bool b)                                 { m_wrapAroundEnabledFlag = b;                  }
   bool                   getWrapAroundEnabledFlag() const                                 { return m_wrapAroundEnabledFlag;               }  
+#if JVET_R0162_WRAPAROUND_OFFSET_SIGNALING
+  void                   setPicWidthMinusWrapAroundOffset(unsigned offset)                { m_picWidthMinusWrapAroundOffset = offset;     }
+  unsigned               getPicWidthMinusWrapAroundOffset() const                         { return m_picWidthMinusWrapAroundOffset;       }
+#else
   void                   setWrapAroundOffsetMinusCtbSize(unsigned offset)                 { m_wrapAroundOffsetMinusCtbSize = offset;      }
   unsigned               getWrapAroundOffsetMinusCtbSize() const                          { return m_wrapAroundOffsetMinusCtbSize;        }
+#endif
   void                   setWrapAroundOffset(unsigned offset)                             { m_wrapAroundOffset = offset;                  }
   unsigned               getWrapAroundOffset() const                                      { return m_wrapAroundOffset;                    }
 #endif
@@ -2085,6 +2100,7 @@ public:
   void                   setSubPicId( int i, uint16_t u )                                 { m_subPicId[i] = u;     }
   void                   setSubPicId(const std::vector<uint16_t> &v)                      { CHECK(v.size()!=m_numSubPics, "number of vector entries must be equal to numSubPics") ; m_subPicId = v; }
   uint16_t               getSubPicId( int i ) const                                       { return  m_subPicId[i]; }
+  const std::vector<uint16_t> getSubPicIds() const                                        { return  m_subPicId; }
   uint32_t               getSubPicIdxFromSubPicId( uint32_t subPicId ) const;
   void                   setNoPicPartitionFlag( bool b )                                  { m_noPicPartitionFlag = b;                     }
   bool                   getNoPicPartitionFlag( ) const                                   { return  m_noPicPartitionFlag;                 }

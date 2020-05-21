@@ -366,10 +366,25 @@ void HLSWriter::codePPS( const PPS* pcPPS )
       for( int i = 0; i < pcPPS->getNumSlicesInPic()-1; i++ )
       {
         // complete tiles within a single slice
+#if JVET_R0188
+        if( ( pcPPS->getSliceTileIdx( i ) % pcPPS->getNumTileColumns() ) != pcPPS->getNumTileColumns() - 1 )
+        {
+          WRITE_UVLC( pcPPS->getSliceWidthInTiles( i ) - 1, "slice_width_in_tiles_minus1[i]" );
+        }
+#else
         if( pcPPS->getNumTileColumns() > 1 )
         {
-        WRITE_UVLC( pcPPS->getSliceWidthInTiles( i ) - 1,  "slice_width_in_tiles_minus1[i]" );
+          WRITE_UVLC( pcPPS->getSliceWidthInTiles( i ) - 1,  "slice_width_in_tiles_minus1[i]" );
         }
+#endif
+
+#if JVET_R0188
+        if( pcPPS->getSliceTileIdx( i ) / pcPPS->getNumTileColumns() != pcPPS->getNumTileRows() - 1 &&
+          ( pcPPS->getTileIdxDeltaPresentFlag() || pcPPS->getSliceTileIdx( i ) % pcPPS->getNumTileColumns() == 0 ) )
+        {
+           WRITE_UVLC( pcPPS->getSliceHeightInTiles( i ) - 1, "slice_height_in_tiles_minus1[i]" );
+        }
+#else
         if( pcPPS->getTileIdxDeltaPresentFlag() || ( (pcPPS->getSliceTileIdx( i ) % pcPPS->getNumTileColumns()) == 0 ) )
         {
           if( pcPPS->getNumTileRows() > 1 )
@@ -377,6 +392,7 @@ void HLSWriter::codePPS( const PPS* pcPPS )
            WRITE_UVLC( pcPPS->getSliceHeightInTiles( i ) - 1, "slice_height_in_tiles_minus1[i]" );
           }
         }
+#endif
 
         // multiple slices within a single tile special case
         if( pcPPS->getSliceWidthInTiles(i) == 1 && pcPPS->getSliceHeightInTiles(i) == 1 && pcPPS->getTileRowHeight(pcPPS->getSliceTileIdx(i) / pcPPS->getNumTileColumns()) > 1 )
@@ -482,13 +498,19 @@ void HLSWriter::codePPS( const PPS* pcPPS )
     {
       WRITE_SVLC( pcPPS->getDeblockingFilterBetaOffsetDiv2(),             "pps_beta_offset_div2" );
       WRITE_SVLC( pcPPS->getDeblockingFilterTcOffsetDiv2(),               "pps_tc_offset_div2" );
-      WRITE_SVLC( pcPPS->getDeblockingFilterCbBetaOffsetDiv2(),           "pps_cb_beta_offset_div2" );
-      WRITE_SVLC( pcPPS->getDeblockingFilterCbTcOffsetDiv2(),             "pps_cb_tc_offset_div2" );
-      WRITE_SVLC( pcPPS->getDeblockingFilterCrBetaOffsetDiv2(),           "pps_cr_beta_offset_div2" );
-      WRITE_SVLC( pcPPS->getDeblockingFilterCrTcOffsetDiv2(),             "pps_cr_tc_offset_div2" );
+#if JVET_R0078_DISABLE_CHROMA_DBF_OFFSET_SINGALLING
+      if( pcPPS->getPPSChromaToolFlag() )
+      {
+#endif
+        WRITE_SVLC( pcPPS->getDeblockingFilterCbBetaOffsetDiv2(),           "pps_cb_beta_offset_div2" );
+        WRITE_SVLC( pcPPS->getDeblockingFilterCbTcOffsetDiv2(),             "pps_cb_tc_offset_div2" );
+        WRITE_SVLC( pcPPS->getDeblockingFilterCrBetaOffsetDiv2(),           "pps_cr_beta_offset_div2" );
+        WRITE_SVLC( pcPPS->getDeblockingFilterCrTcOffsetDiv2(),             "pps_cr_tc_offset_div2" );
+#if JVET_R0078_DISABLE_CHROMA_DBF_OFFSET_SINGALLING
+      }
+#endif
     }
   }
-
 #if JVET_R0113_AND_JVET_R0106_PPS_CLEANUP
   if (!pcPPS->getNoPicPartitionFlag())
   {
@@ -519,7 +541,11 @@ void HLSWriter::codePPS( const PPS* pcPPS )
   WRITE_FLAG( pcPPS->getWrapAroundEnabledFlag() ? 1 : 0, "pps_ref_wraparound_enabled_flag" );
   if( pcPPS->getWrapAroundEnabledFlag() )
   {
+#if JVET_R0162_WRAPAROUND_OFFSET_SIGNALING
+    WRITE_UVLC(pcPPS->getPicWidthMinusWrapAroundOffset(), "pps_pic_width_minus_wraparound_offset");
+#else
     WRITE_UVLC( pcPPS->getWrapAroundOffsetMinusCtbSize(), "pps_ref_wraparound_offset");
+#endif
   }
 #endif
 
@@ -939,10 +965,10 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
     WRITE_FLAG( pcSPS->getEntropyCodingSyncEntryPointsPresentFlag() ? 1 : 0, "sps_wpp_entry_point_offsets_present_flag" );
   }
 #endif
-
+#if !JVET_R0332_HLS_ORDER
   WRITE_FLAG( pcSPS->getUseWP() ? 1 : 0, "sps_weighted_pred_flag" );   // Use of Weighting Prediction (P_SLICE)
   WRITE_FLAG( pcSPS->getUseWPBiPred() ? 1 : 0, "sps_weighted_bipred_flag" );  // Use of Weighting Bi-Prediction (B_SLICE)
-
+#endif
   WRITE_CODE(pcSPS->getBitsForPOC()-4, 4, "log2_max_pic_order_cnt_lsb_minus4");
 
   WRITE_FLAG(pcSPS->getPocMsbFlag() ? 1 : 0, "sps_poc_msb_flag");
@@ -971,6 +997,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
     dpb_parameters(pcSPS->getMaxTLayers() - 1, pcSPS->getSubLayerDpbParamsFlag(), pcSPS);
   }
   CHECK( pcSPS->getMaxCUWidth() != pcSPS->getMaxCUHeight(),                          "Rectangular CTUs not supported" );
+#if !JVET_R0332_HLS_ORDER  
   WRITE_FLAG(pcSPS->getLongTermRefsPresent() ? 1 : 0, "long_term_ref_pics_flag");
 #if JVET_R0205
   if( pcSPS->getVPSId() > 0 )
@@ -1014,6 +1041,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 #endif
     }
   }
+#endif
   if( pcSPS->getChromaFormatIdc() != CHROMA_400 )
   {
     WRITE_FLAG(pcSPS->getUseDualITree(), "qtbtt_dual_tree_intra_flag");
@@ -1088,6 +1116,55 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
     CHECK(pcSPS->getBDPCMEnabledFlag(), "BDPCM cannot be used when transform skip is disabled");
   }
 
+#if JVET_R0332_HLS_ORDER
+  WRITE_FLAG(pcSPS->getUseWP() ? 1 : 0, "sps_weighted_pred_flag");           // Use of Weighting Prediction (P_SLICE)
+  WRITE_FLAG(pcSPS->getUseWPBiPred() ? 1 : 0, "sps_weighted_bipred_flag");   // Use of Weighting Bi-Prediction (B_SLICE)
+
+  WRITE_FLAG(pcSPS->getLongTermRefsPresent() ? 1 : 0, "long_term_ref_pics_flag");
+#if JVET_R0205
+  if( pcSPS->getVPSId() > 0 )
+  {
+    WRITE_FLAG( pcSPS->getInterLayerPresentFlag() ? 1 : 0, "sps_inter_layer_ref_pics_present_flag" );
+  }
+#else
+  WRITE_FLAG( pcSPS->getInterLayerPresentFlag() ? 1 : 0, "inter_layer_ref_pics_present_flag" );
+#endif
+  WRITE_FLAG(pcSPS->getIDRRefParamListPresent() ? 1 : 0, "sps_idr_rpl_present_flag" );
+  WRITE_FLAG(pcSPS->getRPL1CopyFromRPL0Flag() ? 1 : 0, "rpl1_copy_from_rpl0_flag");
+
+  const RPLList* rplList0 = pcSPS->getRPLList0();
+  const RPLList* rplList1 = pcSPS->getRPLList1();
+
+  //Write candidate for List0
+  uint32_t numberOfRPL = pcSPS->getNumRPL0();
+  WRITE_UVLC(numberOfRPL, "num_ref_pic_lists_in_sps[0]");
+  for (int ii = 0; ii < numberOfRPL; ii++)
+  {
+    const ReferencePictureList* rpl = rplList0->getReferencePictureList(ii);
+#if JVET_R0059_RPL_CLEANUP
+    xCodeRefPicList(rpl, pcSPS->getLongTermRefsPresent(), pcSPS->getBitsForPOC(), !pcSPS->getUseWP() && !pcSPS->getUseWPBiPred(), ii);
+#else
+    xCodeRefPicList( rpl, pcSPS->getLongTermRefsPresent(), pcSPS->getBitsForPOC(), !pcSPS->getUseWP() && !pcSPS->getUseWPBiPred());
+#endif
+  }
+
+  //Write candidate for List1
+  if (!pcSPS->getRPL1CopyFromRPL0Flag())
+  {
+    numberOfRPL = pcSPS->getNumRPL1();
+    WRITE_UVLC(numberOfRPL, "num_ref_pic_lists_in_sps[1]");
+    for (int ii = 0; ii < numberOfRPL; ii++)
+    {
+      const ReferencePictureList* rpl = rplList1->getReferencePictureList(ii);
+#if JVET_R0059_RPL_CLEANUP
+      xCodeRefPicList(rpl, pcSPS->getLongTermRefsPresent(), pcSPS->getBitsForPOC(), !pcSPS->getUseWP() && !pcSPS->getUseWPBiPred(), ii);
+#else
+      xCodeRefPicList( rpl, pcSPS->getLongTermRefsPresent(), pcSPS->getBitsForPOC(), !pcSPS->getUseWP() && !pcSPS->getUseWPBiPred());
+#endif
+    }
+  }
+#endif
+
   WRITE_FLAG( pcSPS->getWrapAroundEnabledFlag() ? 1 : 0,                              "sps_ref_wraparound_enabled_flag" );
 #if !JVET_Q0764_WRAP_AROUND_WITH_RPR
   if( pcSPS->getWrapAroundEnabledFlag() )
@@ -1123,6 +1200,47 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
     WRITE_FLAG(pcSPS->getFpelMmvdEnabledFlag() ? 1 : 0,                               "sps_mmvd_fullpel_only_flag");
   }
 #endif
+#if JVET_R0332_HLS_ORDER
+  WRITE_UVLC(MRG_MAX_NUM_CANDS - pcSPS->getMaxNumMergeCand(), "six_minus_max_num_merge_cand");
+  WRITE_FLAG( pcSPS->getUseSBT() ? 1 : 0,                                                      "sps_sbt_enabled_flag");
+  WRITE_FLAG( pcSPS->getUseAffine() ? 1 : 0,                                                   "sps_affine_enabled_flag" );
+  if ( pcSPS->getUseAffine() )
+  {
+    WRITE_UVLC(AFFINE_MRG_MAX_NUM_CANDS - pcSPS->getMaxNumAffineMergeCand(), "five_minus_max_num_subblock_merge_cand");
+    WRITE_FLAG( pcSPS->getUseAffineType() ? 1 : 0,                                             "sps_affine_type_flag" );
+    if (pcSPS->getAMVREnabledFlag())
+    {
+      WRITE_FLAG( pcSPS->getAffineAmvrEnabledFlag() ? 1 : 0,                                     "sps_affine_amvr_enabled_flag" );
+    }
+    WRITE_FLAG( pcSPS->getUsePROF() ? 1 : 0,                                                   "sps_affine_prof_enabled_flag" );
+    if (pcSPS->getUsePROF())
+    {
+      WRITE_FLAG(pcSPS->getProfControlPresentFlag() ? 1 : 0,                                   "sps_prof_pic_present_flag" );
+    }
+  }
+
+  WRITE_FLAG(pcSPS->getUseBcw() ? 1 : 0, "sps_bcw_enabled_flag");
+
+  WRITE_FLAG( pcSPS->getUseCiip() ? 1 : 0,                                                  "sps_ciip_enabled_flag" );
+#if !JVET_R0214_MMVD_SYNTAX_MODIFICATION
+  if ( pcSPS->getUseMMVD() )
+  {
+    WRITE_FLAG( pcSPS->getFpelMmvdEnabledFlag() ? 1 : 0,                            "sps_fpel_mmvd_enabled_flag" );
+  }
+#endif
+  if (pcSPS->getMaxNumMergeCand() >= 2)
+  {
+    WRITE_FLAG(pcSPS->getUseGeo() ? 1 : 0, "sps_gpm_enabled_flag");
+    if (pcSPS->getUseGeo() && pcSPS->getMaxNumMergeCand() >= 3)
+    {
+      CHECK(pcSPS->getMaxNumMergeCand() < pcSPS->getMaxNumGeoCand(), "Incorrrect max number of GEO candidates!");
+      WRITE_UVLC(pcSPS->getMaxNumMergeCand() - pcSPS->getMaxNumGeoCand(), "max_num_merge_cand_minus_max_num_gpm_cand");
+    }
+  }
+
+  WRITE_UVLC(pcSPS->getLog2ParallelMergeLevelMinus2(), "log2_parallel_merge_level_minus2");
+#endif 
+
   WRITE_FLAG( pcSPS->getUseISP() ? 1 : 0,                                             "sps_isp_enabled_flag");
   WRITE_FLAG( pcSPS->getUseMRL() ? 1 : 0,                                             "sps_mrl_enabled_flag");
   WRITE_FLAG( pcSPS->getUseMIP() ? 1 : 0,                                             "sps_mip_enabled_flag");
@@ -1148,6 +1266,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
     WRITE_FLAG( pcSPS->getUseInterMTS() ? 1 : 0,                                               "sps_explicit_mts_inter_enabled_flag" );
   }
   CHECK(pcSPS->getMaxNumMergeCand() > MRG_MAX_NUM_CANDS, "More merge candidates signalled than supported");
+#if !JVET_R0332_HLS_ORDER
   WRITE_UVLC(MRG_MAX_NUM_CANDS - pcSPS->getMaxNumMergeCand(), "six_minus_max_num_merge_cand");
   WRITE_FLAG( pcSPS->getUseSBT() ? 1 : 0,                                                      "sps_sbt_enabled_flag");
   WRITE_FLAG( pcSPS->getUseAffine() ? 1 : 0,                                                   "sps_affine_enabled_flag" );
@@ -1165,6 +1284,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
       WRITE_FLAG(pcSPS->getProfControlPresentFlag() ? 1 : 0,                                   "sps_prof_pic_present_flag" );
     }
   }
+#endif
   WRITE_FLAG(pcSPS->getPLTMode() ? 1 : 0,                                                    "sps_palette_enabled_flag" );
   if (pcSPS->getChromaFormatIdc() == CHROMA_444 && pcSPS->getLog2MaxTbSize() != 6)
   {
@@ -1178,13 +1298,16 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
     WRITE_UVLC(pcSPS->getMinQpPrimeTsMinus4(CHANNEL_TYPE_LUMA),                                "min_qp_prime_ts_minus4");
 #endif
   }
+#if !JVET_R0332_HLS_ORDER
   WRITE_FLAG( pcSPS->getUseBcw() ? 1 : 0,                                                      "sps_bcw_enabled_flag" );
+#endif
   WRITE_FLAG(pcSPS->getIBCFlag() ? 1 : 0,                                                      "sps_ibc_enabled_flag");
   if (pcSPS->getIBCFlag())
   {
     CHECK(pcSPS->getMaxNumIBCMergeCand() > IBC_MRG_MAX_NUM_CANDS, "More IBC merge candidates signalled than supported");
     WRITE_UVLC(IBC_MRG_MAX_NUM_CANDS - pcSPS->getMaxNumIBCMergeCand(), "six_minus_max_num_ibc_merge_cand");
   }
+#if !JVET_R0332_HLS_ORDER
   // KJS: sps_ciip_enabled_flag
   WRITE_FLAG( pcSPS->getUseCiip() ? 1 : 0,                                                  "sps_ciip_enabled_flag" );
 #if !JVET_R0214_MMVD_SYNTAX_MODIFICATION
@@ -1202,6 +1325,7 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
       WRITE_UVLC(pcSPS->getMaxNumMergeCand() - pcSPS->getMaxNumGeoCand(), "max_num_merge_cand_minus_max_num_gpm_cand");
     }
   }
+#endif
   WRITE_FLAG(pcSPS->getUseLmcs() ? 1 : 0, "sps_lmcs_enable_flag");
   WRITE_FLAG( pcSPS->getUseLFNST() ? 1 : 0,                                                    "sps_lfnst_enabled_flag" );
 
@@ -1218,8 +1342,9 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
     }
   }
 #endif
+#if !JVET_R0332_HLS_ORDER
   WRITE_UVLC(pcSPS->getLog2ParallelMergeLevelMinus2(), "log2_parallel_merge_level_minus2");
-
+#endif
   // KJS: reference picture sets to be replaced
 
 
@@ -1437,7 +1562,11 @@ void HLSWriter::codeVPS(const VPS* pcVPS)
   {
     if(i > 0)
       WRITE_FLAG(pcVPS->getPtPresentFlag(i), "pt_present_flag");
+#if JVET_R0107_VPS_SIGNALING
+    if (!pcVPS->getAllLayersSameNumSublayersFlag())
+#else
     if(pcVPS->getMaxSubLayers() > 1 && !pcVPS->getAllLayersSameNumSublayersFlag())
+#endif
       WRITE_CODE(pcVPS->getPtlMaxTemporalId(i) ,3, "ptl_max_temporal_id");
   }
   int cnt = 0;
@@ -1473,6 +1602,16 @@ void HLSWriter::codeVPS(const VPS* pcVPS)
 
   for( int i = 0; i < pcVPS->m_numDpbParams; i++ )
   {
+#if JVET_R0107_VPS_SIGNALING
+    if (!pcVPS->getAllLayersSameNumSublayersFlag())
+    {
+      WRITE_CODE(pcVPS->m_dpbMaxTemporalId[i], 3, "dpb_max_temporal_id[i]");
+    }
+    else
+    {
+      CHECK(pcVPS->m_dpbMaxTemporalId[i] != pcVPS->getMaxSubLayers() - 1, "When vps_all_layers_same_num_sublayers_flag is equal to 1, the value of dpb_max_temporal_id[ i ] is inferred to be equal to vps_max_sublayers_minus1");
+    }
+#else
     if( pcVPS->getMaxSubLayers() == 1 )
     {
       CHECK( pcVPS->m_dpbMaxTemporalId[i] != 0, "When vps_max_sublayers_minus1 is equal to 0, the value of dpb_max_temporal_id[ i ] is inferred to be equal to 0" );
@@ -1488,6 +1627,7 @@ void HLSWriter::codeVPS(const VPS* pcVPS)
         WRITE_CODE( pcVPS->m_dpbMaxTemporalId[i], 3, "dpb_max_temporal_id[i]" );
       }
     }
+#endif
 
     for( int j = ( pcVPS->m_sublayerDpbParamsPresentFlag ? 0 : pcVPS->m_dpbMaxTemporalId[i] ); j <= pcVPS->m_dpbMaxTemporalId[i]; j++ )
     {
@@ -1497,17 +1637,28 @@ void HLSWriter::codeVPS(const VPS* pcVPS)
     }
   }
 
+#if JVET_R0099_DPB_HRD_PARAMETERS_SIGNALLING
+  for( int i = 1; i < pcVPS->m_numMultiLayeredOlss; i++) 
+  {
+#else
   for( int i = 0; i < pcVPS->getTotalNumOLSs(); i++ )
   {
     if( pcVPS->m_numLayersInOls[i] > 1 )
     {
+#endif
       WRITE_UVLC( pcVPS->getOlsDpbPicSize( i ).width, "ols_dpb_pic_width[i]" );
       WRITE_UVLC( pcVPS->getOlsDpbPicSize( i ).height, "ols_dpb_pic_height[i]" );
+#if JVET_R0099_DPB_HRD_PARAMETERS_SIGNALLING
+      if( (pcVPS->m_numDpbParams > 1) && (pcVPS->m_numDpbParams != pcVPS->m_numMultiLayeredOlss) )
+#else
       if( pcVPS->m_numDpbParams > 1 )
+#endif
       {
         WRITE_UVLC( pcVPS->getOlsDpbParamsIdx( i ), "ols_dpb_params_idx[i]" );
       }
+#if !JVET_R0099_DPB_HRD_PARAMETERS_SIGNALLING
     }
+#endif
   }
   if (!pcVPS->getEachLayerIsAnOlsFlag())
   {
@@ -1523,13 +1674,26 @@ void HLSWriter::codeVPS(const VPS* pcVPS)
     WRITE_UVLC(pcVPS->getNumOlsHrdParamsMinus1(), "num_ols_hrd_params_minus1");
     for (int i = 0; i <= pcVPS->getNumOlsHrdParamsMinus1(); i++)
     {
+#if JVET_R0107_VPS_SIGNALING
+      if (!pcVPS->getAllLayersSameNumSublayersFlag())
+#else
       if (((pcVPS->getMaxSubLayers()-1) > 0) && (!pcVPS->getAllLayersSameNumSublayersFlag()))
+#endif
       {
         WRITE_CODE(pcVPS->getHrdMaxTid(i), 3, "hrd_max_tid[i]");
       }
       uint32_t firstSublayer = pcVPS->getVPSSublayerCpbParamsPresentFlag() ? 0 : pcVPS->getHrdMaxTid(i);
       codeOlsHrdParameters(pcVPS->getGeneralHrdParameters(), pcVPS->getOlsHrdParameters(i),firstSublayer, pcVPS->getHrdMaxTid(i));
     }
+#if JVET_R0099_DPB_HRD_PARAMETERS_SIGNALLING
+    if ((pcVPS->getNumOlsHrdParamsMinus1() > 0) && ((pcVPS->getNumOlsHrdParamsMinus1() + 1) != pcVPS->m_numMultiLayeredOlss))
+    {
+      for (int i = 0; i < pcVPS->m_numMultiLayeredOlss; i++)
+      {
+        WRITE_UVLC(pcVPS->getOlsHrdIdx(i), "ols_hrd_idx[i]");
+      }
+    }
+#else
     if (((pcVPS->getNumOlsHrdParamsMinus1() + 1)!= pcVPS->getTotalNumOLSs()) && (pcVPS->getNumOlsHrdParamsMinus1() > 0))
     {
       for (int i=1; i < pcVPS->getTotalNumOLSs();i++)
@@ -1540,6 +1704,7 @@ void HLSWriter::codeVPS(const VPS* pcVPS)
         }
       }
     }
+#endif
   }
 
   WRITE_FLAG(0, "vps_extension_flag");
@@ -2124,10 +2289,17 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader, bool writeRbspTrailingB
       {
         WRITE_SVLC( picHeader->getDeblockingFilterBetaOffsetDiv2(), "ph_beta_offset_div2" );
         WRITE_SVLC( picHeader->getDeblockingFilterTcOffsetDiv2(), "ph_tc_offset_div2" );
-        WRITE_SVLC( picHeader->getDeblockingFilterCbBetaOffsetDiv2(), "ph_cb_beta_offset_div2" );
-        WRITE_SVLC( picHeader->getDeblockingFilterCbTcOffsetDiv2(), "ph_cb_tc_offset_div2" );
-        WRITE_SVLC( picHeader->getDeblockingFilterCrBetaOffsetDiv2(), "ph_cr_beta_offset_div2" );
-        WRITE_SVLC( picHeader->getDeblockingFilterCrTcOffsetDiv2(), "ph_cr_tc_offset_div2" );
+#if JVET_R0078_DISABLE_CHROMA_DBF_OFFSET_SINGALLING
+        if( pps->getPPSChromaToolFlag() )
+        {
+#endif
+          WRITE_SVLC( picHeader->getDeblockingFilterCbBetaOffsetDiv2(), "ph_cb_beta_offset_div2" );
+          WRITE_SVLC( picHeader->getDeblockingFilterCbTcOffsetDiv2(), "ph_cb_tc_offset_div2" );
+          WRITE_SVLC( picHeader->getDeblockingFilterCrBetaOffsetDiv2(), "ph_cr_beta_offset_div2" );
+          WRITE_SVLC( picHeader->getDeblockingFilterCrTcOffsetDiv2(), "ph_cr_tc_offset_div2" );
+#if JVET_R0078_DISABLE_CHROMA_DBF_OFFSET_SINGALLING
+        }
+#endif
       }
     }
     else
@@ -2569,10 +2741,17 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
         {
           WRITE_SVLC (pcSlice->getDeblockingFilterBetaOffsetDiv2(), "slice_beta_offset_div2");
           WRITE_SVLC (pcSlice->getDeblockingFilterTcOffsetDiv2(),   "slice_tc_offset_div2");
-          WRITE_SVLC (pcSlice->getDeblockingFilterCbBetaOffsetDiv2(), "slice_cb_beta_offset_div2");
-          WRITE_SVLC (pcSlice->getDeblockingFilterCbTcOffsetDiv2(),   "slice_cb_tc_offset_div2");
-          WRITE_SVLC (pcSlice->getDeblockingFilterCrBetaOffsetDiv2(), "slice_cr_beta_offset_div2");
-          WRITE_SVLC (pcSlice->getDeblockingFilterCrTcOffsetDiv2(),   "slice_cr_tc_offset_div2");
+#if JVET_R0078_DISABLE_CHROMA_DBF_OFFSET_SINGALLING
+          if( pcSlice->getPPS()->getPPSChromaToolFlag() )
+          {
+#endif
+            WRITE_SVLC (pcSlice->getDeblockingFilterCbBetaOffsetDiv2(), "slice_cb_beta_offset_div2");
+            WRITE_SVLC (pcSlice->getDeblockingFilterCbTcOffsetDiv2(),   "slice_cb_tc_offset_div2");
+            WRITE_SVLC (pcSlice->getDeblockingFilterCrBetaOffsetDiv2(), "slice_cr_beta_offset_div2");
+            WRITE_SVLC (pcSlice->getDeblockingFilterCrTcOffsetDiv2(),   "slice_cr_tc_offset_div2");
+#if JVET_R0078_DISABLE_CHROMA_DBF_OFFSET_SINGALLING
+          }
+#endif
         }
       }
       else

@@ -369,6 +369,9 @@ uint32_t BitstreamExtractorApp::decode()
   bitstreamFileIn.seekg( 0, std::ios::beg );
 
   int unitCnt = 0;
+#if JVET_Q0404_CBR_SUBPIC
+  bool lastSliceWritten= false;   // stores status of previous slice for associated filler data NAL units
+#endif
 
   VPS *vpsIdZero = new VPS();
   std::vector<uint8_t> empty;
@@ -441,8 +444,8 @@ uint32_t BitstreamExtractorApp::decode()
         }
         uint32_t numOlss = vps->getNumOutputLayerSets();
         CHECK(m_targetOlsIdx <0  || m_targetOlsIdx >= numOlss, "target Ols shall be in the range of OLSs specified by the VPS");
-        std::vector<int> LayerIdInOls = vps->getLayerIdsInOls(m_targetOlsIdx);
-        bool isIncludedInTargetOls = std::find(LayerIdInOls.begin(), LayerIdInOls.end(), nalu.m_nuhLayerId) != LayerIdInOls.end();
+        std::vector<int> layerIdInOls = vps->getLayerIdsInOls(m_targetOlsIdx);
+        bool isIncludedInTargetOls = std::find(layerIdInOls.begin(), layerIdInOls.end(), nalu.m_nuhLayerId) != layerIdInOls.end();
         writeInpuNalUnitToStream &= (isSpecialNalTypes || isIncludedInTargetOls);
 #if JVET_Q0394_TIMING_SEI
         m_removeTimingSEI = !vps->getGeneralHrdParameters()->getGeneralSamePicTimingInAllOlsFlag();
@@ -627,7 +630,12 @@ uint32_t BitstreamExtractorApp::decode()
           // check for subpicture ID
           writeInpuNalUnitToStream = xCheckSliceSubpicture(nalu, m_subPicId);
         }
-
+#if JVET_Q0404_CBR_SUBPIC
+        if (nalu.m_nalUnitType == NAL_UNIT_FD)
+        {
+          writeInpuNalUnitToStream = lastSliceWritten;
+        }
+#endif
       }
       unitCnt++;
 
@@ -642,9 +650,28 @@ uint32_t BitstreamExtractorApp::decode()
         }
         ch = 1;
         bitstreamFileOut.write( &ch, 1 );
-        // write input NAL unit
-        bitstreamFileOut.write( (const char*)nalu.getBitstream().getFifo().data(), nalu.getBitstream().getFifo().size() );
+
+        // create output NAL unit
+        OutputNALUnit out (nalu.m_nalUnitType, nalu.m_nuhLayerId, nalu.m_temporalId);
+        out.m_Bitstream.getFIFO() = nalu.getBitstream().getFifo();
+        // write with start code emulation prevention
+        writeNaluContent (bitstreamFileOut, out);
       }
+
+#if JVET_Q0404_CBR_SUBPIC
+      // update status of previous slice
+      if (nalu.isSlice())
+      {
+        if (writeInpuNalUnitToStream)
+        {
+          lastSliceWritten = true;
+        }
+        else
+        {
+          lastSliceWritten=false;
+        }
+      }
+#endif
     }
   }
 

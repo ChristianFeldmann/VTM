@@ -1590,76 +1590,87 @@ void HLSWriter::codeVPS(const VPS* pcVPS)
       WRITE_CODE(pcVPS->getOlsPtlIdx(i), 8, "ols_ptl_idx");
   }
 
+#if JVET_R0185_OLS_DPB_CLEANUP
+  if( !pcVPS->getEachLayerIsAnOlsFlag() )
+  {
+    WRITE_UVLC( pcVPS->m_numDpbParams - 1, "vps_num_dpb_params_minus1" );
+
+    if( pcVPS->getMaxSubLayers() > 1 )
+#else
   if( !pcVPS->getAllIndependentLayersFlag() )
   {
     WRITE_UVLC( pcVPS->m_numDpbParams, "vps_num_dpb_params" );
   }
 
   if( pcVPS->m_numDpbParams > 0 && pcVPS->getMaxSubLayers() > 1 )
-  {
-    WRITE_FLAG( pcVPS->m_sublayerDpbParamsPresentFlag, "vps_sublayer_dpb_params_present_flag" );
-  }
+#endif
+    {
+      WRITE_FLAG( pcVPS->m_sublayerDpbParamsPresentFlag, "vps_sublayer_dpb_params_present_flag" );
+    }
 
-  for( int i = 0; i < pcVPS->m_numDpbParams; i++ )
-  {
+    for( int i = 0; i < pcVPS->m_numDpbParams; i++ )
+    {
 #if JVET_R0107_VPS_SIGNALING
-    if (!pcVPS->getAllLayersSameNumSublayersFlag())
-    {
-      WRITE_CODE(pcVPS->m_dpbMaxTemporalId[i], 3, "dpb_max_temporal_id[i]");
-    }
-    else
-    {
-      CHECK(pcVPS->m_dpbMaxTemporalId[i] != pcVPS->getMaxSubLayers() - 1, "When vps_all_layers_same_num_sublayers_flag is equal to 1, the value of dpb_max_temporal_id[ i ] is inferred to be equal to vps_max_sublayers_minus1");
-    }
-#else
-    if( pcVPS->getMaxSubLayers() == 1 )
-    {
-      CHECK( pcVPS->m_dpbMaxTemporalId[i] != 0, "When vps_max_sublayers_minus1 is equal to 0, the value of dpb_max_temporal_id[ i ] is inferred to be equal to 0" );
-    }
-    else
-    {
-      if( pcVPS->getAllLayersSameNumSublayersFlag() )
+      if (!pcVPS->getAllLayersSameNumSublayersFlag())
       {
-        CHECK( pcVPS->m_dpbMaxTemporalId[i] != pcVPS->getMaxSubLayers() - 1, "When vps_max_sublayers_minus1 is greater than 0 and vps_all_layers_same_num_sublayers_flag is equal to 1, the value of dpb_max_temporal_id[ i ] is inferred to be equal to vps_max_sublayers_minus1" );
+        WRITE_CODE(pcVPS->m_dpbMaxTemporalId[i], 3, "dpb_max_temporal_id[i]");
       }
       else
       {
-        WRITE_CODE( pcVPS->m_dpbMaxTemporalId[i], 3, "dpb_max_temporal_id[i]" );
+        CHECK(pcVPS->m_dpbMaxTemporalId[i] != pcVPS->getMaxSubLayers() - 1, "When vps_all_layers_same_num_sublayers_flag is equal to 1, the value of dpb_max_temporal_id[ i ] is inferred to be equal to vps_max_sublayers_minus1");
       }
-    }
-#endif
-
-    for( int j = ( pcVPS->m_sublayerDpbParamsPresentFlag ? 0 : pcVPS->m_dpbMaxTemporalId[i] ); j <= pcVPS->m_dpbMaxTemporalId[i]; j++ )
-    {
-      WRITE_UVLC( pcVPS->m_dpbParameters[i].m_maxDecPicBuffering[j], "max_dec_pic_buffering_minus1[i]" );
-      WRITE_UVLC( pcVPS->m_dpbParameters[i].m_numReorderPics[j], "max_num_reorder_pics[i]" );
-      WRITE_UVLC( pcVPS->m_dpbParameters[i].m_maxLatencyIncreasePlus1[j], "max_latency_increase_plus1[i]" );
-    }
-  }
-
-#if JVET_R0099_DPB_HRD_PARAMETERS_SIGNALLING
-  for( int i = 1; i < pcVPS->m_numMultiLayeredOlss; i++) 
-  {
 #else
-  for( int i = 0; i < pcVPS->getTotalNumOLSs(); i++ )
-  {
-    if( pcVPS->m_numLayersInOls[i] > 1 )
-    {
-#endif
-      WRITE_UVLC( pcVPS->getOlsDpbPicSize( i ).width, "ols_dpb_pic_width[i]" );
-      WRITE_UVLC( pcVPS->getOlsDpbPicSize( i ).height, "ols_dpb_pic_height[i]" );
-#if JVET_R0099_DPB_HRD_PARAMETERS_SIGNALLING
-      if( (pcVPS->m_numDpbParams > 1) && (pcVPS->m_numDpbParams != pcVPS->m_numMultiLayeredOlss) )
-#else
-      if( pcVPS->m_numDpbParams > 1 )
-#endif
+      if( pcVPS->getMaxSubLayers() == 1 )
       {
-        WRITE_UVLC( pcVPS->getOlsDpbParamsIdx( i ), "ols_dpb_params_idx[i]" );
+        CHECK( pcVPS->m_dpbMaxTemporalId[i] != 0, "When vps_max_sublayers_minus1 is equal to 0, the value of dpb_max_temporal_id[ i ] is inferred to be equal to 0" );
       }
-#if !JVET_R0099_DPB_HRD_PARAMETERS_SIGNALLING
-    }
+      else
+      {
+        if( pcVPS->getAllLayersSameNumSublayersFlag() )
+        {
+          CHECK( pcVPS->m_dpbMaxTemporalId[i] != pcVPS->getMaxSubLayers() - 1, "When vps_max_sublayers_minus1 is greater than 0 and vps_all_layers_same_num_sublayers_flag is equal to 1, the value of dpb_max_temporal_id[ i ] is inferred to be equal to vps_max_sublayers_minus1" );
+        }
+        else
+        {
+          WRITE_CODE( pcVPS->m_dpbMaxTemporalId[i], 3, "dpb_max_temporal_id[i]" );
+        }
+      }
 #endif
+
+      for( int j = ( pcVPS->m_sublayerDpbParamsPresentFlag ? 0 : pcVPS->m_dpbMaxTemporalId[i] ); j <= pcVPS->m_dpbMaxTemporalId[i]; j++ )
+      {
+        WRITE_UVLC( pcVPS->m_dpbParameters[i].m_maxDecPicBuffering[j], "max_dec_pic_buffering_minus1[i]" );
+        WRITE_UVLC( pcVPS->m_dpbParameters[i].m_numReorderPics[j], "max_num_reorder_pics[i]" );
+        WRITE_UVLC( pcVPS->m_dpbParameters[i].m_maxLatencyIncreasePlus1[j], "max_latency_increase_plus1[i]" );
+      }
+    }
+
+#if JVET_R0099_DPB_HRD_PARAMETERS_SIGNALLING
+    for( int i = 1; i < pcVPS->m_numMultiLayeredOlss; i++) 
+    {
+#else
+    for( int i = 0; i < pcVPS->getTotalNumOLSs(); i++ )
+    {
+      if( pcVPS->m_numLayersInOls[i] > 1 )
+      {
+#endif
+        WRITE_UVLC( pcVPS->getOlsDpbPicSize( i ).width, "ols_dpb_pic_width[i]" );
+        WRITE_UVLC( pcVPS->getOlsDpbPicSize( i ).height, "ols_dpb_pic_height[i]" );
+#if JVET_R0099_DPB_HRD_PARAMETERS_SIGNALLING
+        if( (pcVPS->m_numDpbParams > 1) && (pcVPS->m_numDpbParams != pcVPS->m_numMultiLayeredOlss) )
+#else
+        if( pcVPS->m_numDpbParams > 1 )
+#endif
+        {
+          WRITE_UVLC( pcVPS->getOlsDpbParamsIdx( i ), "ols_dpb_params_idx[i]" );
+        }
+#if !JVET_R0099_DPB_HRD_PARAMETERS_SIGNALLING
+      }
+#endif
+    }
+#if JVET_R0185_OLS_DPB_CLEANUP
   }
+#endif
   if (!pcVPS->getEachLayerIsAnOlsFlag())
   {
     WRITE_FLAG(pcVPS->getVPSGeneralHrdParamsPresentFlag(), "vps_general_hrd_params_present_flag");

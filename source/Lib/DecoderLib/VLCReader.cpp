@@ -2173,7 +2173,10 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   READ_FLAG(uiCode, "sps_explicit_scaling_list_enabled_flag");                 pcSPS->setScalingListFlag(uiCode);
 
 #if JVET_R0064
-  READ_FLAG(uiCode, "scaling_matrix_for_lfnst_disabled_flag"); pcSPS->setDisableScalingMatrixForLfnstBlks(uiCode ? true : false);
+  if (pcSPS->getUseLFNST() && pcSPS->getScalingListFlag())
+  {
+    READ_FLAG(uiCode, "scaling_matrix_for_lfnst_disabled_flag"); pcSPS->setDisableScalingMatrixForLfnstBlks(uiCode ? true : false);
+  }
 #endif
 
 #if JVET_R0380_SCALING_MATRIX_DISABLE_YCC_OR_RGB

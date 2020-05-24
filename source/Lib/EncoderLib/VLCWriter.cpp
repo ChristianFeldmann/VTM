@@ -1352,7 +1352,10 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   WRITE_FLAG( pcSPS->getScalingListFlag() ? 1 : 0,                                   "sps_scaling_list_enabled_flag" );
 
 #if JVET_R0064
-  WRITE_FLAG( pcSPS->getDisableScalingMatrixForLfnstBlks(), "scaling_matrix_for_lfnst_disabled_flag");
+  if (pcSPS->getUseLFNST() && pcSPS->getScalingListFlag())
+  {
+    WRITE_FLAG(pcSPS->getDisableScalingMatrixForLfnstBlks(), "scaling_matrix_for_lfnst_disabled_flag");
+  }
 #endif
 
 #if JVET_R0380_SCALING_MATRIX_DISABLE_YCC_OR_RGB

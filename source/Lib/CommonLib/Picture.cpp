@@ -195,6 +195,9 @@ Picture::Picture()
   m_spliceIdx = NULL;
   m_ctuNums = 0;
   layerId = NOT_VALID;
+#if JVET_R0058
+  numSubpics = 1;
+#endif
 }
 
 void Picture::create( const ChromaFormat &_chromaFormat, const Size &size, const unsigned _maxCUSize, const unsigned _margin, const bool _decoder, const int _layerId )

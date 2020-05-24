@@ -1581,7 +1581,7 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
         {
           Picture *refPic = pcSlice->getRefPic((RefPicList)rlist, idx);
 #if JVET_R0058
-          if (!refPic->getSubPicSaved() && refPic->unscaledPic->cs->pps->getNumSubPics() > 1)
+          if (!refPic->getSubPicSaved() && refPic->numSubpics > 1)
 #else
           if (!refPic->getSubPicSaved())
 #endif

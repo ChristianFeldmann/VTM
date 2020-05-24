@@ -655,13 +655,20 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
               uint32_t numExpSliceInTile = uiCode;
               uint32_t remTileRowHeight  = pcPPS->getTileRowHeight(tileIdx / pcPPS->getNumTileColumns());
               int j = 0;
+
+#if JVET_R0062
+              for( ; j < numExpSliceInTile; j++ )
+#else
               for( ; j < numExpSliceInTile - 1; j++ )
+#endif
               {
                 READ_UVLC(uiCode, "exp_slice_height_in_ctus_minus1[i]");
                 pcPPS->setSliceHeightInCtu(i + j, uiCode + 1);
                 remTileRowHeight -= (uiCode + 1);
               }
+#if !JVET_R0062
               READ_UVLC(uiCode, "exp_slice_height_in_ctus_minus1[i]");
+#endif
               uint32_t uniformSliceHeight = uiCode + 1;
 
               while( remTileRowHeight >= uniformSliceHeight )

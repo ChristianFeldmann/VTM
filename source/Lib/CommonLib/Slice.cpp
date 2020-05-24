@@ -2811,6 +2811,7 @@ void PPS::initTiles()
 
   // check explicit tile column sizes
   uint32_t  remainingWidthInCtu  = m_picWidthInCtu;
+
   for( colIdx = 0; colIdx < m_numExpTileCols; colIdx++ )
   {
     CHECK(m_tileColWidth[colIdx] > remainingWidthInCtu,    "Tile column width exceeds picture width");
@@ -2831,6 +2832,7 @@ void PPS::initTiles()
 
   // check explicit tile row sizes
   uint32_t  remainingHeightInCtu  = m_picHeightInCtu;
+
   for( rowIdx = 0; rowIdx < m_numExpTileRows; rowIdx++ )
   {
     CHECK(m_tileRowHeight[rowIdx] > remainingHeightInCtu,     "Tile row height exceeds picture height");

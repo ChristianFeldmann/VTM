@@ -132,7 +132,7 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
 
 
 #if JVET_R0058
-  if (slice->getSliceType() != I_SLICE && slice->getRefPic(REF_PIC_LIST_0, 0)->cs->pps->getNumSubPics() > 1)
+  if (slice->getSliceType() != I_SLICE && slice->getRefPic(REF_PIC_LIST_0, 0)->numSubpics > 1)
   {
     clipMv = clipMvInSubpic;
   }
@@ -173,7 +173,7 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
         {
           Picture *refPic = slice->getRefPic((RefPicList)rlist, idx);
 #if JVET_R0058
-          if (!refPic->getSubPicSaved() && refPic->unscaledPic->cs->pps->getNumSubPics() > 1)
+          if (!refPic->getSubPicSaved() && refPic->numSubpics > 1)
 #else
           if (!refPic->getSubPicSaved())
 #endif

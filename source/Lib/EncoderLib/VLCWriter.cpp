@@ -1350,6 +1350,11 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
 
   // KJS: remove scaling lists?
   WRITE_FLAG( pcSPS->getScalingListFlag() ? 1 : 0,                                   "sps_scaling_list_enabled_flag" );
+
+#if JVET_R0064
+  WRITE_FLAG( pcSPS->getDisableScalingMatrixForLfnstBlks(), "scaling_matrix_for_lfnst_disabled_flag");
+#endif
+
 #if JVET_R0380_SCALING_MATRIX_DISABLE_YCC_OR_RGB
   if (pcSPS->getUseColorTrans() && pcSPS->getScalingListFlag())
   {
@@ -3173,7 +3178,9 @@ void HLSWriter::xCodePredWeightTable(PicHeader *picHeader, const SPS *sps)
 void HLSWriter::codeScalingList( const ScalingList &scalingList )
 {
   //for each size
+#if !JVET_R0064
   WRITE_FLAG(scalingList.getDisableScalingMatrixForLfnstBlks(), "scaling_matrix_for_lfnst_disabled_flag");
+#endif
   WRITE_FLAG(scalingList.getChromaScalingListPresentFlag(), "scaling_list_chroma_present_flag");
   for (uint32_t scalingListId = 0; scalingListId < 28; scalingListId++)
   {

@@ -51,6 +51,8 @@
 #include <cassert>
 
 //########### place macros to be removed in next cycle below this line ###############
+#define JVET_R0064                                        1 // JVET-R0064, aspect 2: Move the flag scaling_matrix_for_lfnst_disabled_flag from the scaling_list_data( ) syntax to the SPS.
+
 #define JVET_R0058                                        1 // JVET-R0058: the combination of RPR, subpictures, and scalability 
 
 #define JVET_R0078_DISABLE_CHROMA_DBF_OFFSET_SINGALLING   1 // JVET-R0078: disable chroma DBF offset signalling

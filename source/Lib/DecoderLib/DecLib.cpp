@@ -2093,20 +2093,17 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
     m_pcPic->setPictureType(nalu.m_nalUnitType);
 #if JVET_R0058
     // store sub-picture numbers, sizes, and locations with a picture
-    if (sps->getSubPicInfoPresentFlag() && sps->getNumSubPics() > 1)
+    pcSlice->getPic()->numSubpics = sps->getNumSubPics();
+    pcSlice->getPic()->subpicWidthInCTUs.clear();
+    pcSlice->getPic()->subpicHeightInCTUs.clear();
+    pcSlice->getPic()->subpicCtuTopLeftX.clear();
+    pcSlice->getPic()->subpicCtuTopLeftY.clear();
+    for (int subPicIdx = 0; subPicIdx < sps->getNumSubPics(); subPicIdx++)
     {
-      pcSlice->getPic()->numSubpics = sps->getNumSubPics();
-      pcSlice->getPic()->subpicWidthInCTUs.clear();
-      pcSlice->getPic()->subpicHeightInCTUs.clear();
-      pcSlice->getPic()->subpicCtuTopLeftX.clear();
-      pcSlice->getPic()->subpicCtuTopLeftY.clear();
-      for (int subPicIdx = 0; subPicIdx < sps->getNumSubPics(); subPicIdx++)
-      {
-        pcSlice->getPic()->subpicWidthInCTUs.push_back(pps->getSubPic(subPicIdx).getSubPicWidthInCTUs());
-        pcSlice->getPic()->subpicHeightInCTUs.push_back(pps->getSubPic(subPicIdx).getSubPicHeightInCTUs());
-        pcSlice->getPic()->subpicCtuTopLeftX.push_back(pps->getSubPic(subPicIdx).getSubPicCtuTopLeftX());
-        pcSlice->getPic()->subpicCtuTopLeftY.push_back(pps->getSubPic(subPicIdx).getSubPicCtuTopLeftY());
-      }
+      pcSlice->getPic()->subpicWidthInCTUs.push_back(pps->getSubPic(subPicIdx).getSubPicWidthInCTUs());
+      pcSlice->getPic()->subpicHeightInCTUs.push_back(pps->getSubPic(subPicIdx).getSubPicHeightInCTUs());
+      pcSlice->getPic()->subpicCtuTopLeftX.push_back(pps->getSubPic(subPicIdx).getSubPicCtuTopLeftX());
+      pcSlice->getPic()->subpicCtuTopLeftY.push_back(pps->getSubPic(subPicIdx).getSubPicCtuTopLeftY());
     }
 #endif
   }

@@ -51,7 +51,9 @@
 #include <cassert>
 
 //########### place macros to be removed in next cycle below this line ###############
-#define JVET_R0058                                        1 // JVET-R0058: the combination of RPR, subpictures, and scalability 
+#define RETRAIN_CABAC                                     1 // CABAC initial values retrained on VTM-9.0rc1
+
+#define JVET_R0058                                        1 // JVET-R0058: the combination of RPR, subpictures, and scalability
 
 #define JVET_R0078_DISABLE_CHROMA_DBF_OFFSET_SINGALLING   1 // JVET-R0078: disable chroma DBF offset signalling
 

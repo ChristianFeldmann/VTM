@@ -2259,6 +2259,20 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     pcSlice->constructRefPicList(rcListPic);
 
 #if JVET_R0058
+    // store sub-picture numbers, sizes, and locations with a picture
+    pcSlice->getPic()->numSubpics = pcPic->cs->pps->getNumSubPics();
+    pcSlice->getPic()->subpicWidthInCTUs.clear();
+    pcSlice->getPic()->subpicHeightInCTUs.clear();
+    pcSlice->getPic()->subpicCtuTopLeftX.clear();
+    pcSlice->getPic()->subpicCtuTopLeftY.clear();
+    for (int subPicIdx = 0; subPicIdx < pcPic->cs->pps->getNumSubPics(); subPicIdx++)
+    {
+      pcSlice->getPic()->subpicWidthInCTUs.push_back(pcPic->cs->pps->getSubPic(subPicIdx).getSubPicWidthInCTUs());
+      pcSlice->getPic()->subpicHeightInCTUs.push_back(pcPic->cs->pps->getSubPic(subPicIdx).getSubPicHeightInCTUs());
+      pcSlice->getPic()->subpicCtuTopLeftX.push_back(pcPic->cs->pps->getSubPic(subPicIdx).getSubPicCtuTopLeftX());
+      pcSlice->getPic()->subpicCtuTopLeftY.push_back(pcPic->cs->pps->getSubPic(subPicIdx).getSubPicCtuTopLeftY());
+    }
+
     const VPS* vps = pcPic->cs->vps;
     int layerIdx = vps == nullptr ? 0 : vps->getGeneralLayerIdx(pcPic->layerId);
     if (vps && !vps->getIndependentLayerFlag(layerIdx) && pcPic->cs->pps->getNumSubPics() > 1)
@@ -2743,7 +2757,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 #endif
 
 #if JVET_R0058
-        if (pcSlice->getSliceType() != I_SLICE && pcSlice->getRefPic(REF_PIC_LIST_0, 0)->unscaledPic->cs->pps->getNumSubPics() > 1)
+        if (pcSlice->getSliceType() != I_SLICE && pcSlice->getRefPic(REF_PIC_LIST_0, 0)->numSubpics > 1)
         {
           clipMv = clipMvInSubpic;
           m_pcEncLib->getInterSearch()->setClipMvInSubPic(true);

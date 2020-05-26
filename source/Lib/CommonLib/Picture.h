@@ -222,6 +222,13 @@ public:
   uint32_t layer;
   uint32_t depth;
   int      layerId;
+#if JVET_R0058
+  int  numSubpics;
+  std::vector<int> subpicWidthInCTUs;
+  std::vector<int> subpicHeightInCTUs;
+  std::vector<int> subpicCtuTopLeftX;
+  std::vector<int> subpicCtuTopLeftY;
+#endif
 
   bool subLayerNonReferencePictureDueToSTSA;
 

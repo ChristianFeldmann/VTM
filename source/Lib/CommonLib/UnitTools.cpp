@@ -149,7 +149,7 @@ void CU::checkConformanceILRP(Slice *slice)
     {
       const Picture* refPic = slice->getRefPic(eRefPicList, refIdx)->unscaledPic;
 
-      if (refPic->cs->pps->getNumSubPics() != slice->getPic()->cs->pps->getNumSubPics())
+      if (refPic->numSubpics != slice->getPic()->cs->pps->getNumSubPics())
       {
         isAllRefSameSubpicLayout = false;
         refList = numRefList;
@@ -157,12 +157,12 @@ void CU::checkConformanceILRP(Slice *slice)
       }
       else
       {
-        for (int i = 0; i < slice->getPic()->cs->pps->getNumSubPics(); i++)
+        for (int i = 0; i < refPic->numSubpics; i++)
         {
-          if (refPic->cs->pps->getSubPic(i).getSubPicWidthInCTUs() != slice->getPic()->cs->pps->getSubPic(i).getSubPicWidthInCTUs()
-            || refPic->cs->pps->getSubPic(i).getSubPicHeightInCTUs() != slice->getPic()->cs->pps->getSubPic(i).getSubPicHeightInCTUs()
-            || refPic->cs->pps->getSubPic(i).getSubPicCtuTopLeftX() != slice->getPic()->cs->pps->getSubPic(i).getSubPicCtuTopLeftX()
-            || refPic->cs->pps->getSubPic(i).getSubPicCtuTopLeftY() != slice->getPic()->cs->pps->getSubPic(i).getSubPicCtuTopLeftY())
+          if (refPic->subpicWidthInCTUs[i] != slice->getPic()->cs->pps->getSubPic(i).getSubPicWidthInCTUs()
+            || refPic->subpicHeightInCTUs[i] != slice->getPic()->cs->pps->getSubPic(i).getSubPicHeightInCTUs()
+            || refPic->subpicCtuTopLeftX[i] != slice->getPic()->cs->pps->getSubPic(i).getSubPicCtuTopLeftX()
+            || refPic->subpicCtuTopLeftY[i] != slice->getPic()->cs->pps->getSubPic(i).getSubPicCtuTopLeftY())
           {
             isAllRefSameSubpicLayout = false;
             refIdx = slice->getNumRefIdx(eRefPicList);
@@ -183,7 +183,7 @@ void CU::checkConformanceILRP(Slice *slice)
       for (int refIdx = 0; refIdx < slice->getNumRefIdx(eRefPicList); refIdx++)
       {
         const Picture* refPic = slice->getRefPic(eRefPicList, refIdx)->unscaledPic;
-        CHECK(!(refPic->layerId != slice->getPic()->layerId && refPic->cs->pps->getNumSubPics() == 1), "The inter-layer reference shall contain a single subpicture or have same subpicture layout with the current picture");
+        CHECK(!(refPic->layerId != slice->getPic()->layerId && refPic->numSubpics == 1), "The inter-layer reference shall contain a single subpicture or have same subpicture layout with the current picture");
       }
     }
   }

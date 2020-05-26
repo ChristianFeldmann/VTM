@@ -55,6 +55,10 @@
 
 #define JVET_R0058                                        1 // JVET-R0058: the combination of RPR, subpictures, and scalability
 
+#define JVET_R0185_OLS_DPB_CLEANUP                        1 // JVET-R0185: Replace if( !vps_all_independent_layers_flag ) condition on vps_num_dpb_params syntax element with if(!each_layer_is_an_ols_flag)
+                                                            //             Change vps_num_dpb_params to vps_num_dpb_params_minus1 and change the semantics to a “two-way” constraint
+                                                            //             Signal DPB parameters for OLS in this case only if(!each_layer_is_an_ols_flag)
+
 #define JVET_R0078_DISABLE_CHROMA_DBF_OFFSET_SINGALLING   1 // JVET-R0078: disable chroma DBF offset signalling
 
 #define JVET_R0194_CONSTRAINT_PS_SHARING_REFERENCING      1 // JVET-R0194: Constraint that if slice at layer A refer to PS at layer B, then all OLS that contains layer A must contain layer B as well.

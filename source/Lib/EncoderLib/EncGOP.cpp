@@ -3226,6 +3226,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
           }
         }
         pcSlice->setPicHeader( pcPic->cs->picHeader );
+	pcSlice->setNalUnitLayerId( m_pcEncLib->getLayerId() );
 
         for ( uint32_t ui = 0 ; ui < numSubstreams; ui++ )
         {

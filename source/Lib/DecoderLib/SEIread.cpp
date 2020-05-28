@@ -771,10 +771,17 @@ void SEIReader::xParseSEIPictureTiming(SEIPictureTiming& sei, uint32_t payloadSi
                           "nal_cpb_alt_initial_cpb_removal_offset_delta[ i ][ j ]");
             sei.m_nalCpbAltInitialRemovalOffsetDelta[i][j] = symbol;
           }
+#if JVET_R0101_PROPOSAL2
+          sei_read_code(pDecodedMessageOutputStream, bp.m_cpbRemovalDelayLength, sei.m_nalCpbDelayOffset[i],
+                        "nal_cpb_delay_offset[ i ]");
+          sei_read_code(pDecodedMessageOutputStream, bp.m_dpbOutputDelayLength, sei.m_nalDpbDelayOffset[i],
+                        "nal_dpb_delay_offset[ i ]");
+#else
           sei_read_code(pDecodedMessageOutputStream, bp.m_initialCpbRemovalDelayLength, sei.m_nalCpbDelayOffset[i],
                         "nal_cpb_delay_offset[ i ]");
           sei_read_code(pDecodedMessageOutputStream, bp.m_initialCpbRemovalDelayLength, sei.m_nalDpbDelayOffset[i],
                         "nal_dpb_delay_offset[ i ]");
+#endif
         }
       }
 
@@ -810,10 +817,17 @@ void SEIReader::xParseSEIPictureTiming(SEIPictureTiming& sei, uint32_t payloadSi
                           "vcl_cpb_alt_initial_cpb_removal_offset_delta[ i ][ j ]");
             sei.m_vclCpbAltInitialRemovalOffsetDelta[i][j] = symbol;
           }
+#if JVET_R0101_PROPOSAL2
+          sei_read_code(pDecodedMessageOutputStream, bp.m_cpbRemovalDelayLength, sei.m_vclCpbDelayOffset[i],
+                        "vcl_cpb_delay_offset[ i ]");
+          sei_read_code(pDecodedMessageOutputStream, bp.m_dpbOutputDelayLength, sei.m_vclDpbDelayOffset[i],
+                        "vcl_dpb_delay_offset[ i ]");
+#else
           sei_read_code(pDecodedMessageOutputStream, bp.m_initialCpbRemovalDelayLength, sei.m_vclCpbDelayOffset[i],
                         "vcl_cpb_delay_offset[ i ]");
           sei_read_code(pDecodedMessageOutputStream, bp.m_initialCpbRemovalDelayLength, sei.m_vclDpbDelayOffset[i],
                         "vcl_dpb_delay_offset[ i ]");
+#endif
         }
       }
 #else

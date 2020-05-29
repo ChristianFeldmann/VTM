@@ -1490,8 +1490,12 @@ void EncLib::xInitHrdParameters(SPS &sps)
   GeneralHrdParams *generalHrdParams = sps.getGeneralHrdParameters();
   *generalHrdParams = m_encHRD.getGeneralHrdParameters();
 
-  OlsHrdParams *olsHrdParams = sps.getOlsHrdParameters();
-  *olsHrdParams = m_encHRD.getOlsHrdParameters();
+  OlsHrdParams *spsOlsHrdParams = sps.getOlsHrdParameters();
+  for(int i = 0; i < MAX_TLAYER; i++)
+  {
+    *spsOlsHrdParams = m_encHRD.getOlsHrdParameters(i);
+    spsOlsHrdParams++;
+  }
 }
 
 void EncLib::xInitPPS(PPS &pps, const SPS &sps)

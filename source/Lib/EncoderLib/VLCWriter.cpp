@@ -397,7 +397,7 @@ void HLSWriter::codePPS( const PPS* pcPPS )
         // multiple slices within a single tile special case
         if( pcPPS->getSliceWidthInTiles(i) == 1 && pcPPS->getSliceHeightInTiles(i) == 1 && pcPPS->getTileRowHeight(pcPPS->getSliceTileIdx(i) / pcPPS->getNumTileColumns()) > 1 )
         {
-          uint32_t numExpSliceInTile = pcPPS->getNumSlicesInTile(i) - 1;
+          uint32_t numExpSliceInTile = (pcPPS->getNumSlicesInTile(i) == 1) ? 0 : pcPPS->getNumSlicesInTile(i);
           if( numExpSliceInTile > 1 && pcPPS->getSliceHeightInCtu(i + numExpSliceInTile - 2) >= pcPPS->getSliceHeightInCtu(i + numExpSliceInTile - 1) )
           {
             for( int j = numExpSliceInTile - 2; j >= 0; j-- )

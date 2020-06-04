@@ -66,7 +66,7 @@ class EncAppCommon;
 /// encoder application class
 class EncApp : public EncAppCfg, public AUWriterIf
 {
-private:
+protected:
   // class interface
   EncLib            m_cEncLib;                    ///< encoder class
   VideoIOYuv        m_cVideoIOYuvInputFile;       ///< input YUV file
@@ -79,7 +79,7 @@ private:
   std::chrono::duration<long long, ratio<1, 1000000000>> m_metricTime;
 #endif
 
-private:
+protected:
   // initialization
   void xCreateLib( std::list<PelUnitBuf*>& recBufList, const int layerId );         ///< create files & encoder class
   void xInitLibCfg ();                           ///< initialize internal variables

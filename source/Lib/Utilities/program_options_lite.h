@@ -89,6 +89,7 @@ namespace df
     std::list<const char*> scanArgv(Options& opts, unsigned argc, const char* argv[], ErrorReporter& error_reporter = default_error_reporter);
     void setDefaults(Options& opts);
     void parseConfigFile(Options& opts, const std::string& filename, ErrorReporter& error_reporter = default_error_reporter);
+    void parseConfigFileString(Options& opts, const std::string& fileAsString, ErrorReporter& error_reporter = default_error_reporter);
 
     /** OptionBase: Virtual base class for storing information relating to a
      * specific option This base class describes common elements.  Type specific

@@ -592,6 +592,12 @@ namespace df
       csp.scanStream(cfgstream);
     }
 
+    void parseConfigFileString(Options& opts, const string& fileAsString, ErrorReporter& error_reporter)
+    {
+      std::istringstream cfgstream(fileAsString);
+      CfgStreamParser csp("nonName", opts, error_reporter);
+      csp.scanStream(cfgstream);
+    }
   }
 }
 

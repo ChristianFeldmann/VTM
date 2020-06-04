@@ -730,6 +730,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   opts.addOptions()
   ("help",                                            do_help,                                          false, "this help text")
   ("c",    po::parseConfigFile, "configuration file name")
+  ("cstring",    po::parseConfigFileString, "configuration file as string")
   ("WarnUnknowParameter,w",                           warnUnknowParameter,                                  0, "warn for unknown configuration parameters instead of failing")
   ("isSDR",                                           sdr,                                              false, "compatibility")
 #if ENABLE_SIMD_OPT

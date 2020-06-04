@@ -287,7 +287,11 @@ uint32_t DecApp::decode()
       m_cDecLib.resetPictureUnitNals();
     }
 #endif
+<<<<<<< HEAD
 #if JVET_R0066_DPB_NO_OUTPUT_PRIOR_PIC_FLAG
+=======
+#if JVET_R0066
+>>>>>>> signal ols_dpb_chroma_format[ i ] and ols_dpb_bitdepth_minus8[ i ] in the VPS, and check make sure no_output_of_prior_pics_flag are same foe all pics in an AU
     if (bNewAccessUnit || !bitstreamFile)
     {
       m_cDecLib.CheckNoOutputPriorPicFlagsInAccessUnit();

@@ -2645,6 +2645,7 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
       {
         READ_UVLC( uiCode, "ols_dpb_pic_width[i]" ); pcVPS->setOlsDpbPicWidth( i, uiCode );
         READ_UVLC( uiCode, "ols_dpb_pic_height[i]" ); pcVPS->setOlsDpbPicHeight( i, uiCode );
+<<<<<<< HEAD
 #if JVET_R0066_DPB_NO_OUTPUT_PRIOR_PIC_FLAG
         READ_CODE( 2, uiCode, "ols_dpb_chroma_format[i]"); pcVPS->setOlsDpbChromaFormatIdc(i, uiCode);
         READ_UVLC( uiCode, "ols_dpb_bitdepth_minus8[i]"); pcVPS->setOlsDpbBitDepthMinus8(i, uiCode);
@@ -2652,6 +2653,12 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
 #if JVET_R0099_DPB_HRD_PARAMETERS_SIGNALLING
         if ((pcVPS->m_numDpbParams > 1) && (pcVPS->m_numDpbParams != pcVPS->m_numMultiLayeredOlss))
 #else
+=======
+#if JVET_R0066
+        READ_CODE(2, uiCode, "ols_dpb_chroma_format[i]"); pcVPS->setOlsDpbChromaFormatIdc(i, uiCode);
+        READ_UVLC(uiCode, "ols_dpb_bitdepth_minus8[i]"); pcVPS->setOlsDpbBitDepthMinus8(i, uiCode);
+#endif
+>>>>>>> signal ols_dpb_chroma_format[ i ] and ols_dpb_bitdepth_minus8[ i ] in the VPS, and check make sure no_output_of_prior_pics_flag are same foe all pics in an AU
         if( pcVPS->m_numDpbParams > 1 )
 #endif
         {

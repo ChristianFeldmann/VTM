@@ -51,6 +51,9 @@
 #include <cassert>
 
 //########### place macros to be removed in next cycle below this line ###############
+#define JVET_R0066                                        1 // JVET-R0066: Signal the maximum values of chroma_format_idc and bit_depth_minus8 for all pictures of all layers in the VPS
+                                                            //             The value of no_output_of_prior_pics_flag, when present, is required to be the same for all pictures in an AU
+
 #define JVET_R0041                                        1 // JVET-R0041: Picture types related constraints
 
 #define JVET_R0064                                        1 // JVET-R0064, aspect 2: Move the flag scaling_matrix_for_lfnst_disabled_flag from the scaling_list_data( ) syntax to the SPS.

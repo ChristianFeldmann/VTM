@@ -2615,6 +2615,10 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
       {
         READ_UVLC( uiCode, "ols_dpb_pic_width[i]" ); pcVPS->setOlsDpbPicWidth( j, uiCode );
         READ_UVLC( uiCode, "ols_dpb_pic_height[i]" ); pcVPS->setOlsDpbPicHeight( j, uiCode );
+#if JVET_R0066
+        READ_CODE( 2, uiCode, "ols_dpb_chroma_format[i]"); pcVPS->setOlsDpbChromaFormatIdc(j, uiCode);
+        READ_UVLC( uiCode, "ols_dpb_bitdepth_minus8[i]"); pcVPS->setOlsDpbBitDepthMinus8(j, uiCode);
+#endif
 #if JVET_R0099_DPB_HRD_PARAMETERS_SIGNALLING
         if ((pcVPS->m_numDpbParams > 1) && (pcVPS->m_numDpbParams != pcVPS->m_numMultiLayeredOlss))
 #else
@@ -2644,7 +2648,7 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
 #endif
       }
     }
-#if JVET_R0191_ASPECT3
+#if JVET_R0191_ASPECT3 & 0 //JVET_R0066 debug
     for( int i = 0; i < pcVPS->m_numDpbParams; i++ )
     {
       CHECK( !isDPBParamReferred[i],"Each dpb_parameters( ) syntax structure in the VPS shall be referred to by at least one value of vps_ols_dpb_params_idx[i] for i in the range of 0 to NumMultiLayerOlss - 1, inclusive");

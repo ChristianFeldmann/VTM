@@ -1053,6 +1053,10 @@ void EncLib::xInitVPS( const SPS& sps )
         m_vps->setOlsDpbPicWidth( olsIdx, std::max<int>( sps.getMaxPicWidthInLumaSamples(), m_vps->getOlsDpbPicSize( olsIdx ).width ) );
         m_vps->setOlsDpbPicHeight( olsIdx, std::max<int>( sps.getMaxPicHeightInLumaSamples(), m_vps->getOlsDpbPicSize( olsIdx ).height ) );
 #endif
+#if JVET_R0066
+        m_vps->setOlsDpbChromaFormatIdc( dpbIdx, std::max<int>(sps.getChromaFormatIdc(), m_vps->getOlsDpbChromaFormatIdc(dpbIdx)));
+        m_vps->setOlsDpbBitDepthMinus8( dpbIdx, std::max<int>(sps.getBitDepth(CHANNEL_TYPE_LUMA) - 8, m_vps->getOlsDpbBitDepthMinus8(dpbIdx)));
+#endif
       }
 
       m_vps->setOlsDpbParamsIdx( olsIdx, dpbIdx );

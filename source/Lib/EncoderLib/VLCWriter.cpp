@@ -1664,6 +1664,10 @@ void HLSWriter::codeVPS(const VPS* pcVPS)
 #endif
         WRITE_UVLC( pcVPS->getOlsDpbPicSize( i ).width, "ols_dpb_pic_width[i]" );
         WRITE_UVLC( pcVPS->getOlsDpbPicSize( i ).height, "ols_dpb_pic_height[i]" );
+#if JVET_R0066
+        WRITE_CODE( pcVPS->m_olsDpbChromaFormatIdc[i], 2, "ols_dpb_chroma_format[i]");
+        WRITE_UVLC( pcVPS->m_olsDpbBitDepthMinus8[i], "ols_dpb_bitdepth_minus8[i]");
+#endif
 #if JVET_R0099_DPB_HRD_PARAMETERS_SIGNALLING
         if( (pcVPS->m_numDpbParams > 1) && (pcVPS->m_numDpbParams != pcVPS->m_numMultiLayeredOlss) )
 #else

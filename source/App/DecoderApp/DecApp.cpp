@@ -287,6 +287,13 @@ uint32_t DecApp::decode()
       m_cDecLib.resetPictureUnitNals();
     }
 #endif
+#if JVET_R0066
+    if (bNewAccessUnit || !bitstreamFile)
+    {
+      m_cDecLib.CheckNoOutputPriorPicFlagsInAccessUnit();
+      m_cDecLib.resetAccessUnitNoOutputPriorPicFlags();
+    }
+#endif
     if(bNewAccessUnit)
     {
       m_cDecLib.checkTidLayerIdInAccessUnit();

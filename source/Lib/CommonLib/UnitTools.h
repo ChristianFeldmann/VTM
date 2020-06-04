@@ -122,6 +122,9 @@ namespace CU
   bool    isSbtMode                   (const uint8_t sbtInfo);
   bool    isSameSbtSize               (const uint8_t sbtInfo1, const uint8_t sbtInfo2);
   bool    getRprScaling               ( const SPS* sps, const PPS* curPPS, Picture* refPic, int& xScale, int& yScale );
+#if JVET_R0058
+  void    checkConformanceILRP        (Slice *slice);
+#endif
 }
 // PU tools
 namespace PU
@@ -129,8 +132,14 @@ namespace PU
   int  getLMSymbolList(const PredictionUnit &pu, int *modeList);
   int  getIntraMPMs(const PredictionUnit &pu, unsigned *mpm, const ChannelType &channelType = CHANNEL_TYPE_LUMA);
   bool          isMIP                 (const PredictionUnit &pu, const ChannelType &chType = CHANNEL_TYPE_LUMA);
+#if JVET_R0350_MIP_CHROMA_444_SINGLETREE
+  bool          isDMChromaMIP         (const PredictionUnit &pu);
+#endif
   uint32_t      getIntraDirLuma       (const PredictionUnit &pu);
   void getIntraChromaCandModes        (const PredictionUnit &pu, unsigned modeList[NUM_CHROMA_MODE]);
+#if JVET_R0350_MIP_CHROMA_444_SINGLETREE
+  const PredictionUnit &getCoLocatedLumaPU(const PredictionUnit &pu);
+#endif
   uint32_t getFinalIntraMode              (const PredictionUnit &pu, const ChannelType &chType);
   uint32_t getCoLocatedIntraLumaMode      (const PredictionUnit &pu);
   int getWideAngIntraMode             ( const TransformUnit &tu, const uint32_t dirMode, const ComponentID compID );

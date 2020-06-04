@@ -52,11 +52,11 @@ void xTraceSEIMessageType( SEI::PayloadType payloadType )
 }
 #endif
 
-SEIMessages getSeisByType(SEIMessages &seiList, SEI::PayloadType seiType)
+SEIMessages getSeisByType(const SEIMessages &seiList, SEI::PayloadType seiType)
 {
   SEIMessages result;
 
-  for (SEIMessages::iterator it=seiList.begin(); it!=seiList.end(); it++)
+  for (SEIMessages::const_iterator it=seiList.begin(); it!=seiList.end(); it++)
   {
     if ((*it)->payloadType() == seiType)
     {
@@ -119,6 +119,10 @@ void SEIBufferingPeriod::copyTo (SEIBufferingPeriod& target) const
   target.m_sublayerInitialCpbRemovalDelayPresentFlag = m_sublayerInitialCpbRemovalDelayPresentFlag;
   target.m_concatenationFlag = m_concatenationFlag;
   target.m_maxInitialRemovalDelayForConcatenation = m_maxInitialRemovalDelayForConcatenation;
+#if JVET_R0094_DPB_TID_OFFSET
+  target.m_sublayerDpbOutputOffsetsPresentFlag = m_sublayerDpbOutputOffsetsPresentFlag;
+  ::memcpy(target.m_dpbOutputTidOffset, m_dpbOutputTidOffset, sizeof(m_dpbOutputTidOffset));
+#endif
   target.m_altCpbParamsPresentFlag = m_altCpbParamsPresentFlag;
 }
 
@@ -137,10 +141,21 @@ void SEIPictureTiming::copyTo (SEIPictureTiming& target) const
   target.m_numNalusInDuMinus1 = m_numNalusInDuMinus1;
   target.m_duCpbRemovalDelayMinus1 = m_duCpbRemovalDelayMinus1;
   target.m_cpbAltTimingInfoPresentFlag = m_cpbAltTimingInfoPresentFlag;
+#if JVET_R0413_HRD_TIMING_INFORMATION
+  target.m_nalCpbAltInitialRemovalDelayDelta  = m_nalCpbAltInitialRemovalDelayDelta;
+  target.m_nalCpbAltInitialRemovalOffsetDelta = m_nalCpbAltInitialRemovalOffsetDelta;
+  target.m_nalCpbDelayOffset = m_nalCpbDelayOffset;
+  target.m_nalCpbDelayOffset = m_nalCpbDelayOffset;
+  target.m_vclCpbAltInitialRemovalDelayDelta  = m_vclCpbAltInitialRemovalDelayDelta;
+  target.m_vclCpbAltInitialRemovalOffsetDelta = m_vclCpbAltInitialRemovalOffsetDelta;
+  target.m_vclCpbDelayOffset = m_vclCpbDelayOffset;
+  target.m_vclCpbDelayOffset = m_vclCpbDelayOffset;
+#else
   target.m_cpbAltInitialCpbRemovalDelayDelta = m_cpbAltInitialCpbRemovalDelayDelta;
   target.m_cpbAltInitialCpbRemovalOffsetDelta = m_cpbAltInitialCpbRemovalOffsetDelta;
   target.m_cpbDelayOffset = m_cpbDelayOffset;
   target.m_dpbDelayOffset = m_dpbDelayOffset;
+#endif
 }
 
 // Static member

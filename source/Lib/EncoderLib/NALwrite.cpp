@@ -60,13 +60,13 @@ OutputBitstream bsNALUHeader;
 
   out.write(reinterpret_cast<const char*>(bsNALUHeader.getByteStream()), bsNALUHeader.getByteStreamLength());
 }
+
 /**
  * write nalu to bytestream out, performing RBSP anti startcode
  * emulation as required.  nalu.m_RBSPayload must be byte aligned.
  */
-void write(ostream& out, OutputNALUnit& nalu)
+void writeNaluContent(ostream& out, OutputNALUnit& nalu)
 {
-  writeNalUnitHeader(out, nalu);
   /* write out rsbp_byte's, inserting any required
    * emulation_prevention_three_byte's */
   /* 7.4.1 ...
@@ -123,6 +123,12 @@ void write(ostream& out, OutputNALUnit& nalu)
     outputBuffer[outputAmount++]=emulation_prevention_three_byte;
   }
   out.write(reinterpret_cast<const char*>(&(*outputBuffer.begin())), outputAmount);
+}
+
+void writeNaluWithHeader(ostream& out, OutputNALUnit& nalu)
+{
+  writeNalUnitHeader(out, nalu);
+  writeNaluContent(out, nalu);
 }
 
 //! \}

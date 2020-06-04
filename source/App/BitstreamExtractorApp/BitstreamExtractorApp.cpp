@@ -46,7 +46,11 @@
 #include "EncoderLib/AnnexBwrite.h"
 
 BitstreamExtractorApp::BitstreamExtractorApp()
-:m_vpsId(-1)
+:m_vpsId(0)
+#if JVET_Q0394_TIMING_SEI
+, m_removeTimingSEI (false)
+#endif
+
 {
 }
 
@@ -365,6 +369,9 @@ uint32_t BitstreamExtractorApp::decode()
   bitstreamFileIn.seekg( 0, std::ios::beg );
 
   int unitCnt = 0;
+#if JVET_Q0404_CBR_SUBPIC
+  bool lastSliceWritten= false;   // stores status of previous slice for associated filler data NAL units
+#endif
 
   VPS *vpsIdZero = new VPS();
   std::vector<uint8_t> empty;
@@ -422,25 +429,27 @@ uint32_t BitstreamExtractorApp::decode()
       if (m_targetOlsIdx >= 0)
       {
         // if there is no VPS nal unit, there shall be one OLS and one layer.
-        if (m_vpsId == -1)
+        if (m_vpsId == 0)
         {
           CHECK(m_targetOlsIdx != 0, "only one OLS and one layer exist, but target olsIdx is not equal to zero");
-          vps = new VPS();
-          vps->setNumLayersInOls(0, 1);
-          vps->setLayerIdInOls(0, 0, nalu.m_nuhLayerId);
         }
-        else
+        // Remove NAL units with nal_unit_type not equal to any of VPS_NUT, DPS_NUT, and EOB_NUT and with nuh_layer_id not included in the list LayerIdInOls[targetOlsIdx].
+        NalUnitType t = nalu.m_nalUnitType;
+        bool isSpecialNalTypes = t == NAL_UNIT_VPS || t == NAL_UNIT_DCI || t == NAL_UNIT_EOB;
+        vps = m_parameterSetManager.getVPS(m_vpsId);
+        if (m_vpsId == 0)
         {
-          // Remove NAL units with nal_unit_type not equal to any of VPS_NUT, DPS_NUT, and EOB_NUT and with nuh_layer_id not included in the list LayerIdInOls[targetOlsIdx].
-          NalUnitType t = nalu.m_nalUnitType;
-          bool isSpecialNalTypes = t == NAL_UNIT_VPS || t == NAL_UNIT_DCI || t == NAL_UNIT_EOB;
-          vps = m_parameterSetManager.getVPS(m_vpsId);
-          uint32_t numOlss = vps->getNumOutputLayerSets();
-          CHECK(m_targetOlsIdx <0  || m_targetOlsIdx >= numOlss, "target Ols shall be in the range of OLSs specified by the VPS");
-          std::vector<int> LayerIdInOls = vps->getLayerIdsInOls(m_targetOlsIdx);
-          bool isIncludedInTargetOls = std::find(LayerIdInOls.begin(), LayerIdInOls.end(), nalu.m_nuhLayerId) != LayerIdInOls.end();
-          writeInpuNalUnitToStream &= (isSpecialNalTypes || isIncludedInTargetOls);
+          // this initialization can be removed once the dummy VPS is properly initialized in the parameter set manager
+          vps->deriveOutputLayerSets();
         }
+        uint32_t numOlss = vps->getNumOutputLayerSets();
+        CHECK(m_targetOlsIdx <0  || m_targetOlsIdx >= numOlss, "target Ols shall be in the range of OLSs specified by the VPS");
+        std::vector<int> layerIdInOls = vps->getLayerIdsInOls(m_targetOlsIdx);
+        bool isIncludedInTargetOls = std::find(layerIdInOls.begin(), layerIdInOls.end(), nalu.m_nuhLayerId) != layerIdInOls.end();
+        writeInpuNalUnitToStream &= (isSpecialNalTypes || isIncludedInTargetOls);
+#if JVET_Q0394_TIMING_SEI
+        m_removeTimingSEI = !vps->getGeneralHrdParameters()->getGeneralSamePicTimingInAllOlsFlag();
+#endif
       }
       if( nalu.m_nalUnitType == NAL_UNIT_SPS )
       {
@@ -491,6 +500,22 @@ uint32_t BitstreamExtractorApp::decode()
         }
         else
         {
+          if( pps->getNoPicPartitionFlag() )
+          {
+            pps->resetTileSliceInfo();
+            pps->setLog2CtuSize( ceilLog2(sps->getCTUSize()) );
+            pps->setNumExpTileColumns(1);
+            pps->setNumExpTileRows(1);
+            pps->addTileColumnWidth( pps->getPicWidthInCtu( ) );
+            pps->addTileRowHeight( pps->getPicHeightInCtu( ) );
+            pps->initTiles();
+            pps->setRectSliceFlag( 1 );
+            pps->setNumSlicesInPic( 1 );
+            pps->initRectSlices( );
+            pps->setTileIdxDeltaPresentFlag( 0 );
+            pps->setSliceTileIdx( 0, 0 );
+          }
+          pps->initRectSliceMap(sps);
           pps->initSubPic(*sps);
           xPrintSubPicInfo (pps);
           if (m_subPicId >= 0)
@@ -567,12 +592,12 @@ uint32_t BitstreamExtractorApp::decode()
             if (sei->payloadType() == SEI::SCALABLE_NESTING)
             {
               SEIScalableNesting *seiNesting = (SEIScalableNesting *)sei;
-              if (seiNesting->m_nestingOlsFlag == 1)
+              if (seiNesting->m_snOlsFlag == 1)
               {
                 bool targetOlsIdxInNestingAppliedOls = false;
-                for (uint32_t i = 0; i <= seiNesting->m_nestingNumOlssMinus1; i++)
+                for (uint32_t i = 0; i <= seiNesting->m_snNumOlssMinus1; i++)
                 {
-                  if (seiNesting->m_nestingOlsIdx[i] == m_targetOlsIdx)
+                  if (seiNesting->m_snOlsIdx[i] == m_targetOlsIdx)
                   {
                     targetOlsIdxInNestingAppliedOls = true;
                     break;
@@ -582,7 +607,11 @@ uint32_t BitstreamExtractorApp::decode()
               }
             }
             // remove unqualified timing related SEI
+#if JVET_Q0394_TIMING_SEI
+            if (sei->payloadType() == SEI::BUFFERING_PERIOD || (m_removeTimingSEI && sei->payloadType() == SEI::PICTURE_TIMING ) || sei->payloadType() == SEI::DECODING_UNIT_INFO)
+#else
             if (sei->payloadType() == SEI::BUFFERING_PERIOD || sei->payloadType() == SEI::PICTURE_TIMING || sei->payloadType() == SEI::DECODING_UNIT_INFO)
+#endif
             {
               bool targetOlsIdxGreaterThanZero = m_targetOlsIdx > 0;
               writeInpuNalUnitToStream &= !targetOlsIdxGreaterThanZero;
@@ -601,7 +630,12 @@ uint32_t BitstreamExtractorApp::decode()
           // check for subpicture ID
           writeInpuNalUnitToStream = xCheckSliceSubpicture(nalu, m_subPicId);
         }
-
+#if JVET_Q0404_CBR_SUBPIC
+        if (nalu.m_nalUnitType == NAL_UNIT_FD)
+        {
+          writeInpuNalUnitToStream = lastSliceWritten;
+        }
+#endif
       }
       unitCnt++;
 
@@ -616,9 +650,28 @@ uint32_t BitstreamExtractorApp::decode()
         }
         ch = 1;
         bitstreamFileOut.write( &ch, 1 );
-        // write input NAL unit
-        bitstreamFileOut.write( (const char*)nalu.getBitstream().getFifo().data(), nalu.getBitstream().getFifo().size() );
+
+        // create output NAL unit
+        OutputNALUnit out (nalu.m_nalUnitType, nalu.m_nuhLayerId, nalu.m_temporalId);
+        out.m_Bitstream.getFIFO() = nalu.getBitstream().getFifo();
+        // write with start code emulation prevention
+        writeNaluContent (bitstreamFileOut, out);
       }
+
+#if JVET_Q0404_CBR_SUBPIC
+      // update status of previous slice
+      if (nalu.isSlice())
+      {
+        if (writeInpuNalUnitToStream)
+        {
+          lastSliceWritten = true;
+        }
+        else
+        {
+          lastSliceWritten=false;
+        }
+      }
+#endif
     }
   }
 

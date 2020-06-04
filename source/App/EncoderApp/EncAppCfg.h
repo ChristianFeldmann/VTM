@@ -135,6 +135,20 @@ protected:
   uint32_t  m_maxBitDepthConstraintIdc;
   uint32_t  m_maxChromaFormatConstraintIdc;
   bool      m_bFrameConstraintFlag;
+#if JVET_R0286_GCI_CLEANUP
+  bool      m_singleLayerConstraintFlag;
+  bool      m_allLayersIndependentConstraintFlag;
+  bool      m_noMrlConstraintFlag;
+  bool      m_noIspConstraintFlag;
+  bool      m_noMipConstraintFlag;
+  bool      m_noLfnstConstraintFlag;
+  bool      m_noMmvdConstraintFlag;
+  bool      m_noSmvdConstraintFlag;
+  bool      m_noProfConstraintFlag;
+  bool      m_noPaletteConstraintFlag;
+  bool      m_noActConstraintFlag;
+  bool      m_noLmcsConstraintFlag;
+#endif
   bool      m_bNoQtbttDualTreeIntraConstraintFlag;
   bool      m_noPartitionConstraintsOverrideConstraintFlag;
   bool      m_bNoSaoConstraintFlag;
@@ -153,7 +167,9 @@ protected:
   bool      m_bNoBcwConstraintFlag;
   bool      m_noIbcConstraintFlag;
   bool      m_bNoCiipConstraintFlag;
+#if !JVET_R0214_MMVD_SYNTAX_MODIFICATION
   bool      m_noFPelMmvdConstraintFlag;
+#endif
   bool      m_noGeoConstraintFlag;
   bool      m_bNoLadfConstraintFlag;
   bool      m_noTransformSkipConstraintFlag;
@@ -181,8 +197,10 @@ protected:
   uint32_t          m_bitDepthConstraint;
   ChromaFormat  m_chromaFormatConstraint;
   bool          m_intraConstraintFlag;
+#if !JVET_R0090_VUI
   bool          m_progressiveSourceFlag;
   bool          m_interlacedSourceFlag;
+#endif
   bool          m_nonPackedConstraintFlag;
   bool          m_nonProjectedConstraintFlag;
   bool          m_noResChangeInClvsConstraintFlag;
@@ -438,6 +456,10 @@ protected:
   bool      m_bUseCbfFastMode;                                ///< flag for using Cbf Fast PU Mode Decision
   bool      m_useEarlySkipDetection;                          ///< flag for using Early SKIP Detection
   bool      m_picPartitionFlag;                               ///< enable picture partitioning (0: single tile, single slice, 1: multiple tiles/slices can be used)
+#if JVET_R0110_MIXED_LOSSLESS
+  bool      m_mixedLossyLossless;                             ///< enable mixed lossy/lossless coding
+  std::vector<uint16_t> m_sliceLosslessArray;                 ///< Slice lossless array
+#endif
   std::vector<uint32_t> m_tileColumnWidth;                    ///< tile column widths in units of CTUs (last column width will be repeated uniformly to cover any remaining picture width)
   std::vector<uint32_t> m_tileRowHeight;                      ///< tile row heights in units of CTUs (last row height will be repeated uniformly to cover any remaining picture height)
   bool      m_rasterSliceFlag;                                ///< indicates if using raster-scan or rectangular slices (0: rectangular, 1: raster-scan)
@@ -454,7 +476,11 @@ protected:
   uint32_t  m_numTileRows;                                    ///< derived number of tile rows
   bool      m_singleSlicePerSubPicFlag;
   bool      m_entropyCodingSyncEnabledFlag;
+#if JVET_R0165_OPTIONAL_ENTRY_POINT
+  bool      m_entryPointPresentFlag;                          ///< flag for the presence of entry points
+#else
   bool      m_entropyCodingSyncEntryPointPresentFlag;         ///< flag for the presence of entry points for WPP
+#endif
 
   bool      m_bFastUDIUseMPMEnabled;
   bool      m_bFastMEForGenBLowDelayEnabled;
@@ -621,13 +647,23 @@ protected:
   ScalingListMode m_useScalingListId;                         ///< using quantization matrix
   std::string m_scalingListFileName;                          ///< quantization matrix file name
   bool      m_disableScalingMatrixForLfnstBlks;
+#if JVET_R0380_SCALING_MATRIX_DISABLE_YCC_OR_RGB
+  bool      m_disableScalingMatrixForAlternativeColourSpace;
+  bool      m_scalingMatrixDesignatedColourSpace;
+#endif
   CostMode  m_costMode;                                       ///< Cost mode to use
+#if JVET_R0143_TSRCdisableLL
+  bool      m_TSRCdisableLL;                                  ///< disable TSRC for lossless
+#endif
 
   bool      m_recalculateQPAccordingToLambda;                 ///< recalculate QP value according to the lambda value
 
   bool      m_DCIEnabled;                                     ///< enable Decoding Capability Information (DCI)
   bool      m_hrdParametersPresentFlag;                       ///< enable generation of HRD parameters
   bool      m_vuiParametersPresentFlag;                       ///< enable generation of VUI parameters
+#if JVET_Q0394_TIMING_SEI
+  bool      m_samePicTimingInAllOLS;                          ///< same picture timing SEI message is used in all OLS
+#endif
   bool      m_aspectRatioInfoPresentFlag;                     ///< Signals whether aspect_ratio_idc is present
   int       m_aspectRatioIdc;                                 ///< aspect_ratio_idc
   int       m_sarWidth;                                       ///< horizontal size of the sample aspect ratio
@@ -636,6 +672,10 @@ protected:
   int       m_colourPrimaries;                                ///< Indicates chromaticity coordinates of the source primaries
   int       m_transferCharacteristics;                        ///< Indicates the opto-electronic transfer characteristics of the source
   int       m_matrixCoefficients;                             ///< Describes the matrix coefficients used in deriving luma and chroma from RGB primaries
+#if JVET_R0090_VUI
+  bool      m_progressiveSourceFlag;                          ///< Indicates if the content is progressive
+  bool      m_interlacedSourceFlag;                           ///< Indicates if the content is interlaced
+#endif
   bool      m_chromaLocInfoPresentFlag;                       ///< Signals whether chroma_sample_loc_type_top_field and chroma_sample_loc_type_bottom_field are present
   int       m_chromaSampleLocTypeTopField;                    ///< Specifies the location of chroma samples for top field
   int       m_chromaSampleLocTypeBottomField;                 ///< Specifies the location of chroma samples for bottom field
@@ -667,7 +707,11 @@ protected:
 
   double      m_scalingRatioHor;
   double      m_scalingRatioVer;
+#if JVET_R0058
+  bool        m_resChangeInClvsEnabled;
+#else
   bool        m_rprEnabled;
+#endif
   double      m_fractionOfFrames;                             ///< encode a fraction of the frames as specified in FramesToBeEncoded
   int         m_switchPocPeriod;
   int         m_upscaledOutput;                               ////< Output upscaled (2), decoded cropped but in full resolution buffer (1) or decoded cropped (0, default) picture for RPR.
@@ -684,6 +728,10 @@ protected:
   int         m_maxSublayers;
   bool        m_allLayersSameNumSublayersFlag;
   bool        m_allIndependentLayersFlag;
+#if JVET_R0058
+  std::string m_predDirectionArray;
+#endif
+
   int         m_numRefLayers[MAX_VPS_LAYERS];
   std::string m_refLayerIdxStr[MAX_VPS_LAYERS];
   bool        m_eachLayerIsAnOlsFlag;

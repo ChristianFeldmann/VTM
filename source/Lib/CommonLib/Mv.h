@@ -281,11 +281,17 @@ namespace std
     }
   };
 };
+#if JVET_R0058
+extern void(*clipMv) ( Mv& rcMv, const struct Position& pos, const struct Size& size, const class SPS& sps, const class PPS& pps );
+void clipMvInPic ( Mv& rcMv, const struct Position& pos, const struct Size& size, const class SPS& sps, const class PPS& pps );
+void clipMvInSubpic ( Mv& rcMv, const struct Position& pos, const struct Size& size, const class SPS& sps, const class PPS& pps );
+#else
 void clipMv ( Mv& rcMv, const struct Position& pos,
               const struct Size& size,
               const class SPS& sps
             , const class PPS& pps
 );
+#endif
 
 bool wrapClipMv( Mv& rcMv, const Position& pos,
                  const struct Size& size,

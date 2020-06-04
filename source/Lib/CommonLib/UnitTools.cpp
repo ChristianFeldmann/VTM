@@ -127,8 +127,70 @@ bool CU::getRprScaling( const SPS* sps, const PPS* curPPS, Picture* refPic, int&
   CHECK(curPicWidth > refPicWidth * 8, "curPicWidth shall be less than or equal to refPicWidth * 8");
   CHECK(curPicHeight > refPicHeight * 8, "curPicHeight shall be less than or equal to refPicHeight * 8");
 
+#if JVET_R0114_NEGATIVE_SCALING_WINDOW_OFFSETS
+  CHECK(SPS::getWinUnitX(sps->getChromaFormatIdc()) * (abs(curScalingWindow.getWindowLeftOffset()) + abs(curScalingWindow.getWindowRightOffset())) > curPPS->getPicWidthInLumaSamples(), "The value of SubWidthC * ( Abs(pps_scaling_win_left_offset) + Abs(pps_scaling_win_right_offset) ) shall be less than pic_width_in_luma_samples");
+  CHECK(SPS::getWinUnitY(sps->getChromaFormatIdc()) * (abs(curScalingWindow.getWindowTopOffset()) + abs(curScalingWindow.getWindowBottomOffset())) > curPPS->getPicHeightInLumaSamples(), "The value of SubHeightC * ( Abs(pps_scaling_win_top_offset) + Abs(pps_scaling_win_bottom_offset) ) shall be less than pic_height_in_luma_samples");
+#endif
+
   return refPic->isRefScaled( curPPS );
 }
+
+#if JVET_R0058
+void CU::checkConformanceILRP(Slice *slice)
+{
+  const int numRefList = (slice->getSliceType() == B_SLICE) ? (2) : (1);
+
+  //constraint 1: The picture referred to by each active entry in RefPicList[ 0 ] or RefPicList[ 1 ] has the same subpicture layout as the current picture 
+  bool isAllRefSameSubpicLayout = true;
+  for (int refList = 0; refList < numRefList; refList++) // loop over l0 and l1
+  {
+    RefPicList  eRefPicList = (refList ? REF_PIC_LIST_1 : REF_PIC_LIST_0);
+    for (int refIdx = 0; refIdx < slice->getNumRefIdx(eRefPicList); refIdx++)
+    {
+      const Picture* refPic = slice->getRefPic(eRefPicList, refIdx)->unscaledPic;
+
+      if (refPic->numSubpics != slice->getPic()->cs->pps->getNumSubPics())
+      {
+        isAllRefSameSubpicLayout = false;
+        refList = numRefList;
+        break;
+      }
+      else
+      {
+        for (int i = 0; i < refPic->numSubpics; i++)
+        {
+          if (refPic->subpicWidthInCTUs[i] != slice->getPic()->cs->pps->getSubPic(i).getSubPicWidthInCTUs()
+            || refPic->subpicHeightInCTUs[i] != slice->getPic()->cs->pps->getSubPic(i).getSubPicHeightInCTUs()
+            || refPic->subpicCtuTopLeftX[i] != slice->getPic()->cs->pps->getSubPic(i).getSubPicCtuTopLeftX()
+            || refPic->subpicCtuTopLeftY[i] != slice->getPic()->cs->pps->getSubPic(i).getSubPicCtuTopLeftY())
+          {
+            isAllRefSameSubpicLayout = false;
+            refIdx = slice->getNumRefIdx(eRefPicList);
+            refList = numRefList;
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  //constraint 2: The picture referred to by each active entry in RefPicList[ 0 ] or RefPicList[ 1 ] is an ILRP for which the value of sps_num_subpics_minus1 is equal to 0
+  if (!isAllRefSameSubpicLayout)
+  {
+    for (int refList = 0; refList < numRefList; refList++) // loop over l0 and l1
+    {
+      RefPicList  eRefPicList = (refList ? REF_PIC_LIST_1 : REF_PIC_LIST_0);
+      for (int refIdx = 0; refIdx < slice->getNumRefIdx(eRefPicList); refIdx++)
+      {
+        const Picture* refPic = slice->getRefPic(eRefPicList, refIdx)->unscaledPic;
+        CHECK(!(refPic->layerId != slice->getPic()->layerId && refPic->numSubpics == 1), "The inter-layer reference shall contain a single subpicture or have same subpicture layout with the current picture");
+      }
+    }
+  }
+
+  return;
+}
+#endif
 
 bool CU::isIntra(const CodingUnit &cu)
 {
@@ -553,9 +615,27 @@ int PU::getIntraMPMs( const PredictionUnit &pu, unsigned* mpm, const ChannelType
 
 bool PU::isMIP(const PredictionUnit &pu, const ChannelType &chType)
 {
+#if JVET_R0350_MIP_CHROMA_444_SINGLETREE
+  if (chType == CHANNEL_TYPE_LUMA)
+  {
+    // Default case if chType is omitted.
+    return pu.cu->mipFlag;
+  }
+  else
+  {
+    return isDMChromaMIP(pu) && (pu.intraDir[CHANNEL_TYPE_CHROMA] == DM_CHROMA_IDX);
+  }
+#else
   return (chType == CHANNEL_TYPE_LUMA && pu.cu->mipFlag);
+#endif
 }
 
+#if JVET_R0350_MIP_CHROMA_444_SINGLETREE
+bool PU::isDMChromaMIP(const PredictionUnit &pu)
+{
+  return !pu.cu->isSepTree() && (pu.chromaFormat == CHROMA_444) && getCoLocatedLumaPU(pu).cu->mipFlag;
+}
+#endif
 
 uint32_t PU::getIntraDirLuma( const PredictionUnit &pu )
 {
@@ -582,6 +662,14 @@ void PU::getIntraChromaCandModes( const PredictionUnit &pu, unsigned modeList[NU
     modeList[6] = MDLM_T_IDX;
     modeList[7] = DM_CHROMA_IDX;
 
+#if JVET_R0350_MIP_CHROMA_444_SINGLETREE
+    // If Direct Mode is MIP, mode cannot be already in the list.
+    if (isDMChromaMIP(pu))
+    {
+      return;
+    }
+
+#endif
     const uint32_t lumaMode = getCoLocatedIntraLumaMode(pu);
     for( int i = 0; i < 4; i++ )
     {
@@ -638,6 +726,23 @@ uint32_t PU::getFinalIntraMode( const PredictionUnit &pu, const ChannelType &chT
   return uiIntraMode;
 }
 
+#if JVET_R0350_MIP_CHROMA_444_SINGLETREE
+const PredictionUnit &PU::getCoLocatedLumaPU(const PredictionUnit &pu)
+{
+  Position              topLeftPos = pu.blocks[pu.chType].lumaPos();
+  Position              refPos     = topLeftPos.offset(pu.blocks[pu.chType].lumaSize().width  >> 1,
+                                                       pu.blocks[pu.chType].lumaSize().height >> 1);
+  const PredictionUnit &lumaPU     = pu.cu->isSepTree() ? *pu.cs->picture->cs->getPU(refPos, CHANNEL_TYPE_LUMA)
+                                                        : *pu.cs->getPU(topLeftPos, CHANNEL_TYPE_LUMA);
+
+  return lumaPU;
+}
+
+uint32_t PU::getCoLocatedIntraLumaMode(const PredictionUnit &pu)
+{
+  return PU::getIntraDirLuma(PU::getCoLocatedLumaPU(pu));
+}
+#else
 uint32_t PU::getCoLocatedIntraLumaMode( const PredictionUnit &pu )
 {
   Position topLeftPos = pu.blocks[pu.chType].lumaPos();
@@ -646,6 +751,7 @@ uint32_t PU::getCoLocatedIntraLumaMode( const PredictionUnit &pu )
 
   return PU::getIntraDirLuma( lumaPU );
 }
+#endif
 
 int PU::getWideAngIntraMode( const TransformUnit &tu, const uint32_t dirMode, const ComponentID compID )
 {

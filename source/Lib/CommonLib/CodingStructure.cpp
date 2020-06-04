@@ -1096,7 +1096,7 @@ void CodingStructure::initSubStructure( CodingStructure& subStruct, const Channe
   }
 }
 
-void CodingStructure::useSubStructure( const CodingStructure& subStruct, const ChannelType chType, const UnitArea &subArea, const bool cpyPred /*= true*/, const bool cpyReco /*= true*/, const bool cpyOrgResi /*= true*/, const bool cpyResi /*= true*/ )
+void CodingStructure::useSubStructure( const CodingStructure& subStruct, const ChannelType chType, const UnitArea &subArea, const bool cpyPred /*= true*/, const bool cpyReco /*= true*/, const bool cpyOrgResi /*= true*/, const bool cpyResi /*= true*/, const bool updateCost /*= true*/ )
 {
   UnitArea clippedArea = clipArea( subArea, *picture );
 
@@ -1132,10 +1132,13 @@ void CodingStructure::useSubStructure( const CodingStructure& subStruct, const C
   prevPLT = subStruct.prevPLT;
 
 
-  fracBits += subStruct.fracBits;
-  dist     += subStruct.dist;
-  cost     += subStruct.cost;
-  costDbOffset += subStruct.costDbOffset;
+  if ( updateCost )
+  {
+    fracBits += subStruct.fracBits;
+    dist     += subStruct.dist;
+    cost     += subStruct.cost;
+    costDbOffset += subStruct.costDbOffset;
+  }
   if( parent )
   {
     // allow this to be false at the top level

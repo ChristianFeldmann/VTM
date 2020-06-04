@@ -153,6 +153,9 @@ private:
   std::vector<NalUnitInfo> m_nalUnitInfo[MAX_VPS_LAYERS];
   std::vector<int> m_accessUnitApsNals;
   std::vector<int> m_accessUnitSeiTids;
+#if JVET_R0066
+  std::vector<bool> m_accessUnitNoOutputPriorPicFlags;
+#endif
 
   // NAL unit type, layer ID, and SEI payloadType
   std::vector<std::tuple<NalUnitType, int, SEI::PayloadType>> m_accessUnitSeiPayLoadTypes;
@@ -217,6 +220,10 @@ public:
   void checkTidLayerIdInAccessUnit();
   void resetAccessUnitSeiPayLoadTypes()   { m_accessUnitSeiPayLoadTypes.clear(); }
   void checkSEIInAccessUnit();
+#if JVET_R0066
+  void CheckNoOutputPriorPicFlagsInAccessUnit();
+  void resetAccessUnitNoOutputPriorPicFlags() { m_accessUnitNoOutputPriorPicFlags.clear(); }
+#endif
 #if JVET_Q0488_SEI_REPETITION_CONSTRAINT
   void checkSeiInPictureUnit();
   void resetPictureSeiNalus();

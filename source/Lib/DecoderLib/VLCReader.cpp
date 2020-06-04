@@ -2616,6 +2616,10 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
 #endif
         READ_UVLC( uiCode, "ols_dpb_pic_width[i]" ); pcVPS->setOlsDpbPicWidth( i, uiCode );
         READ_UVLC( uiCode, "ols_dpb_pic_height[i]" ); pcVPS->setOlsDpbPicHeight( i, uiCode );
+#if JVET_R0066
+        READ_CODE(2, uiCode, "ols_dpb_chroma_format[i]"); pcVPS->setOlsDpbChromaFormatIdc(i, uiCode);
+        READ_UVLC(uiCode, "ols_dpb_bitdepth_minus8[i]"); pcVPS->setOlsDpbBitDepthMinus8(i, uiCode);
+#endif
         if( pcVPS->m_numDpbParams > 1 )
         {
           READ_UVLC( uiCode, "ols_dpb_params_idx[i]" ); pcVPS->setOlsDpbParamsIdx( i, uiCode );

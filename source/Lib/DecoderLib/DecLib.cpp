@@ -874,6 +874,18 @@ void DecLib::xCreateUnavailablePicture(int iUnavailablePoc, bool longTermFlag, c
   }
 
 }
+#if JVET_R0066
+void DecLib::CheckNoOutputPriorPicFlagsInAccessUnit()
+{
+  if (m_accessUnitNoOutputPriorPicFlags.size() > 1)
+  {
+    bool anchor = m_accessUnitNoOutputPriorPicFlags[0];
+    bool isDiffFlagsInAu = std::find(m_accessUnitNoOutputPriorPicFlags.begin(), m_accessUnitNoOutputPriorPicFlags.end(), !anchor) != m_accessUnitNoOutputPriorPicFlags.end();
+    CHECK(isDiffFlagsInAu, "The value of no_output_of_prior_pics_flag, when present, is required to be the same for all pictures in an AU");
+  }
+}
+#endif
+
 void DecLib::checkTidLayerIdInAccessUnit()
 {
   int firstPicTid = m_accessUnitPicInfo.begin()->m_temporalId;
@@ -1557,6 +1569,10 @@ void DecLib::xCheckParameterSetConstraints(const int layerId)
   {
     CHECK( sps->getMaxPicWidthInLumaSamples() > vps->getOlsDpbPicSize( vps->m_targetOlsIdx ).width, "pic_width_max_in_luma_samples shall be less than or equal to the value of ols_dpb_pic_width[ i ]" );
     CHECK( sps->getMaxPicHeightInLumaSamples() > vps->getOlsDpbPicSize( vps->m_targetOlsIdx ).height, "pic_height_max_in_luma_samples shall be less than or equal to the value of ols_dpb_pic_height[ i ]" );
+#if JVET_R0066
+    CHECK( sps->getChromaFormatIdc() > vps->getOlsDpbChromaFormatIdc( vps->m_targetOlsIdx ), "sps_chroma_format_idc shall be less than or equal to the value of ols_dpb_chroma_format[ i ]");
+    CHECK((sps->getBitDepth(CHANNEL_TYPE_LUMA) - 8) > vps->getOlsDpbBitDepthMinus8( vps->m_targetOlsIdx ), "sps_bit_depth_minus8 shall be less than or equal to the value of ols_dpb_bitdepth_minus8[ i ]");
+#endif
   }
 
   static std::unordered_map<int, int> m_layerChromaFormat;
@@ -1767,6 +1783,13 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   m_apcSlicePilot->m_ccAlfFilterParam = m_cALF.getCcAlfFilterParam();
   m_HLSReader.parseSliceHeader( m_apcSlicePilot, &m_picHeader, &m_parameterSetManager, m_prevTid0POC );
 
+#if JVET_R0066
+  if (m_picHeader.getGdrOrIrapPicFlag())
+  {
+    m_accessUnitNoOutputPriorPicFlags.push_back(m_picHeader.getNoOutputOfPriorPicsFlag());
+  }
+#endif
+
   PPS *pps = m_parameterSetManager.getPPS(m_picHeader.getPPSId());
   CHECK(pps == 0, "No PPS present");
   SPS *sps = m_parameterSetManager.getSPS(pps->getSPSId());
@@ -1778,7 +1801,6 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   {
     CHECK(nalu.m_temporalId == 0, "TemporalID of STSA picture shall not be zero in independent layers");
   }
-
 
   int currSubPicIdx = pps->getSubPicIdxFromSubPicId( m_apcSlicePilot->getSliceSubPicId() );
   int currSliceAddr = m_apcSlicePilot->getSliceID();

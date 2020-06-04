@@ -101,7 +101,11 @@ public:
   AUDWriter() {};
   virtual ~AUDWriter() {};
 
+#if JVET_R0065
+  void  codeAUD(OutputBitstream& bs, const bool audIrapOrGdrAuFlag, const int pictureType);
+#else
   void  codeAUD(OutputBitstream& bs, const int pictureType);
+#endif
 };
 
 

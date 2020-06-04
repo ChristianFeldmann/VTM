@@ -286,13 +286,16 @@ uint32_t DecApp::decode()
 #endif
     if(bNewAccessUnit)
     {
+#if JVET_R0065
+      m_cDecLib.isCvsStart();
+#endif
       m_cDecLib.checkTidLayerIdInAccessUnit();
       m_cDecLib.resetAccessUnitSeiTids();
       m_cDecLib.checkSEIInAccessUnit();
       m_cDecLib.resetAccessUnitSeiPayLoadTypes();
-        m_cDecLib.resetAccessUnitNals();
-        m_cDecLib.resetAccessUnitApsNals();
-        m_cDecLib.resetAccessUnitPicInfo();
+      m_cDecLib.resetAccessUnitNals();
+      m_cDecLib.resetAccessUnitApsNals();
+      m_cDecLib.resetAccessUnitPicInfo();
     }
   }
 

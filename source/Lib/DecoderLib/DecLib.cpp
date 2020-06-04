@@ -874,6 +874,40 @@ void DecLib::xCreateUnavailablePicture(int iUnavailablePoc, bool longTermFlag, c
   }
 
 }
+#if JVET_R0065
+void DecLib::isCvsStart()
+{
+  for (auto pic = m_accessUnitPicInfo.begin(); pic != m_accessUnitPicInfo.end(); pic++)
+  {
+    if (pic->m_nalUnitType != NAL_UNIT_CODED_SLICE_IDR_N_LP && pic->m_nalUnitType != NAL_UNIT_CODED_SLICE_IDR_W_RADL)
+    {
+      checkIncludedInFirstAu();
+      return;
+    }
+  }
+  //save the first AU info for a CVS start
+  m_firstAccessUnitPicInfo.assign(m_accessUnitPicInfo.begin(), m_accessUnitPicInfo.end());
+}
+
+
+void DecLib::checkIncludedInFirstAu()
+{
+  for (auto pic = m_accessUnitPicInfo.begin(); pic != m_accessUnitPicInfo.end(); pic++)
+  {
+    bool isFind = 0;
+    for (auto picFirst = m_firstAccessUnitPicInfo.begin(); picFirst != m_firstAccessUnitPicInfo.end(); picFirst++)
+    {
+      if (pic->m_nuhLayerId == picFirst->m_nuhLayerId)
+      {
+        isFind = 1;
+        break;
+      }
+    }
+    CHECK(!isFind, "each picture in an AU in a CVS shall have nuh_layer_id equal to the nuh_layer_id of one of the pictures present in the first AU of the CVS");
+  }
+}
+#endif
+
 void DecLib::checkTidLayerIdInAccessUnit()
 {
   int firstPicTid = m_accessUnitPicInfo.begin()->m_temporalId;
@@ -2604,7 +2638,12 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay, i
       {
         AUDReader audReader;
         uint32_t picType;
+#if JVET_R0065
+        uint32_t audIrapOrGdrAuFlag;
+        audReader.parseAccessUnitDelimiter(&(nalu.getBitstream()), audIrapOrGdrAuFlag, picType);
+#else
         audReader.parseAccessUnitDelimiter(&(nalu.getBitstream()),picType);
+#endif
         return !m_bFirstSliceInPicture;
       }
 

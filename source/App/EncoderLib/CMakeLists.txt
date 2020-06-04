@@ -107,5 +107,5 @@ INSTALL( TARGETS ${LIB_NAME}
         PUBLIC_HEADER DESTINATION include )
 
 # Install package config
-SET( INSTALL_PKGCONFIG_DIR "${CMAKE_INSTALL_PREFIX}/share/pkgconfig" CACHE PATH "Installation directory for pkgconfig (.pc) files")
+SET( INSTALL_PKGCONFIG_DIR "/usr/share/pkgconfig" CACHE PATH "Installation directory for pkgconfig (.pc) files")
 INSTALL( FILES ${CMAKE_CURRENT_BINARY_DIR}/libVTMEncoder.pc DESTINATION "${INSTALL_PKGCONFIG_DIR}")

@@ -39,7 +39,7 @@
 
 #include "libVTMEncoderDefaultConfigs.h"
 
-#include "../EncoderApp/EncApp.h"
+#include "EncApp.h"
 #include "EncoderLib/EncLib.h"
 #include "EncoderLib/EncLibCommon.h"
 #include "CommonLib/Buffer.h"

@@ -91,6 +91,7 @@ typedef struct vtm_pic_t
   int64_t i_dts;
   vtm_chroma_format_t chroma_format;
   vtm_image_t img;
+  int desiredBitDepth[2];
 } vtm_pic_t;
 
 typedef struct vtm_settings_t

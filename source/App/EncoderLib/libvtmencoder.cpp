@@ -53,9 +53,12 @@ class vtmEncoderWrapper : public EncApp
 public:
   vtmEncoderWrapper() : EncApp(bitstream, &encLibCommon)
   {
+    initROM();
   }
   ~vtmEncoderWrapper()
   {
+    destroyLib();
+    destroyROM();
   }
 
   void outputAU(const AccessUnit& au) override
@@ -70,16 +73,13 @@ public:
       return false;
     }
 
-    auto parametersAsString = getRandomAccessParameters(settings);
-    auto parameterForParsing = "-cs " + parametersAsString;
+    auto parametersAsString = getRandomAccessParameters();
+    parametersAsString += convertSettingsToParameters(settings);
     {
-        char** layerArgv = new char*[1];
-        layerArgv[0] = const_cast<char*>(parameterForParsing.c_str());
-        if (!parseCfg(1, layerArgv))
-        {
+      if (!parseCfg(parametersAsString))
+      {
         return false;
-        }
-        delete[] layerArgv;
+      }
     }
 
     this->vtm_settings = *settings;
@@ -138,6 +138,11 @@ public:
     origVtmPic.img.nr_planes = (vtm_settings.chroma_format == VTM_CHROMA_400) ? 1 : 3;
     origVtmPic.img.size[0] = vtm_settings.source_width;
     origVtmPic.img.size[1] = vtm_settings.source_height;
+
+    const auto m_bitdepthShift = m_internalBitDepth - m_MSBExtendedBitDepth;
+    origVtmPic.desiredBitDepth[0] = m_MSBExtendedBitDepth[CHANNEL_TYPE_LUMA] + m_bitdepthShift;
+    origVtmPic.desiredBitDepth[1] = m_MSBExtendedBitDepth[CHANNEL_TYPE_CHROMA] + m_bitdepthShift;
+    
     for (int i=0; i<origVtmPic.img.nr_planes; i++)
     {
       auto component = ComponentID(i);
@@ -148,47 +153,28 @@ public:
     return &origVtmPic;
   }
 
+  void encodeUntilPacketsReadyOrMoreFramesNeeded()
+  {
+    bool keepLoop = true;
+    while (keepLoop)
+    {
+      keepLoop = encode();
+    }
+
+    // Check for data out?
+  }
+
   bool pushFrame(vtm_pic_t *pic)
   {
-    if (encodingState == EncodingState::PushFrames)
+    if (encodingState != EncodingState::PushFrames)
       return false;
 
     bool eos = (pic == nullptr);
 
-    // EncApp::encodePrep
-    const InputColourSpaceConversion ipCSC = m_inputColourSpaceConvert;
-    const InputColourSpaceConversion snrCSC = ( !m_snrInternalColourSpace ) ? m_inputColourSpaceConvert : IPCOLOURSPACE_UNCHANGED;
-
-    // m_cVideoIOYuvInputFile.read
+    bool keepDoing = encodePrep(eos);
+    if (!keepDoing)
     {
-      VideoIOYuv::ColourSpaceConvert(*m_trueOrgPic, *m_orgPic, ipCSC, true);
-      m_trueOrgPic->copyFrom(*m_orgPic);
-    }
-
-    if( m_gopBasedTemporalFilterEnabled )
-    {
-      m_temporalFilter.filter( m_orgPic, m_iFrameRcvd );
-    }
-
-    // increase number of received frames
-    m_iFrameRcvd++;
-
-    if (eos)
-    {
-      m_flush = true;
-      m_iFrameRcvd--;
-      m_cEncLib.setFramesToBeEncoded( m_iFrameRcvd );
-    }
-
-    bool keepDoing = false;
-    // call encoding function for one frame
-    if( m_isField )
-    {
-      keepDoing = m_cEncLib.encodePrep( eos, m_flush ? 0 : m_orgPic, m_flush ? 0 : m_trueOrgPic, snrCSC, m_recBufList, m_numEncoded, m_isTopFieldFirst );
-    }
-    else
-    {
-      keepDoing = m_cEncLib.encodePrep( eos, m_flush ? 0 : m_orgPic, m_flush ? 0 : m_trueOrgPic, snrCSC, m_recBufList, m_numEncoded );
+      encodeUntilPacketsReadyOrMoreFramesNeeded();
     }
 
     if (eos)

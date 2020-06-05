@@ -37,11 +37,46 @@
 
 #include "libVTMEncoderDefaultConfigs.h"
 
-std::string getRandomAccessParameters(vtm_settings_t *settings)
+#include <sstream>
+
+std::string convertFormatToString(vtm_chroma_format_t format)
+{
+    switch (format)
+    {
+    case VTM_CHROMA_400:
+        return "400";
+    case VTM_CHROMA_420:
+        return "420";
+    case VTM_CHROMA_422:
+        return "422";
+    case VTM_CHROMA_444:
+        return "444";
+    default:
+        return "unknown";
+    }
+}
+
+std::string convertSettingsToParameters(vtm_settings_t *settings)
+{
+    std::stringstream parameters;
+
+    const auto fps = settings->fps_den / settings->fps_num;
+
+    // #======== File I/O ===============
+    parameters << "InputBitDepth: " << settings->source_bitdepth << "\n";
+    parameters << "InputChromaFormat: " << convertFormatToString(settings->chroma_format) << "\n";
+    parameters << "FrameRate: " << fps << "\n";
+    parameters << "FrameSkip: 0\n";
+    parameters << "SourceWidth: " << settings->source_width << "\n";
+    parameters << "SourceHeight: " << settings->source_height << "\n";
+    parameters << "Level: 4.1\n";
+
+    return parameters.str();
+}
+
+std::string getRandomAccessParameters()
 {
     std::string parameters;
-
-    // Todo: Apply the settings
 
     //#======== Profile ================
     parameters.append("Profile                       : auto\n");

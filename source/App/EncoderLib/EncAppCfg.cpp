@@ -596,7 +596,7 @@ static uint32_t getMaxSlicesByLevel( Level::Name level )
     \param  argv        array of arguments
     \retval             true when success
  */
-bool EncAppCfg::parseCfg( int argc, char* argv[] )
+bool EncAppCfg::parseCfg( std::string parametersAsString )
 {
   bool do_help = false;
 
@@ -730,7 +730,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   opts.addOptions()
   ("help",                                            do_help,                                          false, "this help text")
   ("c",    po::parseConfigFile, "configuration file name")
-  ("cstring",    po::parseConfigFileString, "configuration file as string")
   ("WarnUnknowParameter,w",                           warnUnknowParameter,                                  0, "warn for unknown configuration parameters instead of failing")
   ("isSDR",                                           sdr,                                              false, "compatibility")
 #if ENABLE_SIMD_OPT
@@ -1428,7 +1427,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 
   po::setDefaults(opts);
   po::ErrorReporter err;
-  const list<const char*>& argv_unhandled = po::scanArgv(opts, argc, (const char**) argv, err);
+  po::parseConfigFileString(opts, parametersAsString, err);
 
 #if JVET_R0058
   m_resChangeInClvsEnabled = m_scalingRatioHor != 1.0 || m_scalingRatioVer != 1.0;
@@ -1536,18 +1535,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
         m_RPLList1[i].m_deltaRefPics[j] *= 2;
       }
     }
-  }
-
-  for (list<const char*>::const_iterator it = argv_unhandled.begin(); it != argv_unhandled.end(); it++)
-  {
-    msg( ERROR, "Unhandled argument ignored: `%s'\n", *it);
-  }
-
-  if (argc == 1 || do_help)
-  {
-    /* argc == 1: no options have been specified */
-    po::doHelp(cout, opts);
-    return false;
   }
 
   if (err.is_errored)
@@ -2456,7 +2443,7 @@ bool EncAppCfg::xCheckParameter()
   xConfirmPara( m_useAMaxBT && !m_SplitConsOverrideEnabledFlag, "AMaxBt can only be used with PartitionConstriantsOverride enabled" );
 
 
-  xConfirmPara(m_bitstreamFileName.empty(), "A bitstream file name must be specified (BitstreamFile)");
+  //xConfirmPara(m_bitstreamFileName.empty(), "A bitstream file name must be specified (BitstreamFile)");
   xConfirmPara(m_internalBitDepth[CHANNEL_TYPE_CHROMA] != m_internalBitDepth[CHANNEL_TYPE_LUMA], "The internalBitDepth must be the same for luma and chroma");
   if (m_profile==Profile::MAIN_10 || m_profile==Profile::MAIN_444_10)
   {
@@ -2511,8 +2498,8 @@ bool EncAppCfg::xCheckParameter()
   xConfirmPara( m_inputColourSpaceConvert >= NUMBER_INPUT_COLOUR_SPACE_CONVERSIONS,         sTempIPCSC.c_str() );
   xConfirmPara( m_InputChromaFormatIDC >= NUM_CHROMA_FORMAT,                                "InputChromaFormatIDC must be either 400, 420, 422 or 444" );
   xConfirmPara( m_iFrameRate <= 0,                                                          "Frame rate must be more than 1" );
-  xConfirmPara( m_framesToBeEncoded <= 0,                                                   "Total Number Of Frames encoded must be more than 0" );
-  xConfirmPara( m_framesToBeEncoded < m_switchPOC,                                          "debug POC out of range" );
+  //xConfirmPara( m_framesToBeEncoded <= 0,                                                   "Total Number Of Frames encoded must be more than 0" );
+  //xConfirmPara( m_framesToBeEncoded < m_switchPOC,                                          "debug POC out of range" );
 
   xConfirmPara( m_iGOPSize < 1 ,                                                            "GOP Size must be greater or equal to 1" );
   xConfirmPara( m_iGOPSize > 1 &&  m_iGOPSize % 2,                                          "GOP Size must be a multiple of 2, if GOP Size is greater than 1" );
@@ -3554,8 +3541,8 @@ bool EncAppCfg::xCheckParameter()
   {
     xConfirmPara(!m_ImvMode, "AffineAmvr cannot be used when IMV is disabled.");
   }
-  xConfirmPara( m_decodeBitstreams[0] == m_bitstreamFileName, "Debug bitstream and the output bitstream cannot be equal.\n" );
-  xConfirmPara( m_decodeBitstreams[1] == m_bitstreamFileName, "Decode2 bitstream and the output bitstream cannot be equal.\n" );
+  //xConfirmPara( m_decodeBitstreams[0] == m_bitstreamFileName, "Debug bitstream and the output bitstream cannot be equal.\n" );
+  //xConfirmPara( m_decodeBitstreams[1] == m_bitstreamFileName, "Decode2 bitstream and the output bitstream cannot be equal.\n" );
   xConfirmPara(unsigned(m_LMChroma) > 1, "LMMode exceeds range (0 to 1)");
   if (m_gopBasedTemporalFilterEnabled)
   {

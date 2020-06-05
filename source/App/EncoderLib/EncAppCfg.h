@@ -782,7 +782,7 @@ public:
 public:
   void  create    ();                                         ///< create option handling class
   void  destroy   ();                                         ///< destroy option handling class
-  bool  parseCfg  ( int argc, char* argv[] );                ///< parse configuration file to fill member variables
+  bool  parseCfg  ( std::string parametersAsString );         ///< parse configuration file to fill member variables
 
 };// END CLASS DEFINITION EncAppCfg
 

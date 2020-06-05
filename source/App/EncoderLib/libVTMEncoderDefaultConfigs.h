@@ -43,6 +43,7 @@
 
 #include "libvtmencoder.h"
 
-std::string getRandomAccessParameters(vtm_settings_t *settings);
+std::string convertSettingsToParameters(vtm_settings_t *settings);
+std::string getRandomAccessParameters();
 
 #endif // __LIBVTMENCDEFAULTCONFIGS__

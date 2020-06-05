@@ -258,7 +258,9 @@ void EncApp::xInitLibCfg()
 #endif
   m_cEncLib.setSwitchPocPeriod                                   ( m_switchPocPeriod );
   m_cEncLib.setUpscaledOutput                                    ( m_upscaledOutput );
-  m_cEncLib.setFramesToBeEncoded                                 ( m_framesToBeEncoded );
+
+  const auto INT_MAX = 2147483647;
+  m_cEncLib.setFramesToBeEncoded                                 ( INT_MAX );
 
   //====== SPS constraint flags =======
   m_cEncLib.setIntraOnlyConstraintFlag                           ( m_intraConstraintFlag );
@@ -887,43 +889,6 @@ void EncApp::xInitLibCfg()
 
 void EncApp::xCreateLib( std::list<PelUnitBuf*>& recBufList, const int layerId )
 {
-  // Video I/O
-  m_cVideoIOYuvInputFile.open( m_inputFileName,     false, m_inputBitDepth, m_MSBExtendedBitDepth, m_internalBitDepth );  // read  mode
-#if EXTENSION_360_VIDEO
-  m_cVideoIOYuvInputFile.skipFrames(m_FrameSkip, m_inputFileWidth, m_inputFileHeight, m_InputChromaFormatIDC);
-#else
-  const int sourceHeight = m_isField ? m_iSourceHeightOrg : m_iSourceHeight;
-  m_cVideoIOYuvInputFile.skipFrames(m_FrameSkip, m_iSourceWidth - m_aiPad[0], sourceHeight - m_aiPad[1], m_InputChromaFormatIDC);
-#endif
-  if (!m_reconFileName.empty())
-  {
-    if (m_packedYUVMode && ((m_outputBitDepth[CH_L] != 10 && m_outputBitDepth[CH_L] != 12)
-        || ((m_iSourceWidth & (1 + (m_outputBitDepth[CH_L] & 3))) != 0)))
-    {
-      EXIT ("Invalid output bit-depth or image width for packed YUV output, aborting\n");
-    }
-    if (m_packedYUVMode && (m_chromaFormatIDC != CHROMA_400) && ((m_outputBitDepth[CH_C] != 10 && m_outputBitDepth[CH_C] != 12)
-        || (((m_iSourceWidth / SPS::getWinUnitX (m_chromaFormatIDC)) & (1 + (m_outputBitDepth[CH_C] & 3))) != 0)))
-    {
-      EXIT ("Invalid chroma output bit-depth or image width for packed YUV output, aborting\n");
-    }
-
-    std::string reconFileName = m_reconFileName;
-    if( m_reconFileName.compare( "/dev/null" ) &&  (m_maxLayers > 1) )
-    {
-      size_t pos = reconFileName.find_last_of('.');
-      if (pos != string::npos)
-      {
-        reconFileName.insert( pos, std::to_string( layerId ) );
-      }
-      else
-      {
-        reconFileName.append( std::to_string( layerId ) );
-      }
-    }
-    m_cVideoIOYuvReconFile.open( reconFileName, true, m_outputBitDepth, m_outputBitDepth, m_internalBitDepth );  // write mode
-  }
-
   // create the encoder
   m_cEncLib.create( layerId );
 
@@ -952,46 +917,6 @@ void EncApp::xInitLib(bool isFieldCoding)
 // ====================================================================================================================
 // Public member functions
 // ====================================================================================================================
-
-void EncApp::createLib( const int layerIdx )
-{
-  const int sourceHeight = m_isField ? m_iSourceHeightOrg : m_iSourceHeight;
-  UnitArea unitArea( m_chromaFormatIDC, Area( 0, 0, m_iSourceWidth, sourceHeight ) );
-
-  m_orgPic = new PelStorage;
-  m_trueOrgPic = new PelStorage;
-  m_orgPic->create( unitArea );
-  m_trueOrgPic->create( unitArea );
-
-  if( !m_bitstream.is_open() )
-  {
-    m_bitstream.open( m_bitstreamFileName.c_str(), fstream::binary | fstream::out );
-    if( !m_bitstream )
-    {
-      EXIT( "Failed to open bitstream file " << m_bitstreamFileName.c_str() << " for writing\n" );
-    }
-  }
-
-  // initialize internal class & member variables and VPS
-  xInitLibCfg();
-  const int layerId = m_cEncLib.getVPS() == nullptr ? 0 : m_cEncLib.getVPS()->getLayerId( layerIdx );
-  xCreateLib( m_recBufList, layerId );
-  xInitLib( m_isField );
-
-  printChromaFormat();
-
-#if EXTENSION_360_VIDEO
-  m_ext360 = new TExt360AppEncTop( *this, m_cEncLib.getGOPEncoder()->getExt360Data(), *( m_cEncLib.getGOPEncoder() ), *m_orgPic );
-#endif
-
-  if( m_gopBasedTemporalFilterEnabled )
-  {
-    m_temporalFilter.init( m_FrameSkip, m_inputBitDepth, m_MSBExtendedBitDepth, m_internalBitDepth, m_iSourceWidth, m_iSourceHeight,
-      m_aiPad, m_bClipInputVideoToRec709Range, m_inputFileName, m_chromaFormatIDC,
-      m_inputColourSpaceConvert, m_iQP, m_gopBasedTemporalFilterStrengths,
-      m_gopBasedTemporalFilterFutureReference );
-  }
-}
 
 void EncApp::destroyLib()
 {
@@ -1026,25 +951,14 @@ void EncApp::destroyLib()
   printRateSummary();
 }
 
-bool EncApp::encodePrep( bool& eos )
+bool EncApp::encodePrep(bool eos)
 {
-  // main encoder loop
   const InputColourSpaceConversion ipCSC = m_inputColourSpaceConvert;
   const InputColourSpaceConversion snrCSC = ( !m_snrInternalColourSpace ) ? m_inputColourSpaceConvert : IPCOLOURSPACE_UNCHANGED;
 
-  // read input YUV file
-#if EXTENSION_360_VIDEO
-  if( m_ext360->isEnabled() )
-  {
-    m_ext360->read( m_cVideoIOYuvInputFile, *m_orgPic, *m_trueOrgPic, ipCSC );
-  }
-  else
-  {
-    m_cVideoIOYuvInputFile.read( *m_orgPic, *m_trueOrgPic, ipCSC, m_aiPad, m_InputChromaFormatIDC, m_bClipInputVideoToRec709Range );
-  }
-#else
-  m_cVideoIOYuvInputFile.read( *m_orgPic, *m_trueOrgPic, ipCSC, m_aiPad, m_InputChromaFormatIDC, m_bClipInputVideoToRec709Range );
-#endif
+  // This happens in m_cVideoIOYuvInputFile.read
+  VideoIOYuv::ColourSpaceConvert(*m_trueOrgPic, *m_orgPic, ipCSC, true);
+  m_orgPic->copyFrom(*m_trueOrgPic);
 
   if( m_gopBasedTemporalFilterEnabled )
   {
@@ -1054,13 +968,10 @@ bool EncApp::encodePrep( bool& eos )
   // increase number of received frames
   m_iFrameRcvd++;
 
-  eos = ( m_isField && ( m_iFrameRcvd == ( m_framesToBeEncoded >> 1 ) ) ) || ( !m_isField && ( m_iFrameRcvd == m_framesToBeEncoded ) );
-
   // if end of file (which is only detected on a read failure) flush the encoder of any queued pictures
-  if( m_cVideoIOYuvInputFile.isEof() )
+  if( eos )
   {
     m_flush = true;
-    eos = true;
     m_iFrameRcvd--;
     m_cEncLib.setFramesToBeEncoded( m_iFrameRcvd );
   }

@@ -110,7 +110,7 @@ public:
   int   getMaxLayers() const { return m_maxLayers; }
   void  createLib( const int layerIdx );
   void  destroyLib();
-  bool  encodePrep( bool& eos );
+  bool  encodePrep(bool eos);
   bool  encode();                               ///< main encoding function
 
   void  outputAU( const AccessUnit& au );

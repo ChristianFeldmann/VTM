@@ -31,7 +31,7 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/** \file     libVTMEncoder.h
+/** \file     libvtmencoder.h
     \brief    Encoder lib class (header)
 */
 
@@ -50,7 +50,7 @@ extern "C" {
 #define VTM_ENC_API
 #endif
 
-//! \ingroup libVTMEncoder
+//! \ingroup libvtmencoder
 //! \{
 
 /** The error codes that are returned if something goes wrong

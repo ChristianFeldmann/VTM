@@ -31,11 +31,11 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
- /** \file     libVTMEncoder.cpp
+ /** \file     libvtmencoder.cpp
      \brief    Encoder library class
  */
 
-#include "libVTMEncoder.h"
+#include "libvtmencoder.h"
 
 #include "libVTMEncoderDefaultConfigs.h"
 

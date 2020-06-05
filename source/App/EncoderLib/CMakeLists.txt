@@ -85,21 +85,21 @@ if( CMAKE_SYSTEM_NAME STREQUAL "Linux" )
                                                           $<$<CONFIG:Release>:${CMAKE_SOURCE_DIR}/bin/libvtmencoder.so>
                                                           $<$<CONFIG:RelWithDebInfo>:${CMAKE_SOURCE_DIR}/bin/libvtmencoder.so>
                                                           $<$<CONFIG:MinSizeRel>:${CMAKE_SOURCE_DIR}/bin/libvtmencoder.so> )
-  add_custom_command( TARGET ${LIB_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/source/App/EncoderLib/libVTMEncoder.h ${CMAKE_SOURCE_DIR}/bin/libVTMEncoder.h)
+  add_custom_command( TARGET ${LIB_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/source/App/EncoderLib/libvtmencoder.h ${CMAKE_SOURCE_DIR}/bin/libvtmencoder.h)
 endif()
 
 # example: place header files in different folders
 source_group( "Natvis Files" FILES ${NATVIS_FILES} )
 
 # Create the package config file
-configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/libVTMEncoder.pc.cmakein
-		            ${CMAKE_CURRENT_BINARY_DIR}/libVTMEncoder.pc @ONLY)
+configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/libvtmencoder.pc.cmakein
+                ${CMAKE_CURRENT_BINARY_DIR}/libvtmencoder.pc @ONLY)
 
 # set the folder where to place the projects
 set_target_properties( ${LIB_NAME} PROPERTIES FOLDER app LINKER_LANGUAGE CXX )
 
 # Set the header files to be public with the library
-set_target_properties( ${LIB_NAME} PROPERTIES PUBLIC_HEADER libVTMEncoder.h )
+set_target_properties( ${LIB_NAME} PROPERTIES PUBLIC_HEADER libvtmencoder.h )
 
 # Set the install target for the library
 INSTALL( TARGETS ${LIB_NAME}
@@ -108,4 +108,4 @@ INSTALL( TARGETS ${LIB_NAME}
 
 # Install package config
 SET( INSTALL_PKGCONFIG_DIR "/usr/share/pkgconfig" CACHE PATH "Installation directory for pkgconfig (.pc) files")
-INSTALL( FILES ${CMAKE_CURRENT_BINARY_DIR}/libVTMEncoder.pc DESTINATION "${INSTALL_PKGCONFIG_DIR}")
+INSTALL( FILES ${CMAKE_CURRENT_BINARY_DIR}/libvtmencoder.pc DESTINATION "${INSTALL_PKGCONFIG_DIR}")

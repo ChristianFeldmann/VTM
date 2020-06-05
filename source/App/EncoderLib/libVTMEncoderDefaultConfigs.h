@@ -41,7 +41,7 @@
 #ifndef __LIBVTMENCDEFAULTCONFIGS__
 #define __LIBVTMENCDEFAULTCONFIGS__
 
-#include "libVTMEncoder.h"
+#include "libvtmencoder.h"
 
 std::string getRandomAccessParameters(vtm_settings_t *settings);
 

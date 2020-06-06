@@ -181,7 +181,7 @@ Pel IntraPrediction::xGetPredValDc( const CPelBuf &pSrc, const Size &dstSize )
   return dcVal;
 }
 
-int IntraPrediction::getWideAngle( int width, int height, int predMode )
+int IntraPrediction::getModifiedWideAngle( int width, int height, int predMode )
 {
   if ( predMode > DC_IDX && predMode <= VDIA_IDX )
   {
@@ -193,7 +193,7 @@ int IntraPrediction::getWideAngle( int width, int height, int predMode )
     }
     else if (height > width && predMode > VDIA_IDX - modeShift[deltaSize])
     {
-      predMode -= (VDIA_IDX - 1);
+      predMode -= (VDIA_IDX - 1); //In this software implementation, there is no need to reserve the indices 0 and 1 for Planar and DC
     }
   }
   return predMode;
@@ -362,7 +362,7 @@ void IntraPrediction::initPredIntraParams(const PredictionUnit & pu, const CompA
   const Size   puSize    = Size( area.width, area.height );
   const Size&  blockSize = useISP ? cuSize : puSize;
   const int      dirMode = PU::getFinalIntraMode(pu, chType);
-  const int     predMode = getWideAngle( blockSize.width, blockSize.height, dirMode );
+  const int     predMode = getModifiedWideAngle( blockSize.width, blockSize.height, dirMode );
 
   m_ipaParam.isModeVer            = predMode >= DIA_IDX;
   m_ipaParam.multiRefIndex        = isLuma (chType) ? pu.multiRefIdx : 0 ;

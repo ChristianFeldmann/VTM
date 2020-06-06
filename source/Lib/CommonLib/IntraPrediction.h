@@ -134,7 +134,7 @@ protected:
                                int multiRefIdx
   );
 
-  static int getWideAngle         ( int width, int height, int predMode );
+  static int getModifiedWideAngle         ( int width, int height, int predMode );
   void setReferenceArrayLengths   ( const CompArea &area );
 
   void destroy                    ();

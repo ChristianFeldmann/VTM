@@ -40,6 +40,7 @@
 #include "libVTMEncoderDefaultConfigs.h"
 
 #include "EncApp.h"
+#include "EncoderLib/AnnexBwrite.h"
 #include "EncoderLib/EncLib.h"
 #include "EncoderLib/EncLibCommon.h"
 #include "CommonLib/Buffer.h"
@@ -47,6 +48,7 @@
 #include "EncGOP.h"
 
 #include <vector>
+#include <sstream>
 
 class vtmEncoderWrapper : public EncApp
 {
@@ -61,9 +63,12 @@ public:
     destroyROM();
   }
 
-  void outputAU(const AccessUnit& au) override
+  void outputAU( const AccessUnit& au ) override
   {
-    m_lOutputAUList.push_back(au);
+    std::stringstream stream;
+    const vector<uint32_t>& stats = writeAnnexB(stream, au);
+    rateStatsAccum(au, stats);
+    this->auDataList.push_back(stream.str());
   }
 
   bool configureAndOpenEncoder(vtm_settings_t *settings)
@@ -185,6 +190,23 @@ public:
     return true;
   }
 
+  bool retrievePacket(vtm_nal_t *nal)
+  {
+    nal->payload = nullptr;
+    nal->payloadSizeBytes = 0;
+
+    if (!auDataList.empty())
+    {
+      currentAUData = auDataList.front();
+      auDataList.pop_front();
+
+      nal->payload = (uint8_t*)(this->currentAUData.c_str());
+      nal->payloadSizeBytes = this->currentAUData.size();
+    }
+    
+    return true;
+  }
+
 protected:
   std::fstream bitstream;
   EncLibCommon encLibCommon;
@@ -204,6 +226,9 @@ protected:
     EndOfStream
   };
   EncodingState encodingState { EncodingState::PushFrames };
+
+  std::deque<std::string> auDataList;
+  std::string currentAUData;
 };
 
 extern "C" {
@@ -268,10 +293,13 @@ extern "C" {
     return LIBVTMENC_OK;
   }
 
-  VTM_ENC_API libVTMEnc_error libVTMEncoder_receive_packet(libVTMEncoder_context* encCtx, vtm_nal_t **pp_nal, int *pi_nal, vtm_pic_t *pic_out)
+  VTM_ENC_API libVTMEnc_error libVTMEncoder_receive_packet(libVTMEncoder_context* encCtx, vtm_nal_t *pp_nal)
   {
     vtmEncoderWrapper *enc = (vtmEncoderWrapper*)encCtx;
     if (!enc)
+      return LIBVTMENC_ERROR;
+
+    if (!enc->retrievePacket(pp_nal))
       return LIBVTMENC_ERROR;
 
     return LIBVTMENC_OK;

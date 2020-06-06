@@ -69,12 +69,9 @@ class EncApp : public EncAppCfg, public AUWriterIf
 protected:
   // class interface
   EncLib            m_cEncLib;                    ///< encoder class
-  VideoIOYuv        m_cVideoIOYuvInputFile;       ///< input YUV file
-  VideoIOYuv        m_cVideoIOYuvReconFile;       ///< output reconstruction file
   int               m_iFrameRcvd;                 ///< number of received frames
   uint32_t          m_essentialBytes;
   uint32_t          m_totalBytes;
-  fstream&          m_bitstream;
 #if JVET_O0756_CALCULATE_HDRMETRICS
   std::chrono::duration<long long, ratio<1, 1000000000>> m_metricTime;
 #endif
@@ -87,8 +84,6 @@ protected:
   void xDestroyLib ();                           ///< destroy encoder class
 
   // file I/O
-  void xWriteOutput     ( int iNumEncoded, std::list<PelUnitBuf*>& recBufList
-                         );                      ///< write bitstream to file
   void rateStatsAccum   ( const AccessUnit& au, const std::vector<uint32_t>& stats);
   void printRateSummary ();
   void printChromaFormat();
@@ -112,8 +107,6 @@ public:
   void  destroyLib();
   bool  encodePrep(bool eos);
   bool  encode();                               ///< main encoding function
-
-  void  outputAU( const AccessUnit& au );
 
 #if JVET_O0756_CALCULATE_HDRMETRICS
   std::chrono::duration<long long, ratio<1, 1000000000>> getMetricTime()    const { return m_metricTime; };

@@ -43,7 +43,6 @@
 #include <iomanip>
 
 #include "EncApp.h"
-#include "EncoderLib/AnnexBwrite.h"
 #include "EncoderLib/EncLibCommon.h"
 
 using namespace std;
@@ -57,7 +56,6 @@ using namespace std;
 
 EncApp::EncApp( fstream& bitStream, EncLibCommon* encLibCommon )
   : m_cEncLib( encLibCommon )
-  , m_bitstream( bitStream )
 {
   m_iFrameRcvd = 0;
   m_totalBytes = 0;
@@ -901,10 +899,6 @@ void EncApp::xCreateLib( std::list<PelUnitBuf*>& recBufList, const int layerId )
 
 void EncApp::xDestroyLib()
 {
-  // Video I/O
-  m_cVideoIOYuvInputFile.close();
-  m_cVideoIOYuvReconFile.close();
-
   // Neo Decoder
   m_cEncLib.destroy();
 }
@@ -934,11 +928,6 @@ void EncApp::destroyLib()
   m_recBufList.clear();
 
   xDestroyLib();
-
-  if( m_bitstream.is_open() )
-  {
-    m_bitstream.close();
-  }
 
   m_orgPic->destroy();
   m_trueOrgPic->destroy();
@@ -1010,103 +999,12 @@ bool EncApp::encode()
     m_metricTime = m_cEncLib.getMetricTime();
 #endif
 
-  // output when the entire GOP was proccessed
-  if( !keepDoing )
-  {
-    // write bistream to file if necessary
-    if( m_numEncoded > 0 )
-    {
-      xWriteOutput( m_numEncoded, m_recBufList );
-    }
-    // temporally skip frames
-    if( m_temporalSubsampleRatio > 1 )
-    {
-#if EXTENSION_360_VIDEO
-      m_cVideoIOYuvInputFile.skipFrames( m_temporalSubsampleRatio - 1, m_inputFileWidth, m_inputFileHeight, m_InputChromaFormatIDC );
-#else
-    const int sourceHeight = m_isField ? m_iSourceHeightOrg : m_iSourceHeight;
-    m_cVideoIOYuvInputFile.skipFrames( m_temporalSubsampleRatio - 1, m_iSourceWidth - m_aiPad[0], sourceHeight - m_aiPad[1], m_InputChromaFormatIDC );
-#endif
-    }
-  }
-
   return keepDoing;
 }
 
 // ====================================================================================================================
 // Protected member functions
 // ====================================================================================================================
-
-/**
-  Write access units to output file.
-  \param bitstreamFile  target bitstream file
-  \param iNumEncoded    number of encoded frames
-  \param accessUnits    list of access units to be written
- */
-void EncApp::xWriteOutput( int iNumEncoded, std::list<PelUnitBuf*>& recBufList )
-{
-  const InputColourSpaceConversion ipCSC = (!m_outputInternalColourSpace) ? m_inputColourSpaceConvert : IPCOLOURSPACE_UNCHANGED;
-  std::list<PelUnitBuf*>::iterator iterPicYuvRec = recBufList.end();
-  int i;
-
-  for ( i = 0; i < iNumEncoded; i++ )
-  {
-    --iterPicYuvRec;
-  }
-
-  if (m_isField)
-  {
-    //Reinterlace fields
-    for ( i = 0; i < iNumEncoded/2; i++ )
-    {
-      const PelUnitBuf*  pcPicYuvRecTop     = *(iterPicYuvRec++);
-      const PelUnitBuf*  pcPicYuvRecBottom  = *(iterPicYuvRec++);
-
-      if (!m_reconFileName.empty())
-      {
-        m_cVideoIOYuvReconFile.write( *pcPicYuvRecTop, *pcPicYuvRecBottom,
-                                      ipCSC,
-                                      false, // TODO: m_packedYUVMode,
-                                      m_confWinLeft, m_confWinRight, m_confWinTop, m_confWinBottom, NUM_CHROMA_FORMAT, m_isTopFieldFirst );
-      }
-    }
-  }
-  else
-  {
-    for ( i = 0; i < iNumEncoded; i++ )
-    {
-      const PelUnitBuf* pcPicYuvRec = *(iterPicYuvRec++);
-      if (!m_reconFileName.empty())
-      {
-#if JVET_R0058
-        if( m_cEncLib.isResChangeInClvsEnabled() && m_cEncLib.getUpscaledOutput() )
-#else
-        if( m_cEncLib.isRPREnabled() && m_cEncLib.getUpscaledOutput() )
-#endif
-        {
-          const SPS& sps = *m_cEncLib.getSPS( 0 );
-          const PPS& pps = *m_cEncLib.getPPS( ( sps.getMaxPicWidthInLumaSamples() != pcPicYuvRec->get( COMPONENT_Y ).width || sps.getMaxPicHeightInLumaSamples() != pcPicYuvRec->get( COMPONENT_Y ).height ) ? ENC_PPS_ID_RPR : 0 );
-
-          m_cVideoIOYuvReconFile.writeUpscaledPicture( sps, pps, *pcPicYuvRec, ipCSC, m_packedYUVMode, m_cEncLib.getUpscaledOutput(), NUM_CHROMA_FORMAT, m_bClipOutputVideoToRec709Range );
-        }
-        else
-        {
-          m_cVideoIOYuvReconFile.write( pcPicYuvRec->get( COMPONENT_Y ).width, pcPicYuvRec->get( COMPONENT_Y ).height, *pcPicYuvRec, ipCSC, m_packedYUVMode,
-            m_confWinLeft, m_confWinRight, m_confWinTop, m_confWinBottom, NUM_CHROMA_FORMAT, m_bClipOutputVideoToRec709Range );
-        }
-      }
-    }
-  }
-}
-
-
-void EncApp::outputAU( const AccessUnit& au )
-{
-  const vector<uint32_t>& stats = writeAnnexB(m_bitstream, au);
-  rateStatsAccum(au, stats);
-  m_bitstream.flush();
-}
-
 
 /**
  *

@@ -169,6 +169,8 @@ class AccessUnit : public std::list<NALUnitEBSP*> // NOTE: Should not inherit fr
 {
 public:
   int temporalId;
+  int poc;
+  bool isIRAP;
   ~AccessUnit()
   {
     for (AccessUnit::iterator it = this->begin(); it != this->end(); it++)

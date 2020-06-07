@@ -1193,6 +1193,7 @@ void EncApp::outputAU( const AccessUnit& au )
 {
   const vector<uint32_t>& stats = writeAnnexB(m_bitstream, au);
   rateStatsAccum(au, stats);
+  //std::cout << "WriteAU\n";
   m_bitstream.flush();
 }
 

@@ -70,11 +70,14 @@ typedef enum
   VTM_NUM_CHROMA_FORMAT = 4
 } vtm_chroma_format_t;
 
-typedef struct vtm_nal_t
+typedef struct vtm_auData_t
 {
   int payloadSizeBytes;
   uint8_t *payload;
-} vtm_nal_t;
+  int pts;
+  int dts;
+  int isIRAP;
+} vtm_auData_t;
 
 typedef struct vtm_image_t
 {
@@ -139,7 +142,7 @@ VTM_ENC_API libVTMEnc_error libVTMEncoder_free_encoder(libVTMEncoder_context* en
 VTM_ENC_API vtm_pic_t *libVTMEncoder_get_input_frame(libVTMEncoder_context* encCtx);
 
 VTM_ENC_API libVTMEnc_error libVTMEncoder_send_frame(libVTMEncoder_context* encCtx, vtm_pic_t *pic_in);
-VTM_ENC_API libVTMEnc_error libVTMEncoder_receive_packet(libVTMEncoder_context* encCtx, vtm_nal_t *pp_nal);
+VTM_ENC_API libVTMEnc_error libVTMEncoder_receive_packet(libVTMEncoder_context* encCtx, vtm_auData_t *pp_nal);
 
 //! \}
 

@@ -68,7 +68,11 @@ public:
     std::stringstream stream;
     const vector<uint32_t>& stats = writeAnnexB(stream, au);
     rateStatsAccum(au, stats);
-    this->auDataList.push_back(stream.str());
+    AU auData;
+    auData.data = stream.str();
+    auData.poc = au.poc;
+    auData.isIRAP = au.isIRAP;
+    this->auDataList.push_back(auData);
   }
 
   bool configureAndOpenEncoder(vtm_settings_t *settings)
@@ -86,6 +90,8 @@ public:
         return false;
       }
     }
+    // TODO: Add a function to calculate this from the configured GOP structure:
+    this->dtsCounter = -2;
 
     this->vtm_settings = *settings;
 
@@ -163,45 +169,116 @@ public:
     bool keepLoop = true;
     while (keepLoop)
     {
+      if (debugOutput)
+        std::cout << "VTM encodeUntilPacketsReadyOrMoreFramesNeeded: call encode()\n";
       keepLoop = encode();
-    }
 
-    // Check for data out?
+      if (!keepLoop)
+      {
+        this->state = State::Encoding;
+        this->encodingState = EncodingState::PushFrames;
+        if (debugOutput)
+          std::cout << "VTM encodeUntilPacketsReadyOrMoreFramesNeeded: Encode loop ended. Switch to Encoding-PushFrames\n";
+      }
+
+      if (!this->auDataList.empty())
+      {
+        if (debugOutput)
+          std::cout << "VTM encodeUntilPacketsReadyOrMoreFramesNeeded: Data found. Switch to Retrieve Data\n";
+        this->state = State::RetrieveData;
+        return;
+      }
+    }
   }
 
   bool pushFrame(vtm_pic_t *pic)
   {
-    if (encodingState != EncodingState::PushFrames)
+    if (this->state != State::Encoding && this->encodingState != EncodingState::PushFrames)
+      return false;
+    if (this->nullFramePushed)
       return false;
 
-    bool eos = (pic == nullptr);
+    this->nullFramePushed = (pic == nullptr);
 
-    bool keepDoing = encodePrep(eos);
+    if (debugOutput)
+      std::cout << "VTM pushFrame: Call encoderPrep\n";
+    bool keepDoing = this->encodePrep(this->nullFramePushed);
     if (!keepDoing)
     {
-      encodeUntilPacketsReadyOrMoreFramesNeeded();
+      if (debugOutput)
+        std::cout << "VTM pushFrame: Call keepGoing false. Switch to State Encode\n";
+      this->encodingState = EncodingState::Encode;
+      this->encodeUntilPacketsReadyOrMoreFramesNeeded();
     }
 
-    if (eos)
-      encodingState = EncodingState::EndOfStream;
-    else if (!keepDoing)
-      encodingState = EncodingState::RetrieveFrames;
+    if (this->nullFramePushed)
+    {
+      if (debugOutput)
+        std::cout << "VTM pushFrame: Null frame pushed. Flushing. Switch to  State RetriveData.\n";
+      this->state = State::RetrieveData;
+    }
+
+    if (!this->auDataList.empty())
+    {
+      if (debugOutput)
+        std::cout << "VTM pushFrame: Data found. Switch to Retrieve Data\n";
+      this->state = State::RetrieveData;
+    }
 
     return true;
   }
 
-  bool retrievePacket(vtm_nal_t *nal)
+  bool retrievePacket(vtm_auData_t *auData)
   {
-    nal->payload = nullptr;
-    nal->payloadSizeBytes = 0;
+    auData->payload = nullptr;
+    auData->payloadSizeBytes = 0;
 
-    if (!auDataList.empty())
+    if (this->state == State::EndOfStream)
     {
-      currentAUData = auDataList.front();
-      auDataList.pop_front();
+      if (debugOutput)
+        std::cout << "VTM retrievePacket: Error we are at EOS.";
+      return false;
+    }
 
-      nal->payload = (uint8_t*)(this->currentAUData.c_str());
-      nal->payloadSizeBytes = this->currentAUData.size();
+    if (!this->auDataList.empty())
+    {
+      currentAUData = this->auDataList.front();
+      this->auDataList.pop_front();
+
+      auData->payload = (uint8_t*)(this->currentAUData.data.c_str());
+      auData->payloadSizeBytes = this->currentAUData.data.size();
+      auData->pts = this->currentAUData.poc;
+      auData->dts = this->dtsCounter++;
+      auData->isIRAP = this->currentAUData.isIRAP ? 1 : 0;
+
+      if (debugOutput)
+        std::cout << "VTM retrievePacket: Returned " << auData->payloadSizeBytes << " bytes data PTS " << auData->pts << " DTS " << auData->dts << (this->currentAUData.isIRAP ? " IRAP" : "") << "\n";
+    }
+
+    if (auData->payload == nullptr && this->state != State::EndOfStream)
+    {
+      this->state = State::Encoding;
+      if (debugOutput)
+      {
+        if (this->encodingState == EncodingState::PushFrames)
+          std::cout << "VTM retrievePacket: No data found. Switch to Encoding-PushFrames\n";
+        else
+          std::cout << "VTM retrievePacket: No data found. Switch to Encoding-Encode\n";
+      }
+      if (this->encodingState == EncodingState::Encode)
+      {
+        this->encodeUntilPacketsReadyOrMoreFramesNeeded();
+        if (this->state == State::RetrieveData && !this->auDataList.empty())
+        {
+          return this->retrievePacket(auData);
+        }
+        if (this->nullFramePushed)
+        {
+          if (debugOutput)
+            std::cout << "VTM retrievePacket: Encoding loop ended and no more packets are available. END.\n";
+          this->state = State::EndOfStream;
+        }
+      }
     }
     
     return true;
@@ -218,17 +295,36 @@ protected:
   vtm_pic_t origVtmPic;
   std::list<PelUnitBuf*> recBufList;
   int iNumEncoded = { 0 };
+  bool nullFramePushed { false };
 
+  bool debugOutput {false};
+
+  enum class State
+  {
+    Encoding,
+    RetrieveData,
+    EndOfStream
+  };
+  State state { State::Encoding };
+
+  // When the state is 'Encoding'
   enum class EncodingState
   {
     PushFrames,
-    RetrieveFrames,
-    EndOfStream
+    Encode
   };
   EncodingState encodingState { EncodingState::PushFrames };
 
-  std::deque<std::string> auDataList;
-  std::string currentAUData;
+  struct AU
+  {
+    std::string data;
+    int poc;
+    bool isIRAP;
+  };
+
+  std::deque<AU> auDataList;
+  AU currentAUData;
+  int dtsCounter {0};
 };
 
 extern "C" {
@@ -293,13 +389,13 @@ extern "C" {
     return LIBVTMENC_OK;
   }
 
-  VTM_ENC_API libVTMEnc_error libVTMEncoder_receive_packet(libVTMEncoder_context* encCtx, vtm_nal_t *pp_nal)
+  VTM_ENC_API libVTMEnc_error libVTMEncoder_receive_packet(libVTMEncoder_context* encCtx, vtm_auData_t *auData)
   {
     vtmEncoderWrapper *enc = (vtmEncoderWrapper*)encCtx;
     if (!enc)
       return LIBVTMENC_ERROR;
 
-    if (!enc->retrievePacket(pp_nal))
+    if (!enc->retrievePacket(auData))
       return LIBVTMENC_ERROR;
 
     return LIBVTMENC_OK;

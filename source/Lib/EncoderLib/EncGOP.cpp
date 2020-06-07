@@ -3407,6 +3407,8 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       xWriteLeadingSEIMessages( leadingSeiMessages, duInfoSeiMessages, accessUnit, pcSlice->getTLayer(), pcSlice->getSPS(), duData );
       xWriteDuSEIMessages( duInfoSeiMessages, accessUnit, pcSlice->getTLayer(), pcSlice->getSPS(), duData );
 
+      accessUnit.poc = pocCurr;
+      accessUnit.isIRAP = pcSlice->isIRAP();
       m_AUWriterIf->outputAU( accessUnit );
 
       msg( NOTICE, "\n" );

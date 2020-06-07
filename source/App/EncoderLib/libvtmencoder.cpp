@@ -150,9 +150,8 @@ public:
     origVtmPic.img.size[0] = vtm_settings.source_width;
     origVtmPic.img.size[1] = vtm_settings.source_height;
 
-    const int m_bitdepthShift = m_internalBitDepth - m_MSBExtendedBitDepth;
-    origVtmPic.desiredBitDepth[0] = m_MSBExtendedBitDepth[CHANNEL_TYPE_LUMA] + m_bitdepthShift;
-    origVtmPic.desiredBitDepth[1] = m_MSBExtendedBitDepth[CHANNEL_TYPE_CHROMA] + m_bitdepthShift;
+    origVtmPic.desiredBitDepth[0] = m_internalBitDepth[0];
+    origVtmPic.desiredBitDepth[1] = m_internalBitDepth[1];
     
     for (int i=0; i<origVtmPic.img.nr_planes; i++)
     {

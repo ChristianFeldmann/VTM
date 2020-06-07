@@ -257,8 +257,8 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setSwitchPocPeriod                                   ( m_switchPocPeriod );
   m_cEncLib.setUpscaledOutput                                    ( m_upscaledOutput );
 
-  const auto INT_MAX = 2147483647;
-  m_cEncLib.setFramesToBeEncoded                                 ( INT_MAX );
+  const auto maximumInt = 2147483647;
+  m_cEncLib.setFramesToBeEncoded                                 ( maximumInt );
 
   //====== SPS constraint flags =======
   m_cEncLib.setIntraOnlyConstraintFlag                           ( m_intraConstraintFlag );

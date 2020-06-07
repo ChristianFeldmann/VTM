@@ -91,7 +91,7 @@ public:
       }
     }
     // TODO: Add a function to calculate this from the configured GOP structure:
-    this->dtsCounter = -2;
+    this->dtsCounter = -3;
 
     this->vtm_settings = *settings;
 

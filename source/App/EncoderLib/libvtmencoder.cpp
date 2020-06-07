@@ -150,7 +150,7 @@ public:
     origVtmPic.img.size[0] = vtm_settings.source_width;
     origVtmPic.img.size[1] = vtm_settings.source_height;
 
-    const auto m_bitdepthShift = m_internalBitDepth - m_MSBExtendedBitDepth;
+    const int m_bitdepthShift = m_internalBitDepth - m_MSBExtendedBitDepth;
     origVtmPic.desiredBitDepth[0] = m_MSBExtendedBitDepth[CHANNEL_TYPE_LUMA] + m_bitdepthShift;
     origVtmPic.desiredBitDepth[1] = m_MSBExtendedBitDepth[CHANNEL_TYPE_CHROMA] + m_bitdepthShift;
     
@@ -246,7 +246,7 @@ public:
       this->auDataList.pop_front();
 
       auData->payload = (uint8_t*)(this->currentAUData.data.c_str());
-      auData->payloadSizeBytes = this->currentAUData.data.size();
+      auData->payloadSizeBytes = int(this->currentAUData.data.size());
       auData->pts = this->currentAUData.poc;
       auData->dts = this->dtsCounter++;
       auData->isIRAP = this->currentAUData.isIRAP ? 1 : 0;

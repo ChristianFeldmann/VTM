@@ -183,6 +183,7 @@ Pel IntraPrediction::xGetPredValDc( const CPelBuf &pSrc, const Size &dstSize )
 
 int IntraPrediction::getModifiedWideAngle( int width, int height, int predMode )
 {
+  //The function returns a 'modified' wide angle, given that it is not necessary in this software implementation to reserve the values 0 and 1 for Planar and DC.
   if ( predMode > DC_IDX && predMode <= VDIA_IDX )
   {
     int modeShift[] = { 0, 6, 10, 12, 14, 15 };
@@ -193,7 +194,7 @@ int IntraPrediction::getModifiedWideAngle( int width, int height, int predMode )
     }
     else if (height > width && predMode > VDIA_IDX - modeShift[deltaSize])
     {
-      predMode -= (VDIA_IDX - 1); //In this software implementation, there is no need to reserve the indices 0 and 1 for Planar and DC
+      predMode -= (VDIA_IDX - 1); 
     }
   }
   return predMode;

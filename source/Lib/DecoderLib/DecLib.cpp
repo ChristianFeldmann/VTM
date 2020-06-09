@@ -2456,7 +2456,11 @@ void DecLib::xDecodeVPS( InputNALUnit& nalu )
   CHECK( nalu.m_temporalId, "The value of TemporalId of VPS NAL units shall be equal to 0" );
 
   m_HLSReader.parseVPS( m_vps );
+
+  // storeVPS may directly delete the new VPS in case it is a repetition. Need to retrieve proper initialized memory back
+  int vpsID = m_vps->getVPSId();
   m_parameterSetManager.storeVPS( m_vps, nalu.getBitstream().getFifo());
+  m_vps = m_parameterSetManager.getVPS(vpsID);
 }
 
 void DecLib::xDecodeDCI(InputNALUnit& nalu)

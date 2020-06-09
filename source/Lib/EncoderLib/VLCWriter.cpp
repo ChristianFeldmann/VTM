@@ -1654,7 +1654,7 @@ void HLSWriter::codeVPS(const VPS* pcVPS)
     }
 
 #if JVET_R0099_DPB_HRD_PARAMETERS_SIGNALLING
-    for( int i = 1; i < pcVPS->m_numMultiLayeredOlss; i++) 
+    for( int i = 0; i < pcVPS->m_numMultiLayeredOlss; i++) 
     {
 #else
     for( int i = 0; i < pcVPS->getTotalNumOLSs(); i++ )

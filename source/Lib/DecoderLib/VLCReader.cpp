@@ -2606,30 +2606,34 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
 
 
 #if JVET_R0099_DPB_HRD_PARAMETERS_SIGNALLING
-    for (int i = 1; i < pcVPS->m_numMultiLayeredOlss; i++)
-    {
+    for( int i = 0, j=0; i < pcVPS->getTotalNumOLSs(); i++ )
 #else
     for( int i = 0; i < pcVPS->getTotalNumOLSs(); i++ )
+#endif
     {
       if( pcVPS->m_numLayersInOls[i] > 1 )
       {
-#endif
         READ_UVLC( uiCode, "ols_dpb_pic_width[i]" ); pcVPS->setOlsDpbPicWidth( i, uiCode );
         READ_UVLC( uiCode, "ols_dpb_pic_height[i]" ); pcVPS->setOlsDpbPicHeight( i, uiCode );
+#if JVET_R0099_DPB_HRD_PARAMETERS_SIGNALLING
+        if ((pcVPS->m_numDpbParams > 1) && (pcVPS->m_numDpbParams != pcVPS->m_numMultiLayeredOlss))
+#else
         if( pcVPS->m_numDpbParams > 1 )
+#endif
         {
           READ_UVLC( uiCode, "ols_dpb_params_idx[i]" ); pcVPS->setOlsDpbParamsIdx( i, uiCode );
         }
 #if JVET_R0191_ASPECT3
 #if JVET_R0099_DPB_HRD_PARAMETERS_SIGNALLING
-        else if (pcVPS->m_numDpbParams == 0)
+        else if (pcVPS->m_numDpbParams == 1)
         {
           pcVPS->setOlsDpbParamsIdx(i, 0);
         }
         else
         {
-          pcVPS->setOlsDpbParamsIdx(i, i);
+          pcVPS->setOlsDpbParamsIdx(i, j);
         }
+        j += 1;
 #else
         else
         {
@@ -2638,9 +2642,7 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
 #endif
         isDPBParamReferred[pcVPS->getOlsDpbParamsIdx(i)] = true;
 #endif
-#if !JVET_R0099_DPB_HRD_PARAMETERS_SIGNALLING
       }
-#endif
     }
 #if JVET_R0191_ASPECT3
     for( int i = 0; i < pcVPS->m_numDpbParams; i++ )

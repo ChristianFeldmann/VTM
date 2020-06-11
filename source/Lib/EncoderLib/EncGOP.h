@@ -161,8 +161,13 @@ private:
   // clean decoding refresh
   bool                    m_bRefreshPending;
   int                     m_pocCRA;
+#if JVET_R0041
+  NalUnitType             m_associatedIRAPType[MAX_VPS_LAYERS];
+  int                     m_associatedIRAPPOC[MAX_VPS_LAYERS];
+#else
   NalUnitType             m_associatedIRAPType;
   int                     m_associatedIRAPPOC;
+#endif
 
   std::vector<int>        m_vRVM_RP;
   uint32_t                    m_lastBPSEI[MAX_TLAYER];

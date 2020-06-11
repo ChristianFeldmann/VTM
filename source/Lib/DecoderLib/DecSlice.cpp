@@ -115,7 +115,11 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
 
   const unsigned  widthInCtus             = cs.pcv->widthInCtus;
   const bool     wavefrontsEnabled           = cs.sps->getEntropyCodingSyncEnabledFlag();
+#if JVET_R0165_OPTIONAL_ENTRY_POINT
+  const bool     entryPointPresent           = cs.sps->getEntryPointsPresentFlag();
+#else
   const bool     wavefrontsEntryPointPresent = cs.sps->getEntropyCodingSyncEntryPointsPresentFlag();
+#endif
 
   cabacReader.initBitstream( ppcSubstreams[0] );
   cabacReader.initCtxModels( *slice );
@@ -127,6 +131,16 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
   DTRACE( g_trace_ctx, D_HEADER, "=========== POC: %d ===========\n", slice->getPOC() );
 
 
+#if JVET_R0058
+  if (slice->getSliceType() != I_SLICE && slice->getRefPic(REF_PIC_LIST_0, 0)->numSubpics > 1)
+  {
+    clipMv = clipMvInSubpic;
+  }
+  else
+  {
+    clipMv = clipMvInPic;
+  }
+#endif
   // for every CTU in the slice segment...
   unsigned subStrmId = 0;
   for( unsigned ctuIdx = 0; ctuIdx < slice->getNumCtuInSlice(); ctuIdx++ )
@@ -158,7 +172,11 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
         for (int idx = 0; idx < n; idx++)
         {
           Picture *refPic = slice->getRefPic((RefPicList)rlist, idx);
+#if JVET_R0058
+          if (!refPic->getSubPicSaved() && refPic->numSubpics > 1)
+#else
           if (!refPic->getSubPicSaved())
+#endif
           {
             refPic->saveSubPicBorder(refPic->getPOC(), subPicX, subPicY, subPicWidth, subPicHeight);
             refPic->extendSubPicBorder(refPic->getPOC(), subPicX, subPicY, subPicWidth, subPicHeight);
@@ -247,8 +265,12 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
       // (end of slice-segment, end of tile, end of wavefront-CTU-row)
       unsigned binVal = cabacReader.terminating_bit();
       CHECK( !binVal, "Expecting a terminating bit" );
+#if JVET_R0165_OPTIONAL_ENTRY_POINT
+      if( entryPointPresent )
+#else
       bool isLastTileCtu = (ctuXPosInCtus + 1 == tileXPosInCtus + tileColWidth) && (ctuYPosInCtus + 1 == tileYPosInCtus + tileRowHeight);
       if( isLastTileCtu || wavefrontsEntryPointPresent )
+#endif
       {
 #if DECODER_CHECK_SUBSTREAM_AND_SLICE_TRAILING_BYTES
         cabacReader.remaining_bytes( true );

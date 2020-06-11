@@ -59,7 +59,7 @@ class InputNALUnit : public NALUnit
 
   public:
     InputNALUnit(const InputNALUnit &src) : NALUnit(src), m_Bitstream(src.m_Bitstream) {};
-    InputNALUnit() : m_Bitstream() {};
+    InputNALUnit() : NALUnit(NAL_UNIT_INVALID), m_Bitstream() {};
     virtual ~InputNALUnit() { }
     const InputBitstream &getBitstream() const { return m_Bitstream; }
           InputBitstream &getBitstream()       { return m_Bitstream; }

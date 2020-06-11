@@ -678,6 +678,19 @@ const int g_quantInterDefault8x8[8 * 8] =
 const uint32_t g_scalingListSize [SCALING_LIST_SIZE_NUM] = { 1, 4, 16, 64, 256, 1024, 4096, 16384 };
 const uint32_t g_scalingListSizeX[SCALING_LIST_SIZE_NUM] = { 1, 2,  4,  8,  16,   32,   64,   128 };
 
+#if JVET_R0166_SCALING_LISTS_CHROMA_444
+const uint32_t g_scalingListId[SCALING_LIST_SIZE_NUM][SCALING_LIST_NUM] =
+{
+  {  0,  0,  0,  0,  0,  0},  // SCALING_LIST_1x1
+  {  0,  0,  0,  0,  0,  1},  // SCALING_LIST_2x2
+  {  2,  3,  4,  5,  6,  7},  // SCALING_LIST_4x4
+  {  8,  9, 10, 11, 12, 13},  // SCALING_LIST_8x8
+  { 14, 15, 16, 17, 18, 19},  // SCALING_LIST_16x16
+  { 20, 21, 22, 23, 24, 25},  // SCALING_LIST_32x32
+  { 26, 21, 22, 27, 24, 25},  // SCALING_LIST_64x64
+  {  0,  0,  0,  0,  0,  0},  // SCALING_LIST_128x128
+};
+#endif
 
 
 Mv   g_reusedUniMVs[32][32][8][8][2][33];

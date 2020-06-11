@@ -179,6 +179,21 @@ void SEIEncoder::initSEIBufferingPeriod(SEIBufferingPeriod *bufferingPeriodSEI, 
         break;
     }
   }
+#if JVET_R0094_DPB_TID_OFFSET
+  bufferingPeriodSEI->m_sublayerDpbOutputOffsetsPresentFlag = true;
+  for(int i = 0; i < bufferingPeriodSEI->m_bpMaxSubLayers; i++)
+  {
+    bufferingPeriodSEI->m_dpbOutputTidOffset[i] = m_pcCfg->getNumReorderPics(i) * static_cast<int>(pow(2, static_cast<double>(bufferingPeriodSEI->m_bpMaxSubLayers-1-i)));
+    if(bufferingPeriodSEI->m_dpbOutputTidOffset[i] >= m_pcCfg->getNumReorderPics(bufferingPeriodSEI->m_bpMaxSubLayers-1))
+    {
+      bufferingPeriodSEI->m_dpbOutputTidOffset[i] -= m_pcCfg->getNumReorderPics(bufferingPeriodSEI->m_bpMaxSubLayers-1);
+    }
+    else
+    {
+      bufferingPeriodSEI->m_dpbOutputTidOffset[i] = 0;
+    }
+  }
+#endif
   // A commercial encoder should track the buffer state for all layers and sub-layers
   // to ensure CPB conformance. Such tracking is required for calculating alternative
   // CPB parameters.
@@ -374,32 +389,47 @@ void SEIEncoder::initSEISampleAspectRatioInfo(SEISampleAspectRatioInfo* seiSampl
 //! initialize scalable nesting SEI message.
 //! Note: The SEI message structures input into this function will become part of the scalable nesting SEI and will be
 //!       automatically freed, when the nesting SEI is disposed.
+#if JVET_Q0397_SCAL_NESTING
+void SEIEncoder::initSEIScalableNesting(SEIScalableNesting *scalableNestingSEI, SEIMessages &nestedSEIs, const std::vector<uint16_t> &subpictureIDs)
+#else
 void SEIEncoder::initSEIScalableNesting(SEIScalableNesting *scalableNestingSEI, SEIMessages &nestedSEIs)
+#endif
 {
-  CHECK(!(m_isInitialized), "Unspecified error");
-  CHECK(!(scalableNestingSEI != NULL), "Unspecified error");
-  scalableNestingSEI->m_nestingOlsFlag = 1;         // by If the nested SEI messages are picture buffering SEI messages, picture timing SEI messages or sub-picture timing SEI messages, nesting_ols_flag shall be equal to 1, by default case
-  scalableNestingSEI->m_nestingNumOlssMinus1 =  1;  // by default the nesting scalable SEI message applies to two OLSs.
-  for (int i = 0; i <= scalableNestingSEI->m_nestingNumOlssMinus1; i++)
+  CHECK(!(m_isInitialized), "Scalable Nesting SEI already initialized ");
+  CHECK(!(scalableNestingSEI != NULL), "No Scalable Nesting SEI object passed");
+
+  //KJS: OLS and layer targeting needs to be fixed for the actual OLSs in the bitstream
+  scalableNestingSEI->m_snOlsFlag = 1;         // If the nested SEI messages are picture buffering SEI messages, picture timing SEI messages or sub-picture timing SEI messages, nesting_ols_flag shall be equal to 1, by default case
+  scalableNestingSEI->m_snNumOlssMinus1 =  1;  // by default the nesting scalable SEI message applies to two OLSs.
+  for (int i = 0; i <= scalableNestingSEI->m_snNumOlssMinus1; i++)
   {
-    scalableNestingSEI->m_nestingOlsIdxDeltaMinus1[i] = 0; // first ols to which nesting SEI applies is
+    scalableNestingSEI->m_snOlsIdxDeltaMinus1[i] = 0; // first ols to which nesting SEI applies is
   }
-  for (int i = 0; i <= scalableNestingSEI->m_nestingNumOlssMinus1; i++)
+  for (int i = 0; i <= scalableNestingSEI->m_snNumOlssMinus1; i++)
   {
     if (i == 0)
     {
-      scalableNestingSEI->m_nestingOlsIdx[i] = scalableNestingSEI->m_nestingOlsIdxDeltaMinus1[i];
+      scalableNestingSEI->m_snOlsIdx[i] = scalableNestingSEI->m_snOlsIdxDeltaMinus1[i];
     }
     else
     {
-      scalableNestingSEI->m_nestingOlsIdx[i] = scalableNestingSEI->m_nestingOlsIdxDeltaMinus1[i] + scalableNestingSEI->m_nestingOlsIdxDeltaMinus1[i - 1] + 1;
+      scalableNestingSEI->m_snOlsIdx[i] = scalableNestingSEI->m_snOlsIdxDeltaMinus1[i] + scalableNestingSEI->m_snOlsIdxDeltaMinus1[i - 1] + 1;
     }
   }
 
-  scalableNestingSEI->m_nestingAllLayersFlag = 1; // nesting is not applied to all layers
-  scalableNestingSEI->m_nestingNumLayersMinus1 = 2 - 1;  //nesting_num_layers_minus1
-  scalableNestingSEI->m_nestingLayerId[0] = 0;
-
+  scalableNestingSEI->m_snAllLayersFlag = 1; // nesting is not applied to all layers
+  scalableNestingSEI->m_snNumLayersMinus1 = 2 - 1;  //nesting_num_layers_minus1
+  scalableNestingSEI->m_snLayerId[0] = 0;
+#if JVET_Q0397_SCAL_NESTING
+  if (!subpictureIDs.empty())
+  {
+    scalableNestingSEI->m_snSubpicFlag = 1;
+    scalableNestingSEI->m_snNumSubpics = (uint32_t) subpictureIDs.size();
+    scalableNestingSEI->m_snSubpicId   = subpictureIDs;
+    scalableNestingSEI->m_snSubpicIdLen = max(1, ceilLog2((*std::max_element(subpictureIDs.begin(), subpictureIDs.end())) + 1));
+    CHECK ( scalableNestingSEI->m_snSubpicIdLen > 15, "Subpicture ID too large. Length must be <= 15 bits");
+  }
+#endif
   scalableNestingSEI->m_nestedSEIs.clear();
   for (SEIMessages::iterator it = nestedSEIs.begin(); it != nestedSEIs.end(); it++)
   {

@@ -660,6 +660,7 @@ void Slice::checkRPL(const ReferencePictureList* pRPL0, const ReferencePictureLi
 
   bool fieldSeqFlag = getSPS()->getFieldSeqFlag();
 
+#if !JVET_R0041
   int currentPictureIsTrailing = 0;
   if (getPic()->getDecodingOrderNumber() > associatedIRAPDecodingOrderNumber)
   {
@@ -677,6 +678,7 @@ void Slice::checkRPL(const ReferencePictureList* pRPL0, const ReferencePictureLi
       currentPictureIsTrailing = 1;
     }
   }
+#endif
 
   for (int i = 0; i < numEntriesL0; i++)
   {

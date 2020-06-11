@@ -393,16 +393,15 @@ DecLib::DecLib()
   , m_isFirstGeneralHrd(true)
   , m_prevGeneralHrdParams()
 #if JVET_R0041
+  , m_PrevGDRInSameLayerPOC{ 0 }
+  , m_pocCRA{ 0 }
   , m_associatedIRAPDecodingOrderNumber{ 0 }
 #else
   , m_associatedIRAPType(NAL_UNIT_INVALID)
   , m_associatedIRAPDecodingOrderNumber(0)
 #endif
   , m_decodingOrderCounter(0)
-#if JVET_R0041
-  , m_PrevGDRInSameLayerPOC{ 0 }
-  , m_pocCRA{ 0 }
-#else
+#if !JVET_R0041
   , m_pocCRA(0)
 #endif
   , m_pocRandomAccess(MAX_INT)

@@ -51,6 +51,8 @@
 #include <cassert>
 
 //########### place macros to be removed in next cycle below this line ###############
+#define JVET_R0041                                        1 // JVET-R0041: Picture types related constraints
+
 #define JVET_R0064                                        1 // JVET-R0064, aspect 2: Move the flag scaling_matrix_for_lfnst_disabled_flag from the scaling_list_data( ) syntax to the SPS.
 
 #define RETRAIN_CABAC                                     1 // CABAC initial values retrained on VTM-9.0rc1

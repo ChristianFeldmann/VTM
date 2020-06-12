@@ -2619,7 +2619,7 @@ private:
   int                        m_iPOC;
   int                        m_iLastIDR;
 #if JVET_R0041
-  int                        m_PrevGDRInSameLayerPOC;  //< the previous GDR in the same layer
+  int                        m_prevGDRInSameLayerPOC;  //< the previous GDR in the same layer
 #endif
   int                        m_iAssociatedIRAP;
   NalUnitType                m_iAssociatedIRAPType;
@@ -2771,8 +2771,8 @@ public:
   void                        setLastIDR(int iIDRPOC)                                { m_iLastIDR = iIDRPOC;                                         }
   int                         getLastIDR() const                                     { return m_iLastIDR;                                            }
 #if JVET_R0041
-  void                        setPrevGDRInSameLayerPOC(int iPrevGDRInSameLayerPOC)   { m_PrevGDRInSameLayerPOC = iPrevGDRInSameLayerPOC;             }
-  int                         getPrevGDRInSameLayerPOC() const                       { return m_PrevGDRInSameLayerPOC;                               }
+  void                        setPrevGDRInSameLayerPOC(int prevGDRInSameLayerPOC)    { m_prevGDRInSameLayerPOC = prevGDRInSameLayerPOC;              }
+  int                         getPrevGDRInSameLayerPOC() const                       { return m_prevGDRInSameLayerPOC;                               }
 #endif
   void                        setAssociatedIRAPPOC(int iAssociatedIRAPPOC)           { m_iAssociatedIRAP = iAssociatedIRAPPOC;                       }
   int                         getAssociatedIRAPPOC() const                           { return m_iAssociatedIRAP;                                     }

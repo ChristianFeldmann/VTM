@@ -233,6 +233,9 @@ void EncApp::xInitLibCfg()
 #endif
   m_cEncLib.setNoResChangeInClvsConstraintFlag                   ( m_noResChangeInClvsConstraintFlag );
   m_cEncLib.setOneTilePerPicConstraintFlag                       ( m_oneTilePerPicConstraintFlag );
+#if JVET_R0118_PH_IN_SH_CONSTRAINT_FLAG
+  m_cEncLib.setPicHeaderInSliceHeaderConstraintFlag              ( m_picHeaderInSliceHeaderConstraintFlag );
+#endif
   m_cEncLib.setOneSlicePerPicConstraintFlag                      ( m_oneSlicePerPicConstraintFlag );
   m_cEncLib.setOneSubpicPerPicConstraintFlag                     ( m_oneSubpicPerPicConstraintFlag );
   m_cEncLib.setFrameOnlyConstraintFlag                           ( m_frameOnlyConstraintFlag);

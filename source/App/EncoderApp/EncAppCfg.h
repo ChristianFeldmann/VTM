@@ -205,6 +205,9 @@ protected:
   bool          m_nonProjectedConstraintFlag;
   bool          m_noResChangeInClvsConstraintFlag;
   bool          m_oneTilePerPicConstraintFlag;
+#if JVET_R0118_PH_IN_SH_CONSTRAINT_FLAG
+  bool          m_picHeaderInSliceHeaderConstraintFlag;
+#endif
   bool          m_oneSlicePerPicConstraintFlag;
   bool          m_oneSubpicPerPicConstraintFlag;
   bool          m_frameOnlyConstraintFlag;

@@ -1339,8 +1339,22 @@ void EncLib::xInitSPS( SPS& sps )
 
   sps.setScalingListFlag ( (m_useScalingListId == SCALING_LIST_OFF) ? 0 : 1 );
 #if JVET_R0380_SCALING_MATRIX_DISABLE_YCC_OR_RGB
-  sps.setScalingMatrixForAlternativeColourSpaceDisabledFlag( m_disableScalingMatrixForAlternativeColourSpace );
-  sps.setScalingMatrixDesignatedColourSpaceFlag( m_scalingMatrixDesignatedColourSpace );
+  if (sps.getUseColorTrans() && sps.getScalingListFlag())
+  {
+    sps.setScalingMatrixForAlternativeColourSpaceDisabledFlag( m_disableScalingMatrixForAlternativeColourSpace );
+  }
+  else
+  {
+    sps.setScalingMatrixForAlternativeColourSpaceDisabledFlag( false );
+  }
+  if (sps.getScalingMatrixForAlternativeColourSpaceDisabledFlag())
+  {
+    sps.setScalingMatrixDesignatedColourSpaceFlag( m_scalingMatrixDesignatedColourSpace );
+  }
+  else
+  {
+    sps.setScalingMatrixDesignatedColourSpaceFlag( true );
+  }
 #endif
   sps.setALFEnabledFlag( m_alf );
   sps.setCCALFEnabledFlag( m_ccalf );

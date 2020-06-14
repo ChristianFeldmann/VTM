@@ -60,8 +60,8 @@ void BitstreamExtractorApp::xPrintVPSInfo (VPS *vps)
   msg (VERBOSE, "  VPS ID         : %d\n", vps->getVPSId());
   msg (VERBOSE, "  Max layers     : %d\n", vps->getMaxLayers());
   msg (VERBOSE, "  Max sub-layers : %d\n", vps->getMaxSubLayers());
-  msg (VERBOSE, "  Number of OLS  : %d\n", vps->getNumOutputLayerSets());
-  for (int olsIdx=0; olsIdx < vps->getNumOutputLayerSets(); olsIdx++)
+  msg (VERBOSE, "  Number of OLS  : %d\n", vps->getTotalNumOLSs());
+  for (int olsIdx=0; olsIdx < vps->getTotalNumOLSs(); olsIdx++)
   {
     vps->deriveTargetOutputLayerSet(olsIdx);
     msg (VERBOSE, "    OLS # %d\n", olsIdx);
@@ -442,7 +442,7 @@ uint32_t BitstreamExtractorApp::decode()
           // this initialization can be removed once the dummy VPS is properly initialized in the parameter set manager
           vps->deriveOutputLayerSets();
         }
-        uint32_t numOlss = vps->getNumOutputLayerSets();
+        uint32_t numOlss = vps->getTotalNumOLSs();
         CHECK(m_targetOlsIdx <0  || m_targetOlsIdx >= numOlss, "target Ols shall be in the range of OLSs specified by the VPS");
         std::vector<int> layerIdInOls = vps->getLayerIdsInOls(m_targetOlsIdx);
         bool isIncludedInTargetOls = std::find(layerIdInOls.begin(), layerIdInOls.end(), nalu.m_nuhLayerId) != layerIdInOls.end();
@@ -566,6 +566,7 @@ uint32_t BitstreamExtractorApp::decode()
         APS* aps = new APS();
         m_hlSynaxReader.setBitstream( &nalu.getBitstream() );
         m_hlSynaxReader.parseAPS( aps );
+        msg (VERBOSE, "APS Info: APS ID = %d Type = %d Layer = %d\n", aps->getAPSId(), aps->getAPSType(), nalu.m_nuhLayerId);
         int apsId = aps->getAPSId();
         int apsType = aps->getAPSType();
         // note: storeAPS may invalidate the aps pointer!

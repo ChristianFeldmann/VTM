@@ -1217,6 +1217,10 @@ void activateAPS(PicHeader* picHeader, Slice* pSlice, ParameterSetManager& param
         memcpy(filterParam.ccAlfCoeff[COMPONENT_Cb - 1][filterIdx], aps->getCcAlfAPSParam().ccAlfCoeff[COMPONENT_Cb - 1][filterIdx], sizeof(aps->getCcAlfAPSParam().ccAlfCoeff[COMPONENT_Cb - 1][filterIdx]));
       }
     }
+    else
+    {
+      THROW("CC ALF Cb APS not available!");
+    }
   }
 
   if(pSlice->getTileGroupCcAlfCrEnabledFlag())
@@ -1240,6 +1244,10 @@ void activateAPS(PicHeader* picHeader, Slice* pSlice, ParameterSetManager& param
         filterParam.ccAlfFilterIdxEnabled[COMPONENT_Cr - 1][filterIdx] = aps->getCcAlfAPSParam().ccAlfFilterIdxEnabled[COMPONENT_Cr - 1][filterIdx];
         memcpy(filterParam.ccAlfCoeff[COMPONENT_Cr - 1][filterIdx], aps->getCcAlfAPSParam().ccAlfCoeff[COMPONENT_Cr - 1][filterIdx], sizeof(aps->getCcAlfAPSParam().ccAlfCoeff[COMPONENT_Cr - 1][filterIdx]));
       }
+    }
+    else
+    {
+      THROW("CC ALF Cr APS not available!");
     }
   }
 

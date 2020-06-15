@@ -1046,13 +1046,8 @@ void EncLib::xInitVPS( const SPS& sps )
     { 
       if( std::find( m_vps->m_layerIdInOls[olsIdx].begin(), m_vps->m_layerIdInOls[olsIdx].end(), m_layerId ) != m_vps->m_layerIdInOls[olsIdx].end() )
       {
-#if JVET_R0099_DPB_HRD_PARAMETERS_SIGNALLING
-        m_vps->setOlsDpbPicWidth( dpbIdx, std::max<int>(sps.getMaxPicWidthInLumaSamples(), m_vps->getOlsDpbPicSize(dpbIdx).width));
-        m_vps->setOlsDpbPicHeight( dpbIdx, std::max<int>(sps.getMaxPicHeightInLumaSamples(), m_vps->getOlsDpbPicSize(dpbIdx).height));
-#else
         m_vps->setOlsDpbPicWidth( olsIdx, std::max<int>( sps.getMaxPicWidthInLumaSamples(), m_vps->getOlsDpbPicSize( olsIdx ).width ) );
         m_vps->setOlsDpbPicHeight( olsIdx, std::max<int>( sps.getMaxPicHeightInLumaSamples(), m_vps->getOlsDpbPicSize( olsIdx ).height ) );
-#endif
       }
 
       m_vps->setOlsDpbParamsIdx( olsIdx, dpbIdx );

@@ -2648,7 +2648,7 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
 #endif
       }
     }
-#if JVET_R0191_ASPECT3 & 0 //JVET_R0066 debug
+#if JVET_R0191_ASPECT3
     for( int i = 0; i < pcVPS->m_numDpbParams; i++ )
     {
       CHECK( !isDPBParamReferred[i],"Each dpb_parameters( ) syntax structure in the VPS shall be referred to by at least one value of vps_ols_dpb_params_idx[i] for i in the range of 0 to NumMultiLayerOlss - 1, inclusive");

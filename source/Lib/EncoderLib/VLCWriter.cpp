@@ -1653,15 +1653,10 @@ void HLSWriter::codeVPS(const VPS* pcVPS)
       }
     }
 
-#if JVET_R0099_DPB_HRD_PARAMETERS_SIGNALLING
-    for( int i = 0; i < pcVPS->m_numMultiLayeredOlss; i++) 
-    {
-#else
     for( int i = 0; i < pcVPS->getTotalNumOLSs(); i++ )
     {
       if( pcVPS->m_numLayersInOls[i] > 1 )
       {
-#endif
         WRITE_UVLC( pcVPS->getOlsDpbPicSize( i ).width, "ols_dpb_pic_width[i]" );
         WRITE_UVLC( pcVPS->getOlsDpbPicSize( i ).height, "ols_dpb_pic_height[i]" );
 #if JVET_R0099_DPB_HRD_PARAMETERS_SIGNALLING
@@ -1672,9 +1667,7 @@ void HLSWriter::codeVPS(const VPS* pcVPS)
         {
           WRITE_UVLC( pcVPS->getOlsDpbParamsIdx( i ), "ols_dpb_params_idx[i]" );
         }
-#if !JVET_R0099_DPB_HRD_PARAMETERS_SIGNALLING
       }
-#endif
     }
 #if JVET_R0185_OLS_DPB_CLEANUP
   }

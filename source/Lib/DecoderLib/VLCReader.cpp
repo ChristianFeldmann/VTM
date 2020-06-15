@@ -2613,8 +2613,8 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
     {
       if( pcVPS->m_numLayersInOls[i] > 1 )
       {
-        READ_UVLC( uiCode, "ols_dpb_pic_width[i]" ); pcVPS->setOlsDpbPicWidth( j, uiCode );
-        READ_UVLC( uiCode, "ols_dpb_pic_height[i]" ); pcVPS->setOlsDpbPicHeight( j, uiCode );
+        READ_UVLC( uiCode, "ols_dpb_pic_width[i]" ); pcVPS->setOlsDpbPicWidth( i, uiCode );
+        READ_UVLC( uiCode, "ols_dpb_pic_height[i]" ); pcVPS->setOlsDpbPicHeight( i, uiCode );
 #if JVET_R0099_DPB_HRD_PARAMETERS_SIGNALLING
         if ((pcVPS->m_numDpbParams > 1) && (pcVPS->m_numDpbParams != pcVPS->m_numMultiLayeredOlss))
 #else

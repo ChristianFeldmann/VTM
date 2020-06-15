@@ -1788,7 +1788,7 @@ bool EncCu::xCheckRDCostIntra(CodingStructure *&tempCS, CodingStructure *&bestCS
           tempCS->cost     = m_pcRdCost->calcRdCost(tempCS->fracBits, tempCS->dist);
 
 
-          const double tmpCostWithoutSplitFlags = tempCS->cost;
+          double tmpCostWithoutSplitFlags = tempCS->cost;
           xEncodeDontSplit( *tempCS, partitioner );
 
           xCheckDQP( *tempCS, partitioner );
@@ -1805,6 +1805,7 @@ bool EncCu::xCheckRDCostIntra(CodingStructure *&tempCS, CodingStructure *&bestCS
             if( cbfAtZeroDepth )
             {
               tempCS->cost = MAX_DOUBLE;
+              tmpCostWithoutSplitFlags = MAX_DOUBLE;
             }
           }
 

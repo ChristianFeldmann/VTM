@@ -331,7 +331,7 @@ void TrQuant::xInvLfnst( const TransformUnit &tu, const ComponentID compID )
 
     if( lfnstIdx < 3 )
     {
-      intraMode = getLFNSTIntraMode( PU::getWideAngIntraMode( tu, intraMode, compID ) );
+      intraMode = getLFNSTIntraMode( PU::getWideAngle( tu, intraMode, compID ) );
 #if RExt__DECODER_DEBUG_TOOL_STATISTICS
       CodingStatistics::IncrementStatisticTool( CodingStatisticsClassType { STATS__TOOL_LFNST, width, height, compID } );
 #endif
@@ -422,7 +422,7 @@ void TrQuant::xFwdLfnst( const TransformUnit &tu, const ComponentID compID, cons
 
     if( lfnstIdx < 3 )
     {
-      intraMode = getLFNSTIntraMode( PU::getWideAngIntraMode( tu, intraMode, compID ) );
+      intraMode = getLFNSTIntraMode( PU::getWideAngle( tu, intraMode, compID ) );
 
       bool            transposeFlag   = getTransposeFlag( intraMode );
       const int       sbSize          = whge3 ? 8 : 4;

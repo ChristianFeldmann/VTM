@@ -753,8 +753,10 @@ uint32_t PU::getCoLocatedIntraLumaMode( const PredictionUnit &pu )
 }
 #endif
 
-int PU::getWideAngIntraMode( const TransformUnit &tu, const uint32_t dirMode, const ComponentID compID )
+int PU::getWideAngle( const TransformUnit &tu, const uint32_t dirMode, const ComponentID compID )
 {
+  //This function returns a wide angle index taking into account that the values 0 and 1 are reserved 
+  //for Planar and DC respectively, as defined in the Spec. Text.
   if( dirMode < 2 )
   {
     return ( int ) dirMode;

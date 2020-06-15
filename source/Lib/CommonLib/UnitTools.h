@@ -142,7 +142,7 @@ namespace PU
 #endif
   uint32_t getFinalIntraMode              (const PredictionUnit &pu, const ChannelType &chType);
   uint32_t getCoLocatedIntraLumaMode      (const PredictionUnit &pu);
-  int getWideAngIntraMode             ( const TransformUnit &tu, const uint32_t dirMode, const ComponentID compID );
+  int  getWideAngle                   ( const TransformUnit &tu, const uint32_t dirMode, const ComponentID compID );
   void getInterMergeCandidates        (const PredictionUnit &pu, MergeCtx& mrgCtx,
     int mmvdList,
     const int& mrgCandIdx = -1 );

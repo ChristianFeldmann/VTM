@@ -1828,7 +1828,6 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
     CHECK(nalu.m_temporalId == 0, "TemporalID of STSA picture shall not be zero in independent layers");
   }
 
-
   int currSubPicIdx = pps->getSubPicIdxFromSubPicId( m_apcSlicePilot->getSliceSubPicId() );
   int currSliceAddr = m_apcSlicePilot->getSliceID();
   for(int sp = 0; sp < currSubPicIdx; sp++)

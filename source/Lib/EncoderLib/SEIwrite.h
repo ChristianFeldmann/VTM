@@ -61,6 +61,9 @@ protected:
   void xWriteSEIDependentRAPIndication(const SEIDependentRAPIndication& sei);
   void xWriteSEIScalableNesting(OutputBitstream& bs, const SEIScalableNesting& sei, const SPS *sps);
   void xWriteSEIFramePacking(const SEIFramePacking& sei);
+#if JVET_P0359_PARAMETER_SETS_INCLUSION_SEI
+  void xWriteSEIParameterSetsInclusionIndication(const SEIParameterSetsInclusionIndication& sei);
+#endif
   void xWriteSEIMasteringDisplayColourVolume( const SEIMasteringDisplayColourVolume& sei);
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
   void xWriteSEIAlternativeTransferCharacteristics(const SEIAlternativeTransferCharacteristics& sei);

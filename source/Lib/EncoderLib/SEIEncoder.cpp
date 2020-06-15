@@ -70,6 +70,17 @@ void SEIEncoder::initSEIFramePacking(SEIFramePacking *seiFramePacking, int currP
   seiFramePacking->m_upsampledAspectRatio = 0;
 }
 
+
+#if JVET_P0359_PARAMETER_SETS_INCLUSION_SEI
+void SEIEncoder::initSEIParameterSetsInclusionIndication(SEIParameterSetsInclusionIndication* seiParameterSetsInclusionIndication)
+{
+  CHECK(!(m_isInitialized), "Unspecified error");
+  CHECK(!(seiParameterSetsInclusionIndication != NULL), "Unspecified error");
+
+  seiParameterSetsInclusionIndication->m_selfContainedClvsFlag = m_pcCfg->getSelfContainedClvsFlag();
+}
+#endif
+
 void SEIEncoder::initSEIBufferingPeriod(SEIBufferingPeriod *bufferingPeriodSEI, bool noLeadingPictures)
 {
   CHECK(!(m_isInitialized), "bufferingPeriodSEI already initialized");

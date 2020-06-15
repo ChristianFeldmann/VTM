@@ -1912,6 +1912,9 @@ private:
 
   int              m_layerId;
   int              m_temporalId;
+#if JVET_P0359_PARAMETER_SETS_INCLUSION_SEI
+  int              m_puCounter;
+#endif
 
   // access channel
 
@@ -2015,6 +2018,10 @@ public:
 
   void                   setTemporalId( int i )                                           { m_temporalId = i;                             }
   int                    getTemporalId()                                            const { return m_temporalId;                          }
+#if JVET_P0359_PARAMETER_SETS_INCLUSION_SEI
+  void                   setPuCounter(int i)                                              { m_puCounter = i;                              }
+  int                    getPuCounter()                                             const { return m_puCounter;                           }
+#endif
   void                   setLayerId( int i )                                              { m_layerId = i;                                }
   int                    getLayerId()                                               const { return m_layerId;                             }
 
@@ -2253,6 +2260,9 @@ class APS
 private:
   int                    m_APSId;                    // adaptation_parameter_set_id
   int                    m_temporalId;
+#if JVET_P0359_PARAMETER_SETS_INCLUSION_SEI
+  int                    m_puCounter;
+#endif
   int                    m_layerId;
   ApsType                m_APSType;                  // aps_params_type
   AlfParam               m_alfAPSParam;
@@ -2276,6 +2286,10 @@ public:
   void                   setAlfAPSParam(AlfParam& alfAPSParam)                            { m_alfAPSParam = alfAPSParam;                  }
   void                   setTemporalId( int i )                                           { m_temporalId = i;                             }
   int                    getTemporalId()                                            const { return m_temporalId;                          }
+#if JVET_P0359_PARAMETER_SETS_INCLUSION_SEI
+  void                   setPuCounter(int i)                                              { m_puCounter = i;                              }
+  int                    getPuCounter()                                             const { return m_puCounter;                           }
+#endif
   void                   setLayerId( int i )                                              { m_layerId = i;                                }
   int                    getLayerId()                                               const { return m_layerId;                             }
   AlfParam&              getAlfAPSParam()  { return m_alfAPSParam; }

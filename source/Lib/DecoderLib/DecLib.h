@@ -82,6 +82,10 @@ private:
   int                     m_associatedIRAPDecodingOrderNumber; ///< Decoding order number of the associated IRAP picture
 #endif
   int                     m_decodingOrderCounter;
+#if JVET_P0359_PARAMETER_SETS_INCLUSION_SEI
+  int                     m_puCounter;
+  bool                    m_seiInclusionFlag;
+#endif
 #if !JVET_R0041
   int                     m_pocCRA;            ///< POC number of the latest CRA picture
 #endif
@@ -258,7 +262,12 @@ protected:
   Picture * xGetNewPicBuffer( const SPS &sps, const PPS &pps, const uint32_t temporalLayer, const int layerId );
   void  xCreateLostPicture( int iLostPOC, const int layerId );
   void  xCreateUnavailablePicture(int iUnavailablePoc, bool longTermFlag, const int layerId, const bool interLayerRefPicFlag);
+#if JVET_P0359_PARAMETER_SETS_INCLUSION_SEI
+  void  checkParameterSetsInclusionSEIconstraints(const InputNALUnit nalu);
+  void  xActivateParameterSets( const InputNALUnit nalu );
+#else
   void  xActivateParameterSets( const int layerId );
+#endif
   void  xCheckParameterSetConstraints( const int layerId );
   void      xDecodePicHeader( InputNALUnit& nalu );
   bool      xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDisplay);

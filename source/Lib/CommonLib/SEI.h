@@ -61,6 +61,9 @@ public:
     USER_DATA_UNREGISTERED               = 5,
     FILM_GRAIN_CHARACTERISTICS           = 19,
     FRAME_PACKING                        = 45,
+#if JVET_P0359_PARAMETER_SETS_INCLUSION_SEI
+    PARAMETER_SETS_INCLUSION_INDICATION  = 129,
+#endif
     DECODING_UNIT_INFO                   = 130,
     DECODED_PICTURE_HASH                 = 132,
     SCALABLE_NESTING                     = 133,
@@ -464,6 +467,18 @@ public:
   bool m_arrangementPersistenceFlag;
   bool m_upsampledAspectRatio;
 };
+
+#if JVET_P0359_PARAMETER_SETS_INCLUSION_SEI
+class SEIParameterSetsInclusionIndication : public SEI
+{
+public:
+  PayloadType payloadType() const { return PARAMETER_SETS_INCLUSION_INDICATION; }
+  SEIParameterSetsInclusionIndication() {}
+  virtual ~SEIParameterSetsInclusionIndication() {}
+
+  int m_selfContainedClvsFlag;
+};
+#endif
 
 class SEIMasteringDisplayColourVolume : public SEI
 {

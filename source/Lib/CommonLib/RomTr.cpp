@@ -345,6 +345,90 @@
   {  b, -d,  f, -h,  j, -l,  n, -p,  r, -t,  v, -x,  z, -B,  D, -F,  E, -C,  A, -y,  w, -u,  s, -q,  o, -m,  k, -i,  g, -e,  c, -a,}, \
 }
 
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT && RExt__HIGH_PRECISION_FORWARD_TRANSFORM
+//--------------------------------------------------------------------------------------------------
+// DCT-2
+const TMatrixCoeff g_trCoreDCT2P2[TRANSFORM_NUMBER_OF_DIRECTIONS][2][2] =
+{
+  DEFINE_DCT2_P2_MATRIX(16384),
+  DEFINE_DCT2_P2_MATRIX(64)
+};
+
+const TMatrixCoeff g_trCoreDCT2P4 [TRANSFORM_NUMBER_OF_DIRECTIONS][4][4]   =
+{
+  DEFINE_DCT2_P4_MATRIX  (16384, 21266,  9224),
+  DEFINE_DCT2_P4_MATRIX  (   64,    83,    36)
+};
+
+const TMatrixCoeff g_trCoreDCT2P8[TRANSFORM_NUMBER_OF_DIRECTIONS][8][8] =
+{
+  DEFINE_DCT2_P8_MATRIX(16384, 21266,  9224, 22813, 19244, 12769,  4563),
+  DEFINE_DCT2_P8_MATRIX(64,    83,    36,    89,    75,    50,    18)
+};
+
+const TMatrixCoeff g_trCoreDCT2P16[TRANSFORM_NUMBER_OF_DIRECTIONS][16][16] =
+{
+  DEFINE_DCT2_P16_MATRIX(16384, 21266,  9224, 22813, 19244, 12769,  4563, 23120, 22063, 20450, 17972, 14642, 11109,  6446,  2316),
+  DEFINE_DCT2_P16_MATRIX(   64,    83,    36,    89,    75,    50,    18,    90,    87,    80,    70,    57,    43,    25,     9)
+};
+
+const TMatrixCoeff g_trCoreDCT2P32[TRANSFORM_NUMBER_OF_DIRECTIONS][32][32] =
+{
+  DEFINE_DCT2_P32_MATRIX(16384, 21266,  9224, 22813, 19244, 12769,  4563, 23120, 22063, 20450, 17972, 14642, 11109,  6446 , 2316, 23106, 22852, 22445, 21848, 20995, 19810, 18601, 17143, 15718, 13853, 11749,  9846,  7908,  5573,  3281,   946),
+  DEFINE_DCT2_P32_MATRIX(   64,    83,    36,    89,    75,    50,    18,    90,    87,    80,    70,    57,    43,    25,     9,    90,    90,    88,    85,    82,    78,    73,    67,    61,    54,    46,    38,    31,    22,    13,     4)
+};
+
+const TMatrixCoeff g_trCoreDCT2P64[TRANSFORM_NUMBER_OF_DIRECTIONS][64][64] =
+{
+  DEFINE_DCT2_P64_MATRIX(16384, 21266,  9224, 22813, 19244, 12769,  4563, 23129, 22063, 20450, 17972, 14642, 11109,  6446,  2316, 23106, 22852, 22445, 21848, 20995, 19810, 18601, 17143, 15718, 13853, 11749,  9846,  7908,  5573,  3281,   946, 23360, 23053, 23048, 23023, 22610, 22339, 21936, 21502, 21266, 20730, 20251, 19726, 18731, 18201, 17638, 16604, 15881, 15084, 14322, 13340, 12238, 11330, 10493,  9428,  8426,  7100,  6151,  5101,  3848,  2734,  1754,   574),
+  DEFINE_DCT2_P64_MATRIX(   64,    83,    36,    89,    75,    50,    18,    90,    87,    80,    70,    57,    43,    25,     9,    90,    90,    88,    85,    82,    78,    73,    67,    61,    54,    46,    38,    31,    22,    13,     4,    91,    90,    90,    90,    88,    87,    86,    84,    83,    81,    79,    77,    73,    71,    69,    65,    62,    59,    56,    52,    48,    44,    41,    37,    33,    28,    24,    20,    15,    11,     7,     2)
+};
+
+// DCT-8
+const TMatrixCoeff g_trCoreDCT8P4[TRANSFORM_NUMBER_OF_DIRECTIONS][4][4] =
+{
+  DEFINE_DCT8_P4_MATRIX(21505, 18893, 14081,  7425),
+  DEFINE_DCT8_P4_MATRIX(84,     74,     55,     29)
+};
+const TMatrixCoeff g_trCoreDCT8P8[TRANSFORM_NUMBER_OF_DIRECTIONS][8][8] =
+{
+  DEFINE_DCT8_P8_MATRIX(22018, 21790, 19958, 18154, 15363, 11754,  8148,  4350),
+  DEFINE_DCT8_P8_MATRIX(   86,    85,    78,    71,    60,    46,    32,    17)
+};
+const TMatrixCoeff g_trCoreDCT8P16[TRANSFORM_NUMBER_OF_DIRECTIONS][16][16] =
+{
+  DEFINE_DCT8_P16_MATRIX(22569, 22542, 22202, 21664, 20754, 19738, 18787, 17369, 15781, 14044, 12209, 10360,  8498,  6421,  4295,  1967),
+  DEFINE_DCT8_P16_MATRIX(   88,    88,    87,    85,    81,    77,    73,    68,    62,    55,    48,    40,    33,    25,    17,     8)
+};
+const TMatrixCoeff g_trCoreDCT8P32[TRANSFORM_NUMBER_OF_DIRECTIONS][32][32] =
+{
+  DEFINE_DCT8_P32_MATRIX(23065, 23136, 22715, 22533, 22544, 22053, 21901, 21463, 21131, 20385, 20019, 19708, 19007, 18415, 17448, 16894, 16143, 15230, 14312, 13616, 12679, 11526, 10770,  9720,  8606,  7734,  6623,  5414,  4478,  3225,  2291,  1043),
+  DEFINE_DCT8_P32_MATRIX(   90,    90,    89,    88,    87,    86,    85,    84,    82,    80,    78,    77,    74,    72,    68,    66,    63,    60,    56,    53,    50,    46,    42,    38,    34,    30,    26,    21,    17,    13,     9,     4)
+};
+
+// DST-7
+const TMatrixCoeff g_trCoreDST7P4[TRANSFORM_NUMBER_OF_DIRECTIONS][4][4] =
+{
+  DEFINE_DST7_P4_MATRIX( 7425, 14081, 18893, 21505),
+  DEFINE_DST7_P4_MATRIX(   29,    55,    74,    84)
+};
+const TMatrixCoeff g_trCoreDST7P8[TRANSFORM_NUMBER_OF_DIRECTIONS][8][8] =
+{
+  DEFINE_DST7_P8_MATRIX( 4350,  8148, 11754, 15363, 18154, 19958, 21790, 22018),
+  DEFINE_DST7_P8_MATRIX(   17,    32,    46,    60,    71,    78,    85,    86)
+};
+const TMatrixCoeff g_trCoreDST7P16[TRANSFORM_NUMBER_OF_DIRECTIONS][16][16] =
+{
+  DEFINE_DST7_P16_MATRIX(1967,  4295,  6421,  8498, 10360, 12209, 14044, 15781, 17369, 18787, 19738, 20754, 21664, 22202, 22542, 22569),
+  DEFINE_DST7_P16_MATRIX(   8,    17,    25,    33,    40,    48,    55,    62,    68,    73,    77,    81,    85,    87,    88,    88)
+};
+const TMatrixCoeff g_trCoreDST7P32[TRANSFORM_NUMBER_OF_DIRECTIONS][32][32] =
+{
+  DEFINE_DST7_P32_MATRIX( 1043,  2291,  3225,  4478,  5414,  6623,  7734,  8606,  9720, 10770, 11526, 12679, 13616, 14312, 15230, 16143, 16894, 17448, 18415, 19007, 19708, 20019, 20385, 21131, 21463, 21901, 22053, 22544, 22533, 22715, 23136, 23065),
+  DEFINE_DST7_P32_MATRIX(    4,     9,    13,    17,    21,    26,    30,    34,    38,    42,    46,    50,    53,    56,    60,    63,    66,    68,    72,    74,    77,    78,    80,    82,    84,    85,    86,    87,    88,    89,    90,    90)
+};
+
+#else
 //--------------------------------------------------------------------------------------------------
 // DCT-2
 const TMatrixCoeff g_trCoreDCT2P2[TRANSFORM_NUMBER_OF_DIRECTIONS][2][2] =
@@ -426,5 +510,5 @@ const TMatrixCoeff g_trCoreDST7P32[TRANSFORM_NUMBER_OF_DIRECTIONS][32][32] =
   DEFINE_DST7_P32_MATRIX(4,     9,    13,    17,    21,    26,    30,    34,    38,    42,    46,    50,    53,    56,    60,    63,    66,    68,    72,    74,    77,    78,    80,    82,    84,    85,    86,    87,    88,    89,    90,    90),
   DEFINE_DST7_P32_MATRIX(4,     9,    13,    17,    21,    26,    30,    34,    38,    42,    46,    50,    53,    56,    60,    63,    66,    68,    72,    74,    77,    78,    80,    82,    84,    85,    86,    87,    88,    89,    90,    90)
 };
-
+#endif
 //--------------------------------------------------------------------------------------------------

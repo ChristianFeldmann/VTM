@@ -415,7 +415,11 @@ void InterpolationFilter::filterCopy( const ClpRng& clpRng, const Pel *src, int 
   }
   else if ( isFirst )
   {
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+    const int shift = IF_INTERNAL_FRAC_BITS(clpRng.bd);
+#else
     const int shift = std::max<int>(2, (IF_INTERNAL_PREC - clpRng.bd));
+#endif
 
     if (biMCForDMVR)
     {
@@ -464,7 +468,11 @@ void InterpolationFilter::filterCopy( const ClpRng& clpRng, const Pel *src, int 
   }
   else
   {
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+    const int shift = IF_INTERNAL_FRAC_BITS(clpRng.bd);
+#else
     const int shift = std::max<int>(2, (IF_INTERNAL_PREC - clpRng.bd));
+#endif
 
     if (biMCForDMVR)
     {
@@ -567,7 +575,11 @@ void InterpolationFilter::filter(const ClpRng& clpRng, Pel const *src, int srcSt
   src -= ( N/2 - 1 ) * cStride;
 
   int offset;
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+  int headRoom = IF_INTERNAL_FRAC_BITS(clpRng.bd);
+#else
   int headRoom = std::max<int>(2, (IF_INTERNAL_PREC - clpRng.bd));
+#endif
   int shift    = IF_FILTER_PREC;
   // with the current settings (IF_INTERNAL_PREC = 14 and IF_FILTER_PREC = 6), though headroom can be
   // negative for bit depths greater than 14, shift will remain non-negative for bit depths of 8->20
@@ -899,7 +911,11 @@ void InterpolationFilter::xWeightedGeoBlk(const PredictionUnit &pu, const uint32
   const char    log2WeightBase = 3;
   const ClpRng  clipRng = pu.cu->slice->clpRngs().comp[compIdx];
   const int32_t clipbd = clipRng.bd;
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+  const int32_t shiftWeighted = IF_INTERNAL_FRAC_BITS(clipbd) + log2WeightBase;
+#else
   const int32_t shiftWeighted = std::max<int>(2, (IF_INTERNAL_PREC - clipbd)) + log2WeightBase;
+#endif
   const int32_t offsetWeighted = (1 << (shiftWeighted - 1)) + (IF_INTERNAL_OFFS << log2WeightBase);
   const uint32_t scaleX = getComponentScaleX(compIdx, pu.chromaFormat);
   const uint32_t scaleY = getComponentScaleY(compIdx, pu.chromaFormat);

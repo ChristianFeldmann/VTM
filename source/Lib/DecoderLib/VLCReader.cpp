@@ -5614,7 +5614,11 @@ void HLSyntaxReader::alfFilter( AlfParam& alfParam, const bool isChroma, const i
   AlfFilterShape alfShape( isChroma ? 5 : 7 );
   const int numFilters = isChroma ? 1 : alfParam.numLumaFilters;
   short* coeff = isChroma ? alfParam.chromaCoeff[altIdx] : alfParam.lumaCoeff;
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+  Pel*   clipp = isChroma ? alfParam.chromaClipp[altIdx] : alfParam.lumaClipp;
+#else
   short* clipp = isChroma ? alfParam.chromaClipp[altIdx] : alfParam.lumaClipp;
+#endif
 
 
   // Filter coefficients

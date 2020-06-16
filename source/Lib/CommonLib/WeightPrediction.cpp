@@ -186,7 +186,11 @@ void WeightPrediction::addWeightBi(const CPelUnitBuf          &pcYuvSrc0,
     const int  w0       = wp0[compID].w;
     const int  offset   = wp0[compID].offset;
     const int  clipBD   = clpRng.bd;
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+    const int shiftNum = IF_INTERNAL_FRAC_BITS(clipBD);
+#else
     const int  shiftNum = std::max<int>(2, (IF_INTERNAL_PREC - clipBD));
+#endif
     const int  shift    = wp0[compID].shift + shiftNum;
     const int  round    = (enableRounding[compID] && (shift > 0)) ? (1 << (shift - 1)) : 0;
     const int  w1       = wp1[compID].w;
@@ -243,7 +247,11 @@ void WeightPrediction::addWeightBiComponent(const CPelUnitBuf          &pcYuvSrc
   const int  w0       = wp0[compID].w;
   const int  offset   = wp0[compID].offset;
   const int  clipBD   = clpRng.bd;
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+  const int shiftNum = IF_INTERNAL_FRAC_BITS(clipBD);
+#else
   const int  shiftNum = std::max<int>(2, (IF_INTERNAL_PREC - clipBD));
+#endif
   const int  shift    = wp0[compID].shift + shiftNum;
   const int  round    = (enableRounding[compID] && (shift > 0)) ? (1 << (shift - 1)) : 0;
   const int  w1       = wp1[compID].w;
@@ -304,7 +312,11 @@ void  WeightPrediction::addWeightUni(const CPelUnitBuf          &pcYuvSrc0,
     const int  w0           = wp0[compID].w;
     const int  offset       = wp0[compID].offset;
     const int  clipBD       = clpRng.bd;
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+    const int shiftNum      = IF_INTERNAL_FRAC_BITS(clipBD);
+#else
     const int  shiftNum     = std::max<int>(2, (IF_INTERNAL_PREC - clipBD));
+#endif
     const int  shift        = wp0[compID].shift + shiftNum;
     const uint32_t iSrc0Stride  = pcYuvSrc0.bufs[compID].stride;
     const uint32_t iDstStride   = rpcYuvDst.bufs[compID].stride;

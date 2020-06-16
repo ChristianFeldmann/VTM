@@ -440,8 +440,13 @@ void AreaBuf<T>::removeWeightHighFreq(const AreaBuf<T>& other, const bool bClip,
   {
 #endif
     int normalizer = ((1 << 16) + (bcwWeight > 0 ? (bcwWeight >> 1) : -(bcwWeight >> 1))) / bcwWeight;
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+    Intermediate_Int weight0 = normalizer << log2WeightBase;
+    Intermediate_Int weight1 = bcwWeightOther * normalizer;
+#else
     int weight0 = normalizer << log2WeightBase;
     int weight1 = bcwWeightOther * normalizer;
+#endif
 #define REM_HF_INC  \
   src += srcStride; \
   dst += dstStride; \

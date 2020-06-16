@@ -77,7 +77,11 @@ extern const int g_quantScales   [2/*0=4^n blocks, 1=2*4^n blocks*/][SCALING_LIS
 extern const int g_invQuantScales[2/*0=4^n blocks, 1=2*4^n blocks*/][SCALING_LIST_REM_NUM];          // IQ(QP%6)
 
 static const int g_numTransformMatrixSizes = 6;
+#if RExt__HIGH_PRECISION_FORWARD_TRANSFORM
+static const int g_transformMatrixShift[TRANSFORM_NUMBER_OF_DIRECTIONS] = { 14, 6 };
+#else
 static const int g_transformMatrixShift[TRANSFORM_NUMBER_OF_DIRECTIONS] = {  6, 6 };
+#endif
 
 
 // ====================================================================================================================
@@ -224,7 +228,11 @@ const int g_IBCBufferSize = 256 * 128;
 void initGeoTemplate();
 extern int16_t** g_GeoParams;
 extern int16_t*  g_globalGeoWeights   [GEO_NUM_PRESTORED_MASK];
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+extern Pel*      g_globalGeoEncSADmask[GEO_NUM_PRESTORED_MASK];
+#else
 extern int16_t*  g_globalGeoEncSADmask[GEO_NUM_PRESTORED_MASK];
+#endif
 extern int16_t   g_weightOffset       [GEO_NUM_PARTITION_MODE][GEO_NUM_CU_SIZE][GEO_NUM_CU_SIZE][2];
 extern int8_t    g_angle2mask         [GEO_NUM_ANGLES];
 extern int8_t    g_Dis[GEO_NUM_ANGLES];

@@ -59,8 +59,10 @@
 #define JVET_R0058                                        1 // JVET-R0058: the combination of RPR, subpictures, and scalability
 
 #define JVET_R0185_OLS_DPB_CLEANUP                        1 // JVET-R0185: Replace if( !vps_all_independent_layers_flag ) condition on vps_num_dpb_params syntax element with if(!each_layer_is_an_ols_flag)
-                                                            //             Change vps_num_dpb_params to vps_num_dpb_params_minus1 and change the semantics to a �two-way?constraint
+                                                            //             Change vps_num_dpb_params to vps_num_dpb_params_minus1 and change the semantics to a two-way constraint
                                                             //             Signal DPB parameters for OLS in this case only if(!each_layer_is_an_ols_flag)
+
+#define JVET_R0184_WRAPAROUND_SUBPICS                     1 // JVET-R0184: Wraparound for subpictures
 
 #define JVET_R0078_DISABLE_CHROMA_DBF_OFFSET_SINGALLING   1 // JVET-R0078: disable chroma DBF offset signalling
 

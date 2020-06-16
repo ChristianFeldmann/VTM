@@ -779,7 +779,11 @@ void InterPrediction::xPredInterBlk ( const ComponentID& compID, const Predictio
   JVET_J0090_SET_CACHE_ENABLE((srcPadStride == 0) && (bioApplied == false)); // Enabled only in non-DMVR-non-BDOF process, In DMVR process, srcPadStride is always non-zero
   if (bioApplied && compID == COMPONENT_Y)
   {
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+    const int shift = IF_INTERNAL_FRAC_BITS(clpRng.bd);
+#else
     const int shift = std::max<int>(2, (IF_INTERNAL_PREC - clpRng.bd));
+#endif
     int xOffset = (xFrac < 8) ? 1 : 0;
     int yOffset = (yFrac < 8) ? 1 : 0;
     const Pel* refPel = refBuf.buf - yOffset * refBuf.stride - xOffset;
@@ -1192,7 +1196,11 @@ void InterPrediction::xPredAffineBlk(const ComponentID &compID, const Prediction
       }
       if (enablePROF)
       {
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+        const int shift = IF_INTERNAL_FRAC_BITS(clpRng.bd);
+#else
         const int shift = std::max<int>(2, (IF_INTERNAL_PREC - clpRng.bd));
+#endif
         const int xOffset = xFrac >> 3;
         const int yOffset = yFrac >> 3;
 
@@ -1219,15 +1227,23 @@ void InterPrediction::xPredAffineBlk(const ComponentID &compID, const Prediction
         PelBuf gradYBuf = gradYExt.subBuf(0, 0, blockWidth + 2, blockHeight + 2);
         g_pelBufOP.profGradFilter(dstExtBuf.buf, dstExtBuf.stride, blockWidth + 2, blockHeight + 2, gradXBuf.stride, gradXBuf.buf, gradYBuf.buf, clpRng.bd);
 
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+        const Pel offset = (1 << (shift - 1)) + IF_INTERNAL_OFFS;
+#else
         const int shiftNum = std::max<int>(2, (IF_INTERNAL_PREC - clpRng.bd));
         const Pel offset = (1 << (shiftNum - 1)) + IF_INTERNAL_OFFS;
+#endif
         Pel* src = dstExtBuf.bufAt(PROF_BORDER_EXT_W, PROF_BORDER_EXT_H);
         Pel* gX = gradXBuf.bufAt(PROF_BORDER_EXT_W, PROF_BORDER_EXT_H);
         Pel* gY = gradYBuf.bufAt(PROF_BORDER_EXT_W, PROF_BORDER_EXT_H);
 
         Pel * dstY = dstBuf.bufAt(w, h);
 
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+        g_pelBufOP.applyPROF(dstY, dstBuf.stride, src, dstExtBuf.stride, blockWidth, blockHeight, gX, gY, gradXBuf.stride, dMvScaleHor, dMvScaleVer, blockWidth, bi, shift, offset, clpRng);
+#else
         g_pelBufOP.applyPROF(dstY, dstBuf.stride, src, dstExtBuf.stride, blockWidth, blockHeight, gX, gY, gradXBuf.stride, dMvScaleHor, dMvScaleVer, blockWidth, bi, shiftNum, offset, clpRng);
+#endif
       }
       }
     }
@@ -1280,7 +1296,11 @@ void InterPrediction::applyBiOptFlow(const PredictionUnit &pu, const CPelUnitBuf
 
   const ClpRng& clpRng = pu.cu->cs->slice->clpRng(COMPONENT_Y);
   const int   bitDepth = clipBitDepths.recon[toChannelType(COMPONENT_Y)];
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+  const int   shiftNum = IF_INTERNAL_FRAC_BITS(bitDepth) + 1;
+#else
   const int   shiftNum = IF_INTERNAL_PREC + 1 - bitDepth;
+#endif
   const int   offset = (1 << (shiftNum - 1)) + 2 * IF_INTERNAL_OFFS;
   const int   limit = ( 1 << 4 ) - 1;
 

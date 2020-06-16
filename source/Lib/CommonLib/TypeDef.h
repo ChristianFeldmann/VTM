@@ -61,6 +61,9 @@
 
 #define RETRAIN_CABAC                                     1 // CABAC initial values retrained on VTM-9.0rc1
 
+#define JVET_R0351_HIGH_BIT_DEPTH_SUPPORT                 1 // JVET-R0351: high bit depth coding support (syntax changes, no mathematical differences for CTCs)
+#define JVET_R0351_HIGH_BIT_DEPTH_ENABLED                 0 // JVET-R0351: high bit depth coding enabled (increases accuracies of some calculations, e.g. transforms)
+
 #define JVET_R0058                                        1 // JVET-R0058: the combination of RPR, subpictures, and scalability
 
 #define JVET_R0185_OLS_DPB_CLEANUP                        1 // JVET-R0185: Replace if( !vps_all_independent_layers_flag ) condition on vps_num_dpb_params syntax element with if(!each_layer_is_an_ols_flag)
@@ -332,7 +335,11 @@ typedef std::pair<int, int>  TrCost;
 
 // This can be enabled by the makefile
 #ifndef RExt__HIGH_BIT_DEPTH_SUPPORT
+#if JVET_R0351_HIGH_BIT_DEPTH_ENABLED
+#define RExt__HIGH_BIT_DEPTH_SUPPORT                      1 ///< 0 (default) use data type definitions for 8-10 bit video, 1 = use larger data types to allow for up to 16-bit video (originally developed as part of N0188)
+#else
 #define RExt__HIGH_BIT_DEPTH_SUPPORT                      0 ///< 0 (default) use data type definitions for 8-10 bit video, 1 = use larger data types to allow for up to 16-bit video (originally developed as part of N0188)
+#endif
 #endif
 
 // SIMD optimizations

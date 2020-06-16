@@ -102,6 +102,11 @@ public:
   void            decimateNumCtxBins(int n) { m_remainingContextBins -= n; }
   void            increaseNumCtxBins(int n) { m_remainingContextBins += n; }
 
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+  TCoeff          minCoeff()                                const { return m_minCoeff; }
+  TCoeff          maxCoeff()                                const { return m_maxCoeff; }
+#endif
+
   unsigned sigCtxIdAbs( int scanPos, const TCoeff* coeff, const int state )
   {
     const uint32_t posY      = m_scan[scanPos].y;
@@ -241,6 +246,13 @@ public:
     return m_tsLrg1FlagCtxSet(numPos);
   }
 
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+  template <typename T> int sgn(T val)
+  {
+    return (T(0) < val) - (val < T(0));
+  }
+
+#endif
   unsigned signCtxIdAbsTS(int scanPos, const TCoeff* coeff, int bdpcm)
   {
     const uint32_t  posY = m_scan[scanPos].y;
@@ -252,11 +264,19 @@ public:
 
     if (posX > 0)
     {
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+      rightSign = sgn(pData[-1]);
+#else
       rightSign = pData[-1];
+#endif
     }
     if (posY > 0)
     {
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+      belowSign = sgn(pData[-(int)m_width]);
+#else
       belowSign = pData[-(int)m_width];
+#endif
     }
 
     if ((rightSign == 0 && belowSign == 0) || ((rightSign*belowSign) < 0))
@@ -380,6 +400,10 @@ private:
   const int                 m_lastShiftX;
   const int                 m_lastShiftY;
   const bool                m_TrafoBypass;
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+  const TCoeff              m_minCoeff;
+  const TCoeff              m_maxCoeff;
+#endif
   // modified
   int                       m_scanPosLast;
   int                       m_subSetId;

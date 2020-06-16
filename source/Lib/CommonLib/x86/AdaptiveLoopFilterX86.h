@@ -297,7 +297,11 @@ static void simdDeriveClassificationBlk(AlfClassifier **classifier, int **laplac
 template<X86_VEXT vext>
 static void simdFilter5x5Blk(AlfClassifier **classifier, const PelUnitBuf &recDst, const CPelUnitBuf &recSrc,
   const Area &blkDst, const Area &blk, const ComponentID compId, const short *filterSet,
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+  const Pel *fClipSet, const ClpRng &clpRng, CodingStructure &cs, const int vbCTUHeight,
+#else
   const short *fClipSet, const ClpRng &clpRng, CodingStructure &cs, const int vbCTUHeight,
+#endif
   int vbPos)
 
 {
@@ -484,7 +488,11 @@ static const uint16_t shuffleTab[4][2][8] = {
 template<X86_VEXT vext>
 static void simdFilter7x7Blk(AlfClassifier **classifier, const PelUnitBuf &recDst, const CPelUnitBuf &recSrc,
   const Area &blkDst, const Area &blk, const ComponentID compId, const short *filterSet,
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+  const Pel *fClipSet, const ClpRng &clpRng, CodingStructure &cs, const int vbCTUHeight,
+#else
   const short *fClipSet, const ClpRng &clpRng, CodingStructure &cs, const int vbCTUHeight,
+#endif
   int vbPos)
 {
   CHECK((vbCTUHeight & (vbCTUHeight - 1)) != 0, "vbCTUHeight must be a power of 2");

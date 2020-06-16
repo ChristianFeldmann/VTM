@@ -3294,7 +3294,11 @@ void HLSWriter::alfFilter( const AlfParam& alfParam, const bool isChroma, const 
 {
   AlfFilterShape alfShape(isChroma ? 5 : 7);
   const short* coeff = isChroma ? alfParam.chromaCoeff[altIdx] : alfParam.lumaCoeff;
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+  const Pel* clipp = isChroma ? alfParam.chromaClipp[altIdx] : alfParam.lumaClipp;
+#else
   const short* clipp = isChroma ? alfParam.chromaClipp[altIdx] : alfParam.lumaClipp;
+#endif
   const int numFilters = isChroma ? 1 : alfParam.numLumaFilters;
 
   // vlc for all

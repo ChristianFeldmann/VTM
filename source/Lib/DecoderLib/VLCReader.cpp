@@ -2838,7 +2838,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   }
   else
   {
-    picHeader->setRecoveryPocCnt( 0 );
+    picHeader->setRecoveryPocCnt( -1 );
   }
 
   std::vector<bool> phExtraBitsPresent = sps->getExtraPHBitPresentFlags();

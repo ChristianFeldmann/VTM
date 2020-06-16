@@ -52,6 +52,9 @@
 
 //########### place macros to be removed in next cycle below this line ###############
 #define JVET_R0080                                        1 // JVET-R0080, Change the syntax condition for pps_tile_idx_delta_present_flag. When the value of pps_num_slices_in_pic_minus1 is greater than 1 instead of 0, the syntax element of pps_tile_idx_delta_present_flag is signalled.
+
+#define JVET_R0041                                        1 // JVET-R0041: Picture types related constraints
+
 #define JVET_R0064                                        1 // JVET-R0064, aspect 2: Move the flag scaling_matrix_for_lfnst_disabled_flag from the scaling_list_data( ) syntax to the SPS.
 
 #define RETRAIN_CABAC                                     1 // CABAC initial values retrained on VTM-9.0rc1

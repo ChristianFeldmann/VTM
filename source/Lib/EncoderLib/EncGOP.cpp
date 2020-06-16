@@ -1970,12 +1970,12 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     if(iPOCLast == 0) //case first frame or first top field
     {
       pocCurr=0;
-      iTimeOffset = multipleFactor;
+      iTimeOffset = isField ? (1 - multipleFactor) : multipleFactor;
     }
     else if(iPOCLast == 1 && isField) //case first bottom field, just like the first frame, the poc computation is not right anymore, we set the right value
     {
       pocCurr = 1;
-      iTimeOffset = 1;
+      iTimeOffset = multipleFactor + 1;
     }
     else
     {

@@ -50,7 +50,7 @@ Slice::Slice()
 : m_iPOC                          ( 0 )
 , m_iLastIDR                      ( 0 )
 #if JVET_R0041
-, m_prevGDRInSameLayerPOC         ( 0 )
+, m_prevGDRInSameLayerPOC         ( MAX_INT )
 #endif
 , m_iAssociatedIRAP               ( 0 )
 , m_iAssociatedIRAPType           ( NAL_UNIT_INVALID )
@@ -721,9 +721,9 @@ void Slice::checkRPL(const ReferencePictureList* pRPL0, const ReferencePictureLi
 #endif
     {
 #if JVET_R0041
-      CHECK(refPicPOC < irapPOC || refPicDecodingOrderNumber < associatedIRAPDecodingOrderNumber, "When the current picture follows an IRAP picture having the same value "
-            "of nuh_layer_id in both decoding order and output order, there shall be no picture referred to by an active entry in RefPicList[ 0 ] or RefPicList[ 1 ] that "
-            "precedes that IRAP picture in output order or decoding order.");
+      CHECK(refPicPOC < irapPOC || refPicDecodingOrderNumber < associatedIRAPDecodingOrderNumber, "When the current picture, with nuh_layer_id equal to a particular value layerId, "
+           "is an IRAP picture, there shall be no picture referred to by an entry in RefPicList[ 0 ] that precedes, in output order or decoding order, any preceding IRAP picture "
+           "with nuh_layer_id equal to layerId in decoding order (when present).");
 #else
       CHECK(refPicPOC < irapPOC || refPicDecodingOrderNumber < associatedIRAPDecodingOrderNumber, "IRAP picture detected that violate the rule that no entry in RefPicList[] shall precede, in output order or decoding order, any preceding IRAP picture in decoding order (when present).");
 #endif
@@ -804,9 +804,9 @@ void Slice::checkRPL(const ReferencePictureList* pRPL0, const ReferencePictureLi
 #if JVET_R0041
     if ((m_eNalUnitType == NAL_UNIT_CODED_SLICE_CRA || m_eNalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL || m_eNalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP))
     {
-        CHECK(refPicPOC < irapPOC || refPicDecodingOrderNumber < associatedIRAPDecodingOrderNumber, "When the current picture follows an IRAP picture having the same value of "
-              "nuh_layer_id in both decoding order and output order, there shall be no picture referred to by an active entry in RefPicList[ 0 ] or RefPicList[ 1 ] that "
-              "precedes that IRAP picture in output order or decoding order.");
+        CHECK(refPicPOC < irapPOC || refPicDecodingOrderNumber < associatedIRAPDecodingOrderNumber, "When the current picture, with nuh_layer_id equal to a particular value layerId, "
+             "is an IRAP picture, there shall be no picture referred to by an entry in RefPicList[ 1 ] that precedes, in output order or decoding order, any preceding IRAP picture "
+             "with nuh_layer_id equal to layerId in decoding order (when present).");
     }
 #else
     if (m_eNalUnitType == NAL_UNIT_CODED_SLICE_CRA)
@@ -1319,7 +1319,8 @@ void Slice::checkLeadingPictureRestrictions(PicList& rcListPic, const PPS& pps) 
 #endif
 
 #if JVET_R0041
-    if (pcSlice->getPicHeader()->getPicOutputFlag() == 1 && !this->getPicHeader()->getNoOutputBeforeRecoveryFlag() && pcPic->layerId == this->m_nuhLayerId)
+    if (pcSlice->getPicHeader()->getPicOutputFlag() == 1 && !this->getPicHeader()->getNoOutputBeforeRecoveryFlag() && pcPic->layerId == this->m_nuhLayerId
+        && nalUnitType != NAL_UNIT_CODED_SLICE_GDR && this->getPicHeader()->getRecoveryPocCnt() != -1)
     {
       if (this->getPOC() == this->getPicHeader()->getRecoveryPocCnt() + this->getPrevGDRInSameLayerPOC())
       {
@@ -2365,7 +2366,7 @@ PicHeader::PicHeader()
 , m_nonReferencePictureFlag                       ( 0 )
 , m_gdrPicFlag                                    ( 0 )
 , m_noOutputOfPriorPicsFlag                       ( 0 )
-, m_recoveryPocCnt                                ( 0 )
+, m_recoveryPocCnt                                ( -1 )
 , m_noOutputBeforeRecoveryFlag                    ( false )
 , m_handleCraAsCvsStartFlag                       ( false )
 , m_handleGdrAsCvsStartFlag                       ( false )
@@ -2462,7 +2463,7 @@ void PicHeader::initPicHeader()
   m_nonReferencePictureFlag                       = 0;
   m_gdrPicFlag                                    = 0;
   m_noOutputOfPriorPicsFlag                       = 0;
-  m_recoveryPocCnt                                = 0;
+  m_recoveryPocCnt                                = -1;
   m_spsId                                         = -1;
   m_ppsId                                         = -1;
   m_pocMsbPresentFlag                             = 0;

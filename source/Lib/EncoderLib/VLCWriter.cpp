@@ -1770,7 +1770,7 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader, bool writeRbspTrailingB
   }
   else
   {
-    picHeader->setRecoveryPocCnt( 0 );
+    picHeader->setRecoveryPocCnt( -1 );
   }
   // PH extra bits are not written in the reference encoder
   // as these bits are reserved for future extensions

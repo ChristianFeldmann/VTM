@@ -448,7 +448,7 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
   }
   else
   {
-    eSliceType = (pocLast == 0 || pocCurr - (isField ? 1 : 0) == 0 || m_pcGOPEncoder->getGOPSize() == 0) ? I_SLICE : eSliceType;
+    eSliceType = (pocLast == 0 || pocCurr == 0 || m_pcGOPEncoder->getGOPSize() == 0) ? I_SLICE : eSliceType;
   }
 
   rpcSlice->setDepth        ( depth );
@@ -599,23 +599,23 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
   {
     // restore original slice type
 
-    if (m_pcCfg->getIntraPeriod() > 0 )
+    if (m_pcCfg->getIntraPeriod() > 0)
     {
-      if(!(isField && pocLast == 1) || !m_pcCfg->getEfficientFieldIRAPEnabled())
+      if (!(isField && pocLast == 1) || !m_pcCfg->getEfficientFieldIRAPEnabled())
       {
-        if(m_pcCfg->getDecodingRefreshType() == 3)
+        if (m_pcCfg->getDecodingRefreshType() == 3)
         {
-          eSliceType = (pocLast == 0 || (pocCurr) % (m_pcCfg->getIntraPeriod() * multipleFactor) == 0 || m_pcGOPEncoder->getGOPSize() == 0) ? I_SLICE : eSliceType;
+          eSliceType = (pocLast == 0 || pocCurr % (m_pcCfg->getIntraPeriod() * multipleFactor) == 0 || m_pcGOPEncoder->getGOPSize() == 0) ? I_SLICE : eSliceType;
         }
         else
         {
           eSliceType = (pocLast == 0 || (pocCurr - (isField ? 1 : 0)) % (m_pcCfg->getIntraPeriod() * multipleFactor) == 0 || m_pcGOPEncoder->getGOPSize() == 0) ? I_SLICE : eSliceType;
         }
       }
-      else
-      {
-        eSliceType = (pocLast == 0 || pocCurr - (isField ? 1 : 0) == 0 || m_pcGOPEncoder->getGOPSize() == 0) ? I_SLICE : eSliceType;
-      }
+    }
+    else
+    {
+      eSliceType = (pocLast == 0 || pocCurr == 0 || m_pcGOPEncoder->getGOPSize() == 0) ? I_SLICE : eSliceType;
     }
     rpcSlice->setSliceType        ( eSliceType );
   }

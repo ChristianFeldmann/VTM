@@ -876,7 +876,6 @@ bool EncLib::encodePrep( bool flush, PelStorage* pcPicYuvOrg, PelStorage* pcPicY
   if( m_iNumPicRcvd && ( flush || m_iPOCLast == 1 || m_iNumPicRcvd == m_iGOPSize ) )
   {
     m_picIdInGOP = 0;
-    m_iPOCLast -= 2;
     keepDoing = false;
   }
 
@@ -889,7 +888,7 @@ bool EncLib::encode( const InputColourSpaceConversion snrCSC, std::list<PelUnitB
 
   for( int fieldNum = 0; fieldNum < 2; fieldNum++ )
   {
-    m_iPOCLast = ( m_iNumPicRcvd == m_iGOPSize ) ? m_uiNumAllPicCoded + m_iNumPicRcvd - 1 : m_iPOCLast + 1;
+    m_iPOCLast = m_iPOCLast < 2 ? fieldNum : m_iPOCLast;
 
     // compress GOP
     m_cGOPEncoder.compressGOP( m_iPOCLast, m_iPOCLast < 2 ? m_iPOCLast + 1 : m_iNumPicRcvd, m_cListPic, rcListPicYuvRecOut, true, isTff, snrCSC, m_printFrameMSE, false, m_picIdInGOP );

@@ -393,8 +393,8 @@ DecLib::DecLib()
   , m_isFirstGeneralHrd(true)
   , m_prevGeneralHrdParams()
 #if JVET_R0041
-  , m_prevGDRInSameLayerPOC{ 0 }
-  , m_pocCRA{ 0 }
+  , m_prevGDRInSameLayerPOC{ MAX_INT }
+  , m_pocCRA{ MAX_INT }
   , m_associatedIRAPDecodingOrderNumber{ 0 }
 #else
   , m_associatedIRAPType(NAL_UNIT_INVALID)
@@ -2702,8 +2702,8 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay, i
     case NAL_UNIT_EOS:
 #if JVET_R0041
       m_associatedIRAPType[nalu.m_nuhLayerId] = NAL_UNIT_INVALID;
-      m_pocCRA[nalu.m_nuhLayerId] = 0;
-      m_prevGDRInSameLayerPOC[nalu.m_nuhLayerId] = 0;
+      m_pocCRA[nalu.m_nuhLayerId] = MAX_INT;
+      m_prevGDRInSameLayerPOC[nalu.m_nuhLayerId] = MAX_INT;
 #else
       m_associatedIRAPType = NAL_UNIT_INVALID;
       m_pocCRA = 0;

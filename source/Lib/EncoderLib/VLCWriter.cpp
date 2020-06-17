@@ -1937,7 +1937,11 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader, bool writeRbspTrailingB
 
 
   // picture output flag
-  if( pps->getOutputFlagPresentFlag() )
+#if JVET_R0122_PIC_OUTPUT_FLAG_CLEANUP
+  if (pps->getOutputFlagPresentFlag() && !picHeader->getNonReferencePictureFlag())
+#else
+  if (pps->getOutputFlagPresentFlag())
+#endif
   {
     WRITE_FLAG( picHeader->getPicOutputFlag(), "pic_output_flag" );
   }

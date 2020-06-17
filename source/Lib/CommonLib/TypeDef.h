@@ -55,6 +55,8 @@
 
 #define JVET_R0118_PH_IN_SH_CONSTRAINT_FLAG               1 // JVET0R0118: Add a general constraint flag pic_header_in_slice_header_constraint_flag
 
+#define JVET_R0122_PIC_OUTPUT_FLAG_CLEANUP                1 // JVET-R0122: pic_output_flag is not signalled in picture header and inferred to be equal to 1, when the value of non_reference_picture_flag is equal to 1.
+
 #define JVET_R0041                                        1 // JVET-R0041: Picture types related constraints
 
 #define JVET_R0064                                        1 // JVET-R0064, aspect 2: Move the flag scaling_matrix_for_lfnst_disabled_flag from the scaling_list_data( ) syntax to the SPS.

@@ -366,8 +366,13 @@ void SEIWriter::xWriteSEIPictureTiming(const SEIPictureTiming& sei, const SEIBuf
             WRITE_CODE(sei.m_nalCpbAltInitialRemovalOffsetDelta[i][j], bp.m_initialCpbRemovalDelayLength,
                        "nal_cpb_alt_initial_cpb_removal_offset_delta[ i ][ j ]");
           }
+#if JVET_R0101_PROPOSAL2
+          WRITE_CODE(sei.m_nalCpbDelayOffset[i], bp.m_cpbRemovalDelayLength, "nal_cpb_delay_offset[ i ]");
+          WRITE_CODE(sei.m_nalDpbDelayOffset[i], bp.m_dpbOutputDelayLength, "nal_dpb_delay_offset[ i ]");
+#else
           WRITE_CODE(sei.m_nalCpbDelayOffset[i], bp.m_initialCpbRemovalDelayLength, "nal_cpb_delay_offset[ i ]");
           WRITE_CODE(sei.m_nalDpbDelayOffset[i], bp.m_initialCpbRemovalDelayLength, "nal_dpb_delay_offset[ i ]");
+#endif
         }
       }
 
@@ -383,8 +388,13 @@ void SEIWriter::xWriteSEIPictureTiming(const SEIPictureTiming& sei, const SEIBuf
             WRITE_CODE(sei.m_vclCpbAltInitialRemovalOffsetDelta[i][j], bp.m_initialCpbRemovalDelayLength,
                        "vcl_cpb_alt_initial_cpb_removal_offset_delta[ i ][ j ]");
           }
+#if JVET_R0101_PROPOSAL2
+          WRITE_CODE(sei.m_vclCpbDelayOffset[i], bp.m_cpbRemovalDelayLength, "vcl_cpb_delay_offset[ i ]");
+          WRITE_CODE(sei.m_vclDpbDelayOffset[i], bp.m_dpbOutputDelayLength,  "vcl_dpb_delay_offset[ i ]");
+#else
           WRITE_CODE(sei.m_vclCpbDelayOffset[i], bp.m_initialCpbRemovalDelayLength, "vcl_cpb_delay_offset[ i ]");
           WRITE_CODE(sei.m_vclDpbDelayOffset[i], bp.m_initialCpbRemovalDelayLength, "vcl_dpb_delay_offset[ i ]");
+#endif
         }
       }
 #else

@@ -96,6 +96,9 @@ EncGOP::EncGOP()
   m_pcListPic           = NULL;
   m_HLSWriter           = NULL;
   m_bSeqFirst           = true;
+#if JVET_R0065
+  m_audIrapOrGdrAuFlag  = false;
+#endif
 
   m_bRefreshPending     = 0;
   m_pocCRA              = 0;
@@ -428,8 +431,11 @@ void EncGOP::xWriteAccessUnitDelimiter (AccessUnit &accessUnit, Slice *slice)
   }
   CHECK( nalu.m_temporalId != accessUnit.temporalId, "TemporalId shall be equal to the TemporalId of the AU containing the NAL unit" );
   int picType = slice->isIntra() ? 0 : (slice->isInterP() ? 1 : 2);
-
+#if JVET_R0065
+  audWriter.codeAUD(nalu.m_Bitstream, m_audIrapOrGdrAuFlag, picType);
+#else
   audWriter.codeAUD(nalu.m_Bitstream, picType);
+#endif
   accessUnit.push_front(new NALUnitEBSP(nalu));
 }
 
@@ -3054,6 +3060,15 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
       int layerIdx = m_pcEncLib->getVPS() == nullptr ? 0 : m_pcEncLib->getVPS()->getGeneralLayerIdx( m_pcEncLib->getLayerId() );
 
+#if JVET_R0065
+      // it is assumed that layerIdx equal to 0 is always present
+      m_audIrapOrGdrAuFlag = pcSlice->getPicHeader()->getGdrPicFlag() || (pcSlice->isIRAP() && !pcSlice->getPPS()->getMixedNaluTypesInPicFlag());
+      if ((( m_pcEncLib->getVPS()->getMaxLayers() > 1 && m_audIrapOrGdrAuFlag) || m_pcCfg->getAccessUnitDelimiter()) && !layerIdx )
+      {
+        xWriteAccessUnitDelimiter(accessUnit, pcSlice);
+      }
+#endif
+
       // it is assumed that layerIdx equal to 0 is always present
       actualTotalBits += xWriteParameterSets(accessUnit, pcSlice, writePS, layerIdx);
       if (writePS)
@@ -3065,11 +3080,13 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         m_bSeqFirst = false;
       }
 
+#if !JVET_R0065
       // it is assumed that layerIdx equal to 0 is always present
       if( m_pcCfg->getAccessUnitDelimiter() && !layerIdx )
       {
         xWriteAccessUnitDelimiter(accessUnit, pcSlice);
       }
+#endif
 
       //send LMCS APS when LMCSModel is updated. It can be updated even current slice does not enable reshaper.
       //For example, in RA, update is on intra slice, but intra slice may not use reshaper

@@ -1579,6 +1579,7 @@ void CABACReader::adaptive_color_transform(CodingUnit& cu)
 
   if (CU::isInter(cu) || CU::isIBC(cu) || CU::isIntra(cu))
   {
+    RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET( STATS__CABAC_BITS__ACT );
     cu.colorTransform = (m_BinDecoder.decodeBin(Ctx::ACTFlag()));
   }
 }
@@ -1656,6 +1657,8 @@ void CABACReader::end_of_ctu( CodingUnit& cu, CUCtx& cuCtx )
 
 void CABACReader::cu_palette_info(CodingUnit& cu, ComponentID compBegin, uint32_t numComp, CUCtx& cuCtx)
 {
+  RExt__DECODER_DEBUG_BIT_STATISTICS_CREATE_SET( STATS__CABAC_BITS__PLT_MODE );
+
   const SPS&      sps = *(cu.cs->sps);
   TransformUnit&   tu = *cu.firstTU;
   int curPLTidx = 0;

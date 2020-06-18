@@ -2632,6 +2632,7 @@ SPS::SPS()
 #else
 , m_entropyCodingSyncEntryPointPresentFlag(false)
 #endif
+, m_internalMinusInputBitDepth{ 0, 0 }
 , m_sbtmvpEnabledFlag         (false)
 , m_bdofEnabledFlag           (false)
 , m_fpelMmvdEnabledFlag       ( false )

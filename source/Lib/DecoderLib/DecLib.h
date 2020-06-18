@@ -60,7 +60,7 @@ class InputNALUnit;
 //! \ingroup DecoderLib
 //! \{
 
-bool tryDecodePicture( Picture* pcPic, const int expectedPoc, const std::string& bitstreamFileName, bool bDecodeUntilPocFound = false, int debugCTU = -1, int debugPOC = -1 );
+bool tryDecodePicture( Picture* pcPic, const int expectedPoc, const std::string& bitstreamFileName, ParameterSetMap<APS> *apsMap = nullptr, bool bDecodeUntilPocFound = false, int debugCTU = -1, int debugPOC = -1 );
 // Class definition
 // ====================================================================================================================
 
@@ -185,6 +185,7 @@ public:
   int                     m_targetSubPicIdx;
 
   DCI*                    m_dci;
+  ParameterSetMap<APS>*   m_apsMapEnc;
 public:
   DecLib();
   virtual ~DecLib();
@@ -252,6 +253,9 @@ public:
     m_cTrQuantScalingList.init(nullptr, MAX_TB_SIZEY, false, false, false, false);
   }
 
+  void  setAPSMapEnc( ParameterSetMap<APS>* apsMap ) { m_apsMapEnc = apsMap;  }
+  bool  isNewPicture( std::ifstream *bitstreamFile, class InputByteStream *bytestream );
+  bool  isNewAccessUnit( bool newPicture, std::ifstream *bitstreamFile, class InputByteStream *bytestream );
 protected:
   void  xUpdateRasInit(Slice* slice);
 

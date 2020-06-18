@@ -1474,7 +1474,7 @@ bool isPicEncoded( int targetPoc, int curPoc, int curTLayer, int gopSize, int in
   return curTLayer <= tarTL && curId == 0;
 }
 
-void trySkipOrDecodePicture( bool& decPic, bool& encPic, const EncCfg& cfg, Picture* pcPic )
+void trySkipOrDecodePicture( bool& decPic, bool& encPic, const EncCfg& cfg, Picture* pcPic, ParameterSetMap<APS> *apsMap )
 {
   // check if we should decode a leading bitstream
   if( !cfg.getDecodeBitstream( 0 ).empty() )
@@ -1484,7 +1484,7 @@ void trySkipOrDecodePicture( bool& decPic, bool& encPic, const EncCfg& cfg, Pict
     {
       if( cfg.getForceDecodeBitstream1() )
       {
-        if( ( bDecode1stPart = tryDecodePicture( pcPic, pcPic->getPOC(), cfg.getDecodeBitstream( 0 ), false ) ) )
+        if( ( bDecode1stPart = tryDecodePicture( pcPic, pcPic->getPOC(), cfg.getDecodeBitstream( 0 ), apsMap, false ) ) )
         {
           decPic = bDecode1stPart;
         }
@@ -1494,7 +1494,7 @@ void trySkipOrDecodePicture( bool& decPic, bool& encPic, const EncCfg& cfg, Pict
         // update decode decision
         bool dbgCTU = cfg.getDebugCTU() != -1 && cfg.getSwitchPOC() == pcPic->getPOC();
 
-        if( ( bDecode1stPart = ( cfg.getSwitchPOC() != pcPic->getPOC() ) || dbgCTU ) && ( bDecode1stPart = tryDecodePicture( pcPic, pcPic->getPOC(), cfg.getDecodeBitstream( 0 ), false, cfg.getDebugCTU(), cfg.getSwitchPOC() ) ) )
+        if( ( bDecode1stPart = ( cfg.getSwitchPOC() != pcPic->getPOC() ) || dbgCTU ) && ( bDecode1stPart = tryDecodePicture( pcPic, pcPic->getPOC(), cfg.getDecodeBitstream( 0 ), apsMap, false, cfg.getDebugCTU(), cfg.getSwitchPOC() ) ) )
         {
           if( dbgCTU )
           {
@@ -1535,7 +1535,7 @@ void trySkipOrDecodePicture( bool& decPic, bool& encPic, const EncCfg& cfg, Pict
       expectedPoc = pcPic->getPOC() - iRestartIntraPOC;
       slice0.copySliceInfo( pcPic->slices[ 0 ], false );
     }
-    if( bDecode2ndPart && (bDecode2ndPart = tryDecodePicture( pcPic, expectedPoc, cfg.getDecodeBitstream(1), true )) )
+    if( bDecode2ndPart && (bDecode2ndPart = tryDecodePicture( pcPic, expectedPoc, cfg.getDecodeBitstream(1), apsMap, true )) )
     {
       decPic = bDecode2ndPart;
       if ( cfg.getBs2ModPOCAndType() )
@@ -2672,7 +2672,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     bool decPic = false;
     bool encPic = false;
     // test if we can skip the picture entirely or decode instead of encoding
-    trySkipOrDecodePicture( decPic, encPic, *m_pcCfg, pcPic );
+    trySkipOrDecodePicture( decPic, encPic, *m_pcCfg, pcPic, m_pcEncLib->getApsMap() );
 
     pcPic->cs->slice = pcSlice; // please keep this
 #if ENABLE_QPA
@@ -2960,6 +2960,9 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 #endif
         );
 
+        pcSlice->m_ccAlfFilterParam      = m_pcALF->getCcAlfFilterParam();
+        pcSlice->m_ccAlfFilterControl[0] = m_pcALF->getCcAlfControlIdc(COMPONENT_Cb);
+        pcSlice->m_ccAlfFilterControl[1] = m_pcALF->getCcAlfControlIdc(COMPONENT_Cr);
         //assign ALF slice header
         for (int s = 0; s < uiNumSliceSegments; s++)
         {
@@ -3022,6 +3025,83 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
       if( pcSlice->getSPS()->getSAOEnabledFlag() )
       {
         m_pcSAO->disabledRate( *pcPic->cs, pcPic->getSAO(1), m_pcCfg->getSaoEncodingRate(), m_pcCfg->getSaoEncodingRateChroma());
+      }
+      if (pcSlice->getSPS()->getALFEnabledFlag() && (pcSlice->getTileGroupAlfEnabledFlag(COMPONENT_Y) || pcSlice->getTileGroupCcAlfCbEnabledFlag() || pcSlice->getTileGroupCcAlfCrEnabledFlag()))
+      {
+        // IRAP AU: reset APS map
+        {
+          int layerIdx = pcSlice->getVPS() == nullptr ? 0 : pcSlice->getVPS()->getGeneralLayerIdx( pcSlice->getPic()->layerId );
+          if( !layerIdx && ( pcSlice->getPendingRasInit() || pcSlice->isIDRorBLA() ) )
+          {
+            // We have to reset all APS on IRAP, but in not encoding case we have to keep the parsed APS of current slice
+            // Get active ALF APSs from picture/slice header
+            const std::vector<int> sliceApsIdsLuma = pcSlice->getTileGroupApsIdLuma();
+
+            m_pcALF->setApsIdStart( ALF_CTB_MAX_NUM_APS );
+
+            ParameterSetMap<APS>* apsMap = m_pcEncLib->getApsMap();
+            apsMap->clear();
+
+            for( int apsId = 0; apsId < ALF_CTB_MAX_NUM_APS; apsId++ )
+            {
+              int psId = ( apsId << NUM_APS_TYPE_LEN ) + ALF_APS;
+              APS* aps = apsMap->getPS( psId );
+              if( aps )
+              {
+                // Check if this APS is currently the active one (used in current slice)
+                bool activeAps = false;
+                bool activeApsCcAlf = false;
+                // Luma
+                for( int i = 0; i < sliceApsIdsLuma.size(); i++ )
+                {
+                  if( aps->getAPSId() == sliceApsIdsLuma[i] )
+                  {
+                    activeAps = true;
+                    break;
+                  }
+                }
+                // Chroma
+                activeAps |= aps->getAPSId() == pcSlice->getTileGroupApsIdChroma();
+                // CC-ALF
+                activeApsCcAlf |= pcSlice->getTileGroupCcAlfCbEnabledFlag() && aps->getAPSId() == pcSlice->getTileGroupCcAlfCbApsId();
+                activeApsCcAlf |= pcSlice->getTileGroupCcAlfCrEnabledFlag() && aps->getAPSId() == pcSlice->getTileGroupCcAlfCrApsId();
+                if( !activeAps && !activeApsCcAlf )
+                {
+                  apsMap->clearChangedFlag( psId );
+                }
+                if( !activeAps  )
+                {
+                  aps->getAlfAPSParam().reset();
+                }
+                if( !activeApsCcAlf )
+                {
+                  aps->getCcAlfAPSParam().reset();
+                }
+              }
+            }
+          }
+        }
+
+        // Assign tne correct APS to slice and emulate the setting of ALF start APS ID
+        int changedApsId = -1;
+        for( int apsId = ALF_CTB_MAX_NUM_APS - 1; apsId >= 0; apsId-- )
+        {
+          ParameterSetMap<APS>* apsMap = m_pcEncLib->getApsMap();
+          int psId = ( apsId << NUM_APS_TYPE_LEN ) + ALF_APS;
+          APS* aps = apsMap->getPS( psId );
+          if( aps )
+          {
+            // In slice, replace the old APS (from decoder map) with the APS from encoder map due to later checks while bitstream writing
+            if( pcSlice->getAlfAPSs() && pcSlice->getAlfAPSs()[apsId] )
+            {
+              pcSlice->getAlfAPSs()[apsId] = aps;
+            }
+            if( apsMap->getChangedFlag( psId ) )
+              changedApsId = apsId;
+          }
+        }
+        if( changedApsId >= 0 )
+          m_pcALF->setApsIdStart( changedApsId );
       }
     }
 
@@ -3115,7 +3195,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
           {
             writeAPS = true;
             aps = pcSlice->getAlfAPSs()[apsId]; // use asp from slice header
-            *apsMap->allocatePS(apsId) = *aps; //allocate and cpy
+            *apsMap->allocatePS((apsId << NUM_APS_TYPE_LEN) + ALF_APS) = *aps; //allocate and cpy
             m_pcALF->setApsIdStart( apsId );
           }
           else if (pcSlice->getTileGroupCcAlfCbEnabledFlag() && !aps && apsId == pcSlice->getTileGroupCcAlfCbApsId())
@@ -3273,9 +3353,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
 
         tmpBitsBeforeWriting = m_HLSWriter->getNumberOfWrittenBits();
-        pcSlice->m_ccAlfFilterParam      = m_pcALF->getCcAlfFilterParam();
-        pcSlice->m_ccAlfFilterControl[0] = m_pcALF->getCcAlfControlIdc(COMPONENT_Cb);
-        pcSlice->m_ccAlfFilterControl[1] = m_pcALF->getCcAlfControlIdc(COMPONENT_Cr);
         m_HLSWriter->codeSliceHeader( pcSlice );
         actualHeadBits += ( m_HLSWriter->getNumberOfWrittenBits() - tmpBitsBeforeWriting );
 

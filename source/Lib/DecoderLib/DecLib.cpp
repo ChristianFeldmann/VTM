@@ -57,7 +57,7 @@
 #include "CommonLib/CodingStatistics.h"
 #endif
 
-bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::string& bitstreamFileName, bool bDecodeUntilPocFound /* = false */, int debugCTU /* = -1*/, int debugPOC /* = -1*/ )
+bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::string& bitstreamFileName, ParameterSetMap<APS> *apsMap, bool bDecodeUntilPocFound /* = false */, int debugCTU /* = -1*/, int debugPOC /* = -1*/ )
 {
   int      poc;
   PicList* pcListPic = NULL;
@@ -95,6 +95,7 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
       pcDecLib->setDebugCTU( debugCTU );
       pcDecLib->setDebugPOC( debugPOC );
       pcDecLib->setDecodedPictureHashSEIEnabled( true );
+      pcDecLib->setAPSMapEnc( apsMap );
 
       bFirstCall = false;
       msg( INFO, "start to decode %s \n", bitstreamFileName.c_str() );
@@ -105,18 +106,20 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
     // main decoder loop
     while( !!*bitstreamFile && goOn )
     {
-      /* location serves to work around a design fault in the decoder, whereby
-       * the process of reading a new slice that is the first slice of a new frame
-       * requires the DecApp::decode() method to be called again with the same
-       * nal unit. */
-      std::streampos location = bitstreamFile->tellg();
-      AnnexBStats stats       = AnnexBStats();
-
       InputNALUnit nalu;
+      nalu.m_nalUnitType = NAL_UNIT_INVALID;
+
+      // determine if next NAL unit will be the first one from a new picture
+      bool bNewPicture = pcDecLib->isNewPicture( bitstreamFile,  bytestream );
+      bool bNewAccessUnit = bNewPicture && pcDecLib->isNewAccessUnit( bNewPicture, bitstreamFile,  bytestream );
+      bNewPicture = bNewPicture && bNewAccessUnit;
+
+      if( !bNewPicture )
+      {
+      AnnexBStats stats       = AnnexBStats();
       byteStreamNALUnit( *bytestream, nalu.getBitstream().getFifo(), stats );
 
       // call actual decoding function
-      bool bNewPicture = false;
       if( nalu.getBitstream().getFifo().empty() )
       {
         /* this can happen if the following occur:
@@ -131,17 +134,8 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
         read( nalu );
         int iSkipFrame = 0;
 
-        bNewPicture = pcDecLib->decode(nalu, iSkipFrame, iPOCLastDisplay, 0);
-        if( bNewPicture )
-        {
-          bitstreamFile->clear();
-          /* location points to the current nalunit payload[1] due to the
-            * need for the annexB parser to read three extra bytes.
-            * [1] except for the first NAL unit in the file
-            *     (but bNewPicture doesn't happen then) */
-          bitstreamFile->seekg( location - std::streamoff( 3 ) );
-          bytestream->reset();
-        }
+        pcDecLib->decode(nalu, iSkipFrame, iPOCLastDisplay, 0);
+      }
       }
 
       if ((bNewPicture || !*bitstreamFile || nalu.m_nalUnitType == NAL_UNIT_EOS) && !pcDecLib->getFirstSliceInSequence(nalu.m_nuhLayerId))
@@ -335,7 +329,14 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
             }
           }
 
-
+          pcDecLib->updateAssociatedIRAP();
+          // LMCS APS will be assigned later in LMCS initialization step
+          pcEncPic->cs->picHeader->setLmcsAPS( nullptr );
+          if( bitstreamFile )
+          {
+            pcDecLib->resetAccessUnitNals();
+            pcDecLib->resetAccessUnitApsNals();
+          }
         }
         loopFiltered[nalu.m_nuhLayerId] = (nalu.m_nalUnitType == NAL_UNIT_EOS);
         if( nalu.m_nalUnitType == NAL_UNIT_EOS )
@@ -451,7 +452,9 @@ DecLib::DecLib()
   , m_vps( nullptr )
   , m_maxDecSubPicIdx(0)
   , m_maxDecSliceAddrInSubPic(-1)
+  , m_targetSubPicIdx(0)
   , m_dci(NULL)
+  , m_apsMapEnc( nullptr )
 {
 #if ENABLE_SIMD_OPT_BUFFER
   g_pelBufOP.initPelBufOpsX86();
@@ -2588,6 +2591,12 @@ void DecLib::xDecodeAPS(InputNALUnit& nalu)
   aps->setHasPrefixNalUnitType( nalu.m_nalUnitType == NAL_UNIT_PREFIX_APS );
 #endif
   m_parameterSetManager.checkAuApsContent( aps, m_accessUnitApsNals );
+  if( m_apsMapEnc )
+  {
+    APS* apsEnc = new APS();
+    *apsEnc = *aps;
+    m_apsMapEnc->storePS( ( apsEnc->getAPSId() << NUM_APS_TYPE_LEN ) + apsEnc->getAPSType(), apsEnc ); 
+  }
 
   // aps will be deleted if it was already stored (and did not changed),
   // thus, storing it must be last action.
@@ -2992,5 +3001,204 @@ void DecLib::xCheckMixedNalUnit(Slice* pcSlice, SPS *sps, InputNALUnit &nalu)
     }
     CHECK(!sameNalUnitType, "mixed_nalu_types_in_pic_flag is zero, but have different nal unit types");
   }
+}
+/**
+- lookahead through next NAL units to determine if current NAL unit is the first NAL unit in a new picture
+*/
+bool DecLib::isNewPicture(std::ifstream *bitstreamFile, class InputByteStream *bytestream)
+{
+  bool ret = false;
+  bool finished = false;
+
+  // cannot be a new picture if there haven't been any slices yet
+  if(getFirstSliceInPicture())
+  {
+    return false;
+  }
+
+  // save stream position for backup
+#if RExt__DECODER_DEBUG_STATISTICS
+  CodingStatistics::CodingStatisticsData* backupStats = new CodingStatistics::CodingStatisticsData(CodingStatistics::GetStatistics());
+  std::streampos location = bitstreamFile->tellg() - std::streampos(bytestream->GetNumBufferedBytes());
+#else
+  std::streampos location = bitstreamFile->tellg();
+#endif
+
+  // look ahead until picture start location is determined
+  while (!finished && !!(*bitstreamFile))
+  {
+    AnnexBStats stats = AnnexBStats();
+    InputNALUnit nalu;
+    byteStreamNALUnit(*bytestream, nalu.getBitstream().getFifo(), stats);
+    if (nalu.getBitstream().getFifo().empty())
+    {
+      msg( ERROR, "Warning: Attempt to decode an empty NAL unit\n");
+    }
+    else
+    {
+      // get next NAL unit type
+      read(nalu);
+      switch( nalu.m_nalUnitType ) {
+
+      // NUT that indicate the start of a new picture
+      case NAL_UNIT_ACCESS_UNIT_DELIMITER:
+      case NAL_UNIT_DCI:
+      case NAL_UNIT_VPS:
+      case NAL_UNIT_SPS:
+      case NAL_UNIT_PPS:
+      case NAL_UNIT_PH:
+        ret = true;
+        finished = true;
+        break;
+
+      // NUT that may be the start of a new picture - check first bit in slice header
+      case NAL_UNIT_CODED_SLICE_TRAIL:
+      case NAL_UNIT_CODED_SLICE_STSA:
+      case NAL_UNIT_CODED_SLICE_RASL:
+      case NAL_UNIT_CODED_SLICE_RADL:
+      case NAL_UNIT_RESERVED_VCL_4:
+      case NAL_UNIT_RESERVED_VCL_5:
+      case NAL_UNIT_RESERVED_VCL_6:
+      case NAL_UNIT_CODED_SLICE_IDR_W_RADL:
+      case NAL_UNIT_CODED_SLICE_IDR_N_LP:
+      case NAL_UNIT_CODED_SLICE_CRA:
+      case NAL_UNIT_CODED_SLICE_GDR:
+      case NAL_UNIT_RESERVED_IRAP_VCL_11:
+      case NAL_UNIT_RESERVED_IRAP_VCL_12:
+        ret = checkPictureHeaderInSliceHeaderFlag(nalu);
+        finished = true;
+        break;
+
+      // NUT that are not the start of a new picture
+      case NAL_UNIT_EOS:
+      case NAL_UNIT_EOB:
+      case NAL_UNIT_SUFFIX_APS:
+      case NAL_UNIT_SUFFIX_SEI:
+      case NAL_UNIT_FD:
+        ret = false;
+        finished = true;
+        break;
+
+      // NUT that might indicate the start of a new picture - keep looking
+      case NAL_UNIT_PREFIX_APS:
+      case NAL_UNIT_PREFIX_SEI:
+      case NAL_UNIT_RESERVED_NVCL_26:
+      case NAL_UNIT_RESERVED_NVCL_27:
+      case NAL_UNIT_UNSPECIFIED_28:
+      case NAL_UNIT_UNSPECIFIED_29:
+      case NAL_UNIT_UNSPECIFIED_30:
+      case NAL_UNIT_UNSPECIFIED_31:
+      default:
+        break;
+      }
+    }
+  }
+
+  // restore previous stream location - minus 3 due to the need for the annexB parser to read three extra bytes
+#if RExt__DECODER_DEBUG_BIT_STATISTICS
+  bitstreamFile->clear();
+  bitstreamFile->seekg(location);
+  bytestream->reset();
+  CodingStatistics::SetStatistics(*backupStats);
+  delete backupStats;
+#else
+  bitstreamFile->clear();
+  bitstreamFile->seekg(location-std::streamoff(3));
+  bytestream->reset();
+#endif
+
+  // return TRUE if next NAL unit is the start of a new picture
+  return ret;
+}
+
+/**
+- lookahead through next NAL units to determine if current NAL unit is the first NAL unit in a new access unit
+*/
+bool DecLib::isNewAccessUnit( bool newPicture, std::ifstream *bitstreamFile, class InputByteStream *bytestream )
+{
+  bool ret = false;
+  bool finished = false;
+
+  // can only be the start of an AU if this is the start of a new picture
+  if( newPicture == false )
+  {
+    return false;
+  }
+
+  // save stream position for backup
+#if RExt__DECODER_DEBUG_STATISTICS
+  CodingStatistics::CodingStatisticsData* backupStats = new CodingStatistics::CodingStatisticsData(CodingStatistics::GetStatistics());
+  std::streampos location = bitstreamFile->tellg() - std::streampos(bytestream->GetNumBufferedBytes());
+#else
+  std::streampos location = bitstreamFile->tellg();
+#endif
+
+  // look ahead until access unit start location is determined
+  while (!finished && !!(*bitstreamFile))
+  {
+    AnnexBStats stats = AnnexBStats();
+    InputNALUnit nalu;
+    byteStreamNALUnit(*bytestream, nalu.getBitstream().getFifo(), stats);
+    if (nalu.getBitstream().getFifo().empty())
+    {
+      msg( ERROR, "Warning: Attempt to decode an empty NAL unit\n");
+    }
+    else
+    {
+      // get next NAL unit type
+      read(nalu);
+      switch( nalu.m_nalUnitType ) {
+
+      // AUD always indicates the start of a new access unit
+      case NAL_UNIT_ACCESS_UNIT_DELIMITER:
+        ret = true;
+        finished = true;
+        break;
+
+      // slice types - check layer ID and POC
+      case NAL_UNIT_CODED_SLICE_TRAIL:
+      case NAL_UNIT_CODED_SLICE_STSA:
+      case NAL_UNIT_CODED_SLICE_RASL:
+      case NAL_UNIT_CODED_SLICE_RADL:
+      case NAL_UNIT_CODED_SLICE_IDR_W_RADL:
+      case NAL_UNIT_CODED_SLICE_IDR_N_LP:
+      case NAL_UNIT_CODED_SLICE_CRA:
+      case NAL_UNIT_CODED_SLICE_GDR:
+        ret = isSliceNaluFirstInAU( newPicture, nalu );
+        finished = true;
+        break;
+
+      // NUT that are not the start of a new access unit
+      case NAL_UNIT_EOS:
+      case NAL_UNIT_EOB:
+      case NAL_UNIT_SUFFIX_APS:
+      case NAL_UNIT_SUFFIX_SEI:
+      case NAL_UNIT_FD:
+        ret = false;
+        finished = true;
+        break;
+
+      // all other NUT - keep looking to find first VCL
+      default:
+        break;
+      }
+    }
+  }
+
+  // restore previous stream location
+#if RExt__DECODER_DEBUG_BIT_STATISTICS
+  bitstreamFile->clear();
+  bitstreamFile->seekg(location);
+  bytestream->reset();
+  CodingStatistics::SetStatistics(*backupStats);
+  delete backupStats;
+#else
+  bitstreamFile->clear();
+  bitstreamFile->seekg(location);
+  bytestream->reset();
+#endif
+
+  // return TRUE if next NAL unit is the start of a new picture
+  return ret;
 }
 //! \}

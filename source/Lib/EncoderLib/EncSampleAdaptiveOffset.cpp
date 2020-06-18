@@ -1093,7 +1093,7 @@ void EncSampleAdaptiveOffset::disabledRate( CodingStructure& cs, SAOBlkParam* re
   if (saoEncodingRate > 0.0)
   {
     const PreCalcValues& pcv = *cs.pcv;
-    const uint32_t numberOfComponents = m_numberOfComponents;
+    const uint32_t numberOfComponents = getNumberValidComponents( cs.picture->chromaFormat );
     int picTempLayer = cs.slice->getDepth();
     int numCtusForSAOOff[MAX_NUM_COMPONENT];
 

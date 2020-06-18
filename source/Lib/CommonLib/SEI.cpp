@@ -170,6 +170,9 @@ const char *SEI::getSEIMessageString(SEI::PayloadType payloadType)
     case SEI::USER_DATA_UNREGISTERED:               return "User data unregistered";
     case SEI::FILM_GRAIN_CHARACTERISTICS:           return "Film grain characteristics";           // not currently decoded
     case SEI::FRAME_PACKING:                        return "Frame packing arrangement";
+#if JVET_P0359_PARAMETER_SETS_INCLUSION_SEI
+    case SEI::PARAMETER_SETS_INCLUSION_INDICATION:  return "Parameter sets inclusion indication";
+#endif
     case SEI::DECODING_UNIT_INFO:                   return "Decoding unit information";
     case SEI::SCALABLE_NESTING:                     return "Scalable nesting";
     case SEI::DECODED_PICTURE_HASH:                 return "Decoded picture hash";

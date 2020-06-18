@@ -3027,7 +3027,7 @@ The table below lists the SEI messages defined for Version 1 and Range-Extension
    47 & Display orientation                      & Table \ref{tab:sei-display-orientation} \\
    56 & Green Metadata                           & Table \ref{tab:sei-green-metadata} \\
   128 & Structure of pictures information        & Table \ref{tab:sei-sop-info} \\
-  129 & Active parameter sets                    & Table \ref{tab:sei-active-parameter-sets} \\
+  129 & Parameter sets inclusion indication      & Table \ref{tab:sei-parameter-sets-inclusion-indication} \\
   130 & Decoding unit information                & Table \ref{tab:sei-decoding-unit-info} \\
   131 & Temporal sub-layer zero index            & Table \ref{tab:sei-temporal-level-0} \\
   132 & Decoded picture hash                     & Table \ref{tab:sei-decoded-picture-hash} \\
@@ -3411,11 +3411,14 @@ Enables or disables the insertion of the Structure of pictures information SEI m
 
 
 
-\begin{OptionTableNoShorthand}{Active parameter sets SEI message encoder parameters}{tab:sei-active-parameter-sets}
-\Option{SEIActiveParameterSets} &
+\begin{OptionTableNoShorthand}{Parameter sets inclusion indication SEI message encoder parameters}{tab:sei-parameter-sets-inclusion-indication}
+\Option{SEIParameterSetsInclusionIndication} &
 \Default{0} &
-Enables or disables the insertion of the Active parameter sets
-SEI messages.
+Enables or disables the insertion of the Parameter sets inclusion SEI messages.
+\\
+\Option{SEISelfContainedClvsFlag} &
+\Default{0} &
+When equal to 1, the SEI specifies that the CLVS contains all the required NAL units for decoding the CLVS that is associated with the SEI message and that sublayer up-switching within the CLVS works without a need of fetching parameter sets from PUs earlier in decoding order than the PU containing the picture at which the sublayer up-switching occurs.
 \\
 \end{OptionTableNoShorthand}
 

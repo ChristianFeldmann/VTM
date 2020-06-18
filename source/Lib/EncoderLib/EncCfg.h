@@ -527,6 +527,10 @@ protected:
   int       m_framePackingSEIId;
   int       m_framePackingSEIQuincunx;
   int       m_framePackingSEIInterpretation;
+#if JVET_P0359_PARAMETER_SETS_INCLUSION_SEI
+  bool      m_parameterSetsInclusionIndicationSEIEnabled;
+  bool      m_selfContainedClvsFlag;
+#endif
   bool      m_bpDeltasGOPStructure;
   bool      m_decodingUnitInfoSEIEnabled;
 
@@ -1494,6 +1498,12 @@ public:
   int   getFramePackingArrangementSEIQuincunx()                      { return m_framePackingSEIQuincunx; }
   void  setFramePackingArrangementSEIInterpretation(int b)           { m_framePackingSEIInterpretation = b; }
   int   getFramePackingArrangementSEIInterpretation()                { return m_framePackingSEIInterpretation; }
+#if JVET_P0359_PARAMETER_SETS_INCLUSION_SEI
+  void  setParameterSetsInclusionIndicationSEIEnabled(bool b)        { m_parameterSetsInclusionIndicationSEIEnabled = b; }
+  bool  getParameterSetsInclusionIndicationSEIEnabled() const        { return m_parameterSetsInclusionIndicationSEIEnabled; }
+  void  setSelfContainedClvsFlag(bool b)                             { m_selfContainedClvsFlag = b; }
+  int   getSelfContainedClvsFlag()                                   { return m_selfContainedClvsFlag; }
+#endif
   void  setBpDeltasGOPStructure(bool b)                              { m_bpDeltasGOPStructure = b;    }
   bool  getBpDeltasGOPStructure() const                              { return m_bpDeltasGOPStructure; }
   void  setDecodingUnitInfoSEIEnabled(bool b)                        { m_decodingUnitInfoSEIEnabled = b;    }

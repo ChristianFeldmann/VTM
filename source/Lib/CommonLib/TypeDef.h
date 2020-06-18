@@ -116,6 +116,8 @@
 
 #define JVET_R0166_SCALING_LISTS_CHROMA_444               1 // JVET-R0166: Scaling list for Chroma 444
 
+#define JVET_P0359_PARAMETER_SETS_INCLUSION_SEI           1 // JVET-P0359: Parameter sets inclusion indication SEI message
+
 #define JVET_R0191_ASPECT3                                1 // JVET-R0191#3: Modify the upper range of vps_num_dpb_params and num_ols_hrd_params_minus1 to be total number of OLSs minus the number of single-layer OLSs
                                                             //               Constrain that each PTL, DPB, and HRD params in VPS are referred to at least once
 

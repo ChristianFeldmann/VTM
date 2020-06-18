@@ -501,6 +501,10 @@ protected:
   int       m_framePackingSEIId;
   int       m_framePackingSEIQuincunx;
   int       m_framePackingSEIInterpretation;
+#if JVET_P0359_PARAMETER_SETS_INCLUSION_SEI
+  bool      m_parameterSetsInclusionIndicationSEIEnabled;
+  int       m_selfContainedClvsFlag;
+#endif
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
   int       m_preferredTransferCharacteristics;
 #endif

@@ -66,6 +66,9 @@ public:
 
   // leading SEIs
   void initSEIFramePacking(SEIFramePacking *sei, int currPicNum);
+#if JVET_P0359_PARAMETER_SETS_INCLUSION_SEI
+  void initSEIParameterSetsInclusionIndication(SEIParameterSetsInclusionIndication* sei);
+#endif
   void initSEIDependentRAPIndication(SEIDependentRAPIndication *sei);
   void initSEIBufferingPeriod(SEIBufferingPeriod *sei, bool noLeadingPictures);
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI

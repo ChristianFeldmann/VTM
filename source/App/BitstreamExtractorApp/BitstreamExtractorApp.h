@@ -88,6 +88,9 @@ protected:
 
   PicHeader             m_picHeader;
   int                   m_prevTid0Poc;
+#if JVET_R0068_ASPECT1_ASPECT6
+  int                   m_prevPicPOC;
+#endif
   std::vector<int>      m_updatedVPSList;
   std::vector<int>      m_updatedSPSList;
   std::vector<int>      m_updatedPPSList;

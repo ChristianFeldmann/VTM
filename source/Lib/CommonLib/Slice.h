@@ -1997,6 +1997,9 @@ private:
   bool             m_qpDeltaInfoInPhFlag;
   bool             m_mixedNaluTypesInPicFlag;
 
+#if JVET_R0068_ASPECT1_ASPECT6
+  bool             m_conformanceWindowFlag;
+#endif
   uint32_t         m_picWidthInLumaSamples;
   uint32_t         m_picHeightInLumaSamples;
   Window           m_conformanceWindow;
@@ -2247,6 +2250,10 @@ public:
   void                    setPicHeightInLumaSamples( uint32_t u )                         { m_picHeightInLumaSamples = u; }
   uint32_t                getPicHeightInLumaSamples() const                               { return  m_picHeightInLumaSamples; }
 
+#if JVET_R0068_ASPECT1_ASPECT6
+  void                    setConformanceWindowFlag(bool flag)                             { m_conformanceWindowFlag = flag; }
+  bool                    getConformanceWindowFlag() const                                { return m_conformanceWindowFlag; }
+#endif
   Window&                 getConformanceWindow()                                          { return  m_conformanceWindow; }
   const Window&           getConformanceWindow() const                                    { return  m_conformanceWindow; }
   void                    setConformanceWindow( Window& conformanceWindow )               { m_conformanceWindow = conformanceWindow; }

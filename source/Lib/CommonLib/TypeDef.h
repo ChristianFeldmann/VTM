@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_R0068_ASPECT1_ASPECT6                        1 // JVET-R0068 aspect 1: On slice_type constraint; JVET-R0068 aspect 6: On signalling of conformance window parameters
+
 //########### place macros to be removed in next cycle below this line ###############
 #define JVET_R0067_PICTURE_OUTPUT_FLAG                    1 // JVET-R0067: Update the derivation of PictureOutputFlag
 

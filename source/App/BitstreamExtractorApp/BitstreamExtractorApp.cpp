@@ -116,7 +116,11 @@ bool BitstreamExtractorApp::xCheckSliceSubpicture(InputNALUnit &nalu, int target
   slice.setNalUnitLayerId(nalu.m_nuhLayerId);
   slice.setTLayer(nalu.m_temporalId);
 
+#if JVET_R0068_ASPECT1_ASPECT6
+  m_hlSynaxReader.parseSliceHeader(&slice, &m_picHeader, &m_parameterSetManager, m_prevTid0Poc, m_prevPicPOC);
+#else
   m_hlSynaxReader.parseSliceHeader(&slice, &m_picHeader, &m_parameterSetManager, m_prevTid0Poc);
+#endif
 
   PPS *pps = m_parameterSetManager.getPPS(m_picHeader.getPPSId());
   CHECK (nullptr==pps, "referenced PPS not found");

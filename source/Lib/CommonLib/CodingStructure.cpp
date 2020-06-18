@@ -1212,7 +1212,7 @@ void CodingStructure::copyStructure( const CodingStructure& other, const Channel
     // add an analogue CU into own CU store
     const UnitArea &cuPatch = *pcu;
 
-    CodingUnit &cu = addCU(cuPatch, chType);
+    CodingUnit &cu = addCU(cuPatch, pcu->chType);
 
     // copy the CU info from subPatch
     cu = *pcu;
@@ -1228,8 +1228,7 @@ void CodingStructure::copyStructure( const CodingStructure& other, const Channel
     // add an analogue PU into own PU store
     const UnitArea &puPatch = *ppu;
 
-    PredictionUnit &pu = addPU(puPatch, chType);
-
+    PredictionUnit &pu = addPU(puPatch, ppu->chType);
     // copy the PU info from subPatch
     pu = *ppu;
   }
@@ -1257,9 +1256,7 @@ void CodingStructure::copyStructure( const CodingStructure& other, const Channel
       }
       // add an analogue TU into own TU store
       const UnitArea &tuPatch = *ptu;
-
-      TransformUnit &tu = addTU( tuPatch, chType );
-
+      TransformUnit &tu = addTU( tuPatch, ptu->chType );
       // copy the TU info from subPatch
       tu = *ptu;
     }

@@ -109,10 +109,10 @@ bool ParameterSetManager::activatePPS(int ppsId, bool isIRAP)
 
 bool ParameterSetManager::activateAPS(int apsId, int apsType)
 {
-  APS *aps = m_apsMap.getPS(apsId + (MAX_NUM_APS * apsType));
+  APS *aps = m_apsMap.getPS( ( apsId << NUM_APS_TYPE_LEN ) + apsType );
   if (aps)
   {
-    m_apsMap.setActive(apsId + (MAX_NUM_APS * apsType));
+    m_apsMap.setActive( ( apsId << NUM_APS_TYPE_LEN ) + apsType );
     return true;
   }
   else

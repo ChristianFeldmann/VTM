@@ -898,7 +898,6 @@ void DecLib::xCreateUnavailablePicture(int iUnavailablePoc, bool longTermFlag, c
   }
 
 }
-<<<<<<< HEAD
 
 #if JVET_R0065
 void DecLib::isCvsStart()
@@ -934,9 +933,6 @@ void DecLib::checkIncludedInFirstAu()
 #endif
 
 #if JVET_R0066_DPB_NO_OUTPUT_PRIOR_PIC_FLAG
-=======
-#if JVET_R0066
->>>>>>> signal ols_dpb_chroma_format[ i ] and ols_dpb_bitdepth_minus8[ i ] in the VPS, and check make sure no_output_of_prior_pics_flag are same foe all pics in an AU
 void DecLib::CheckNoOutputPriorPicFlagsInAccessUnit()
 {
   if (m_accessUnitNoOutputPriorPicFlags.size() > 1)
@@ -1639,11 +1635,7 @@ void DecLib::xCheckParameterSetConstraints(const int layerId)
   {
     CHECK( sps->getMaxPicWidthInLumaSamples() > vps->getOlsDpbPicSize( vps->m_targetOlsIdx ).width, "pic_width_max_in_luma_samples shall be less than or equal to the value of ols_dpb_pic_width[ i ]" );
     CHECK( sps->getMaxPicHeightInLumaSamples() > vps->getOlsDpbPicSize( vps->m_targetOlsIdx ).height, "pic_height_max_in_luma_samples shall be less than or equal to the value of ols_dpb_pic_height[ i ]" );
-<<<<<<< HEAD
 #if JVET_R0066_DPB_NO_OUTPUT_PRIOR_PIC_FLAG
-=======
-#if JVET_R0066
->>>>>>> signal ols_dpb_chroma_format[ i ] and ols_dpb_bitdepth_minus8[ i ] in the VPS, and check make sure no_output_of_prior_pics_flag are same foe all pics in an AU
     CHECK( sps->getChromaFormatIdc() > vps->getOlsDpbChromaFormatIdc( vps->m_targetOlsIdx ), "sps_chroma_format_idc shall be less than or equal to the value of ols_dpb_chroma_format[ i ]");
     CHECK((sps->getBitDepth(CHANNEL_TYPE_LUMA) - 8) > vps->getOlsDpbBitDepthMinus8( vps->m_targetOlsIdx ), "sps_bit_depth_minus8 shall be less than or equal to the value of ols_dpb_bitdepth_minus8[ i ]");
 #endif

@@ -52,7 +52,6 @@
 
 
 //########### place macros to be removed in next cycle below this line ###############
-<<<<<<< HEAD
 #define JVET_R0066_DPB_NO_OUTPUT_PRIOR_PIC_FLAG           1 // JVET-R0066: Signal the maximum values of chroma_format_idc and bit_depth_minus8 for all pictures of all layers in the VPS
                                                             //             The value of no_output_of_prior_pics_flag, when present, is required to be the same for all pictures in an AU
 
@@ -71,11 +70,6 @@
 
 #define JVET_R0041                                        1 // JVET-R0041: Picture types related constraints
 
-=======
-#define JVET_R0066                                        1 // JVET-R0066: Signal the maximum values of chroma_format_idc and bit_depth_minus8 for all pictures of all layers in the VPS
-                                                            //             The value of no_output_of_prior_pics_flag, when present, is required to be the same for all pictures in an AU
-
->>>>>>> signal ols_dpb_chroma_format[ i ] and ols_dpb_bitdepth_minus8[ i ] in the VPS, and check make sure no_output_of_prior_pics_flag are same foe all pics in an AU
 #define JVET_R0064                                        1 // JVET-R0064, aspect 2: Move the flag scaling_matrix_for_lfnst_disabled_flag from the scaling_list_data( ) syntax to the SPS.
 
 #define RETRAIN_CABAC                                     1 // CABAC initial values retrained on VTM-9.0rc1

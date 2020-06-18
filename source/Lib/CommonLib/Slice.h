@@ -991,11 +991,7 @@ public:
   std::vector<int>              m_numOutputLayersInOls;
   std::vector<int>              m_numLayersInOls;
   std::vector<std::vector<int>> m_layerIdInOls;
-<<<<<<< HEAD
 #if JVET_R0066_DPB_NO_OUTPUT_PRIOR_PIC_FLAG
-=======
-#if JVET_R0066
->>>>>>> signal ols_dpb_chroma_format[ i ] and ols_dpb_bitdepth_minus8[ i ] in the VPS, and check make sure no_output_of_prior_pics_flag are same foe all pics in an AU
   std::vector<int>              m_olsDpbChromaFormatIdc;
   std::vector<int>              m_olsDpbBitDepthMinus8;
 #endif
@@ -1100,11 +1096,7 @@ public:
   void              setOlsDpbPicSize( int olsIdx, Size size )            { m_olsDpbPicSize[olsIdx] = size;          }
   void              setOlsDpbPicWidth( int olsIdx, int width )           { m_olsDpbPicSize[olsIdx].width = width;   }
   void              setOlsDpbPicHeight( int olsIdx, int height )         { m_olsDpbPicSize[olsIdx].height = height; }
-<<<<<<< HEAD
 #if JVET_R0066_DPB_NO_OUTPUT_PRIOR_PIC_FLAG
-=======
-#if JVET_R0066
->>>>>>> signal ols_dpb_chroma_format[ i ] and ols_dpb_bitdepth_minus8[ i ] in the VPS, and check make sure no_output_of_prior_pics_flag are same foe all pics in an AU
   int               getOlsDpbChromaFormatIdc(int olsIdx) const           { return m_olsDpbChromaFormatIdc[olsIdx];  }
   int               getOlsDpbBitDepthMinus8(int olsIdx) const            { return m_olsDpbBitDepthMinus8[olsIdx];   }
   void              setOlsDpbChromaFormatIdc(int olsIdx, int chromaFormatIdc)  { m_olsDpbChromaFormatIdc[olsIdx] = chromaFormatIdc; }

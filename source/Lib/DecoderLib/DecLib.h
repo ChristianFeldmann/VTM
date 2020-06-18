@@ -172,11 +172,7 @@ private:
   std::vector<NalUnitInfo> m_nalUnitInfo[MAX_VPS_LAYERS];
   std::vector<int> m_accessUnitApsNals;
   std::vector<int> m_accessUnitSeiTids;
-<<<<<<< HEAD
 #if JVET_R0066_DPB_NO_OUTPUT_PRIOR_PIC_FLAG
-=======
-#if JVET_R0066
->>>>>>> signal ols_dpb_chroma_format[ i ] and ols_dpb_bitdepth_minus8[ i ] in the VPS, and check make sure no_output_of_prior_pics_flag are same foe all pics in an AU
   std::vector<bool> m_accessUnitNoOutputPriorPicFlags;
 #endif
 
@@ -246,15 +242,11 @@ public:
   void checkTidLayerIdInAccessUnit();
   void resetAccessUnitSeiPayLoadTypes()   { m_accessUnitSeiPayLoadTypes.clear(); }
   void checkSEIInAccessUnit();
-<<<<<<< HEAD
 #if JVET_R0065
   void isCvsStart();
   void checkIncludedInFirstAu();
 #endif
 #if JVET_R0066_DPB_NO_OUTPUT_PRIOR_PIC_FLAG
-=======
-#if JVET_R0066
->>>>>>> signal ols_dpb_chroma_format[ i ] and ols_dpb_bitdepth_minus8[ i ] in the VPS, and check make sure no_output_of_prior_pics_flag are same foe all pics in an AU
   void CheckNoOutputPriorPicFlagsInAccessUnit();
   void resetAccessUnitNoOutputPriorPicFlags() { m_accessUnitNoOutputPriorPicFlags.clear(); }
 #endif

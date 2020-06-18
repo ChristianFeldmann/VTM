@@ -2198,11 +2198,7 @@ void VPS::deriveOutputLayerSets()
   m_numLayersInOls.resize( m_totalNumOLSs );
   m_outputLayerIdInOls.resize( m_totalNumOLSs, std::vector<int>( m_uiMaxLayers, NOT_VALID ) );
   m_layerIdInOls.resize( m_totalNumOLSs, std::vector<int>( m_uiMaxLayers, NOT_VALID ) );
-<<<<<<< HEAD
 #if JVET_R0066_DPB_NO_OUTPUT_PRIOR_PIC_FLAG
-=======
-#if JVET_R0066
->>>>>>> signal ols_dpb_chroma_format[ i ] and ols_dpb_bitdepth_minus8[ i ] in the VPS, and check make sure no_output_of_prior_pics_flag are same foe all pics in an AU
   m_olsDpbChromaFormatIdc.resize(m_totalNumOLSs);
   m_olsDpbBitDepthMinus8.resize(m_totalNumOLSs);
 #endif

@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <cassert>
 
+#define JVET_R0068_ASPECT1_ASPECT6                        1 // JVET-R0068 aspect 1: On slice_type constraint; JVET-R0068 aspect 6: On signalling of conformance window parameters
+
 //########### place macros to be removed in next cycle below this line ###############
 #define JVET_R0080                                        1 // JVET-R0080, Change the syntax condition for pps_tile_idx_delta_present_flag. When the value of pps_num_slices_in_pic_minus1 is greater than 1 instead of 0, the syntax element of pps_tile_idx_delta_present_flag is signalled.
 

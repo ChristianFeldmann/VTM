@@ -2902,6 +2902,9 @@ PPS::PPS()
 , m_wpInfoInPhFlag                   (0)
 , m_qpDeltaInfoInPhFlag              (0)
 , m_mixedNaluTypesInPicFlag          ( false )
+#if JVET_R0068_ASPECT1_ASPECT6
+, m_conformanceWindowFlag            (false)
+#endif
 , m_picWidthInLumaSamples(352)
 , m_picHeightInLumaSamples( 288 )
 #if JVET_Q0764_WRAP_AROUND_WITH_RPR

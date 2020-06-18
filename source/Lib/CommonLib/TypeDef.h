@@ -51,6 +51,8 @@
 #include <cassert>
 
 //########### place macros to be removed in next cycle below this line ###############
+#define JVET_R0067_PICTURE_OUTPUT_FLAG                    1 // JVET-R0067: Update the derivation of PictureOutputFlag
+
 #define JVET_R0080                                        1 // JVET-R0080, Change the syntax condition for pps_tile_idx_delta_present_flag. When the value of pps_num_slices_in_pic_minus1 is greater than 1 instead of 0, the syntax element of pps_tile_idx_delta_present_flag is signalled.
 
 #define JVET_R0118_PH_IN_SH_CONSTRAINT_FLAG               1 // JVET0R0118: Add a general constraint flag pic_header_in_slice_header_constraint_flag

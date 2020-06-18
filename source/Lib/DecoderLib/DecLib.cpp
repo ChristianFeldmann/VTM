@@ -1997,7 +1997,21 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
     {
       VPS *vps = m_parameterSetManager.getVPS(sps->getVPSId());
       CHECK(vps == 0, "No VPS present");
+#if JVET_R0067_PICTURE_OUTPUT_FLAG
+      bool isCurLayerNotOutput = true;
+      for (int i = 0; i < vps->getNumLayersInOls(vps->m_targetOlsIdx); i++)
+      {
+        if( vps->getLayerIdInOls(vps->m_targetOlsIdx, i) == nalu.m_nuhLayerId )
+        {
+            isCurLayerNotOutput = false;
+            break;
+        }
+      }
+
+      if(isCurLayerNotOutput)
+#else
       if ((vps->getOlsModeIdc() == 0 && vps->getGeneralLayerIdx(nalu.m_nuhLayerId) < (vps->getMaxLayers() - 1) && vps->getOlsOutputLayerFlag(vps->m_targetOlsIdx, vps->getMaxLayers() - 1) == 1) || (vps->getOlsModeIdc() == 2 && vps->getOlsOutputLayerFlag(vps->m_targetOlsIdx, vps->getGeneralLayerIdx(nalu.m_nuhLayerId)) == 0))
+#endif
       {
         m_picHeader.setPicOutputFlag(false);
       }

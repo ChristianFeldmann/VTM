@@ -53,6 +53,7 @@
 #define JVET_R0068_ASPECT1_ASPECT6                        1 // JVET-R0068 aspect 1: On slice_type constraint; JVET-R0068 aspect 6: On signalling of conformance window parameters
 
 //########### place macros to be removed in next cycle below this line ###############
+
 #define JVET_R0067_PICTURE_OUTPUT_FLAG                    1 // JVET-R0067: Update the derivation of PictureOutputFlag
 
 #define JVET_R0080                                        1 // JVET-R0080, Change the syntax condition for pps_tile_idx_delta_present_flag. When the value of pps_num_slices_in_pic_minus1 is greater than 1 instead of 0, the syntax element of pps_tile_idx_delta_present_flag is signalled.
@@ -80,6 +81,8 @@
                                                             //             Signal DPB parameters for OLS in this case only if(!each_layer_is_an_ols_flag)
 
 #define JVET_R0184_WRAPAROUND_SUBPICS                     1 // JVET-R0184: Wraparound for subpictures
+
+#define JVET_R0062                                        1 // JVET-R0062: changes on uniform tile and rectangular slice partitioning
 
 #define JVET_R0078_DISABLE_CHROMA_DBF_OFFSET_SINGALLING   1 // JVET-R0078: disable chroma DBF offset signalling
 

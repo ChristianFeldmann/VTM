@@ -2198,6 +2198,10 @@ void VPS::deriveOutputLayerSets()
   m_numLayersInOls.resize( m_totalNumOLSs );
   m_outputLayerIdInOls.resize( m_totalNumOLSs, std::vector<int>( m_uiMaxLayers, NOT_VALID ) );
   m_layerIdInOls.resize( m_totalNumOLSs, std::vector<int>( m_uiMaxLayers, NOT_VALID ) );
+#if JVET_R0066_DPB_NO_OUTPUT_PRIOR_PIC_FLAG
+  m_olsDpbChromaFormatIdc.resize(m_totalNumOLSs);
+  m_olsDpbBitDepthMinus8.resize(m_totalNumOLSs);
+#endif
 
   std::vector<int> numRefLayers( m_uiMaxLayers );
   std::vector<std::vector<int>> outputLayerIdx( m_totalNumOLSs, std::vector<int>( m_uiMaxLayers, NOT_VALID ) );

@@ -184,7 +184,7 @@ Picture::Picture()
   reconstructed        = false;
   neededForOutput      = false;
   referenced           = false;
-  layer                = std::numeric_limits<uint32_t>::max();
+  temporalId           = std::numeric_limits<uint32_t>::max();
   fieldPic             = false;
   topField             = false;
   precedingDRAP        = false;

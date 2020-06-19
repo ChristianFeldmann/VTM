@@ -214,6 +214,8 @@
 
 #define JVET_Q0394_TIMING_SEI                             1 // JVET_Q0394: Picture timing for OLSs
 
+#define JVET_Q0398_SUBLAYER_DEP                           1 // JVET_Q0398: sub-layer dependency
+
 #define JVET_Q0404_CBR_SUBPIC                             1 // JVET_Q0404: Constant bitrate extraction for subpictures
 
 #define JVET_R0100                                        1 // JVET-R0100: Proposal 1 DUI Signalling and inference

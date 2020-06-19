@@ -2234,10 +2234,9 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   Slice* pcSlice = m_pcPic->slices[m_uiSliceSegmentIdx];
   pcSlice->setPic( m_pcPic );
   m_pcPic->poc         = pcSlice->getPOC();
-  m_pcPic->layer       = pcSlice->getTLayer();
   m_pcPic->referenced  = true;
-  m_pcPic->layer       = nalu.m_temporalId;
-  m_pcPic->layerId    = nalu.m_nuhLayerId;
+  m_pcPic->temporalId  = nalu.m_temporalId;
+  m_pcPic->layerId     = nalu.m_nuhLayerId;
   m_pcPic->subLayerNonReferencePictureDueToSTSA = false;
 
 #if JVET_R0194_CONSTRAINT_PS_SHARING_REFERENCING

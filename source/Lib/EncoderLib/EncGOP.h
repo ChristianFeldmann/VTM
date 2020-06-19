@@ -340,6 +340,9 @@ protected:
   void applyDeblockingFilterParameterSelection( Picture* pcPic, const uint32_t numSlices, const int gopID );
 #endif
   void xCreateExplicitReferencePictureSetFromReference( Slice* slice, PicList& rcListPic, const ReferencePictureList *rpl0, const ReferencePictureList *rpl1 );
+#if JVET_Q0398_SUBLAYER_DEP
+  bool xCheckMaxTidILRefPics(Picture* refPic, bool currentPicIsIRAP);
+#endif
 };// END CLASS DEFINITION EncGOP
 
 //! \}

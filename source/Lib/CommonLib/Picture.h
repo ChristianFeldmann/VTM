@@ -219,8 +219,7 @@ public:
   bool precedingDRAP; // preceding a DRAP picture in decoding order
 
   int  poc;
-  uint32_t layer;
-  uint32_t depth;
+  uint32_t temporalId;
   int      layerId;
 #if JVET_R0058
   int  numSubpics;

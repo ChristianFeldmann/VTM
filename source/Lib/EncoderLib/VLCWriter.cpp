@@ -1547,6 +1547,14 @@ void HLSWriter::codeVPS(const VPS* pcVPS)
         {
           WRITE_FLAG(pcVPS->getDirectRefLayerFlag(i, j), "vps_direct_dependency_flag");
         }
+#if JVET_Q0398_SUBLAYER_DEP
+        bool presentFlag = ( pcVPS->getMaxTidIlRefPicsPlus1(i) != 7 );
+        WRITE_FLAG(presentFlag, "max_tid_ref_present_flag[ i ]");
+        if (presentFlag)
+        {
+          WRITE_CODE(pcVPS->getMaxTidIlRefPicsPlus1(i), 3, "max_tid_il_ref_pics_plus1[ i ]");
+        }
+#endif
       }
     }
   }

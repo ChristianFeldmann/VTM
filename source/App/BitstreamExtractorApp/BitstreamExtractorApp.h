@@ -73,6 +73,10 @@ protected:
   bool xIsSPSUpdate(int spsId)     { return (std::find(m_updatedSPSList.begin(),m_updatedSPSList.end(), spsId) != m_updatedSPSList.end()); }
   void xClearSPSUpdated(int spsId) { m_updatedSPSList.erase(std::remove(m_updatedSPSList.begin(), m_updatedSPSList.end(), spsId)); };
 
+#if JVET_Q0398_SUBLAYER_DEP
+  bool xCheckNumSubLayers(InputNALUnit &nalu, VPS *vps);
+#endif
+
   void xWriteVPS(VPS *vps, std::ostream& out, int layerId, int temporalId);
   void xWriteSPS(SPS *sps, std::ostream& out, int layerId, int temporalId);
   void xWritePPS(PPS *pps, std::ostream& out, int layerId, int temporalId);

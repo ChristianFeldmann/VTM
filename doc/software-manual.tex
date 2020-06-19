@@ -1104,7 +1104,7 @@ Specifies the value to use to derive the vps_max_layers_minus1 for layered codin
 
 \Option{MaxSubLayers} &
 %\ShortOption{\None} &
-\Default{1} &
+\Default{7} &
 Specifies the maximum number of temporal sublayers to signal in the VPS
 \\
 
@@ -1191,6 +1191,12 @@ Specifies the index of the PTL that applies to the i-th OLS (with i an integer g
 \Default{1} &
 Indicates that all OLSs are using the same (not nested) picture timing SEI message, i.e. picture timing SEI will not 
 be included in scalable nesting SEI messages (if scalable nesting SEI is enabled).
+\\
+
+\Option{MaxTidILRefPicsPlus1} &
+%\ShortOption{\None} &
+\Default{-1} &
+Specifies the maximum temporal ID for inter-layer reference pictures plus 1. The value 0 allows only to use IRAP pictures for inter-layer prediction.
 \\
 \end{OptionTableNoShorthand}
 

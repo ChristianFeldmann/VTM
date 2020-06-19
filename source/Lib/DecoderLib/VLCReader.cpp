@@ -2433,6 +2433,18 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
           }
         }
         CHECK(sumUiCode == 0, "There has to be at least one value of j such that the value of vps_direct_dependency_flag[ i ][ j ] is equal to 1,when vps_independent_layer_flag[ i ] is equal to 0 ");
+#if JVET_Q0398_SUBLAYER_DEP
+        READ_FLAG(uiCode, "max_tid_ref_present_flag[ i ]");
+        if (uiCode)
+        {
+          READ_CODE(3, uiCode, "max_tid_il_ref_pics_plus1[ i ]");
+          pcVPS->setMaxTidIlRefPicsPlus1(i, uiCode);
+        }
+        else
+        {
+          pcVPS->setMaxTidIlRefPicsPlus1(i, 7);
+        }
+#endif
       }
     }
   }

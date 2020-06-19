@@ -886,6 +886,10 @@ void EncApp::xInitLibCfg()
 #endif
   m_cEncLib.setGopBasedTemporalFilterEnabled(m_gopBasedTemporalFilterEnabled);
   m_cEncLib.setNumRefLayers                                       ( m_numRefLayers );
+
+#if JVET_Q0398_SUBLAYER_DEP
+  m_cEncLib.setVPSParameters(m_cfgVPSParameters);
+#endif
 }
 
 void EncApp::xCreateLib( std::list<PelUnitBuf*>& recBufList, const int layerId )

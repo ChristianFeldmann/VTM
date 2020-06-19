@@ -603,7 +603,7 @@ protected:
   bool                 m_gcmpSEIGuardBandBoundaryExteriorFlag;
   uint32_t             m_gcmpSEIGuardBandSamplesMinus1;
 
-  EncCfgParam::CfgSEISubpictureLevel m_cfgSubpictureLevelInfoSEI;
+  CfgSEISubpictureLevel m_cfgSubpictureLevelInfoSEI;
 
   bool                  m_sampleAspectRatioInfoSEIEnabled;
   bool                  m_sariCancelFlag;
@@ -743,6 +743,10 @@ protected:
   std::string m_olsOutputLayerStr[MAX_VPS_LAYERS];
 
   int         m_numPtlsInVps;
+
+#if JVET_Q0398_SUBLAYER_DEP
+  CfgVPSParameters m_cfgVPSParameters;
+#endif
   Level::Name m_levelPtl[MAX_NUM_OLSS];
   int         m_olsPtlIdx[MAX_NUM_OLSS];
 

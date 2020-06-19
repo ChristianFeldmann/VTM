@@ -703,12 +703,12 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
     rpcSlice->setDeblockingFilterCrTcOffsetDiv2( 0 );
   }
 
-  pcPic->layer =  temporalId;
+  pcPic->temporalId =  temporalId;
   if(eSliceType==I_SLICE)
   {
-    pcPic->layer = 0;
+    pcPic->temporalId = 0;
   }
-  rpcSlice->setTLayer( pcPic->layer );
+  rpcSlice->setTLayer( pcPic->temporalId );
 
   rpcSlice->setDisableSATDForRD(false);
 

@@ -865,7 +865,7 @@ void Slice::checkSTSA(PicList& rcListPic)
 
     if( m_eNalUnitType == NAL_UNIT_CODED_SLICE_STSA && pcRefPic->layerId == m_pcPic->layerId )
     {
-      CHECK( pcRefPic->layer == m_uiTLayer, "When the current picture is an STSA picture and nuh_layer_id equal to that of the current picture, there shall be no active entry in the RPL that has TemporalId equal to that of the current picture" );
+      CHECK( pcRefPic->temporalId == m_uiTLayer, "When the current picture is an STSA picture and nuh_layer_id equal to that of the current picture, there shall be no active entry in the RPL that has TemporalId equal to that of the current picture" );
     }
 
     // Checking this: "When the current picture is a picture that follows, in decoding order, an STSA picture that has TemporalId equal to that of the current picture, there shall be no
@@ -880,7 +880,7 @@ void Slice::checkSTSA(PicList& rcListPic)
 
     if( m_eNalUnitType == NAL_UNIT_CODED_SLICE_STSA && pcRefPic->layerId == m_pcPic->layerId )
     {
-      CHECK( pcRefPic->layer == m_uiTLayer, "When the current picture is an STSA picture and nuh_layer_id equal to that of the current picture, there shall be no active entry in the RPL that has TemporalId equal to that of the current picture" );
+      CHECK( pcRefPic->temporalId == m_uiTLayer, "When the current picture is an STSA picture and nuh_layer_id equal to that of the current picture, there shall be no active entry in the RPL that has TemporalId equal to that of the current picture" );
     }
 
     // Checking this: "When the current picture is a picture that follows, in decoding order, an STSA picture that has TemporalId equal to that of the current picture, there shall be no
@@ -903,7 +903,7 @@ void Slice::checkSTSA(PicList& rcListPic)
         continue;
       }
 
-      if (pcRefPic->layer == m_uiTLayer)
+      if (pcRefPic->temporalId == m_uiTLayer)
       {
         pcRefPic->subLayerNonReferencePictureDueToSTSA = true;
       }
@@ -1151,7 +1151,7 @@ bool Slice::isTemporalLayerSwitchingPoint(PicList& rcListPic) const
     const Picture* pcPic = *(iterPic++);
     if( pcPic->referenced && pcPic->poc != getPOC())
     {
-      if( pcPic->layer >= getTLayer())
+      if( pcPic->temporalId >= getTLayer())
       {
         return false;
       }
@@ -1170,7 +1170,7 @@ bool Slice::isStepwiseTemporalLayerSwitchingPointCandidate(PicList& rcListPic) c
     const Picture* pcPic = *(iterPic++);
     if( pcPic->referenced && pcPic->poc != getPOC())
     {
-      if( pcPic->layer >= getTLayer())
+      if( pcPic->temporalId >= getTLayer())
       {
         return false;
       }
@@ -1672,7 +1672,7 @@ void Slice::applyReferencePictureListBasedMarking( PicList& rcListPic, const Ref
     if (pcPic->referenced)
     {
       //check that pictures of higher temporal layers are not used
-      CHECK(pcPic->usedByCurr && !(pcPic->layer <= this->getTLayer()), "Invalid state");
+      CHECK(pcPic->usedByCurr && !(pcPic->temporalId <= this->getTLayer()), "Invalid state");
     }
   }
 }
@@ -2148,6 +2148,9 @@ VPS::VPS()
   {
     m_vpsLayerId[i] = 0;
     m_vpsIndependentLayerFlag[i] = true;
+#if JVET_Q0398_SUBLAYER_DEP
+    m_vpsMaxTidIlRefPicsPlus1[i] = 7;
+#endif
     m_generalLayerIdx[i] = 0;
     for (int j = 0; j < MAX_VPS_LAYERS; j++)
     {
@@ -2197,6 +2200,9 @@ void VPS::deriveOutputLayerSets()
   m_numOutputLayersInOls.resize( m_totalNumOLSs );
   m_numLayersInOls.resize( m_totalNumOLSs );
   m_outputLayerIdInOls.resize( m_totalNumOLSs, std::vector<int>( m_uiMaxLayers, NOT_VALID ) );
+#if JVET_Q0398_SUBLAYER_DEP
+  m_numSubLayersInLayerInOLS.resize( m_totalNumOLSs, std::vector<int>( m_uiMaxLayers, NOT_VALID ) );
+#endif
   m_layerIdInOls.resize( m_totalNumOLSs, std::vector<int>( m_uiMaxLayers, NOT_VALID ) );
 
   std::vector<int> numRefLayers( m_uiMaxLayers );
@@ -2238,6 +2244,9 @@ void VPS::deriveOutputLayerSets()
 
   m_numOutputLayersInOls[0] = 1;
   m_outputLayerIdInOls[0][0] = m_vpsLayerId[0];
+#if JVET_Q0398_SUBLAYER_DEP
+  m_numSubLayersInLayerInOLS[0][0] = m_vpsMaxSubLayers;
+#endif
   layerUsedAsOutputLayerFlag[0] = 1;
   for (int i = 1; i < m_uiMaxLayers; i++)
   {
@@ -2257,6 +2266,13 @@ void VPS::deriveOutputLayerSets()
     {
       m_numOutputLayersInOls[i] = 1;
       m_outputLayerIdInOls[i][0] = m_vpsLayerId[i];
+#if JVET_Q0398_SUBLAYER_DEP
+      for(int  j = 0; j < i  &&  ( m_vpsOlsModeIdc  ==  0 ); j++ )
+      {
+        m_numSubLayersInLayerInOLS[i][j] = m_vpsMaxTidIlRefPicsPlus1[i];
+      }
+      m_numSubLayersInLayerInOLS[i][i] = m_vpsMaxSubLayers;
+#endif
     }
     else if( m_vpsOlsModeIdc == 1 )
     {
@@ -2265,11 +2281,21 @@ void VPS::deriveOutputLayerSets()
       for( int j = 0; j < m_numOutputLayersInOls[i]; j++ )
       {
         m_outputLayerIdInOls[i][j] = m_vpsLayerId[j];
+#if JVET_Q0398_SUBLAYER_DEP
+        m_numSubLayersInLayerInOLS[i][j] = m_vpsMaxSubLayers;
+#endif
       }
     }
     else if( m_vpsOlsModeIdc == 2 )
     {
       int j = 0;
+#if JVET_Q0398_SUBLAYER_DEP
+      for( j = 0; j  <  m_uiMaxLayers; j++ )
+      {
+        m_numSubLayersInLayerInOLS[i][j] = 0;
+      }
+      j = 0;
+#endif
       for( int k = 0; k < m_uiMaxLayers; k++ )
       {
         if( m_vpsOlsOutputLayerFlag[i][k] )
@@ -2278,6 +2304,9 @@ void VPS::deriveOutputLayerSets()
           layerUsedAsOutputLayerFlag[k] = 1;
           outputLayerIdx[i][j] = k;
           m_outputLayerIdInOls[i][j++] = m_vpsLayerId[k];
+#if JVET_Q0398_SUBLAYER_DEP
+          m_numSubLayersInLayerInOLS[i][k] = m_vpsMaxSubLayers;
+#endif
         }
       }
       m_numOutputLayersInOls[i] = j;
@@ -2288,6 +2317,12 @@ void VPS::deriveOutputLayerSets()
         for( int k = 0; k < numRefLayers[idx]; k++ )
         {
           layerIncludedInOlsFlag[i][refLayerIdx[idx][k]] = 1;
+#if JVET_Q0398_SUBLAYER_DEP
+          if( m_numSubLayersInLayerInOLS[i][ refLayerIdx[idx][k] ] < m_vpsMaxTidIlRefPicsPlus1[ m_outputLayerIdInOls[i][j] ] )
+          {
+            m_numSubLayersInLayerInOLS[i][ refLayerIdx[idx][k] ] =  m_vpsMaxTidIlRefPicsPlus1[ m_outputLayerIdInOls[i][j] ];
+          }
+#endif
         }
       }
     }

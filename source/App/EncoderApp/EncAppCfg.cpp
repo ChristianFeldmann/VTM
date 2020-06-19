@@ -1383,7 +1383,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ( "TargetOutputLayerSet,p",                         m_targetOlsIdx,                              -1, "Target output layer set index" )
   ;
   opts.addOptions()
-  ( "MaxSublayers",                                   m_maxSublayers,                               1, "Max number of Sublayers")
+  ( "MaxSublayers",                                   m_maxSublayers,                               7, "Max number of Sublayers")
   ( "AllLayersSameNumSublayersFlag",                  m_allLayersSameNumSublayersFlag,           true, "All layers same num sublayersflag")
   ( "AllIndependentLayersFlag",                       m_allIndependentLayersFlag,                true, "All layers are independent layer")
 #if JVET_R0058
@@ -1397,6 +1397,9 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ( "NumOutputLayerSets",                             m_numOutputLayerSets,                         1, "Number of output layer sets")
   ( "OlsOutputLayer%d",                               m_olsOutputLayerStr, string(""), MAX_VPS_LAYERS, "Output layer index of i-th OLS")
   ( "NumPTLsInVPS",                                   m_numPtlsInVps,                               1, "Number of profile_tier_level structures in VPS" )
+#if JVET_Q0398_SUBLAYER_DEP
+  ( "MaxTidILRefPicsPlus1",                           m_cfgVPSParameters.m_maxTidILRefPicsPlus1,   -1, "Maximum temporal ID for inter-layer reference pictures plus 1, 0 for IRAP only" )
+#endif
     ;
 
   opts.addOptions()
@@ -2858,6 +2861,9 @@ bool EncAppCfg::xCheckParameter()
   xConfirmPara( abs(m_sliceChromaQpOffsetIntraOrPeriodic[1]  + m_crQpOffset ) > 12, "Intra/periodic Cr QP Offset, when combined with the PPS Cr offset, exceeds supported range (-12 to 12)" );
 #endif
 
+  xConfirmPara( m_maxSublayers < 1 || m_maxSublayers > 7, "MaxSublayers must be in range [1..7]" );
+
+
   xConfirmPara( m_fastLocalDualTreeMode < 0 || m_fastLocalDualTreeMode > 2, "FastLocalDualTreeMode must be in range [0..2]" );
 
   int extraRPLs = 0;
@@ -3463,7 +3469,6 @@ bool EncAppCfg::xCheckParameter()
     printf( "Warning: Constrained Encoding for Motion Constrained Tile Sets (MCTS) is enabled. Disabling BIO!\n" );
     m_BIO = false;
   }
-
 
   xConfirmPara( m_sariAspectRatioIdc < 0 || m_sariAspectRatioIdc > 255, "SEISARISampleAspectRatioIdc must be in the range of 0 to 255");
 

@@ -1099,6 +1099,16 @@ void EncLib::xInitVPS( const SPS& sps )
       }
     }
   }
+
+#if JVET_Q0398_SUBLAYER_DEP
+  if (m_cfgVPSParameters.m_maxTidILRefPicsPlus1 >= 0)
+  {
+    for (int i = 0; i < m_vps->getMaxLayers(); i++)
+    {
+      m_vps->setMaxTidIlRefPicsPlus1(i, m_cfgVPSParameters.m_maxTidILRefPicsPlus1);
+    }
+  }
+#endif
 }
 
 void EncLib::xInitDCI(DCI& dci, const SPS& sps)

@@ -50,8 +50,9 @@
 #include <assert.h>
 #include <cassert>
 
-
 //########### place macros to be removed in next cycle below this line ###############
+#define JVET_R0042_SUBPIC_CHECK                           1 // JVET_R0042: SubPicture types related constraints
+
 #define JVET_R0066_DPB_NO_OUTPUT_PRIOR_PIC_FLAG           1 // JVET-R0066: Signal the maximum values of chroma_format_idc and bit_depth_minus8 for all pictures of all layers in the VPS
                                                             //             The value of no_output_of_prior_pics_flag, when present, is required to be the same for all pictures in an AU
 

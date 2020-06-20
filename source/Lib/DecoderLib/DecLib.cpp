@@ -470,6 +470,12 @@ DecLib::DecLib()
   for (int i = 0; i < MAX_VPS_LAYERS; i++)
   {
     m_associatedIRAPType[i] = NAL_UNIT_INVALID;
+#if JVET_R0042_SUBPIC_CHECK
+    std::fill_n(m_prevGDRSubpicPOC[i], MAX_NUM_SUB_PICS, MAX_INT);
+    memset(m_prevIRAPSubpicPOC[i], 0, sizeof(int)*MAX_NUM_SUB_PICS);
+    memset(m_prevIRAPSubpicDecOrderNo[i], 0, sizeof(int)*MAX_NUM_SUB_PICS);
+    std::fill_n(m_prevIRAPSubpicType[i], MAX_NUM_SUB_PICS, NAL_UNIT_INVALID);
+#endif
   }
 #endif
 }
@@ -1999,7 +2005,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   if (!m_bFirstSliceInPicture)
   {
     uiIndependentSliceIdx = m_pcPic->slices[m_uiSliceSegmentIdx-1]->getIndependentSliceIdx();
-      uiIndependentSliceIdx++;
+    uiIndependentSliceIdx++;
   }
   m_apcSlicePilot->setIndependentSliceIdx(uiIndependentSliceIdx);
 
@@ -2315,6 +2321,13 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   pcSlice->checkCRA(pcSlice->getRPL0(), pcSlice->getRPL1(), m_pocCRA, m_cListPic);
 #endif
   pcSlice->constructRefPicList(m_cListPic);
+#if JVET_R0042_SUBPIC_CHECK
+  pcSlice->setPrevGDRSubpicPOC(m_prevGDRSubpicPOC[nalu.m_nuhLayerId][currSubPicIdx]);
+  pcSlice->setPrevIRAPSubpicPOC(m_prevIRAPSubpicPOC[nalu.m_nuhLayerId][currSubPicIdx]);
+  pcSlice->setPrevIRAPSubpicType(m_prevIRAPSubpicType[nalu.m_nuhLayerId][currSubPicIdx]);
+  pcSlice->setPrevIRAPSubpicType(m_prevIRAPSubpicType[nalu.m_nuhLayerId][currSubPicIdx]);
+  pcSlice->checkSubpicTypeConstraints(m_cListPic, pcSlice->getRPL0(), pcSlice->getRPL1(), m_prevIRAPSubpicDecOrderNo[nalu.m_nuhLayerId][currSubPicIdx]);
+#endif
 #if JVET_R0041
   pcSlice->checkRPL(pcSlice->getRPL0(), pcSlice->getRPL1(), m_associatedIRAPDecodingOrderNumber[nalu.m_nuhLayerId], m_cListPic);
 #else
@@ -2677,6 +2690,31 @@ void DecLib::updateAssociatedIRAP()
   }
 }
 
+#if JVET_R0042_SUBPIC_CHECK
+void DecLib::updatePrevIRAPAndGDRSubpic()
+{
+  for (int j = 0; j < m_uiSliceSegmentIdx; j++)
+  {
+    Slice* pcSlice = m_pcPic->slices[j];
+    const int subpicIdx = pcSlice->getPPS()->getSubPicIdxFromSubPicId(pcSlice->getSliceSubPicId());
+    if (pcSlice->getCtuAddrInSlice(0) == m_pcPic->cs->pps->getSubPic(subpicIdx).getFirstCTUInSubPic())
+    {
+      const NalUnitType subpicType = pcSlice->getNalUnitType();
+      if (subpicType == NAL_UNIT_CODED_SLICE_IDR_W_RADL || subpicType == NAL_UNIT_CODED_SLICE_IDR_N_LP || subpicType == NAL_UNIT_CODED_SLICE_CRA)
+      {
+        m_prevIRAPSubpicPOC[m_pcPic->layerId][subpicIdx] = m_pcPic->getPOC();
+        m_prevIRAPSubpicType[m_pcPic->layerId][subpicIdx] = subpicType;
+        m_prevIRAPSubpicDecOrderNo[m_pcPic->layerId][subpicIdx] = m_pcPic->getDecodingOrderNumber();
+      }
+      else if (subpicType == NAL_UNIT_CODED_SLICE_GDR)
+      {
+        m_prevGDRSubpicPOC[m_pcPic->layerId][subpicIdx] = m_pcPic->getPOC();
+      }
+    }
+  }
+}
+#endif
+
 void DecLib::xDecodeVPS( InputNALUnit& nalu )
 {
   m_vps = new VPS();
@@ -2843,6 +2881,12 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay, i
 #else
       m_associatedIRAPType = NAL_UNIT_INVALID;
       m_pocCRA = 0;
+#endif
+#if JVET_R0042_SUBPIC_CHECK
+      std::fill_n(m_prevGDRSubpicPOC[nalu.m_nuhLayerId], MAX_NUM_SUB_PICS, MAX_INT);
+      memset(m_prevIRAPSubpicPOC[nalu.m_nuhLayerId], 0, sizeof(int)*MAX_NUM_SUB_PICS);
+      memset(m_prevIRAPSubpicDecOrderNo[nalu.m_nuhLayerId], 0, sizeof(int)*MAX_NUM_SUB_PICS);
+      std::fill_n(m_prevIRAPSubpicType[nalu.m_nuhLayerId], MAX_NUM_SUB_PICS, NAL_UNIT_INVALID);
 #endif
       m_pocRandomAccess = MAX_INT;
       m_prevLayerID = MAX_INT;
@@ -3012,6 +3056,7 @@ void DecLib::xCheckMixedNalUnit(Slice* pcSlice, SPS *sps, InputNALUnit &nalu)
     }
 #endif
 
+#if !JVET_R0042_SUBPIC_CHECK
     const unsigned  ctuRsAddr = pcSlice->getCtuAddrInSlice(0);
     const unsigned  ctuXPosInCtus = ctuRsAddr % pcSlice->getPPS()->getPicWidthInCtu();
     const unsigned  ctuYPosInCtus = ctuRsAddr / pcSlice->getPPS()->getPicWidthInCtu();
@@ -3086,6 +3131,7 @@ void DecLib::xCheckMixedNalUnit(Slice* pcSlice, SPS *sps, InputNALUnit &nalu)
         }
       }
     }
+#endif
 #if !JVET_R0203_IRAP_LEADING_CONSTRAINT
     // if this is the last slice of the picture, check whether the nalu type of the slices meet the nal unit type constraints
     if (pcSlice->getPPS()->getNumSlicesInPic() == (m_uiSliceSegmentIdx + 1))

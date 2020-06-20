@@ -2680,6 +2680,11 @@ private:
 #endif
   int                        m_iAssociatedIRAP;
   NalUnitType                m_iAssociatedIRAPType;
+#if JVET_R0042_SUBPIC_CHECK
+  int                        m_prevGDRSubpicPOC;
+  int                        m_prevIRAPSubpicPOC;
+  NalUnitType                m_prevIRAPSubpicType;
+#endif
   bool                       m_enableDRAPSEI;
   bool                       m_useLTforDRAP;
   bool                       m_isDRAP;
@@ -2743,17 +2748,17 @@ private:
   bool                       m_colFromL0Flag;  // collocated picture from List0 flag
 
 
-  uint32_t                       m_colRefIdx;
+  uint32_t                   m_colRefIdx;
   double                     m_lambdas[MAX_NUM_COMPONENT];
 
   bool                       m_abEqualRef  [NUM_REF_PIC_LIST_01][MAX_NUM_REF][MAX_NUM_REF];
-  uint32_t                       m_uiTLayer;
+  uint32_t                   m_uiTLayer;
   bool                       m_bTLayerSwitchingFlag;
 
   SliceMap                   m_sliceMap;                     //!< list of CTUs in current slice - raster scan CTU addresses
-  uint32_t                       m_independentSliceIdx;
+  uint32_t                   m_independentSliceIdx;
   bool                       m_nextSlice;
-  uint32_t                       m_sliceBits;
+  uint32_t                   m_sliceBits;
   bool                       m_bFinalized;
 
 
@@ -2762,16 +2767,13 @@ private:
   WPScalingParam             m_weightPredTable[NUM_REF_PIC_LIST_01][MAX_NUM_REF][MAX_NUM_COMPONENT]; // [REF_PIC_LIST_0 or REF_PIC_LIST_1][refIdx][0:Y, 1:U, 2:V]
   WPACDCParam                m_weightACDCParam[MAX_NUM_COMPONENT];
   ClpRngs                    m_clpRngs;
-  std::vector<uint32_t>          m_substreamSizes;
+  std::vector<uint32_t>      m_substreamSizes;
   uint32_t                   m_numEntryPoints;
   uint32_t                   m_numSubstream;
 
   bool                       m_cabacInitFlag;
 
   uint32_t                   m_sliceSubPicId;
-
-
-
 
 
   SliceType                  m_encCABACTableIdx;           // Used to transmit table selection across slices.
@@ -2835,6 +2837,15 @@ public:
   int                         getAssociatedIRAPPOC() const                           { return m_iAssociatedIRAP;                                     }
   void                        setAssociatedIRAPType(NalUnitType associatedIRAPType)  { m_iAssociatedIRAPType = associatedIRAPType;                   }
   NalUnitType                 getAssociatedIRAPType() const                          { return m_iAssociatedIRAPType;                                 }
+#if JVET_R0042_SUBPIC_CHECK
+  void                        setPrevGDRSubpicPOC(int poc)                           { m_prevGDRSubpicPOC = poc;                                     }
+  int                         getPrevGDRSubpicPOC() const                            { return m_prevGDRSubpicPOC;                                    }
+  void                        setPrevIRAPSubpicPOC(int poc)                          { m_prevIRAPSubpicPOC = poc;                                    }
+  int                         getPrevIRAPSubpicPOC() const                           { return m_prevIRAPSubpicPOC;                                   }
+  void                        setPrevIRAPSubpicType(NalUnitType type)                { m_prevIRAPSubpicType = type;                                  }
+  NalUnitType                 getPrevIRAPSubpicType() const                          { return m_prevIRAPSubpicType;                                  }
+  void                        checkSubpicTypeConstraints(PicList& rcListPic, const ReferencePictureList* pRPL0, const ReferencePictureList* pRPL1, const int prevIRAPSubpicDecOrderNo);
+#endif
   SliceType                   getSliceType() const                                   { return m_eSliceType;                                          }
   int                         getPOC() const                                         { return m_iPOC;                                                }
   int                         getSliceQp() const                                     { return m_iSliceQp;                                            }
@@ -2976,11 +2987,12 @@ public:
   static void                 sortPicList( PicList& rcListPic );
   void                        setList1IdxToList0Idx();
 
-  uint32_t                        getTLayer() const                                      { return m_uiTLayer;                                            }
+  uint32_t                    getTLayer() const                                      { return m_uiTLayer;                                            }
   void                        setTLayer( uint32_t uiTLayer )                             { m_uiTLayer = uiTLayer;                                        }
 
   void                        checkLeadingPictureRestrictions( PicList& rcListPic, const PPS& pps)                                         const;
   int                         checkThatAllRefPicsAreAvailable(PicList& rcListPic, const ReferencePictureList* pRPL, int rplIdx, bool printErrors, int* refPicIndex, int numActiveRefPics) const;
+
   void                        applyReferencePictureListBasedMarking( PicList& rcListPic, const ReferencePictureList *pRPL0, const ReferencePictureList *pRPL1, const int layerId, const PPS& pps )  const;
   bool                        isTemporalLayerSwitchingPoint( PicList& rcListPic )                                           const;
   bool                        isStepwiseTemporalLayerSwitchingPointCandidate( PicList& rcListPic )                          const;

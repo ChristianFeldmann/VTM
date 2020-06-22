@@ -264,10 +264,13 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setFramesToBeEncoded                                 ( m_framesToBeEncoded );
 
   //====== SPS constraint flags =======
-  m_cEncLib.setIntraOnlyConstraintFlag                           ( m_intraConstraintFlag );
+#if STILL_PICTURE_PROFILES
+  m_cEncLib.setOnePictureOnlyConstraintFlag                      ( m_onePictureOnlyConstraintFlag );
+#endif
+  m_cEncLib.setIntraOnlyConstraintFlag                           ( m_intraConstraintFlag );  // NOTE: This setting is not used, and is confused with setIntraConstraintFlag
   m_cEncLib.setMaxBitDepthConstraintIdc                          ( m_bitDepthConstraint - 8 );
   m_cEncLib.setMaxChromaFormatConstraintIdc                      ( m_chromaFormatConstraint );
-  m_cEncLib.setFrameConstraintFlag                               ( m_bFrameConstraintFlag );
+  m_cEncLib.setFrameConstraintFlag                               ( m_bFrameConstraintFlag ); // NOTE: This setting is neither used nor setup, and is confused with setFrameOnlyConstraintFlag
   m_cEncLib.setNoQtbttDualTreeIntraConstraintFlag                ( !m_dualTree );
   m_cEncLib.setNoPartitionConstraintsOverrideConstraintFlag      ( !m_SplitConsOverrideEnabledFlag );
   m_cEncLib.setNoSaoConstraintFlag                               ( !m_bUseSAO );

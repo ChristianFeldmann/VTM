@@ -87,8 +87,16 @@ static const LevelTierFeatures mainLevelTierInfo[] =
 static const ProfileFeatures validProfiles[] =
 #if JVET_R0244_CPB_AND_MINCR
 {   //  profile,                   pNameString,             maxBitDepth, maxChrFmt, lvl15.5, cpbvcl, cpbnal, fcf*1000, mincr*100, levelInfo
+#if STILL_PICTURE_PROFILES
+    // most constrained profiles must appear first.
+    { Profile::MAIN_10,            "Main_10_Still_Picture",          10, CHROMA_420,  true,   1000,   1100,     1875,    100    , mainLevelTierInfo,  true },
+    { Profile::MAIN_444_10,        "Main_444_10_Still_Picture",      10, CHROMA_444,  true,   2500,   2750,     3750,     75    , mainLevelTierInfo,  true },
+    { Profile::MAIN_10,            "Main_10",                        10, CHROMA_420, false,   1000,   1100,     1875,    100    , mainLevelTierInfo, false },
+    { Profile::MAIN_444_10,        "Main_444_10",                    10, CHROMA_444, false,   2500,   2750,     3750,     75    , mainLevelTierInfo, false },
+#else
     { Profile::MAIN_10,            "Main_10",                        10, CHROMA_420, false,   1000,   1100,     1875,    100    , mainLevelTierInfo },
     { Profile::MAIN_444_10,        "Main_444_10",                    10, CHROMA_444, false,   2500,   2750,     3750,     75    , mainLevelTierInfo },
+#endif
 #else
 {   //  profile,                   pNameString,             maxBitDepth, maxChrFmt,  lvl8.5, cpbvcl, cpbnal, fcf*1000, mincr*10, levelInfo
     { Profile::MAIN_10,            "Main_10",                        10, CHROMA_420, false,   1000,   1100,     1875,   10    , mainLevelTierInfo },
@@ -105,9 +113,16 @@ ProfileLevelTierFeatures::extractPTLInformation(const SPS &sps)
   m_tier = spsPtl.getTierFlag();
 
   // Identify the profile from the profile Idc, and possibly other constraints.
+#if STILL_PICTURE_PROFILES
+  bool onePictureOnlyConstraintFlag=spsPtl.getConstraintInfo()->getOnePictureOnlyConstraintFlag();
+#endif
   for(int32_t i=0; validProfiles[i].profile != Profile::NONE; i++)
   {
+#if STILL_PICTURE_PROFILES
+    if (spsPtl.getProfileIdc() == validProfiles[i].profile && !(validProfiles[i].onePictureOnlyFlagMustBe1 && !onePictureOnlyConstraintFlag))
+#else
     if (spsPtl.getProfileIdc() == validProfiles[i].profile)
+#endif
     {
       m_pProfile = &(validProfiles[i]);
       break;

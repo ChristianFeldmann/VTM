@@ -196,6 +196,9 @@ protected:
 
   uint32_t          m_bitDepthConstraint;
   ChromaFormat  m_chromaFormatConstraint;
+#if STILL_PICTURE_PROFILES
+  bool          m_onePictureOnlyConstraintFlag;
+#endif
   bool          m_intraConstraintFlag;
 #if !JVET_R0090_VUI
   bool          m_progressiveSourceFlag;

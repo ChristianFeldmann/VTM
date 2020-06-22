@@ -70,7 +70,11 @@ struct ProfileFeatures
   uint32_t                 maxBitDepth;
   ChromaFormat             maxChromaFormat;
 
+#if JVET_R0245_LEVEL_CODING
+  bool                     canUseLevel15p5;
+#else
   bool                     canUseLevel8p5;
+#endif
   uint32_t                 cpbVclFactor;
   uint32_t                 cpbNalFactor;
   uint32_t                 formatCapabilityFactorx1000;

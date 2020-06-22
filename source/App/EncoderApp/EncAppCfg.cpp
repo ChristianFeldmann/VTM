@@ -273,7 +273,11 @@ strToLevel[] =
   {"6",   Level::LEVEL6},
   {"6.1", Level::LEVEL6_1},
   {"6.2", Level::LEVEL6_2},
+#if JVET_R0245_LEVEL_CODING
+  {"15.5", Level::LEVEL15_5},
+#else
   {"8.5", Level::LEVEL8_5},
+#endif
 };
 
 #if U0132_TARGET_BITS_SATURATION
@@ -711,7 +715,11 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   SMultiValueInput<uint32_t>  cfg_subPicId(0, std::numeric_limits<uint16_t>::max(), 0, MAX_NUM_SUB_PICS);
 
   SMultiValueInput<int>          cfg_sliFractions(0, 100, 0, std::numeric_limits<int>::max());
+#if JVET_R0245_LEVEL_CODING
+  SMultiValueInput<Level::Name>  cfg_sliRefLevels(Level::NONE, Level::LEVEL15_5,  0, 8);
+#else
   SMultiValueInput<Level::Name>  cfg_sliRefLevels(Level::NONE, Level::LEVEL8_5,  0, 8);
+#endif
 
   int warnUnknowParameter = 0;
 

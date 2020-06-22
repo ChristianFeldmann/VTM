@@ -70,7 +70,11 @@ static const LevelTierFeatures mainLevelTierInfo[] =
     { Level::LEVEL6  , 35651584, {    60000,   240000 },      600,       22,       20, 1069547520ULL, {   60000,   240000 }, { 8, 4} },
     { Level::LEVEL6_1, 35651584, {   120000,   480000 },      600,       22,       20, 2139095040ULL, {  120000,   480000 }, { 8, 4} },
     { Level::LEVEL6_2, 35651584, {   240000,   800000 },      600,       22,       20, 4278190080ULL, {  240000,   800000 }, { 6, 4} },
+#if JVET_R0245_LEVEL_CODING
+    { Level::LEVEL15_5, MAX_UINT, { MAX_UINT, MAX_UINT }, MAX_UINT, MAX_UINT, MAX_UINT, MAX_CNFUINT64, {MAX_UINT, MAX_UINT }, { 0, 0} },
+#else
     { Level::LEVEL8_5, MAX_UINT, { MAX_UINT, MAX_UINT }, MAX_UINT, MAX_UINT, MAX_UINT, MAX_CNFUINT64, {MAX_UINT, MAX_UINT }, { 0, 0} },
+#endif
     { Level::NONE    }
 };
 
@@ -103,7 +107,11 @@ ProfileLevelTierFeatures::extractPTLInformation(const SPS &sps)
     // Now identify the level:
     const LevelTierFeatures *pLTF = m_pProfile->pLevelTiersListInfo;
     const Level::Name spsLevelName = spsPtl.getLevelIdc();
+#if JVET_R0245_LEVEL_CODING
+    if (spsLevelName!=Level::LEVEL15_5 || m_pProfile->canUseLevel15p5)
+#else
     if (spsLevelName!=Level::LEVEL8_5 || m_pProfile->canUseLevel8p5)
+#endif
     {
       for(int i=0; pLTF[i].level!=Level::NONE; i++)
       {

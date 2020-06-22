@@ -241,6 +241,8 @@
 
 #define JVET_R0101_PROPOSAL2                              1 // JVET-R0101 Proposal 2: Bug fix for signalling some syntax elements length
 
+#define JVET_R0245_LEVEL_CODING                           1 // JVET-R0245: level coding numbering scheme
+
 //########### place macros to be be kept below this line ###############
 
 #define JVET_R0164_MEAN_SCALED_SATD                       1 // JVET-R0164: Use a mean scaled version of SATD in encoder decisions
@@ -888,6 +890,24 @@ namespace Level
 
   enum Name
   {
+#if JVET_R0245_LEVEL_CODING
+    // code = (major_level * 16 + minor_level * 3)
+    NONE     = 0,
+    LEVEL1   = 16,
+    LEVEL2   = 32,
+    LEVEL2_1 = 35,
+    LEVEL3   = 48,
+    LEVEL3_1 = 51,
+    LEVEL4   = 64,
+    LEVEL4_1 = 67,
+    LEVEL5   = 80,
+    LEVEL5_1 = 83,
+    LEVEL5_2 = 86,
+    LEVEL6   = 96,
+    LEVEL6_1 = 99,
+    LEVEL6_2 = 102,
+    LEVEL15_5 = 255,
+#else
     // code = (level * 30)
     NONE     = 0,
     LEVEL1   = 30,
@@ -904,6 +924,7 @@ namespace Level
     LEVEL6_1 = 183,
     LEVEL6_2 = 186,
     LEVEL8_5 = 255,
+#endif
   };
 }
 

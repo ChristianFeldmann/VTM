@@ -1206,7 +1206,11 @@ validateMinCrRequirements(const ProfileLevelTierFeatures &plt, std::size_t numBy
   //  numBytesInVclNalUnits shall be less than or equal to
   //     FormatCapabilityFactor * MaxLumaSr * framePeriod / MinCr,
   //     ( = FormatCapabilityFactor * MaxLumaSr / (MinCr * frameRate),
+#if JVET_R0245_LEVEL_CODING
+  if (plt.getLevelTierFeatures() && plt.getProfileFeatures() && plt.getLevelTierFeatures()->level!=Level::LEVEL15_5)
+#else
   if (plt.getLevelTierFeatures() && plt.getProfileFeatures() && plt.getLevelTierFeatures()->level!=Level::LEVEL8_5)
+#endif
   {
     const uint32_t formatCapabilityFactorx1000 = plt.getProfileFeatures()->formatCapabilityFactorx1000;
     const uint64_t maxLumaSr = plt.getLevelTierFeatures()->maxLumaSr;

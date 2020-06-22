@@ -51,6 +51,8 @@
 #include <cassert>
 
 //########### place macros to be removed in next cycle below this line ###############
+#define JVET_Q0280_CONSTRAINT_ON_VPS_ID                   1 // JVET-Q0280: Same VPS ID value across layers
+
 #define JVET_R0042_SUBPIC_CHECK                           1 // JVET_R0042: SubPicture types related constraints
 
 #define JVET_R0066_DPB_NO_OUTPUT_PRIOR_PIC_FLAG           1 // JVET-R0066: Signal the maximum values of chroma_format_idc and bit_depth_minus8 for all pictures of all layers in the VPS

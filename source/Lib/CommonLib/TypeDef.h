@@ -241,6 +241,8 @@
 
 #define JVET_R0101_PROPOSAL2                              1 // JVET-R0101 Proposal 2: Bug fix for signalling some syntax elements length
 
+#define JVET_R0244_CPB_AND_MINCR                          1 // JVET-R0244: Changes to CPB sizes for MaxCPB = 80k for level 6, 120k for level 6.1, 180k for level 6.2; MinCrScaleFactor for the 4:4:4 profile changed to 0.75, and change MinCrBase to 8 for level 6.2.
+
 #define JVET_R0245_LEVEL_CODING                           1 // JVET-R0245: level coding numbering scheme
 
 //########### place macros to be be kept below this line ###############

@@ -67,9 +67,15 @@ static const LevelTierFeatures mainLevelTierInfo[] =
     { Level::LEVEL5  ,  8912896, {    25000,   100000 },      200,       11,       10,  267386880ULL, {   25000,   100000 }, { 6, 4} },
     { Level::LEVEL5_1,  8912896, {    40000,   160000 },      200,       11,       10,  534773760ULL, {   40000,   160000 }, { 8, 4} },
     { Level::LEVEL5_2,  8912896, {    60000,   240000 },      200,       11,       10, 1069547520ULL, {   60000,   240000 }, { 8, 4} },
+#if JVET_R0244_CPB_AND_MINCR
+    { Level::LEVEL6  , 35651584, {    80000,   240000 },      600,       22,       20, 1069547520ULL, {   60000,   240000 }, { 8, 4} },
+    { Level::LEVEL6_1, 35651584, {   120000,   480000 },      600,       22,       20, 2139095040ULL, {  120000,   480000 }, { 8, 4} },
+    { Level::LEVEL6_2, 35651584, {   180000,   800000 },      600,       22,       20, 4278190080ULL, {  240000,   800000 }, { 8, 4} },
+#else
     { Level::LEVEL6  , 35651584, {    60000,   240000 },      600,       22,       20, 1069547520ULL, {   60000,   240000 }, { 8, 4} },
     { Level::LEVEL6_1, 35651584, {   120000,   480000 },      600,       22,       20, 2139095040ULL, {  120000,   480000 }, { 8, 4} },
     { Level::LEVEL6_2, 35651584, {   240000,   800000 },      600,       22,       20, 4278190080ULL, {  240000,   800000 }, { 6, 4} },
+#endif
 #if JVET_R0245_LEVEL_CODING
     { Level::LEVEL15_5, MAX_UINT, { MAX_UINT, MAX_UINT }, MAX_UINT, MAX_UINT, MAX_UINT, MAX_CNFUINT64, {MAX_UINT, MAX_UINT }, { 0, 0} },
 #else
@@ -79,9 +85,15 @@ static const LevelTierFeatures mainLevelTierInfo[] =
 };
 
 static const ProfileFeatures validProfiles[] =
+#if JVET_R0244_CPB_AND_MINCR
+{   //  profile,                   pNameString,             maxBitDepth, maxChrFmt, lvl15.5, cpbvcl, cpbnal, fcf*1000, mincr*100, levelInfo
+    { Profile::MAIN_10,            "Main_10",                        10, CHROMA_420, false,   1000,   1100,     1875,    100    , mainLevelTierInfo },
+    { Profile::MAIN_444_10,        "Main_444_10",                    10, CHROMA_444, false,   2500,   2750,     3750,     75    , mainLevelTierInfo },
+#else
 {   //  profile,                   pNameString,             maxBitDepth, maxChrFmt,  lvl8.5, cpbvcl, cpbnal, fcf*1000, mincr*10, levelInfo
     { Profile::MAIN_10,            "Main_10",                        10, CHROMA_420, false,   1000,   1100,     1875,   10    , mainLevelTierInfo },
     { Profile::MAIN_444_10,        "Main_444_10",                    10, CHROMA_444, false,   2500,   2750,     3750,    5    , mainLevelTierInfo },
+#endif
     { Profile::NONE, 0 }
 };
 
@@ -126,7 +138,11 @@ ProfileLevelTierFeatures::extractPTLInformation(const SPS &sps)
 
 double ProfileLevelTierFeatures::getMinCr() const
 {
+#if JVET_R0244_CPB_AND_MINCR
+  return (m_pLevelTier!=0 && m_pProfile!=0) ? (m_pProfile->minCrScaleFactorx100 * m_pLevelTier->minCrBase[m_tier?1:0])/100.0 : 0.0 ;
+#else
   return (m_pLevelTier!=0 && m_pProfile!=0) ? (m_pProfile->minCrScaleFactorx10 * m_pLevelTier->minCrBase[m_tier?1:0])/10.0 : 0.0 ;
+#endif
 }
 
 uint64_t ProfileLevelTierFeatures::getCpbSizeInBits() const

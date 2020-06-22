@@ -1480,10 +1480,9 @@ void Slice::checkSubpicTypeConstraints(PicList& rcListPic, const ReferencePictur
     bool isBufPicOutput = false;
     int bufSubpicType = NAL_UNIT_INVALID;
     int bufSubpicPrevIRAPSubpicPOC = 0;
-    for (int i = 0; i < bufPic->cs->pps->getNumSlicesInPic(); i++)
+    for (int i = 0; i < bufPic->numSlices; i++)
     {
-      int bufSubPicIdx = bufPic->cs->pps->getSubPicIdxFromSubPicId(bufPic->slices[i]->getSliceSubPicId());
-      if (bufSubPicIdx == curSubpicIdx)
+      if (bufPic->sliceSubpicIdx[i] == curSubpicIdx)
       {
         isBufPicOutput = bufPic->slices[i]->getPicHeader()->getPicOutputFlag();
         bufSubpicType = bufPic->slices[i]->getNalUnitType();
@@ -1620,10 +1619,9 @@ void Slice::checkSubpicTypeConstraints(PicList& rcListPic, const ReferencePictur
 
         if (pcRefPic->layerId == m_nuhLayerId)
         {
-          for (int i = 0; i < pcRefPic->cs->pps->getNumSlicesInPic(); i++)
+          for (int i = 0; i < pcRefPic->numSlices; i++)
           {
-            int refSubPicIdx = pcRefPic->cs->pps->getSubPicIdxFromSubPicId(pcRefPic->slices[i]->getSliceSubPicId());
-            if (refSubPicIdx == curSubpicIdx)
+            if (pcRefPic->sliceSubpicIdx[i] == curSubpicIdx)
             {
               CHECK(pcRefPic->slices[i]->getNalUnitType() == NAL_UNIT_CODED_SLICE_RASL, "When the current subpicture, with nuh_layer_id equal to a particular value layerId and "
                     "subpicture index equal to a particular value subpicIdx, is a RADL subpicture, there shall be no active entry in RefPicList[ 0 ] that is a picture with "
@@ -1694,10 +1692,9 @@ void Slice::checkSubpicTypeConstraints(PicList& rcListPic, const ReferencePictur
 
         if (pcRefPic->layerId == m_nuhLayerId)
         {
-          for (int i = 0; i < pcRefPic->cs->pps->getNumSlicesInPic(); i++)
+          for (int i = 0; i < pcRefPic->numSlices; i++)
           {
-            int refSubPicIdx = pcRefPic->cs->pps->getSubPicIdxFromSubPicId(pcRefPic->slices[i]->getSliceSubPicId());
-            if (refSubPicIdx == curSubpicIdx)
+            if (pcRefPic->sliceSubpicIdx[i] == curSubpicIdx)
             {
               CHECK(pcRefPic->slices[i]->getNalUnitType() == NAL_UNIT_CODED_SLICE_RASL, "When the current subpicture, with nuh_layer_id equal to a particular value layerId and "
                     "subpicture index equal to a particular value subpicIdx, is a RADL subpicture, there shall be no active entry in RefPicList[ 1 ] that is a picture with "

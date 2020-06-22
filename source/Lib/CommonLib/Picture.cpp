@@ -198,6 +198,9 @@ Picture::Picture()
 #if JVET_R0058
   numSubpics = 1;
 #endif
+#if JVET_R0042_SUBPIC_CHECK
+  numSlices = 1;
+#endif
 }
 
 void Picture::create( const ChromaFormat &_chromaFormat, const Size &size, const unsigned _maxCUSize, const unsigned _margin, const bool _decoder, const int _layerId )

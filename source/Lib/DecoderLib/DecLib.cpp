@@ -1935,7 +1935,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
 #endif
 
 #if JVET_R0066_DPB_NO_OUTPUT_PRIOR_PIC_FLAG
-  if (m_picHeader.getGdrOrIrapPicFlag())
+  if (m_picHeader.getGdrOrIrapPicFlag() && m_bFirstSliceInPicture)
   {
     m_accessUnitNoOutputPriorPicFlags.push_back(m_picHeader.getNoOutputOfPriorPicsFlag());
   }
@@ -2314,7 +2314,14 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
       pcSlice->getPic()->subpicCtuTopLeftY.push_back(pps->getSubPic(subPicIdx).getSubPicCtuTopLeftY());
     }
 #endif
+#if JVET_R0042_SUBPIC_CHECK
+    pcSlice->getPic()->numSlices = pps->getNumSlicesInPic();
+    pcSlice->getPic()->sliceSubpicIdx.clear();
+#endif
   }
+#if JVET_R0042_SUBPIC_CHECK
+  pcSlice->getPic()->sliceSubpicIdx.push_back(pps->getSubPicIdxFromSubPicId(pcSlice->getSliceSubPicId()));
+#endif
 #if JVET_R0041
   pcSlice->checkCRA(pcSlice->getRPL0(), pcSlice->getRPL1(), m_pocCRA[nalu.m_nuhLayerId], m_cListPic);
 #else

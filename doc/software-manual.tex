@@ -954,18 +954,8 @@ multiple matches.
 \Default{none} &
 Specifies the profile to which the encoded bitstream complies.
 
-Valid HEVC Ver. 1 values are: none, main, main10, main-still-picture
-
-Valid HEVC Ver. 2 (RExt) values are: main-RExt, high-throughput-RExt,
-monochrome, monochrome12, monochrome16, main12, main_422_10,
-main_422_12, main_444, main_444_10, main_444_12, main_444_16,
-main_intra, main_10_intra, main_12_intra, main_422_10_intra, main_422_12_intra,
-main_444_intra, main_444_10_intra, main_444_12_intra, main_444_16_intra.
-
-When main-RExt is specified, the constraint flags are either manually specified, or calculated via the other supplied settings.
-
-Compatibility flags are automatically determined according to the profile.
-NB: There is currently only limited validation that the encoder configuration complies with the profile, level and tier constraints.
+Valid VVC Ver. 1 values are: none, main_10, main_10_still_picture, main_444_10, main_444_10_still_picture.
+When one of the still picture profiles are selected, the OnePictureOnlyConstraintFlag setting will be forced to 1.
 \\
 
 \Option{Level} &
@@ -1019,7 +1009,7 @@ For --profile=main-RExt, specifies the value of general_intra_constraint_flag to
 \Option{OnePictureOnlyConstraintFlag} &
 %\ShortOption{\None} &
 \Default{false} &
-For --profile=main-RExt, specifies the value of general_one_picture_only_constraint_flag to use for RExt profiles.
+Specifies the value of general_one_picture_only_constraint_flag.
 \\
 
 \Option{LowerBitRateConstraintFlag} &

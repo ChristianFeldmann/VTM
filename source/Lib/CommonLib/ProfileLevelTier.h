@@ -84,6 +84,9 @@ struct ProfileFeatures
   uint32_t                 minCrScaleFactorx10;
 #endif
   const LevelTierFeatures *pLevelTiersListInfo;
+#if STILL_PICTURE_PROFILES
+  bool                     onePictureOnlyFlagMustBe1;
+#endif
 };
 
 

@@ -245,6 +245,8 @@
 
 #define JVET_R0245_LEVEL_CODING                           1 // JVET-R0245: level coding numbering scheme
 
+#define STILL_PICTURE_PROFILES                            1 // Adds support for still picture profiles
+
 //########### place macros to be be kept below this line ###############
 
 #define JVET_R0164_MEAN_SCALED_SATD                       1 // JVET-R0164: Use a mean scaled version of SATD in encoder decisions

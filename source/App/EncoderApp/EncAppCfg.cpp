@@ -60,9 +60,17 @@ namespace po = df::program_options_lite;
 
 enum ExtendedProfileName // this is used for determining profile strings, where multiple profiles map to a single profile idc with various constraint flag combinations
 {
+#if STILL_PICTURE_PROFILES
+  NONE,
+  MAIN_10,
+  MAIN_10_STILL_PICTURE,
+  MAIN_444_10,
+  MAIN_444_10_STILL_PICTURE,
+#else
   NONE        = Profile::NONE,
   MAIN_10     = Profile::MAIN_10,
   MAIN_444_10 = Profile::MAIN_444_10,
+#endif
   AUTO = -1
 };
 
@@ -237,6 +245,10 @@ strToExtendedProfile[] =
     {"none",                      NONE             },
     {"main_10",                   MAIN_10          },
     {"main_444_10",               MAIN_444_10      },
+#if STILL_PICTURE_PROFILES
+    {"main_10_still_picture",     MAIN_10_STILL_PICTURE },
+    {"main_444_10_still_picture", MAIN_444_10_STILL_PICTURE },
+#endif
     {"auto",                      AUTO             }
 };
 
@@ -819,14 +831,23 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("HarmonizeGopFirstFieldCoupleEnabled",             m_bHarmonizeGopFirstFieldCoupleEnabled,            true, "Enables harmonization of Gop first field couple")
 
   // Profile and level
+#if STILL_PICTURE_PROFILES
+  ("Profile",                                         extendedProfile,              ExtendedProfileName::NONE, "Profile name to use for encoding. Use main_10, main_10_still_picture, main_444_10, main_444_10_still_picture, auto, or none")
+#else
   ("Profile",                                         extendedProfile,              ExtendedProfileName::NONE, "Profile name to use for encoding. Use main_10, main_444_10, auto, or none")
+#endif
   ("Level",                                           m_level,                                    Level::NONE, "Level limit to be used, eg 5.1, or none")
   ("Tier",                                            m_levelTier,                                Level::MAIN, "Tier to use for interpretation of --Level (main or high only)")
   ("SubProfile",                                      cfg_SubProfile,                          cfg_SubProfile,  "Sub-profile idc")
   ("EnableDecodingCapabilityInformation",             m_DCIEnabled,                                     false, "Enables writing of Decoding Capability Information")
   ("MaxBitDepthConstraint",                           m_bitDepthConstraint,                                0u, "Bit depth to use for profile-constraint for RExt profiles. 0=automatically choose based upon other parameters")
   ("MaxChromaFormatConstraint",                       tmpConstraintChromaFormat,                            0, "Chroma-format to use for the profile-constraint for RExt profiles. 0=automatically choose based upon other parameters")
+#if STILL_PICTURE_PROFILES
+  ("OnePictureOnlyConstraintFlag",                    m_onePictureOnlyConstraintFlag,                   false, "Value of general_intra_constraint_flag. Can only be used for single frame encodings. Will be set to true for still picture profiles")
+  ("IntraConstraintFlag",                             m_intraConstraintFlag,                            false, "Value of intra_only_constraint_flag")
+#else
   ("IntraConstraintFlag",                             m_intraConstraintFlag,                            false, "Value of general_intra_constraint_flag to use for RExt profiles (not used if an explicit RExt sub-profile is specified)")
+#endif
 
 #if !JVET_R0090_VUI
   ("ProgressiveSource",                               m_progressiveSourceFlag,                          false, "Indicate that source is progressive")
@@ -1812,7 +1833,21 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   }
   else
   {
+#if STILL_PICTURE_PROFILES
+    switch (extendedProfile)
+    {
+      case ExtendedProfileName::NONE:                      m_profile = Profile::NONE; break;
+      case ExtendedProfileName::MAIN_10:                   m_profile = Profile::MAIN_10; break;
+      case ExtendedProfileName::MAIN_444_10:               m_profile = Profile::MAIN_444_10; break;
+      case ExtendedProfileName::MAIN_10_STILL_PICTURE:     m_profile = Profile::MAIN_10;     m_onePictureOnlyConstraintFlag = true; break;
+      case ExtendedProfileName::MAIN_444_10_STILL_PICTURE: m_profile = Profile::MAIN_444_10; m_onePictureOnlyConstraintFlag = true; break;
+      default:
+        EXIT( "Unable to determine profile from configured settings");
+        break;
+    }
+#else
     m_profile = Profile::Name(extendedProfile);
+#endif
   }
 
   {
@@ -2557,6 +2592,13 @@ bool EncAppCfg::xCheckParameter()
 
   xConfirmPara (m_log2MaxTransformSkipBlockSize < 2, "Transform Skip Log2 Max Size must be at least 2 (4x4)");
 
+#if STILL_PICTURE_PROFILES
+  xConfirmPara ( m_onePictureOnlyConstraintFlag && m_framesToBeEncoded!=1, "When onePictureOnlyConstraintFlag is true, the number of frames to be encoded must be 1" );
+  if (m_profile == Profile::MAIN_10 || m_profile==Profile::MAIN_444_10)
+  {
+    xConfirmPara ( m_level==Level::LEVEL15_5 && !m_onePictureOnlyConstraintFlag, "Currently the only profiles that support level 15.5 are still pictures, which require onePictureOnlyConstraintFlag to be 1" );
+  }
+#endif
 
   if( m_SubPuMvpMode == 3 && m_maxNumMergeCand < 7 )
   {

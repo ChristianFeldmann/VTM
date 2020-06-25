@@ -1390,10 +1390,8 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   }
 #endif
   WRITE_FLAG(pcSPS->getDepQuantEnabledFlag(), "sps_dep_quant_enabled_flag");
-  if (!pcSPS->getDepQuantEnabledFlag())
-  {
-    WRITE_FLAG(pcSPS->getSignDataHidingEnabledFlag(), "sps_sign_data_hiding_enabled_flag");
-  }
+  WRITE_FLAG(pcSPS->getSignDataHidingEnabledFlag(), "sps_sign_data_hiding_enabled_flag");
+
   WRITE_FLAG( pcSPS->getVirtualBoundariesEnabledFlag(), "sps_virtual_boundaries_enabled_flag" );
   if( pcSPS->getVirtualBoundariesEnabledFlag() )
   {

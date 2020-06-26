@@ -1976,7 +1976,8 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
                                               "when sps_video_parameter_set_id is equal to 0");
   }
   CHECK((sps->getVPSId() > 0) && (vps == 0), "Invalid VPS");
-  if (vps != nullptr && (vps->getIndependentLayerFlag(nalu.m_nuhLayerId) == 0))
+
+  if( vps != nullptr && !vps->getIndependentLayerFlag( vps->getGeneralLayerIdx( nalu.m_nuhLayerId ) ) )
   {
     bool pocIsSet = false;
     for(auto auNALit=m_accessUnitPicInfo.begin(); auNALit != m_accessUnitPicInfo.end();auNALit++)

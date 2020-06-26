@@ -971,6 +971,7 @@ void DecLib::checkTidLayerIdInAccessUnit()
   bool isPicTidInAuSame = true;
   bool isSeiTidInAuSameAsAuTid = true;
   bool isFdNaluLayerIdSameAsVclNaluLayerId = true;
+  bool isFdTidInAuSameAsAuTid = true;
 
   for (auto pic = m_accessUnitPicInfo.begin(); pic != m_accessUnitPicInfo.end(); pic++)
   {
@@ -994,7 +995,7 @@ void DecLib::checkTidLayerIdInAccessUnit()
 
   for (auto tempNalu = m_accessUnitNals.begin(); tempNalu != m_accessUnitNals.end(); tempNalu++)
   {
-    if ((tempNalu->first == NAL_UNIT_FD) && (tempNalu->second != firstPicLayerId))
+    if ((tempNalu->m_nalUnitType == NAL_UNIT_FD) && (tempNalu->m_nuhLayerId != firstPicLayerId))
     {
       isFdNaluLayerIdSameAsVclNaluLayerId = false;
       break;
@@ -1002,7 +1003,17 @@ void DecLib::checkTidLayerIdInAccessUnit()
   }
   CHECK(!isFdNaluLayerIdSameAsVclNaluLayerId, "The nuh_layer_id of a filler data NAL unit shall be equal to the nuh_layer_id of associated VCL NAL unit");
 
+  for (auto tempNalu = m_accessUnitNals.begin(); tempNalu != m_accessUnitNals.end(); tempNalu++)
+  {
+    if ((tempNalu->m_nalUnitType == NAL_UNIT_FD) && (tempNalu->m_temporalId != firstPicTid))
+    {
+      isFdTidInAuSameAsAuTid = false;
+      break;
+    }
+  }
+  CHECK(!isFdTidInAuSameAsAuTid, "The TemporalId of a filler data NAL unit shall be equal to the TemporalId of the AU containing the NAL unit");
 }
+
 void DecLib::checkSEIInAccessUnit()
 {
   for (auto &sei : m_accessUnitSeiPayLoadTypes)
@@ -1910,14 +1921,14 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   for( auto& naluTemporalId : m_accessUnitNals )
   {
     if (
-      naluTemporalId.first != NAL_UNIT_DCI
-      && naluTemporalId.first != NAL_UNIT_VPS
-      && naluTemporalId.first != NAL_UNIT_SPS
-      && naluTemporalId.first != NAL_UNIT_EOS
-      && naluTemporalId.first != NAL_UNIT_EOB)
+      naluTemporalId.m_nalUnitType != NAL_UNIT_DCI
+      && naluTemporalId.m_nalUnitType != NAL_UNIT_VPS
+      && naluTemporalId.m_nalUnitType != NAL_UNIT_SPS
+      && naluTemporalId.m_nalUnitType != NAL_UNIT_EOS
+      && naluTemporalId.m_nalUnitType != NAL_UNIT_EOB)
 
     {
-      CHECK( naluTemporalId.second < nalu.m_temporalId, "TemporalId shall be greater than or equal to the TemporalId of the layer access unit containing the NAL unit" );
+      CHECK( naluTemporalId.m_temporalId < nalu.m_temporalId, "TemporalId shall be greater than or equal to the TemporalId of the layer access unit containing the NAL unit" );
     }
   }
 
@@ -2813,7 +2824,11 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay, i
   bool ret;
   // ignore all NAL units of layers > 0
 
-  m_accessUnitNals.push_back( std::pair<NalUnitType, int>( nalu.m_nalUnitType, nalu.m_temporalId ) );
+  AccessUnitInfo auInfo;
+  auInfo.m_nalUnitType = nalu.m_nalUnitType;
+  auInfo.m_nuhLayerId = nalu.m_nuhLayerId;
+  auInfo.m_temporalId = nalu.m_temporalId;
+  m_accessUnitNals.push_back(auInfo);
 #if JVET_R0201_PREFIX_SUFFIX_APS_CLEANUP
   m_pictureUnitNals.push_back( nalu.m_nalUnitType );
 #endif

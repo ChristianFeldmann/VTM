@@ -683,7 +683,7 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
                 if( pixMi.interDir == 1)
                 {
                   const Mv mv = pixMi.mv[REF_PIC_LIST_0];
-                #if BLOCK_STATS_AS_CSV
+#if BLOCK_STATS_AS_CSV
                   g_trace_ctx->dtrace<false>( 
                     D_BLOCK_STATISTICS_ALL, 
                     "BlockStat;%d;%4d;%4d;%2d;%2d;%s;%4d;%4d\n",
@@ -695,7 +695,7 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
                      GetBlockStatisticName(BlockStatistic::MotionBufL0).c_str(),
                      mv.hor,
                      mv.ver);
-                #else
+#else
                   g_trace_ctx->dtrace<false>(
                     D_BLOCK_STATISTICS_ALL,
                     "BlockStat: POC %d @(%4d,%4d) [%2dx%2d] %s={%4d,%4d}\n",
@@ -707,12 +707,12 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
                      GetBlockStatisticName(BlockStatistic::MotionBufL0).c_str(),
                      mv.hor,
                      mv.ver);
-                #endif
+#endif
                 }
                 else if( pixMi.interDir == 2)
                 {
                   const Mv mv = pixMi.mv[REF_PIC_LIST_1];
-                #if BLOCK_STATS_AS_CSV
+#if BLOCK_STATS_AS_CSV
                   g_trace_ctx->dtrace<false>( 
                     D_BLOCK_STATISTICS_ALL, 
                     "BlockStat;%d;%4d;%4d;%2d;%2d;%s;%4d;%4d\n",
@@ -724,7 +724,7 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
                      GetBlockStatisticName(BlockStatistic::MotionBufL1).c_str(),
                      mv.hor,
                      mv.ver);
-                #else
+#else
                   g_trace_ctx->dtrace<false>(
                     D_BLOCK_STATISTICS_ALL,
                     "BlockStat: POC %d @(%4d,%4d) [%2dx%2d] %s={%4d,%4d}\n",
@@ -736,13 +736,13 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
                      GetBlockStatisticName(BlockStatistic::MotionBufL1).c_str(),
                      mv.hor,
                      mv.ver);
-                #endif
+#endif
                 }
                 else if( pixMi.interDir == 3)
                 {
                   {
                     const Mv mv = pixMi.mv[REF_PIC_LIST_0];
-                #if BLOCK_STATS_AS_CSV
+#if BLOCK_STATS_AS_CSV
                   g_trace_ctx->dtrace<false>( 
                     D_BLOCK_STATISTICS_ALL, 
                     "BlockStat;%d;%4d;%4d;%2d;%2d;%s;%4d;%4d\n",
@@ -754,7 +754,7 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
                      GetBlockStatisticName(BlockStatistic::MotionBufL0).c_str(),
                      mv.hor,
                      mv.ver);
-                #else
+#else
                   g_trace_ctx->dtrace<false>(
                     D_BLOCK_STATISTICS_ALL,
                     "BlockStat: POC %d @(%4d,%4d) [%2dx%2d] %s={%4d,%4d}\n",
@@ -766,11 +766,11 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
                      GetBlockStatisticName(BlockStatistic::MotionBufL0).c_str(),
                      mv.hor,
                      mv.ver);
-                #endif
+#endif
                   }                
                   {
                     const Mv mv = pixMi.mv[REF_PIC_LIST_1];
-                #if BLOCK_STATS_AS_CSV
+#if BLOCK_STATS_AS_CSV
                   g_trace_ctx->dtrace<false>( 
                     D_BLOCK_STATISTICS_ALL, 
                     "BlockStat;%d;%4d;%4d;%2d;%2d;%s;%4d;%4d\n",
@@ -782,7 +782,7 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
                      GetBlockStatisticName(BlockStatistic::MotionBufL1).c_str(),
                      mv.hor,
                      mv.ver);
-                #else
+#else
                   g_trace_ctx->dtrace<false>(
                     D_BLOCK_STATISTICS_ALL,
                     "BlockStat: POC %d @(%4d,%4d) [%2dx%2d] %s={%4d,%4d}\n",
@@ -794,7 +794,7 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
                      GetBlockStatisticName(BlockStatistic::MotionBufL1).c_str(),
                      mv.hor,
                      mv.ver);
-                #endif
+#endif
                   }                                    
                 }
               }

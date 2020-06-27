@@ -762,7 +762,7 @@ void Picture::rescalePicture( const std::pair<int, int> scalingRatio,
   }
 }
 
-void Picture::saveSubPicBorder(int POC, int subPicX0, int subPicY0, int subPicWidth, int subPicHeight)
+void Picture::saveSubPicBorder(int POC, int subPicX0, int subPicY0, int subPicWidth, int subPicHeight, bool refWrapAroundFlag)
 {
 
   // 1.1 set up margin for back up memory allocation
@@ -799,27 +799,29 @@ void Picture::saveSubPicBorder(int POC, int subPicX0, int subPicY0, int subPicWi
 
 
     // 3.1.1 set reconstructed picture
-    PelBuf s = M_BUFS(0, PIC_RECONSTRUCTION).get(compID);
+    PelBuf s = refWrapAroundFlag ? M_BUFS(0, PIC_RECON_WRAP).get(compID) : M_BUFS(0, PIC_RECONSTRUCTION).get(compID);
     Pel *src = s.bufAt(left, top);
 
-    // 3.2.1 set back up buffer for left
-    PelBuf dBufLeft   = m_bufSubPicLeft.getBuf(compID);
-    Pel    *dstLeft   = dBufLeft.bufAt(0, 0);
-
-
-    // 3.2.2 set back up buffer for right
-    PelBuf dBufRight  = m_bufSubPicRight.getBuf(compID);
-    Pel    *dstRight  = dBufRight.bufAt(0, 0);
-
-    // 3.2.3 copy to recon picture to back up buffer
-    Pel *srcLeft  = src - xmargin;
-    Pel *srcRight = src + width;
-    for (int y = 0; y < height; y++)
+    if (!refWrapAroundFlag)
     {
-      ::memcpy(dstLeft  + y *  dBufLeft.stride, srcLeft  + y * s.stride, sizeof(Pel) * xmargin);
-      ::memcpy(dstRight + y * dBufRight.stride, srcRight + y * s.stride, sizeof(Pel) * xmargin);
-    }
+      // 3.2.1 set back up buffer for left
+      PelBuf dBufLeft   = m_bufSubPicLeft.getBuf(compID);
+      Pel    *dstLeft   = dBufLeft.bufAt(0, 0);
 
+
+      // 3.2.2 set back up buffer for right
+      PelBuf dBufRight  = m_bufSubPicRight.getBuf(compID);
+      Pel    *dstRight  = dBufRight.bufAt(0, 0);
+
+      // 3.2.3 copy to recon picture to back up buffer
+      Pel *srcLeft  = src - xmargin;
+      Pel *srcRight = src + width;
+      for (int y = 0; y < height; y++)
+      {
+        ::memcpy(dstLeft  + y *  dBufLeft.stride, srcLeft  + y * s.stride, sizeof(Pel) * xmargin);
+        ::memcpy(dstRight + y * dBufRight.stride, srcRight + y * s.stride, sizeof(Pel) * xmargin);
+      }
+    }
     // 3.3.1 set back up buffer for above
     PelBuf dBufTop = m_bufSubPicAbove.getBuf(compID);
     Pel    *dstTop = dBufTop.bufAt(0, 0);
@@ -839,7 +841,7 @@ void Picture::saveSubPicBorder(int POC, int subPicX0, int subPicY0, int subPicWi
   }
 }
 
-void Picture::extendSubPicBorder(int POC, int subPicX0, int subPicY0, int subPicWidth, int subPicHeight)
+void Picture::extendSubPicBorder(int POC, int subPicX0, int subPicY0, int subPicWidth, int subPicHeight, bool refWrapAroundFlag)
 {
 
   for (int comp = 0; comp < getNumberValidComponents(cs->area.chromaFormat); comp++)
@@ -859,10 +861,11 @@ void Picture::extendSubPicBorder(int POC, int subPicX0, int subPicY0, int subPic
     int height = subPicHeight >> getComponentScaleY(compID, cs->area.chromaFormat);
 
     // 3.1 set reconstructed picture
-    PelBuf s = M_BUFS(0, PIC_RECONSTRUCTION).get(compID);
+    PelBuf s = refWrapAroundFlag ? M_BUFS(0, PIC_RECON_WRAP).get(compID) : M_BUFS(0, PIC_RECONSTRUCTION).get(compID);
     Pel *src = s.bufAt(left, top);
 
     // 4.1 apply padding for left and right
+    if (!refWrapAroundFlag)
     {
       Pel *dstLeft  = src - xmargin;
       Pel *dstRight = src + width;
@@ -905,7 +908,7 @@ void Picture::extendSubPicBorder(int POC, int subPicX0, int subPicY0, int subPic
   } // end of for
 }
 
-void Picture::restoreSubPicBorder(int POC, int subPicX0, int subPicY0, int subPicWidth, int subPicHeight)
+void Picture::restoreSubPicBorder(int POC, int subPicX0, int subPicY0, int subPicWidth, int subPicHeight, bool refWrapAroundFlag)
 {
   for (int comp = 0; comp < getNumberValidComponents(cs->area.chromaFormat); comp++)
   {
@@ -924,26 +927,29 @@ void Picture::restoreSubPicBorder(int POC, int subPicX0, int subPicY0, int subPi
     int height = subPicHeight >> getComponentScaleY(compID, cs->area.chromaFormat);
 
     // 3.1 set reconstructed picture
-    PelBuf s = M_BUFS(0, PIC_RECONSTRUCTION).get(compID);
+    PelBuf s = refWrapAroundFlag ? M_BUFS(0, PIC_RECON_WRAP).get(compID) : M_BUFS(0, PIC_RECONSTRUCTION).get(compID);
     Pel *src = s.bufAt(left, top);
 
-    // 4.2.1 copy from back up buffer to recon picture
-    PelBuf dBufLeft = m_bufSubPicLeft.getBuf(compID);
-    Pel    *dstLeft = dBufLeft.bufAt(0, 0);
-
-    // 4.2.2 set back up buffer for right
-    PelBuf dBufRight = m_bufSubPicRight.getBuf(compID);
-    Pel    *dstRight = dBufRight.bufAt(0, 0);
-
-    // 4.2.3 copy to recon picture to back up buffer
-    Pel *srcLeft  = src - xmargin;
-    Pel *srcRight = src + width;
-
-    for (int y = 0; y < height; y++)
+    if (!refWrapAroundFlag)
     {
-      // the destination and source position is reversed on purpose
-      ::memcpy(srcLeft  + y * s.stride,  dstLeft + y *  dBufLeft.stride, sizeof(Pel) * xmargin);
-      ::memcpy(srcRight + y * s.stride, dstRight + y * dBufRight.stride, sizeof(Pel) * xmargin);
+      // 4.2.1 copy from back up buffer to recon picture
+      PelBuf dBufLeft = m_bufSubPicLeft.getBuf(compID);
+      Pel    *dstLeft = dBufLeft.bufAt(0, 0);
+
+      // 4.2.2 set back up buffer for right
+      PelBuf dBufRight = m_bufSubPicRight.getBuf(compID);
+      Pel    *dstRight = dBufRight.bufAt(0, 0);
+
+      // 4.2.3 copy to recon picture to back up buffer
+      Pel *srcLeft  = src - xmargin;
+      Pel *srcRight = src + width;
+
+      for (int y = 0; y < height; y++)
+      {
+        // the destination and source position is reversed on purpose
+        ::memcpy(srcLeft  + y * s.stride,  dstLeft + y *  dBufLeft.stride, sizeof(Pel) * xmargin);
+        ::memcpy(srcRight + y * s.stride, dstRight + y * dBufRight.stride, sizeof(Pel) * xmargin);
+      }
     }
 
 

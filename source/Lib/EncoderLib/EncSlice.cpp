@@ -1586,8 +1586,8 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
           if (!refPic->getSubPicSaved())
 #endif
           {
-            refPic->saveSubPicBorder(refPic->getPOC(), subPicX, subPicY, subPicWidth, subPicHeight);
-            refPic->extendSubPicBorder(refPic->getPOC(), subPicX, subPicY, subPicWidth, subPicHeight);
+            refPic->saveSubPicBorder(refPic->getPOC(), subPicX, subPicY, subPicWidth, subPicHeight, pcSlice->getPPS()->getWrapAroundEnabledFlag());
+            refPic->extendSubPicBorder(refPic->getPOC(), subPicX, subPicY, subPicWidth, subPicHeight, pcSlice->getPPS()->getWrapAroundEnabledFlag());
             refPic->setSubPicSaved(true);
           }
         }
@@ -1802,7 +1802,7 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
           Picture *refPic = pcSlice->getRefPic((RefPicList)rlist, idx);
           if (refPic->getSubPicSaved())
           {
-            refPic->restoreSubPicBorder(refPic->getPOC(), subPicX, subPicY, subPicWidth, subPicHeight);
+            refPic->restoreSubPicBorder(refPic->getPOC(), subPicX, subPicY, subPicWidth, subPicHeight, pcSlice->getPPS()->getWrapAroundEnabledFlag());
             refPic->setSubPicSaved(false);
           }
         }

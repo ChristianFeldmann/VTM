@@ -178,8 +178,8 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
           if (!refPic->getSubPicSaved())
 #endif
           {
-            refPic->saveSubPicBorder(refPic->getPOC(), subPicX, subPicY, subPicWidth, subPicHeight);
-            refPic->extendSubPicBorder(refPic->getPOC(), subPicX, subPicY, subPicWidth, subPicHeight);
+            refPic->saveSubPicBorder(refPic->getPOC(), subPicX, subPicY, subPicWidth, subPicHeight, slice->getPPS()->getWrapAroundEnabledFlag());
+            refPic->extendSubPicBorder(refPic->getPOC(), subPicX, subPicY, subPicWidth, subPicHeight, slice->getPPS()->getWrapAroundEnabledFlag());
             refPic->setSubPicSaved(true);
           }
         }
@@ -293,7 +293,7 @@ void DecSlice::decompressSlice( Slice* slice, InputBitstream* bitstream, int deb
           Picture *refPic = slice->getRefPic((RefPicList)rlist, idx);
           if (refPic->getSubPicSaved())
           {
-            refPic->restoreSubPicBorder(refPic->getPOC(), subPicX, subPicY, subPicWidth, subPicHeight);
+            refPic->restoreSubPicBorder(refPic->getPOC(), subPicX, subPicY, subPicWidth, subPicHeight, slice->getPPS()->getWrapAroundEnabledFlag());
             refPic->setSubPicSaved(false);
           }
         }

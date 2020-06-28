@@ -462,6 +462,7 @@ DecLib::DecLib()
 #if JVET_Q0280_CONSTRAINT_ON_VPS_ID
   , m_clsVPSid(0)
 #endif
+  , m_targetSubPicIdx(0)
   , m_dci(NULL)
   , m_apsMapEnc( nullptr )
 {

@@ -199,6 +199,9 @@ private:
   VPS*                    m_vps;
   int                     m_maxDecSubPicIdx;
   int                     m_maxDecSliceAddrInSubPic;
+#if JVET_Q0280_CONSTRAINT_ON_VPS_ID
+  int                     m_clsVPSid;
+#endif
 
 public:
   int                     m_targetSubPicIdx;

@@ -148,17 +148,18 @@ public:
       APS* existedAPS = m_paramsetMap[apsId].parameterSet;
 #if JVET_R0201_PREFIX_SUFFIX_APS_CLEANUP
       bool sameNalUnitType = aps->getHasPrefixNalUnitType() == existedAPS->getHasPrefixNalUnitType();
+      bool samePU = aps->getLayerId() == existedAPS->getLayerId();
       if( aps->getAPSType() == LMCS_APS )
       {
-        CHECK( sameNalUnitType && aps->getReshaperAPSInfo() != existedAPS->getReshaperAPSInfo(), "All APS NAL units with a particular value of nal_unit_type, a particular value of aps_adaptation_parameter_set_id, and a particular value of aps_params_type within a PU shall have the same content" );
+        CHECK( samePU && sameNalUnitType && aps->getReshaperAPSInfo() != existedAPS->getReshaperAPSInfo(), "All APS NAL units with a particular value of nal_unit_type, a particular value of aps_adaptation_parameter_set_id, and a particular value of aps_params_type within a PU shall have the same content" );
       }
       else if( aps->getAPSType() == ALF_APS )
       {
-        CHECK( sameNalUnitType && aps->getAlfAPSParam() != existedAPS->getAlfAPSParam(), "All APS NAL units with a particular value of nal_unit_type, a particular value of aps_adaptation_parameter_set_id, and a particular value of aps_params_type within a PU shall have the same content" );
+        CHECK( samePU && sameNalUnitType && aps->getAlfAPSParam() != existedAPS->getAlfAPSParam(), "All APS NAL units with a particular value of nal_unit_type, a particular value of aps_adaptation_parameter_set_id, and a particular value of aps_params_type within a PU shall have the same content" );
       }
       else if( aps->getAPSType() == SCALING_LIST_APS )
       {
-        CHECK( sameNalUnitType && aps->getScalingList() != existedAPS->getScalingList(), "All APS NAL units with a particular value of nal_unit_type, a particular value of aps_adaptation_parameter_set_id, and a particular value of aps_params_type within a PU shall have the same content" );
+        CHECK( samePU && sameNalUnitType && aps->getScalingList() != existedAPS->getScalingList(), "All APS NAL units with a particular value of nal_unit_type, a particular value of aps_adaptation_parameter_set_id, and a particular value of aps_params_type within a PU shall have the same content" );
       }
 #else
       if( aps->getAPSType() == LMCS_APS )

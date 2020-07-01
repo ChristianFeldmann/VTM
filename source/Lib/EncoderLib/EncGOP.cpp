@@ -2732,6 +2732,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
           if (pcSlice->getSliceType() == I_SLICE)
           {
             //reshape original signal
+            pcPic->getOrigBuf().copyFrom(pcPic->getTrueOrigBuf());
             if (pcSlice->getLmcsEnabledFlag())
             {
               pcPic->getOrigBuf(COMPONENT_Y).rspSignal(m_pcReshaper->getFwdLUT());
@@ -2740,7 +2741,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
             }
             else
             {
-              pcPic->getOrigBuf().copyFrom(pcPic->getTrueOrigBuf());
               m_pcReshaper->setSrcReshaped(false);
               m_pcReshaper->setRecReshaped(false);
             }

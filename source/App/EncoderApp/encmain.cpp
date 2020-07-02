@@ -140,30 +140,33 @@ int main(int argc, char* argv[])
       {
         if( argv[i][0] == '-' && argv[i][1] == 'l' )
         {
-          int incr = 0; // count how many parameters are consumed
-          if( argv[i][2] == std::to_string( layerIdx ).c_str()[0] )
+          if (argc <= i + 1)
           {
-            if (argc <= i + 1)
+            THROW("Command line parsing error: missing parameter after -lx\n");
+          }
+          int numParams = 1; // count how many parameters are consumed
+          // check for long parameters, which start with "--"
+          const std::string param = argv[i + 1];
+          if (param.rfind("--", 0) != 0)
+          {
+            // only short parameters have a second parameter for the value
+            if (argc <= i + 2)
             {
               THROW("Command line parsing error: missing parameter after -lx\n");
             }
-            layerArgv[j] = argv[i + 1];
-            incr++;
-            // check for long parameters, which start with "--"
-            const std::string param = argv[i + 1];
-            if (param.rfind("--", 0) != 0)
-            {
-              // only short parameters have a second parameter for the value
-              if (argc <= i + 2)
-              {
-                THROW("Command line parsing error: missing parameter after -lx\n");
-              }
-              layerArgv[j + 1] = argv[i + 2];
-              incr++;
-            }
-            j+= incr;
+            numParams++;
           }
-          i += incr;
+          // check if correct layer index
+          if( argv[i][2] == std::to_string( layerIdx ).c_str()[0] )
+          {
+            layerArgv[j] = argv[i + 1];
+            if (numParams > 1)
+            {
+              layerArgv[j + 1] = argv[i + 2];
+            }
+            j+= numParams;
+          }
+          i += numParams;
         }
         else
         {

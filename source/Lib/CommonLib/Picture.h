@@ -197,6 +197,9 @@ public:
   PelStorage m_bufSubPicLeft;
   PelStorage m_bufSubPicRight;
 
+  PelStorage m_bufWrapSubPicAbove;
+  PelStorage m_bufWrapSubPicBelow;
+
   void    saveSubPicBorder(int POC, int subPicX0, int subPicY0, int subPicWidth, int subPicHeight);
   void  extendSubPicBorder(int POC, int subPicX0, int subPicY0, int subPicWidth, int subPicHeight);
   void restoreSubPicBorder(int POC, int subPicX0, int subPicY0, int subPicWidth, int subPicHeight);

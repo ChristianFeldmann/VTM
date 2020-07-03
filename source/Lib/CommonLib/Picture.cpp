@@ -780,6 +780,8 @@ void Picture::saveSubPicBorder(int POC, int subPicX0, int subPicY0, int subPicWi
   m_bufSubPicBelow.create(unitAreaAboveBelow);
   m_bufSubPicLeft.create(unitAreaLeftRight);
   m_bufSubPicRight.create(unitAreaLeftRight);
+  m_bufWrapSubPicAbove.create(unitAreaAboveBelow);
+  m_bufWrapSubPicBelow.create(unitAreaAboveBelow);
 
   for (int comp = 0; comp < getNumberValidComponents(cs->area.chromaFormat); comp++)
   {
@@ -835,6 +837,30 @@ void Picture::saveSubPicBorder(int POC, int subPicX0, int subPicY0, int subPicWi
     {
       ::memcpy(dstTop    + y *    dBufTop.stride, srcTop    + y * s.stride, sizeof(Pel) * (2 * xmargin + width));
       ::memcpy(dstBottom + y * dBufBottom.stride, srcBottom + y * s.stride, sizeof(Pel) * (2 * xmargin + width));
+    }
+
+    // back up recon wrap buffer
+    if (cs->sps->getWrapAroundEnabledFlag())
+    {
+      PelBuf sWrap = M_BUFS(0, PIC_RECON_WRAP).get(compID);
+      Pel *srcWrap = sWrap.bufAt(left, top);
+
+      // 3.4.1 set back up buffer for above
+      PelBuf dBufTopWrap = m_bufWrapSubPicAbove.getBuf(compID);
+      Pel    *dstTopWrap = dBufTopWrap.bufAt(0, 0);
+
+      // 3.4.2 set back up buffer for below
+      PelBuf dBufBottomWrap = m_bufWrapSubPicBelow.getBuf(compID);
+      Pel    *dstBottomWrap = dBufBottomWrap.bufAt(0, 0);
+
+      // 3.4.3 copy recon wrap picture to back up buffer
+      Pel *srcTopWrap    = srcWrap - xmargin - ymargin * sWrap.stride;
+      Pel *srcBottomWrap = srcWrap - xmargin +  height * sWrap.stride;
+      for (int y = 0; y < ymargin; y++)
+      {
+        ::memcpy(dstTopWrap    + y *    dBufTopWrap.stride, srcTopWrap    + y * sWrap.stride, sizeof(Pel) * (2 * xmargin + width));
+        ::memcpy(dstBottomWrap + y * dBufBottomWrap.stride, srcBottomWrap + y * sWrap.stride, sizeof(Pel) * (2 * xmargin + width));
+      }
     }
   }
 }
@@ -902,6 +928,34 @@ void Picture::extendSubPicBorder(int POC, int subPicX0, int subPicY0, int subPic
       ::memcpy(dstTop, srcTop, sizeof(Pel)*(2 * xmargin + width));
       dstTop -= s.stride;
     }
+
+    // Appy padding for recon wrap buffer
+    if (cs->sps->getWrapAroundEnabledFlag())
+    {
+      // set recon wrap picture
+      PelBuf sWrap = M_BUFS(0, PIC_RECON_WRAP).get(compID);
+      Pel *srcWrap = sWrap.bufAt(left, top);
+
+      // apply padding on bottom
+      Pel *srcBottomWrap = srcWrap + sWrap.stride * (height - 1) - xmargin;
+      Pel *dstBottomWrap = srcBottomWrap + sWrap.stride;
+      for (int y = 0; y < ymargin; y++)
+      {
+        ::memcpy(dstBottomWrap, srcBottomWrap, sizeof(Pel)*(2 * xmargin + width));
+        dstBottomWrap += sWrap.stride;
+      }
+
+      // apply padding for top
+      // si is still (-marginX, SubpictureHeight-1)
+      Pel *srcTopWrap = srcWrap - xmargin;
+      Pel *dstTopWrap = srcTopWrap - sWrap.stride;
+      // si is now (-marginX, 0)
+      for (int y = 0; y < ymargin; y++)
+      {
+        ::memcpy(dstTopWrap, srcTopWrap, sizeof(Pel)*(2 * xmargin + width));
+        dstTopWrap -= sWrap.stride;
+      }
+    }
   } // end of for
 }
 
@@ -964,6 +1018,32 @@ void Picture::restoreSubPicBorder(int POC, int subPicX0, int subPicY0, int subPi
       ::memcpy(srcTop    + y * s.stride, dstTop    + y *    dBufTop.stride, sizeof(Pel) * (2 * xmargin + width));
       ::memcpy(srcBottom + y * s.stride, dstBottom + y * dBufBottom.stride, sizeof(Pel) * (2 * xmargin + width));
     }
+
+    // restore recon wrap buffer
+    if (cs->sps->getWrapAroundEnabledFlag())
+    {
+      // set recon wrap picture
+      PelBuf sWrap = M_BUFS(0, PIC_RECON_WRAP).get(compID);
+      Pel *srcWrap = sWrap.bufAt(left, top);
+
+      // set back up buffer for above
+      PelBuf dBufTopWrap = m_bufWrapSubPicAbove.getBuf(compID);
+      Pel    *dstTopWrap = dBufTopWrap.bufAt(0, 0);
+
+      // set back up buffer for below
+      PelBuf dBufBottomWrap = m_bufWrapSubPicBelow.getBuf(compID);
+      Pel    *dstBottomWrap = dBufBottomWrap.bufAt(0, 0);
+
+      // copy to recon wrap picture from back up buffer
+      Pel *srcTopWrap = srcWrap - xmargin - ymargin * sWrap.stride;
+      Pel *srcBottomWrap = srcWrap - xmargin + height * sWrap.stride;
+
+      for (int y = 0; y < ymargin; y++)
+      {
+        ::memcpy(srcTopWrap    + y * sWrap.stride, dstTopWrap    + y *    dBufTopWrap.stride, sizeof(Pel) * (2 * xmargin + width));
+        ::memcpy(srcBottomWrap + y * sWrap.stride, dstBottomWrap + y * dBufBottomWrap.stride, sizeof(Pel) * (2 * xmargin + width));
+      }
+    }
   }
 
   // 5.0 destroy the back up memory
@@ -971,6 +1051,8 @@ void Picture::restoreSubPicBorder(int POC, int subPicX0, int subPicY0, int subPi
   m_bufSubPicBelow.destroy();
   m_bufSubPicLeft.destroy();
   m_bufSubPicRight.destroy();
+  m_bufWrapSubPicAbove.destroy();
+  m_bufWrapSubPicBelow.destroy();
 }
 
 #if JVET_Q0764_WRAP_AROUND_WITH_RPR  

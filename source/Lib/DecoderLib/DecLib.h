@@ -160,7 +160,13 @@ private:
   int                     m_debugPOC;
   int                     m_debugCTU;
 
-  std::vector<std::pair<NalUnitType, int>> m_accessUnitNals;
+  struct AccessUnitInfo
+  {
+    NalUnitType     m_nalUnitType; ///< nal_unit_type
+    uint32_t        m_temporalId;  ///< temporal_id
+    uint32_t        m_nuhLayerId;  ///< nuh_layer_id
+  };
+  std::vector<AccessUnitInfo> m_accessUnitNals;
   struct AccessUnitPicInfo
   {
     NalUnitType     m_nalUnitType; ///< nal_unit_type

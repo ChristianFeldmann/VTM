@@ -780,6 +780,7 @@ protected:
   int         m_switchPocPeriod;
   int         m_upscaledOutput;
   int         m_numRefLayers[MAX_VPS_LAYERS];
+  bool        m_avoidIntraInDepLayer;
 
 public:
   EncCfg()
@@ -1980,6 +1981,9 @@ public:
 
   void        setNumRefLayers( int* numRefLayers )                   { std::memcpy( m_numRefLayers, numRefLayers, sizeof( m_numRefLayers ) ); }
   int         getNumRefLayers( int layerIdx )                  const { return m_numRefLayers[layerIdx];  }
+
+  void        setAvoidIntraInDepLayer(bool b)                        { m_avoidIntraInDepLayer = b; }
+  bool        getAvoidIntraInDepLayer()                        const { return m_avoidIntraInDepLayer; }
 
 #if JVET_Q0398_SUBLAYER_DEP
   const CfgVPSParameters& getVPSParameters() const                                  { return m_cfgVPSParameters; }

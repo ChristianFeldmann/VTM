@@ -1188,6 +1188,12 @@ be included in scalable nesting SEI messages (if scalable nesting SEI is enabled
 \Default{-1} &
 Specifies the maximum temporal ID for inter-layer reference pictures plus 1. The value 0 allows only to use IRAP pictures for inter-layer prediction.
 \\
+
+\Option{AvoidIntraInDepLayer} &
+%\ShortOption{\None} &
+\Default{1} &
+Replaces I slices in dependent layers with B slices, except for all-intra configuration (IntraPeriod=1).
+\\
 \end{OptionTableNoShorthand}
 
 

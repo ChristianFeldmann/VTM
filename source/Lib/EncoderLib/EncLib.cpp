@@ -219,6 +219,10 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
   aps0.setAPSId( 0 );
   aps0.setAPSType( SCALING_LIST_APS );
 
+  if (getAvoidIntraInDepLayer() && getNumRefLayers(m_vps->getGeneralLayerIdx( getLayerId())) > 0)
+  {
+    setIDRRefParamListPresent(true);
+  }
   // initialize SPS
   xInitSPS( sps0 );
   xInitVPS( sps0 );

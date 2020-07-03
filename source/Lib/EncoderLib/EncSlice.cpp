@@ -315,9 +315,8 @@ static int applyQPAdaptationChroma (Picture* const pcPic, Slice* const pcSlice, 
  \param rpcSlice      slice header class
  \param isField       true for field coding
  */
-void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr, const int iGOPid, Slice*& rpcSlice, const bool isField
-  , bool isEncodeLtRef
-)
+void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr, const int iGOPid, Slice*& rpcSlice, const bool isField,
+                            bool isEncodeLtRef, int layerId)
 {
   double dQP;
   double dLambda;
@@ -329,6 +328,8 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
   rpcSlice->setPic( pcPic );
   rpcSlice->setPicHeader( picHeader );
   rpcSlice->initSlice();
+  rpcSlice->setNalUnitLayerId(layerId);
+
   int multipleFactor = m_pcCfg->getUseCompositeRef() ? 2 : 1;
   if (m_pcCfg->getUseCompositeRef() && isEncodeLtRef)
   {
@@ -432,17 +433,18 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
   SliceType eSliceType;
 
   eSliceType=B_SLICE;
+  const bool useIlRef = m_pcCfg->getAvoidIntraInDepLayer() && rpcSlice->getPic()->cs->vps && m_pcCfg->getNumRefLayers(rpcSlice->getPic()->cs->vps->getGeneralLayerIdx(layerId));
   if (m_pcCfg->getIntraPeriod() > 0 )
   {
     if(!(isField && pocLast == 1) || !m_pcCfg->getEfficientFieldIRAPEnabled())
     {
       if(m_pcCfg->getDecodingRefreshType() == 3)
       {
-        eSliceType = (pocLast == 0 || pocCurr % (m_pcCfg->getIntraPeriod() * multipleFactor) == 0 || m_pcGOPEncoder->getGOPSize() == 0) ? I_SLICE : eSliceType;
+        eSliceType = (pocLast == 0 || pocCurr % (m_pcCfg->getIntraPeriod() * multipleFactor) == 0 || m_pcGOPEncoder->getGOPSize() == 0) && (!useIlRef) ? I_SLICE : eSliceType;
       }
       else
       {
-        eSliceType = (pocLast == 0 || (pocCurr - (isField ? 1 : 0)) % (m_pcCfg->getIntraPeriod() * multipleFactor) == 0 || m_pcGOPEncoder->getGOPSize() == 0) ? I_SLICE : eSliceType;
+        eSliceType = (pocLast == 0 || (pocCurr - (isField ? 1 : 0)) % (m_pcCfg->getIntraPeriod() * multipleFactor) == 0 || m_pcGOPEncoder->getGOPSize() == 0) && (!useIlRef) ? I_SLICE : eSliceType;
       }
     }
   }
@@ -599,17 +601,17 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
   {
     // restore original slice type
 
-    if (m_pcCfg->getIntraPeriod() > 0)
+    if (m_pcCfg->getIntraPeriod() > 0 )
     {
-      if (!(isField && pocLast == 1) || !m_pcCfg->getEfficientFieldIRAPEnabled())
+      if(!(isField && pocLast == 1) || !m_pcCfg->getEfficientFieldIRAPEnabled())
       {
-        if (m_pcCfg->getDecodingRefreshType() == 3)
+        if(m_pcCfg->getDecodingRefreshType() == 3)
         {
-          eSliceType = (pocLast == 0 || pocCurr % (m_pcCfg->getIntraPeriod() * multipleFactor) == 0 || m_pcGOPEncoder->getGOPSize() == 0) ? I_SLICE : eSliceType;
+          eSliceType = (pocLast == 0 || pocCurr % (m_pcCfg->getIntraPeriod() * multipleFactor) == 0 || m_pcGOPEncoder->getGOPSize() == 0) && (!useIlRef) ? I_SLICE : eSliceType;
         }
         else
         {
-          eSliceType = (pocLast == 0 || (pocCurr - (isField ? 1 : 0)) % (m_pcCfg->getIntraPeriod() * multipleFactor) == 0 || m_pcGOPEncoder->getGOPSize() == 0) ? I_SLICE : eSliceType;
+          eSliceType = (pocLast == 0 || (pocCurr - (isField ? 1 : 0)) % (m_pcCfg->getIntraPeriod() * multipleFactor) == 0 || m_pcGOPEncoder->getGOPSize() == 0) && (!useIlRef) ? I_SLICE : eSliceType;
         }
       }
     }
@@ -617,6 +619,7 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
     {
       eSliceType = (pocLast == 0 || pocCurr == 0 || m_pcGOPEncoder->getGOPSize() == 0) ? I_SLICE : eSliceType;
     }
+
     rpcSlice->setSliceType        ( eSliceType );
   }
 
@@ -1631,7 +1634,7 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
       else
       {
         bpp = pRateCtrl->getRCPic()->getLCUTargetBpp(pcSlice->isIRAP());
-        if ( pcPic->slices[0]->isIRAP())
+        if ( pcPic->slices[0]->isIntra())
         {
           estLambda = pRateCtrl->getRCPic()->getLCUEstLambdaAndQP(bpp, pcSlice->getSliceQp(), &estQP);
         }

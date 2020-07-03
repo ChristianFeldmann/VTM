@@ -1803,7 +1803,13 @@ void EncGOP::xPicInitLMCS(Picture *pic, PicHeader *picHeader, Slice *slice)
 {
   if (slice->getSPS()->getUseLmcs())
   {
-    const SliceType sliceType = slice->getSliceType();
+    const SliceType realSliceType = slice->getSliceType();
+    SliceType condSliceType = realSliceType;
+
+    if (condSliceType != I_SLICE && slice->getNalUnitLayerId() > 0 && (slice->getNalUnitType()>= NAL_UNIT_CODED_SLICE_IDR_W_RADL && slice->getNalUnitType()<= NAL_UNIT_CODED_SLICE_CRA))
+    {
+      condSliceType = I_SLICE;
+    }
     m_pcReshaper->getReshapeCW()->rspTid = slice->getTLayer() + (slice->isIntra() ? 0 : 1);
     m_pcReshaper->getReshapeCW()->rspSliceQP = slice->getSliceQp();
 
@@ -1814,18 +1820,18 @@ void EncGOP::xPicInitLMCS(Picture *pic, PicHeader *picHeader, Slice *slice)
 
     if (m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_PQ)
     {
-      m_pcReshaper->preAnalyzerHDR(pic, sliceType, m_pcCfg->getReshapeCW(), m_pcCfg->getDualITree());
+      m_pcReshaper->preAnalyzerHDR(pic, condSliceType, m_pcCfg->getReshapeCW(), m_pcCfg->getDualITree());
     }
     else if (m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_SDR || m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_HLG)
     {
-      m_pcReshaper->preAnalyzerLMCS(pic, m_pcCfg->getReshapeSignalType(), sliceType, m_pcCfg->getReshapeCW());
+      m_pcReshaper->preAnalyzerLMCS(pic, m_pcCfg->getReshapeSignalType(), condSliceType, m_pcCfg->getReshapeCW());
     }
     else
     {
       THROW("Reshaper for other signal currently not defined!");
     }
 
-    if (sliceType == I_SLICE )
+    if (condSliceType == I_SLICE )
     {
       if (m_pcCfg->getReshapeSignalType() == RESHAPE_SIGNAL_PQ)
       {
@@ -1846,7 +1852,10 @@ void EncGOP::xPicInitLMCS(Picture *pic, PicHeader *picHeader, Slice *slice)
       }
 
       m_pcReshaper->setCTUFlag(false);
-
+      if (realSliceType != condSliceType)
+      {
+        m_pcReshaper->setCTUFlag(true);
+      }
     }
     else
     {
@@ -2070,9 +2079,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     pcPic->allocateNewSlice();
     m_pcSliceEncoder->setSliceSegmentIdx(0);
 
-    m_pcSliceEncoder->initEncSlice(pcPic, iPOCLast, pocCurr, iGOPid, pcSlice, isField
-      , isEncodeLtRef
-    );
+    m_pcSliceEncoder->initEncSlice(pcPic, iPOCLast, pocCurr, iGOPid, pcSlice, isField, isEncodeLtRef, m_pcEncLib->getLayerId() );
 
     DTRACE_UPDATE( g_trace_ctx, ( std::make_pair( "poc", pocCurr ) ) );
     DTRACE_UPDATE( g_trace_ctx, ( std::make_pair( "final", 0 ) ) );
@@ -2219,7 +2226,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
     if (pcSlice->checkThatAllRefPicsAreAvailable(rcListPic, pcSlice->getRPL0(), 0, false) != 0 || pcSlice->checkThatAllRefPicsAreAvailable(rcListPic, pcSlice->getRPL1(), 1, false) != 0 ||
         (m_pcEncLib->getDependentRAPIndicationSEIEnabled() && !pcSlice->isIRAP() && ( pcSlice->isDRAP() || !pcSlice->isPOCInRefPicList(pcSlice->getRPL0(), pcSlice->getAssociatedIRAPPOC())) )
-      || (!pcSlice->isIRAP() && pcSlice->getPic()->cs->vps && m_pcEncLib->getNumRefLayers(pcSlice->getPic()->cs->vps->getGeneralLayerIdx(m_pcEncLib->getLayerId())))
+      || ((m_pcEncLib->getAvoidIntraInDepLayer() || !pcSlice->isIRAP()) && pcSlice->getPic()->cs->vps && m_pcEncLib->getNumRefLayers(pcSlice->getPic()->cs->vps->getGeneralLayerIdx(m_pcEncLib->getLayerId())))
       )
     {
       xCreateExplicitReferencePictureSetFromReference( pcSlice, rcListPic, pcSlice->getRPL0(), pcSlice->getRPL1() );
@@ -2333,7 +2340,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
     if( m_pcCfg->getUseAMaxBT() )
     {
-      if( !pcSlice->isIRAP() )
+      if( !pcSlice->isIntra() )
       {
         int refLayer = pcSlice->getDepth();
         if( refLayer > 9 ) refLayer = 9; // Max layer is 10
@@ -2531,7 +2538,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     pcSlice->scaleRefPicList( scaledRefPic, pcPic->cs->picHeader, m_pcEncLib->getApss(), picHeader->getLmcsAPS(), picHeader->getScalingListAPS(), false );
 
     // set adaptive search range for non-intra-slices
-    if (m_pcCfg->getUseASR() && !pcSlice->isIRAP())
+    if (m_pcCfg->getUseASR() && !pcSlice->isIntra())
     {
       m_pcSliceEncoder->setSearchRange(pcSlice);
     }
@@ -3131,7 +3138,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     {
       for( const CodingUnit *cu : pcPic->cs->cus )
       {
-        if( !pcSlice->isIRAP() )
+        if( !pcSlice->isIntra() )
         {
           m_uiBlkSize[pcSlice->getDepth()] += cu->Y().area();
           m_uiNumBlk [pcSlice->getDepth()]++;

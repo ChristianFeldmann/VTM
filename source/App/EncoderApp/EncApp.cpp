@@ -263,6 +263,8 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setUpscaledOutput                                    ( m_upscaledOutput );
   m_cEncLib.setFramesToBeEncoded                                 ( m_framesToBeEncoded );
 
+  m_cEncLib.setAvoidIntraInDepLayer                              ( m_avoidIntraInDepLayer );
+
   //====== SPS constraint flags =======
 #if STILL_PICTURE_PROFILES
   m_cEncLib.setOnePictureOnlyConstraintFlag                      ( m_onePictureOnlyConstraintFlag );

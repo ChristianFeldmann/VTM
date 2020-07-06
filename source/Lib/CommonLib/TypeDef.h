@@ -131,7 +131,6 @@
 
 
 
-#define JVET_R0210_NUMTILESINSLICE_SIGNALLING             1 // JVET-R0210 section 3.3: Don't signal NumTilesInSlice syntax element when numTilesInPic - slice_address is 1.
 
 #define JVET_R0156_ASPECT4_SPS_CLEANUP                    1 // JVET-R0071 #1, R0156 #4, R0284 #1: Condition sps_independent_subpics_flag on "sps_num_subpics_minus1 > 0"
 

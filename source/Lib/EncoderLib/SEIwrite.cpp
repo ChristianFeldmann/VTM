@@ -506,9 +506,7 @@ void SEIWriter::xWriteSEIScalableNesting(OutputBitstream& bs, const SEIScalableN
   CHECK (sei.m_nestedSEIs.size()<1, "There must be at lease one SEI message nested in the scalable nesting SEI.")
 
   WRITE_FLAG(sei.m_snOlsFlag, "sn_ols_flag");
-#if JVET_Q0397_SCAL_NESTING
   WRITE_FLAG(sei.m_snSubpicFlag, "sn_subpic_flag");
-#endif
   if (sei.m_snOlsFlag)
   {
     WRITE_UVLC(sei.m_snNumOlssMinus1, "sn_num_olss_minus1");
@@ -529,7 +527,6 @@ void SEIWriter::xWriteSEIScalableNesting(OutputBitstream& bs, const SEIScalableN
       }
     }
   }
-#if JVET_Q0397_SCAL_NESTING
   if (sei.m_snSubpicFlag)
   {
     WRITE_UVLC( sei.m_snNumSubpics - 1, "sn_num_subpics_minus1");
@@ -540,7 +537,6 @@ void SEIWriter::xWriteSEIScalableNesting(OutputBitstream& bs, const SEIScalableN
       WRITE_CODE(sei.m_snSubpicId[i], sei.m_snSubpicIdLen, "sn_subpic_id[i]");
     }
   }
-#endif
 
   WRITE_UVLC( (uint32_t)sei.m_nestedSEIs.size() - 1, "sn_num_seis_minus1");
 

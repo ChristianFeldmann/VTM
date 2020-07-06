@@ -752,11 +752,7 @@ void EncGOP::xCreatePerPictureSEIMessages (int picInGOP, SEIMessages& seiMessage
 
 }
 
-#if JVET_Q0397_SCAL_NESTING
 void EncGOP::xCreateScalableNestingSEI(SEIMessages& seiMessages, SEIMessages& nestedSeiMessages, const std::vector<uint16_t>& subpicIDs)
-#else
-void EncGOP::xCreateScalableNestingSEI(SEIMessages& seiMessages, SEIMessages& nestedSeiMessages)
-#endif
 {
   SEIMessages tmpMessages;
   while (!nestedSeiMessages.empty())
@@ -765,11 +761,7 @@ void EncGOP::xCreateScalableNestingSEI(SEIMessages& seiMessages, SEIMessages& ne
     nestedSeiMessages.pop_front();
     tmpMessages.push_back(sei);
     SEIScalableNesting *nestingSEI = new SEIScalableNesting();
-#if JVET_Q0397_SCAL_NESTING
     m_seiEncoder.initSEIScalableNesting(nestingSEI, tmpMessages, subpicIDs);
-#else
-    m_seiEncoder.initSEIScalableNesting(nestingSEI, tmpMessages);
-#endif
     seiMessages.push_back(nestingSEI);
     tmpMessages.clear();
   }
@@ -3452,7 +3444,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
       if (m_pcCfg->getScalableNestingSEIEnabled())
       {
-#if JVET_Q0397_SCAL_NESTING
         const SPS* sps = pcSlice->getSPS();
         const PPS* pps = pcSlice->getPPS();
 
@@ -3481,9 +3472,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
           }
         }
         xCreateScalableNestingSEI(leadingSeiMessages, nestedSeiMessages, subpicIDs);
-#else
-        xCreateScalableNestingSEI(leadingSeiMessages, nestedSeiMessages);
-#endif
       }
 
       xWriteLeadingSEIMessages( leadingSeiMessages, duInfoSeiMessages, accessUnit, pcSlice->getTLayer(), pcSlice->getSPS(), duData );

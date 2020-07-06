@@ -106,7 +106,6 @@
 
 
 
-#define JVET_R0266_DESC                                   1 // JVET-R0266: change the signalling of the PPS ID from ue(v) to u(6); Code virtual boundary positions using ue(v)
 
 #define JVET_R0094_DPB_TID_OFFSET                         1 // JVET-R0094: DPB output temporal ID offsets
 

@@ -101,7 +101,6 @@
 
 
 
-#define JVET_R0205                                        1 // JVET-R0205: Condition presence of inter_layer_ref_pics_present_flag on sps_video_parameter_set_id 
 
 #define JVET_R0277_RPL                                    1 // JVET-R0277: Modified condition for sh_num_ref_idx_active_override_flag, inference for sh_collocated_from_l0_flag equal to 1 for P-slices
 

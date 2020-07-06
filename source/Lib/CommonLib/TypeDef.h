@@ -149,7 +149,6 @@
 
 
 
-#define JVET_R0099_DPB_HRD_PARAMETERS_SIGNALLING          1   // JVET-R0099: DPB and HRD parameter signalling for OLS
 
 #define JVET_R0101_PROPOSAL2                              1 // JVET-R0101 Proposal 2: Bug fix for signalling some syntax elements length
 

@@ -2215,11 +2215,7 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
     }
 
 
-#if JVET_R0099_DPB_HRD_PARAMETERS_SIGNALLING
     for( int i = 0, j=0; i < pcVPS->getTotalNumOLSs(); i++ )
-#else
-    for( int i = 0; i < pcVPS->getTotalNumOLSs(); i++ )
-#endif
     {
       if( pcVPS->m_numLayersInOls[i] > 1 )
       {
@@ -2227,15 +2223,10 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
         READ_UVLC( uiCode, "ols_dpb_pic_height[i]" ); pcVPS->setOlsDpbPicHeight( i, uiCode );
         READ_CODE( 2, uiCode, "ols_dpb_chroma_format[i]"); pcVPS->setOlsDpbChromaFormatIdc(i, uiCode);
         READ_UVLC( uiCode, "ols_dpb_bitdepth_minus8[i]"); pcVPS->setOlsDpbBitDepthMinus8(i, uiCode);
-#if JVET_R0099_DPB_HRD_PARAMETERS_SIGNALLING
         if ((pcVPS->m_numDpbParams > 1) && (pcVPS->m_numDpbParams != pcVPS->m_numMultiLayeredOlss))
-#else
-        if( pcVPS->m_numDpbParams > 1 )
-#endif
         {
           READ_UVLC( uiCode, "ols_dpb_params_idx[i]" ); pcVPS->setOlsDpbParamsIdx( i, uiCode );
         }
-#if JVET_R0099_DPB_HRD_PARAMETERS_SIGNALLING
         else if (pcVPS->m_numDpbParams == 1)
         {
           pcVPS->setOlsDpbParamsIdx(i, 0);
@@ -2245,12 +2236,6 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
           pcVPS->setOlsDpbParamsIdx(i, j);
         }
         j += 1;
-#else
-        else
-        {
-          pcVPS->setOlsDpbParamsIdx( i, 0 );
-        }
-#endif
         isDPBParamReferred[pcVPS->getOlsDpbParamsIdx(i)] = true;
       }
     }
@@ -2295,7 +2280,6 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
       uint32_t firstSublayer = pcVPS->getVPSSublayerCpbParamsPresentFlag() ? 0 : pcVPS->getHrdMaxTid(i);
       parseOlsHrdParameters(pcVPS->getGeneralHrdParameters(),pcVPS->getOlsHrdParameters(i), firstSublayer, pcVPS->getHrdMaxTid(i));
     }
-#if JVET_R0099_DPB_HRD_PARAMETERS_SIGNALLING
     for (int i = 0; i < pcVPS->m_numMultiLayeredOlss; i++) 
     {
       if (((pcVPS->getNumOlsHrdParamsMinus1() + 1) != pcVPS->m_numMultiLayeredOlss) && (pcVPS->getNumOlsHrdParamsMinus1() > 0))
@@ -2313,28 +2297,6 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
       }
       isHRDParamReferred[pcVPS->getOlsHrdIdx(i)] = true;
     }
-#else
-    for (int i = 1; i < pcVPS->getTotalNumOLSs(); i++)
-    {
-      if (((pcVPS->getNumOlsHrdParamsMinus1() + 1) != pcVPS->getTotalNumOLSs()) && (pcVPS->getNumOlsHrdParamsMinus1() > 0))
-      {
-        if (pcVPS->m_numLayersInOls[i] > 1)
-        {
-          READ_UVLC(uiCode, "ols_hrd_idx[i]"); pcVPS->setOlsHrdIdx(i, uiCode);
-          CHECK(uiCode > pcVPS->getNumOlsHrdParamsMinus1(), "The value of ols_hrd_idx[[ i ] shall be in the range of 0 to num_ols_hrd_params_minus1, inclusive.");
-        }
-      }
-      else if ((pcVPS->getNumOlsHrdParamsMinus1() + 1) == pcVPS->getTotalNumOLSs())
-      {
-        pcVPS->setOlsHrdIdx(i, i);
-      }
-      else if ((pcVPS->m_numLayersInOls[i] > 1) && (pcVPS->getNumOlsHrdParamsMinus1() == 0))
-      {
-        pcVPS->setOlsHrdIdx(i, 0);
-      }
-      isHRDParamReferred[pcVPS->getOlsHrdIdx(i)] = true;
-    }
-#endif
     for( int i = 0; i <= pcVPS->getNumOlsHrdParamsMinus1(); i++ )
     {
       CHECK( !isHRDParamReferred[i], "Each ols_hrd_parameters( ) syntax structure in the VPS shall be referred to by at least one value of vps_ols_hrd_idx[ i ] for i in the range of 1 to NumMultiLayerOlss - 1, inclusive");

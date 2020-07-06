@@ -2197,7 +2197,6 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   m_pcPic->layerId     = nalu.m_nuhLayerId;
   m_pcPic->subLayerNonReferencePictureDueToSTSA = false;
 
-#if JVET_R0194_CONSTRAINT_PS_SHARING_REFERENCING
   if( pcSlice->getNalUnitLayerId() != pcSlice->getSPS()->getLayerId() )
   {
     CHECK( pcSlice->getSPS()->getLayerId() > pcSlice->getNalUnitLayerId(), "Layer Id of SPS cannot be greater than layer Id of VCL NAL unit the refer to it" );
@@ -2244,7 +2243,6 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
       CHECK( isCurrLayerInOls && !isRefLayerInOls, "When VCL NAl unit in layer A refers to PPS in layer B, all OLS that contains layer A shall also contains layer B" );
     }
   }
-#endif
 
   if (m_bFirstSliceInPicture)
   {
@@ -2466,7 +2464,6 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   if (pcSlice->getExplicitScalingListUsed())
   {
     APS* scalingListAPS = pcSlice->getPicHeader()->getScalingListAPS();
-#if JVET_R0194_CONSTRAINT_PS_SHARING_REFERENCING
     if( pcSlice->getNalUnitLayerId() != scalingListAPS->getLayerId() )
     {
       CHECK( scalingListAPS->getLayerId() > pcSlice->getNalUnitLayerId(), "Layer Id of APS cannot be greater than layer Id of VCL NAL unit the refer to it" );
@@ -2489,7 +2486,6 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
         CHECK( isCurrLayerInOls && !isRefLayerInOls, "When VCL NAl unit in layer A refers to APS in layer B, all OLS that contains layer A shall also contains layer B" );
       }
     }
-#endif
     ScalingList scalingList = scalingListAPS->getScalingList();
     quant->setScalingListDec(scalingList);
     quant->setUseScalingList(true);
@@ -2514,7 +2510,6 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
       {
         CHECK(lmcsAPS->getAPSId() != m_sliceLmcsApsId, "same APS ID shall be used for all slices in one picture");
       }
-#if JVET_R0194_CONSTRAINT_PS_SHARING_REFERENCING
       if( pcSlice->getNalUnitLayerId() != lmcsAPS->getLayerId() )
       {
         CHECK( lmcsAPS->getLayerId() > pcSlice->getNalUnitLayerId(), "Layer Id of APS cannot be greater than layer Id of VCL NAL unit the refer to it" );
@@ -2537,7 +2532,6 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
           CHECK( isCurrLayerInOls && !isRefLayerInOls, "When VCL NAl unit in layer A refers to APS in layer B, all OLS that contains layer A shall also contains layer B" );
         }
       }
-#endif
       SliceReshapeInfo& sInfo = lmcsAPS->getReshaperAPSInfo();
       SliceReshapeInfo& tInfo = m_cReshaper.getSliceReshaperInfo();
       tInfo.reshaperModelMaxBinIdx = sInfo.reshaperModelMaxBinIdx;
@@ -2687,9 +2681,7 @@ void DecLib::xDecodeSPS( InputNALUnit& nalu )
   CHECK( nalu.m_temporalId, "The value of TemporalId of SPS NAL units shall be equal to 0" );
 
   m_HLSReader.parseSPS( sps );
-#if JVET_R0194_CONSTRAINT_PS_SHARING_REFERENCING
   sps->setLayerId( nalu.m_nuhLayerId );
-#endif
   DTRACE( g_trace_ctx, D_QP_PER_CTU, "CTU Size: %dx%d", sps->getMaxCUWidth(), sps->getMaxCUHeight() );
   m_parameterSetManager.storeSPS( sps, nalu.getBitstream().getFifo() );
 }

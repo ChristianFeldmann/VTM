@@ -3719,7 +3719,6 @@ void  HLSyntaxReader::checkAlfNaluTidAndPicTid(Slice* pcSlice, PicHeader* picHea
     {
       aps = parameterSetManager->getAPS(apsId[i], ALF_APS);
       CHECK(aps->getTemporalId() > curPicTid, "The TemporalId of the APS NAL unit having aps_params_type equal to ALF_APS and adaptation_parameter_set_id equal to ph_alf_aps_id_luma[ i ] shall be less than or equal to the TemporalId of the picture associated with the PH.");
-#if JVET_R0194_CONSTRAINT_PS_SHARING_REFERENCING
       if( pcSlice->getNalUnitLayerId() != aps->getLayerId() )
       {
         CHECK( aps->getLayerId() > pcSlice->getNalUnitLayerId(), "Layer Id of APS cannot be greater than layer Id of VCL NAL unit the refer to it" );
@@ -3742,7 +3741,6 @@ void  HLSyntaxReader::checkAlfNaluTidAndPicTid(Slice* pcSlice, PicHeader* picHea
           CHECK( isCurrLayerInOls && !isRefLayerInOls, "When VCL NAl unit in layer A refers to APS in layer B, all OLS that contains layer A shall also contains layer B" );
         }
       }
-#endif
     }
     //chroma
 #if JVET_R0225_SEPERATE_FLAGS_ALF_CHROMA
@@ -3754,7 +3752,6 @@ void  HLSyntaxReader::checkAlfNaluTidAndPicTid(Slice* pcSlice, PicHeader* picHea
       int chromaAlfApsId = picHeader->getAlfApsIdChroma();
       aps = parameterSetManager->getAPS(chromaAlfApsId, ALF_APS);
       CHECK(aps->getTemporalId() > curPicTid, "The TemporalId of the APS NAL unit having aps_params_type equal to ALF_APS and adaptation_parameter_set_id equal to ph_alf_aps_id_chroma shall be less than or equal to the TemporalId of the picture associated with the PH.");
-#if JVET_R0194_CONSTRAINT_PS_SHARING_REFERENCING
       if( pcSlice->getNalUnitLayerId() != aps->getLayerId() )
       {
         CHECK( aps->getLayerId() > pcSlice->getNalUnitLayerId(), "Layer Id of APS cannot be greater than layer Id of VCL NAL unit the refer to it" );
@@ -3777,7 +3774,6 @@ void  HLSyntaxReader::checkAlfNaluTidAndPicTid(Slice* pcSlice, PicHeader* picHea
           CHECK( isCurrLayerInOls && !isRefLayerInOls, "When VCL NAl unit in layer A refers to APS in layer B, all OLS that contains layer A shall also contains layer B" );
         }
       }
-#endif
     }
   }
 }

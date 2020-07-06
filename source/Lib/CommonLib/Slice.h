@@ -1318,9 +1318,7 @@ class SPS
 private:
   int               m_SPSId;
   int               m_VPSId;
-#if JVET_R0194_CONSTRAINT_PS_SHARING_REFERENCING
   int               m_layerId;
-#endif
   bool              m_affineAmvrEnabledFlag;
   bool              m_DMVR;
   bool              m_MMVD;
@@ -1515,10 +1513,8 @@ public:
   void                    setSPSId(int i)                                                                 { m_SPSId = i;                                                         }
   int                     getVPSId() const                                                                { return m_VPSId; }
   void                    setVPSId(int i)                                                                 { m_VPSId = i; }
-#if JVET_R0194_CONSTRAINT_PS_SHARING_REFERENCING
   void                    setLayerId( int i )                                                             { m_layerId = i;                                                       }
   int                     getLayerId() const                                                              { return m_layerId;                                                    }
-#endif
   ChromaFormat            getChromaFormatIdc () const                                                     { return m_chromaFormatIdc;                                            }
   void                    setChromaFormatIdc (ChromaFormat i)                                             { m_chromaFormatIdc = i;                                               }
   void                    setSeparateColourPlaneFlag ( bool b )                                           { m_separateColourPlaneFlag = b;                                       }

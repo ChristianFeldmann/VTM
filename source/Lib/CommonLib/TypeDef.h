@@ -130,7 +130,6 @@
 
 
 
-#define JVET_R0232_CCALF_APS_CONSTRAINT                   1 // JVET-R0232 section 3.2: APS contraint for CCALF
 
 #define JVET_R0210_NUMTILESINSLICE_SIGNALLING             1 // JVET-R0210 section 3.3: Don't signal NumTilesInSlice syntax element when numTilesInPic - slice_address is 1.
 

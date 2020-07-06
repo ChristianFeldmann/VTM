@@ -443,17 +443,10 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
   if( uiCode != 0 )
   {
     Window &scalingWindow = pcPPS->getScalingWindow();
-#if JVET_R0114_NEGATIVE_SCALING_WINDOW_OFFSETS
     READ_SVLC( iCode, "pps_scaling_win_left_offset" );               scalingWindow.setWindowLeftOffset( iCode );
     READ_SVLC( iCode, "pps_scaling_win_right_offset" );              scalingWindow.setWindowRightOffset( iCode );
     READ_SVLC( iCode, "pps_scaling_win_top_offset" );                scalingWindow.setWindowTopOffset( iCode );
     READ_SVLC( iCode, "pps_scaling_win_bottom_offset" );             scalingWindow.setWindowBottomOffset( iCode );
-#else
-    READ_UVLC( uiCode, "scaling_win_left_offset" );               scalingWindow.setWindowLeftOffset( uiCode );
-    READ_UVLC( uiCode, "scaling_win_right_offset" );              scalingWindow.setWindowRightOffset( uiCode );
-    READ_UVLC( uiCode, "scaling_win_top_offset" );                scalingWindow.setWindowTopOffset( uiCode );
-    READ_UVLC( uiCode, "scaling_win_bottom_offset" );             scalingWindow.setWindowBottomOffset( uiCode );
-#endif
   }
   else
   {

@@ -108,7 +108,6 @@
 
 
 
-#define JVET_R0437_BS_DERIVATION                          1 // JVET-R0437: fix the bS derivation for palette mode
 
 #define JVET_R0110_MIXED_LOSSLESS                         1 // JVET-R0110: Slice level mixed lossy/lossless coding: encoder only method
 

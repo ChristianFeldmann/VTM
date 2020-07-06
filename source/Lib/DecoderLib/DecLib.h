@@ -173,9 +173,7 @@ private:
   // NAL unit type, layer ID, and SEI payloadType
   std::vector<std::tuple<NalUnitType, int, SEI::PayloadType>> m_accessUnitSeiPayLoadTypes;
 
-#if JVET_R0201_PREFIX_SUFFIX_APS_CLEANUP
   std::vector<NalUnitType> m_pictureUnitNals;
-#endif
   std::list<InputNALUnit*> m_pictureSeiNalus; 
 
   VPS*                    m_vps;
@@ -242,10 +240,8 @@ public:
   void resetPictureSeiNalus();
   bool isSliceNaluFirstInAU( bool newPicture, InputNALUnit &nalu );
 
-#if JVET_R0201_PREFIX_SUFFIX_APS_CLEANUP
   void checkAPSInPictureUnit();
   void resetPictureUnitNals() { m_pictureUnitNals.clear(); }
-#endif
 
   const VPS* getVPS()                     { return m_vps; }
   void deriveTargetOutputLayerSet( const int targetOlsIdx ) { if( m_vps != nullptr ) m_vps->deriveTargetOutputLayerSet( targetOlsIdx ); }

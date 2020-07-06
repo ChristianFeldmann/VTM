@@ -1156,7 +1156,6 @@ bool DecLib::isSliceNaluFirstInAU( bool newPicture, InputNALUnit &nalu )
   return (m_apcSlicePilot->getPOC() != m_prevPOC);
 }
 
-#if JVET_R0201_PREFIX_SUFFIX_APS_CLEANUP
 void DecLib::checkAPSInPictureUnit()
 {
   bool firstVCLFound = false;
@@ -1178,7 +1177,6 @@ void DecLib::checkAPSInPictureUnit()
     }
   }
 }
-#endif
 
 void activateAPS(PicHeader* picHeader, Slice* pSlice, ParameterSetManager& parameterSetManager, APS** apss, APS* lmcsAPS, APS* scalingListAPS)
 {
@@ -2623,9 +2621,7 @@ void DecLib::xDecodeAPS(InputNALUnit& nalu)
   m_HLSReader.parseAPS(aps);
   aps->setTemporalId(nalu.m_temporalId);
   aps->setLayerId( nalu.m_nuhLayerId );
-#if JVET_R0201_PREFIX_SUFFIX_APS_CLEANUP
   aps->setHasPrefixNalUnitType( nalu.m_nalUnitType == NAL_UNIT_PREFIX_APS );
-#endif
   aps->setPuCounter( m_puCounter );
   m_parameterSetManager.checkAuApsContent( aps, m_accessUnitApsNals );
   if( m_apsMapEnc )
@@ -2649,9 +2645,7 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay, i
   auInfo.m_nuhLayerId = nalu.m_nuhLayerId;
   auInfo.m_temporalId = nalu.m_temporalId;
   m_accessUnitNals.push_back(auInfo);
-#if JVET_R0201_PREFIX_SUFFIX_APS_CLEANUP
   m_pictureUnitNals.push_back( nalu.m_nalUnitType );
-#endif
   switch (nalu.m_nalUnitType)
   {
     case NAL_UNIT_VPS:

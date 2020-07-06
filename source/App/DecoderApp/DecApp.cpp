@@ -277,13 +277,11 @@ uint32_t DecApp::decode()
       m_cDecLib.checkSeiInPictureUnit();
       m_cDecLib.resetPictureSeiNalus();
     }
-#if JVET_R0201_PREFIX_SUFFIX_APS_CLEANUP
     if (bNewPicture || !bitstreamFile || nalu.m_nalUnitType == NAL_UNIT_EOS)
     {
       m_cDecLib.checkAPSInPictureUnit();
       m_cDecLib.resetPictureUnitNals();
     }
-#endif
     if (bNewAccessUnit || !bitstreamFile)
     {
       m_cDecLib.CheckNoOutputPriorPicFlagsInAccessUnit();

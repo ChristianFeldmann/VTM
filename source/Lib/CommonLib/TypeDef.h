@@ -114,7 +114,6 @@
 
 
 
-#define JVET_R0201_PREFIX_SUFFIX_APS_CLEANUP              1 // JVET-R0201 Cleanups on Prefix and Suffix APS
 
 #define JVET_R0202_WHEN_PH_IN_SH_NO_SUBPIC_SEPARATE_COLOR 1 // JVET-R0202 Add constraints when sh_picture_header_in_slice_header_flag equal to 1 sps_subpic_info_present_flag and separate_colour_plane_flag shall be equal to 0
 

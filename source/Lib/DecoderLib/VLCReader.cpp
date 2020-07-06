@@ -674,12 +674,10 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
       pcPPS->setLoopFilterAcrossSlicesEnabledFlag( false );
     }
   }
-#if JVET_R0071_SPS_PPS_CELANUP
   else
   {
     pcPPS->setSingleSlicePerSubPicFlag(1);
   }
-#endif
 
   READ_FLAG( uiCode,   "cabac_init_present_flag" );            pcPPS->setCabacInitPresentFlag( uiCode ? true : false );
 
@@ -1402,13 +1400,8 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
       pcSPS->setIndependentSubPicsFlag(1);
 #endif
 
-#if JVET_R0071_SPS_PPS_CELANUP
       pcSPS->setSubPicTreatedAsPicFlag(0, 1);
       pcSPS->setLoopFilterAcrossSubpicEnabledFlag(0, 0);
-#else
-      pcSPS->setSubPicTreatedAsPicFlag( 0, 0 );
-      pcSPS->setLoopFilterAcrossSubpicEnabledFlag( 0, 1 );
-#endif
     }
     else
     {

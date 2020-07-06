@@ -3140,11 +3140,7 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
 
 
   // picture output flag
-#if JVET_R0122_PIC_OUTPUT_FLAG_CLEANUP
   if (pps->getOutputFlagPresentFlag() && !picHeader->getNonReferencePictureFlag())
-#else
-  if (pps->getOutputFlagPresentFlag())
-#endif
   {
     READ_FLAG( uiCode, "pic_output_flag" ); picHeader->setPicOutputFlag( uiCode != 0 );
   }

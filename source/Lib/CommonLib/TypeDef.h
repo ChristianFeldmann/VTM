@@ -60,7 +60,6 @@
 
 
 
-#define JVET_R0122_PIC_OUTPUT_FLAG_CLEANUP                1 // JVET-R0122: pic_output_flag is not signalled in picture header and inferred to be equal to 1, when the value of non_reference_picture_flag is equal to 1.
 
 #define JVET_R0065                                        1 //JVET-R0065: Each picture in an AU in a CVS shall have nuh_layer_id equal to the nuh_layer_id of one of the pictures present in the first AU of the CVS
                                                             //            Add a flag aud_irap_or_gdr_au_flag to the AUD, and mandate the presence of AUD in each IRAP or GDR AU when vps_max_layers_minus1 is greater than 0

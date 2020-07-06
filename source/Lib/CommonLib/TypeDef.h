@@ -97,7 +97,6 @@
 
 
 
-#define JVET_R0130_TC_DERIVATION_BUGFIX                   1 // JVET-R0130: Cleanup of tC derivation for deblocking filter
 
 #define JVET_R0334_PLT_CLEANUP                            1 // JVET-R0334: Disable chroma palette for local dual tree
 

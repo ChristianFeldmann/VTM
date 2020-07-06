@@ -73,7 +73,6 @@
                                                             //             Change vps_num_dpb_params to vps_num_dpb_params_minus1 and change the semantics to a two-way constraint
                                                             //             Signal DPB parameters for OLS in this case only if(!each_layer_is_an_ols_flag)
 
-#define JVET_R0184_WRAPAROUND_SUBPICS                     1 // JVET-R0184: Wraparound for subpictures
 
 #define JVET_R0062                                        1 // JVET-R0062: changes on uniform tile and rectangular slice partitioning
 

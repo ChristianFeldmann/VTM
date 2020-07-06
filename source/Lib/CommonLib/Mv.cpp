@@ -109,7 +109,6 @@ bool wrapClipMv( Mv& rcMv, const Position& pos, const struct Size& size, const S
   int iHorMax = ( pps->getPicWidthInLumaSamples() + sps->getMaxCUWidth() - size.width + iOffset - (int)pos.x - 1 ) << iMvShift;
   int iHorMin = ( -( int ) sps->getMaxCUWidth()                                      - iOffset - ( int ) pos.x + 1 ) << iMvShift;
 
-#if JVET_R0184_WRAPAROUND_SUBPICS
   int iVerMax = ( pps->getPicHeightInLumaSamples() + iOffset - ( int ) pos.y - 1 ) << iMvShift;
   int iVerMin = ( -( int ) sps->getMaxCUHeight() - iOffset - ( int ) pos.y + 1 ) << iMvShift;
 
@@ -119,10 +118,6 @@ bool wrapClipMv( Mv& rcMv, const Position& pos, const struct Size& size, const S
     iVerMax = ( ( curSubPic.getSubPicBottom() + 1 ) + iOffset - ( int ) pos.y - 1 ) << iMvShift;
     iVerMin = ( -( int ) sps->getMaxCUHeight() - iOffset - ( ( int ) pos.y - curSubPic.getSubPicTop() ) + 1 ) << iMvShift;
   }
-#else
-  int iVerMax = ( pps->getPicHeightInLumaSamples() + iOffset - (int)pos.y - 1 ) << iMvShift;
-  int iVerMin = ( -( int ) sps->getMaxCUHeight()   - iOffset - ( int ) pos.y + 1 ) << iMvShift;
-#endif
   int mvX = rcMv.getHor();
 
   if(mvX > iHorMax)

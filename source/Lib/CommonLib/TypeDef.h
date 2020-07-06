@@ -124,7 +124,6 @@
 
 
 
-#define JVET_R0143_TSRCdisableLL                          1 // JVET-R0143: disable TSRC for lossless coding
 
 #define JVET_R0371_MAX_NUM_SUB_BLK_MRG_CAND               1 // JVET-R0371: set the range of max number of subblock based merge candidate to 0 to 5 - sps_sbtmvp_enabled_flag. 
 

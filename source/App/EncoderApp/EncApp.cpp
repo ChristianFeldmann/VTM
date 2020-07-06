@@ -790,9 +790,7 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setInitialCpbFullness                                ( m_RCInitialCpbFullness );
 #endif
   m_cEncLib.setCostMode                                          ( m_costMode );
-#if JVET_R0143_TSRCdisableLL
   m_cEncLib.setTSRCdisableLL                                     ( m_TSRCdisableLL );
-#endif
   m_cEncLib.setUseRecalculateQPAccordingToLambda                 ( m_recalculateQPAccordingToLambda );
   m_cEncLib.setDCIEnabled                                        ( m_DCIEnabled );
   m_cEncLib.setVuiParametersPresentFlag                          ( m_vuiParametersPresentFlag );

@@ -354,14 +354,10 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
   {
     rpcSlice->setDepQuantEnabledFlag( false ); //should be disabled for lossless
     rpcSlice->setSignDataHidingEnabledFlag( false ); //should be disabled for lossless
-#if JVET_R0143_TSRCdisableLL
     if( m_pcCfg->getTSRCdisableLL() )
     {
       rpcSlice->setTSResidualCodingDisabledFlag( true );
     }
-#else
-    rpcSlice->setTSResidualCodingDisabledFlag( true );
-#endif
   }
 
 #if SHARP_LUMA_DELTA_QP
@@ -1146,11 +1142,7 @@ void EncSlice::setLosslessSlice(Picture* pcPic, bool islossless)
       int losslessQp = LOSSLESS_AND_MIXED_LOSSLESS_RD_COST_TEST_QP - ((slice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA) - 8) * 6);
       slice->setSliceQp(losslessQp); // update the slice/base QPs
 
-#if JVET_R0143_TSRCdisableLL
      slice->setTSResidualCodingDisabledFlag(m_pcCfg->getTSRCdisableLL() ? true : false);
-#else
-     slice->setTSResidualCodingDisabledFlag(true);
-#endif 
 
     }
     else

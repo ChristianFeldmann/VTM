@@ -280,9 +280,6 @@ class ConstraintInfo
   bool              m_noBcwConstraintFlag;
   bool              m_noIbcConstraintFlag;
   bool              m_noCiipConstraintFlag;
-#if !JVET_R0214_MMVD_SYNTAX_MODIFICATION
-  bool              m_noFPelMmvdConstraintFlag;
-#endif
   bool              m_noGeoConstraintFlag;
   bool              m_noLadfConstraintFlag;
   bool              m_noTransformSkipConstraintFlag;
@@ -348,9 +345,6 @@ public:
     , m_noBcwConstraintFlag      (false)
     , m_noIbcConstraintFlag      (false)
     , m_noCiipConstraintFlag  (false)
-#if !JVET_R0214_MMVD_SYNTAX_MODIFICATION
-    , m_noFPelMmvdConstraintFlag (false)
-#endif
     , m_noGeoConstraintFlag      (false)
     , m_noLadfConstraintFlag     (false)
     , m_noTransformSkipConstraintFlag(false)
@@ -473,10 +467,6 @@ public:
   void          setNoIbcConstraintFlag(bool bVal) { m_noIbcConstraintFlag = bVal; }
   bool          getNoCiipConstraintFlag() const { return m_noCiipConstraintFlag; }
   void          setNoCiipConstraintFlag(bool bVal) { m_noCiipConstraintFlag = bVal; }
-#if !JVET_R0214_MMVD_SYNTAX_MODIFICATION
-  bool          getNoFPelMmvdConstraintFlag() const { return m_noFPelMmvdConstraintFlag; }
-  void          setNoFPelMmvdConstraintFlag(bool bVal) { m_noFPelMmvdConstraintFlag = bVal; }
-#endif
   bool          getNoGeoConstraintFlag() const { return m_noGeoConstraintFlag; }
   void          setNoGeoConstraintFlag(bool bVal) { m_noGeoConstraintFlag = bVal; }
   bool          getNoLadfConstraintFlag() const { return m_noLadfConstraintFlag; }

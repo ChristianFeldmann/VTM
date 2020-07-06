@@ -143,7 +143,6 @@
 
 
 
-#define JVET_R0214_MMVD_SYNTAX_MODIFICATION               1 // JVET-R0214: MMVD syntax modifications
 
 #define JVET_R0101_SEI_INFERENCE_RULES                    1 // JVET-R0101: SEI alternative timing information inference rules (including those from JVET-R0413) 
 

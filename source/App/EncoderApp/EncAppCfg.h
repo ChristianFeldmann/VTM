@@ -165,9 +165,6 @@ protected:
   bool      m_bNoBcwConstraintFlag;
   bool      m_noIbcConstraintFlag;
   bool      m_bNoCiipConstraintFlag;
-#if !JVET_R0214_MMVD_SYNTAX_MODIFICATION
-  bool      m_noFPelMmvdConstraintFlag;
-#endif
   bool      m_noGeoConstraintFlag;
   bool      m_bNoLadfConstraintFlag;
   bool      m_noTransformSkipConstraintFlag;

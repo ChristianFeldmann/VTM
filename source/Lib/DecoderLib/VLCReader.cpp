@@ -672,18 +672,14 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
     // loop filtering across slice/tile controls
     READ_CODE(1, uiCode, "loop_filter_across_tiles_enabled_flag");    pcPPS->setLoopFilterAcrossTilesEnabledFlag( uiCode == 1 );
 #endif
-#if JVET_R0247_PPS_LP_FTR_ACROSS_SLICES_FLAG_CLEANUP
     if (pcPPS->getRectSliceFlag() == 0 || pcPPS->getSingleSlicePerSubPicFlag() || pcPPS->getNumSlicesInPic() > 1)
     {
-#endif
       READ_CODE(1, uiCode, "loop_filter_across_slices_enabled_flag");   pcPPS->setLoopFilterAcrossSlicesEnabledFlag( uiCode == 1 );
-#if JVET_R0247_PPS_LP_FTR_ACROSS_SLICES_FLAG_CLEANUP
     }
     else
     {
       pcPPS->setLoopFilterAcrossSlicesEnabledFlag( false );
     }
-#endif
   }
 #if JVET_R0071_SPS_PPS_CELANUP
   else

@@ -116,7 +116,6 @@
 
 
 
-#define JVET_R0247_PPS_LP_FTR_ACROSS_SLICES_FLAG_CLEANUP  1 // JVET-R0247: Skip pps_loop_filter_across_slices_enabled_flag when the picture contains one slice
 
 #define JVET_R0327_ONE_PASS_CCALF                         1 // JVET-R0327: One-pass CCALF
 

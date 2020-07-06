@@ -126,7 +126,6 @@
 
 
 
-#define JVET_R0113_AND_JVET_R0106_PPS_CLEANUP             1 // JVET-R0113 and JVET-R0106: Cleanup in Picture Parameter Set
 
 #define JVET_R0233_CCALF_LINE_BUFFER_REDUCTION            1 // JVET-R0233 method 2: Line buffer reduction for CCALF
 

@@ -2415,12 +2415,10 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   {
     READ_FLAG(uiCode, "gdr_pic_flag");                     picHeader->setGdrPicFlag(uiCode != 0);
   }
-#if JVET_R0112_SEMANTICS_CLEANUP
   else
   {
     picHeader->setGdrPicFlag(false);
   }
-#endif
   READ_FLAG(uiCode, "ph_inter_slice_allowed_flag");       picHeader->setPicInterSliceAllowedFlag(uiCode != 0);
   if (picHeader->getPicInterSliceAllowedFlag())
   {

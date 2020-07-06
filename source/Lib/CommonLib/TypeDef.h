@@ -146,7 +146,6 @@
 
 
 
-#define JVET_R0112_SEMANTICS_CLEANUP                      1 // JVET-R0112: Picture header semantics cleanup for gdr_or_irap_flag
 
 #define JVET_R0107_VPS_SIGNALING                          1 // JVET-R017: Proposal 2 VPS signaling change and updated inference rule
 

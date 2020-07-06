@@ -5482,11 +5482,7 @@ void EncGOP::xCreateExplicitReferencePictureSetFromReference( Slice* slice, PicL
   int numPics = numOfLTRPL0 + numOfSTRPL0;
 
   pLocalRPL0->setNumberOfActivePictures( ( numPics < rpl0->getNumberOfActivePictures() ? numPics : rpl0->getNumberOfActivePictures() ) + numOfILRPL0 );
-#if JVET_R0059_RPL_CLEANUP
   pLocalRPL0->setLtrpInSliceHeaderFlag( 1 );
-#else
-  pLocalRPL0->setLtrpInSliceHeaderFlag( rpl0->getLtrpInSliceHeaderFlag() );
-#endif
   slice->setRPL0idx( -1 );
   slice->setRPL0( pLocalRPL0 );
 
@@ -5530,11 +5526,7 @@ void EncGOP::xCreateExplicitReferencePictureSetFromReference( Slice* slice, PicL
   numPics = numOfLTRPL1 + numOfSTRPL1;
 
   pLocalRPL1->setNumberOfActivePictures( ( isDisallowMixedRefPic ? numPics : ( numPics < rpl1->getNumberOfActivePictures() ? numPics : rpl1->getNumberOfActivePictures() ) ) + numOfILRPL1 );
-#if JVET_R0059_RPL_CLEANUP
   pLocalRPL1->setLtrpInSliceHeaderFlag( 1 );
-#else
-  pLocalRPL1->setLtrpInSliceHeaderFlag( rpl1->getLtrpInSliceHeaderFlag() );
-#endif
   slice->setRPL1idx( -1 );
   slice->setRPL1( pLocalRPL1 );
 }

@@ -4083,10 +4083,6 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
       pcSlice->setNumRefIdx(REF_PIC_LIST_0, 0);
       pcSlice->setNumRefIdx(REF_PIC_LIST_1, 0);
     }
-#if !JVET_R0277_RPL
-    else
-    {
-#endif
       if ((!pcSlice->isIntra() && pcSlice->getRPL0()->getNumRefEntries() > 1) ||
           (pcSlice->isInterB() && pcSlice->getRPL1()->getNumRefEntries() > 1) )
       {
@@ -4152,9 +4148,6 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
         pcSlice->setNumRefIdx( REF_PIC_LIST_0, pcSlice->isIntra() ? 0 : 1 );
         pcSlice->setNumRefIdx( REF_PIC_LIST_1, pcSlice->isInterB() ? 1 : 0 );
       }
-#if !JVET_R0277_RPL
-    }
-#endif
 
     if (pcSlice->isInterP() || pcSlice->isInterB())
     {
@@ -4174,7 +4167,6 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
 
     if ( picHeader->getEnableTMVPFlag() )
     {
-#if JVET_R0277_RPL
       if( pcSlice->getSliceType() == P_SLICE )
       {
         pcSlice->setColFromL0Flag( true );
@@ -4188,24 +4180,6 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
       {
         pcSlice->setColFromL0Flag( picHeader->getPicColFromL0Flag() );
       }
-#else
-      if ( !pps->getRplInfoInPhFlag())
-      {
-      if ( pcSlice->getSliceType() == B_SLICE )
-      {
-        READ_FLAG(uiCode, "collocated_from_l0_flag");
-        pcSlice->setColFromL0Flag(uiCode);
-      }
-      else
-      {
-        pcSlice->setColFromL0Flag( 1 );
-      }
-      }
-      else
-      {
-        pcSlice->setColFromL0Flag(picHeader->getPicColFromL0Flag());
-      }
-#endif
 
       if (!pps->getRplInfoInPhFlag())
       {

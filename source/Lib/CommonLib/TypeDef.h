@@ -102,7 +102,6 @@
 
 
 
-#define JVET_R0277_RPL                                    1 // JVET-R0277: Modified condition for sh_num_ref_idx_active_override_flag, inference for sh_collocated_from_l0_flag equal to 1 for P-slices
 
 #define JVET_R0275_SPS_PTL_DBP_HRD                        1 // JVET-R0275: Modified constraint for sps_ptl_dpb_hrd_params_present_flag
 

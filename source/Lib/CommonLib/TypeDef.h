@@ -123,7 +123,6 @@
 
 
 
-#define JVET_R0271_SLICE_LEVEL_DQ_SDH_RRC                 1 // JVET-R0271/R0155: Slice level DQ and SDH granularity for mixed lossy/lossless.
 
 #define JVET_R0143_TSRCdisableLL                          1 // JVET-R0143: disable TSRC for lossless coding
 

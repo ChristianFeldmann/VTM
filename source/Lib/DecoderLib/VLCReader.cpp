@@ -3207,29 +3207,6 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   }
 
 
-#if !JVET_R0271_SLICE_LEVEL_DQ_SDH_RRC
-  // dependent quantization
-  if (sps->getDepQuantEnabledFlag())
-  {
-    READ_FLAG(uiCode, "ph_dep_quant_enabled_flag");
-    picHeader->setDepQuantEnabledFlag(uiCode != 0);
-  }
-  else
-  {
-    picHeader->setDepQuantEnabledFlag(false);
-  }
-
-  // sign data hiding
-  if (sps->getSignDataHidingEnabledFlag() && !picHeader->getDepQuantEnabledFlag())
-  {
-    READ_FLAG( uiCode, "pic_sign_data_hiding_enabled_flag" );
-    picHeader->setSignDataHidingEnabledFlag( uiCode != 0 );
-  }
-  else
-  {
-    picHeader->setSignDataHidingEnabledFlag(false);
-  }
-#endif
 
   // deblocking filter controls
   if (pps->getDeblockingFilterControlPresentFlag())
@@ -4222,7 +4199,6 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
       pcSlice->setDeblockingFilterCrTcOffsetDiv2  ( 0 );
     }
 
-#if JVET_R0271_SLICE_LEVEL_DQ_SDH_RRC
   // dependent quantization
   if( sps->getDepQuantEnabledFlag() )
   {
@@ -4255,10 +4231,6 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
   {
     pcSlice->setTSResidualCodingDisabledFlag( false );
   }
-#else
-	READ_FLAG(uiCode, "slice_ts_residual_coding_disabled_flag");
-	pcSlice->setTSResidualCodingDisabledFlag(uiCode != 0);
-#endif
 
   if( pcSlice->getFirstCtuRsAddrInSlice() == 0 )
   {

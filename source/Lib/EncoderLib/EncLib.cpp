@@ -1794,11 +1794,6 @@ void EncLib::xInitPicHeader(PicHeader &picHeader, const SPS &sps, const PPS &pps
   picHeader.setMaxBTSizes( sps.getMaxBTSizes() );
   picHeader.setMaxTTSizes( sps.getMaxTTSizes() );
 
-#if !JVET_R0271_SLICE_LEVEL_DQ_SDH_RRC
-  // quantization
-  picHeader.setDepQuantEnabledFlag( sps.getDepQuantEnabledFlag() );
-  picHeader.setSignDataHidingEnabledFlag( sps.getSignDataHidingEnabledFlag() );
-#endif
   bool bUseDQP = (getCuQpDeltaSubdiv() > 0)? true : false;
 
   if( (getMaxDeltaQP() != 0 )|| getUseAdaptiveQP() )

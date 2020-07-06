@@ -83,7 +83,6 @@
 
 
 
-#define JVET_R0055_HANDLING_NON_EXISTENT_QM               1 // JVET-R0055: infer chroma scaling lists to be all 16 in 4:0:0 by copy mode flag
 
 #define JVET_R0097_MAX_TRSIZE_CONDITIONALY_SIGNALING      1 // JVET-R0097: Aspect 1, If the luma CTB size is not larger than 32, sps_max_luma_transform_size_64_flag is not signalled and inferred to be 0
 

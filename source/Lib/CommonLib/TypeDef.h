@@ -120,7 +120,6 @@
 
 
 
-#define JVET_R0388_DBF_CLEANUP                            1 // JVET-R0388: Cleanups on deblocking signalling
 
 #define JVET_R0114_NEGATIVE_SCALING_WINDOW_OFFSETS        1 // JVET-R0114: Allow negative scaling window offsets
 

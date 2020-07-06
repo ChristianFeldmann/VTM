@@ -109,7 +109,6 @@
 
 
 
-#define JVET_R0110_MIXED_LOSSLESS                         1 // JVET-R0110: Slice level mixed lossy/lossless coding: encoder only method
 
 #define JVET_R0267_IDR_RPL                                1 // JVET-R0267: Add RPL constraint for IDR picture
 

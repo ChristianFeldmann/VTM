@@ -636,9 +636,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 
 
   SMultiValueInput<double> cfg_adIntraLambdaModifier         (0, std::numeric_limits<double>::max(), 0, MAX_TLAYER); ///< Lambda modifier for Intra pictures, one for each temporal layer. If size>temporalLayer, then use [temporalLayer], else if size>0, use [size()-1], else use m_adLambdaModifier.
-#if JVET_R0110_MIXED_LOSSLESS
   SMultiValueInput<uint16_t>  cfgSliceLosslessArray          (0, std::numeric_limits<uint16_t>::max(), 0, MAX_SLICES);
-#endif
 #if SHARP_LUMA_DELTA_QP
   const int defaultLumaLevelTodQp_QpChangePoints[]   =  {-3,  -2,  -1,   0,   1,   2,   3,   4,   5,   6};
   const int defaultLumaLevelTodQp_LumaChangePoints[] =  { 0, 301, 367, 434, 501, 567, 634, 701, 767, 834};
@@ -1125,10 +1123,8 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("SAOLcuBoundary",                                  m_saoCtuBoundary,                                 false, "0: right/bottom CTU boundary areas skipped from SAO parameter estimation, 1: non-deblocked pixels are used for those areas")
   ("SAOGreedyEnc",                                    m_saoGreedyMergeEnc,                              false, "SAO greedy merge encoding algorithm")
   ("EnablePicPartitioning",                           m_picPartitionFlag,                               false, "Enable picture partitioning (0: single tile, single slice, 1: multiple tiles/slices can be used)")
-#if JVET_R0110_MIXED_LOSSLESS
   ("MixedLossyLossless",                              m_mixedLossyLossless,                                  false, "Enable encoder to encode mixed lossy/lossless coding ")
   ("SliceLosslessArray",                              cfgSliceLosslessArray, cfgSliceLosslessArray, " Lossless slice array Last lossless flag in the  list will be repeated uniformly to cover any remaining slice")
-#endif 
   ("TileColumnWidthArray",                            cfgTileColumnWidth,                  cfgTileColumnWidth, "Tile column widths in units of CTUs. Last column width in list will be repeated uniformly to cover any remaining picture width")
   ("TileRowHeightArray",                              cfgTileRowHeight,                      cfgTileRowHeight, "Tile row heights in units of CTUs. Last row height in list will be repeated uniformly to cover any remaining picture height")
   ("RasterScanSlices",                                m_rasterSliceFlag,                                false, "Indicates if using raster-scan or rectangular slices (0: rectangular, 1: raster-scan)")
@@ -1663,7 +1659,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
     }
   }
 
-#if JVET_R0110_MIXED_LOSSLESS
   if (m_costMode != COST_LOSSLESS_CODING && m_mixedLossyLossless)
   {
     m_mixedLossyLossless = 0;
@@ -1688,7 +1683,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
       m_sliceLosslessArray[i] = cfgSliceLosslessArray.values[i];
     }
   }
-#endif
 
   if( m_picPartitionFlag )
   {
@@ -2325,7 +2319,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
 
   if( m_costMode == COST_LOSSLESS_CODING )
   {
-#if JVET_R0110_MIXED_LOSSLESS
     bool firstSliceLossless = false;
     if (m_mixedLossyLossless)
     {
@@ -2346,7 +2339,6 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
       firstSliceLossless = true;
     }
     if (firstSliceLossless) // if first slice is lossless 
-#endif
     m_iQP = LOSSLESS_AND_MIXED_LOSSLESS_RD_COST_TEST_QP - ( ( m_internalBitDepth[CHANNEL_TYPE_LUMA] - 8 ) * 6 );
   }
 

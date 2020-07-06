@@ -391,7 +391,6 @@ void Picture::allocateNewSlice()
     slice.initSlice();
   }
 }
-#if JVET_R0110_MIXED_LOSSLESS
 void Picture::fillSliceLossyLosslessArray(std::vector<uint16_t> sliceLosslessIndexArray, bool mixedLossyLossless)
 {
   uint16_t numElementsinsliceLosslessIndexArray = (uint16_t)sliceLosslessIndexArray.size();
@@ -412,7 +411,6 @@ void Picture::fillSliceLossyLosslessArray(std::vector<uint16_t> sliceLosslessInd
   CHECK(m_lossylosslessSliceArray.size() < numSlices, "sliceLosslessArray size is less than number of slices");
 
 }
-#endif
 
 Slice *Picture::swapSliceObject(Slice * p, uint32_t i)
 {

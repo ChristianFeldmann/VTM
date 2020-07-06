@@ -2716,14 +2716,12 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     // now compress (trial encode) the various slice segments (slices, and dependent slices)
     {
       DTRACE_UPDATE( g_trace_ctx, ( std::make_pair( "poc", pocCurr ) ) );
-#if JVET_R0110_MIXED_LOSSLESS
       const std::vector<uint16_t> sliceLosslessArray = *(m_pcCfg->getSliceLosslessArray());
       bool mixedLossyLossless = m_pcCfg->getMixedLossyLossless();
       if (m_pcCfg->getCostMode() == COST_LOSSLESS_CODING)
       {
         pcPic->fillSliceLossyLosslessArray(sliceLosslessArray, mixedLossyLossless);
       }
-#endif
 
       for(uint32_t sliceIdx = 0; sliceIdx < pcPic->cs->pps->getNumSlicesInPic(); sliceIdx++ )
       {
@@ -2767,14 +2765,12 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
           }
         }
 
-#if JVET_R0110_MIXED_LOSSLESS
         bool isLossless = false;
         if (m_pcCfg->getCostMode() == COST_LOSSLESS_CODING)
         {
           isLossless = pcPic->losslessSlice(sliceIdx);
         }
         m_pcSliceEncoder->setLosslessSlice(pcPic, isLossless);
-#endif
 
         if (pcSlice->getSliceType() != I_SLICE && pcSlice->getRefPic(REF_PIC_LIST_0, 0)->numSubpics > 1)
         {
@@ -2881,7 +2877,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         }
   #endif
       }
-#if JVET_R0110_MIXED_LOSSLESS
       if (m_pcCfg->getCostMode() == COST_LOSSLESS_CODING) 
       {
         for (int s = 0; s < uiNumSliceSegments; s++)
@@ -2892,7 +2887,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
           }
         }
       }
-#endif
       m_pcLoopFilter->loopFilterPic( cs );
 
       CS::setRefinedMotionField(cs);
@@ -2911,7 +2905,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         for (int s = 0; s < uiNumSliceSegments; s++)
         {
 
-#if  JVET_R0110_MIXED_LOSSLESS
           if (pcPic->slices[s]->isLossless() && m_pcCfg->getCostMode() == COST_LOSSLESS_CODING)
           {
             pcPic->slices[s]->setSaoEnabledFlag(CHANNEL_TYPE_LUMA, false);
@@ -2919,14 +2912,11 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
           }
           else
           {
-#endif          
             pcPic->slices[s]->setSaoEnabledFlag(CHANNEL_TYPE_LUMA, sliceEnabled[COMPONENT_Y]);
             CHECK(!(sliceEnabled[COMPONENT_Cb] == sliceEnabled[COMPONENT_Cr]), "Unspecified error");
             pcPic->slices[s]->setSaoEnabledFlag(CHANNEL_TYPE_CHROMA, sliceEnabled[COMPONENT_Cb]);
 
-#if  JVET_R0110_MIXED_LOSSLESS
         }
-#endif
 
         }
       }
@@ -2945,9 +2935,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 #if ENABLE_QPA
           , (m_pcCfg->getUsePerceptQPA() && !m_pcCfg->getUseRateCtrl() && pcSlice->getPPS()->getUseDQP() ? m_pcEncLib->getRdCost(PARL_PARAM0(0))->getChromaWeight() : 0.0)
 #endif
-#if JVET_R0110_MIXED_LOSSLESS
           , pcPic, uiNumSliceSegments
-#endif
         );
 
         pcSlice->m_ccAlfFilterParam      = m_pcALF->getCcAlfFilterParam();
@@ -2956,7 +2944,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         //assign ALF slice header
         for (int s = 0; s < uiNumSliceSegments; s++)
         {
-#if JVET_R0110_MIXED_LOSSLESS
            //For the first slice, even if it is lossless, slice level ALF is not disabled and ALF-APS is signaled so that the later lossy slices can use APS of the first slice. 
            //However, if the first slice is lossless, the ALF process is disabled for all of the CTUs ( m_ctuEnableFlag == 0) of that slice which is implemented in the function void EncAdaptiveLoopFilter::ALFProcess.         
       
@@ -2968,14 +2955,11 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
           }
           else
           {
-#endif          
             pcPic->slices[s]->setTileGroupAlfEnabledFlag(COMPONENT_Y, cs.slice->getTileGroupAlfEnabledFlag(COMPONENT_Y));
             pcPic->slices[s]->setTileGroupAlfEnabledFlag(COMPONENT_Cb, cs.slice->getTileGroupAlfEnabledFlag(COMPONENT_Cb));
             pcPic->slices[s]->setTileGroupAlfEnabledFlag(COMPONENT_Cr, cs.slice->getTileGroupAlfEnabledFlag(COMPONENT_Cr));
 
-#if JVET_R0110_MIXED_LOSSLESS
           }
-#endif
           if (pcPic->slices[s]->getTileGroupAlfEnabledFlag(COMPONENT_Y))
           {
             pcPic->slices[s]->setTileGroupNumAps(cs.slice->getTileGroupNumAps());

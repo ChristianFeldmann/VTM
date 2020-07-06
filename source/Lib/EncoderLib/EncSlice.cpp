@@ -631,9 +631,7 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
 
   rpcSlice->setSliceQp           ( iQP );
   rpcSlice->setSliceQpDelta      ( 0 );
-#if JVET_R0110_MIXED_LOSSLESS
   pcPic->setLossyQPValue(iQP);
-#endif
 #if !W0038_CQP_ADJ
   rpcSlice->setSliceChromaQpDelta( COMPONENT_Cb, 0 );
   rpcSlice->setSliceChromaQpDelta( COMPONENT_Cr, 0 );
@@ -1151,7 +1149,6 @@ void EncSlice::setSearchRange( Slice* pcSlice )
   }
 }
 
-#if JVET_R0110_MIXED_LOSSLESS
 void EncSlice::setLosslessSlice(Picture* pcPic, bool islossless) 
 {
   Slice* slice = pcPic->slices[getSliceSegmentIdx()];
@@ -1178,7 +1175,6 @@ void EncSlice::setLosslessSlice(Picture* pcPic, bool islossless)
     }
   }
 }
-#endif
 
 
 /**
@@ -1511,9 +1507,7 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
   RdCost*         pRdCost         = pEncLib->getRdCost( PARL_PARAM0( dataId ) );
   EncCfg*         pCfg            = pEncLib;
   RateCtrl*       pRateCtrl       = pEncLib->getRateCtrl();
-#if JVET_R0110_MIXED_LOSSLESS
   pRdCost->setLosslessRDCost(pcSlice->isLossless());
-#endif
 #if RDOQ_CHROMA_LAMBDA
   pTrQuant    ->setLambdas( pcSlice->getLambdas() );
 #else

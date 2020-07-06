@@ -65,11 +65,7 @@ double RdCost::calcRdCost( uint64_t fracBits, Distortion distortion, bool useUna
 double RdCost::calcRdCost( uint64_t fracBits, Distortion distortion )
 #endif
 {
-#if JVET_R0110_MIXED_LOSSLESS  
   if (m_costMode == COST_LOSSLESS_CODING && 0 != distortion && m_isLosslessRDCost)
-#else
-  if( m_costMode == COST_LOSSLESS_CODING && 0 != distortion)
-#endif
   {
     return MAX_DOUBLE;
   }

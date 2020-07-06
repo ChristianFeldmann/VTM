@@ -887,9 +887,7 @@ void EncAdaptiveLoopFilter::ALFProcess(CodingStructure& cs, const double *lambda
 #if ENABLE_QPA
                                        , const double lambdaChromaWeight
 #endif
-#if JVET_R0110_MIXED_LOSSLESS
                                        , Picture* pcPic, uint32_t numSliceSegments
-#endif
                                       )
 {
   int layerIdx = cs.vps == nullptr ? 0 : cs.vps->getGeneralLayerIdx( cs.slice->getPic()->layerId );
@@ -1052,7 +1050,6 @@ void EncAdaptiveLoopFilter::ALFProcess(CodingStructure& cs, const double *lambda
 #endif
   );
 
-#if  JVET_R0110_MIXED_LOSSLESS
   for (int s = 0; s < numSliceSegments; s++)
   {
     if (pcPic->slices[s]->isLossless())
@@ -1066,7 +1063,6 @@ void EncAdaptiveLoopFilter::ALFProcess(CodingStructure& cs, const double *lambda
       }
     }
   }
-#endif
 
   alfReconstructor(cs, recYuv);
 

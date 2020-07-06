@@ -156,12 +156,10 @@ struct Picture : public UnitArea
   void setBorderExtension( bool bFlag)              { m_bIsBorderExtended = bFlag;}
   Pel* getOrigin( const PictureType &type, const ComponentID compID ) const;
 
-#if JVET_R0110_MIXED_LOSSLESS
   void setLossyQPValue(int i)                 { m_lossyQP = i; }
   int getLossyQPValue()                       const { return m_lossyQP; }
   void      fillSliceLossyLosslessArray(std::vector<uint16_t> sliceLosslessArray, bool mixedLossyLossless);
   bool      losslessSlice(uint32_t sliceIdx)  const { return m_lossylosslessSliceArray[sliceIdx]; }
-#endif
 
   int           getSpliceIdx(uint32_t idx) const { return m_spliceIdx[idx]; }
   void          setSpliceIdx(uint32_t idx, int poc) { m_spliceIdx[idx] = poc; }
@@ -230,10 +228,8 @@ public:
 
   int* m_spliceIdx;
   int  m_ctuNums;
-#if JVET_R0110_MIXED_LOSSLESS
   int m_lossyQP;
   std::vector<bool> m_lossylosslessSliceArray;
-#endif
   bool interLayerRefPicFlag;
 
   std::vector<int> subPicIDs;

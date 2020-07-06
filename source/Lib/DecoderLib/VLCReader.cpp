@@ -3716,39 +3716,23 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
       pcSlice->setTileGroupCcAlfCrApsId(-1);
     }
   }
-#if JVET_R0098_LMCS_AND_SCALING_LISTS_FOR_PH_IN_SH
   if (picHeader->getLmcsEnabledFlag() && !pcSlice->getPictureHeaderInSliceHeader())
-#else
-  if (picHeader->getLmcsEnabledFlag())
-#endif
   {
     READ_FLAG(uiCode, "slice_lmcs_enabled_flag");
     pcSlice->setLmcsEnabledFlag(uiCode);
   }
   else
   {
-#if JVET_R0098_LMCS_AND_SCALING_LISTS_FOR_PH_IN_SH
     pcSlice->setLmcsEnabledFlag(pcSlice->getPictureHeaderInSliceHeader() ? picHeader->getLmcsEnabledFlag() : false);
-#else
-    pcSlice->setLmcsEnabledFlag(false);
-#endif
   }
-#if JVET_R0098_LMCS_AND_SCALING_LISTS_FOR_PH_IN_SH
   if (picHeader->getExplicitScalingListEnabledFlag() && !pcSlice->getPictureHeaderInSliceHeader())
-#else
-  if (picHeader->getExplicitScalingListEnabledFlag())
-#endif
   {
     READ_FLAG(uiCode, "slice_explicit_scaling_list_used_flag");
     pcSlice->setExplicitScalingListUsed(uiCode);
   }
   else
   {
-#if JVET_R0098_LMCS_AND_SCALING_LISTS_FOR_PH_IN_SH
     pcSlice->setExplicitScalingListUsed(pcSlice->getPictureHeaderInSliceHeader() ? picHeader->getExplicitScalingListEnabledFlag() : false);
-#else
-    pcSlice->setExplicitScalingListUsed(false);
-#endif
   }
 
     // 4:4:4 colour plane ID

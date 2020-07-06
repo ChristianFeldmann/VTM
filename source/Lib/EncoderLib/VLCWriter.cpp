@@ -2224,19 +2224,11 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
     }
   }
 
-#if JVET_R0098_LMCS_AND_SCALING_LISTS_FOR_PH_IN_SH
   if (picHeader->getLmcsEnabledFlag() && !pcSlice->getPictureHeaderInSliceHeader())
-#else
-  if (picHeader->getLmcsEnabledFlag())
-#endif
   {
     WRITE_FLAG(pcSlice->getLmcsEnabledFlag(), "slice_lmcs_enabled_flag");
   }
-#if JVET_R0098_LMCS_AND_SCALING_LISTS_FOR_PH_IN_SH
   if (picHeader->getExplicitScalingListEnabledFlag() && !pcSlice->getPictureHeaderInSliceHeader())
-#else
-  if (picHeader->getExplicitScalingListEnabledFlag())
-#endif
   {
     WRITE_FLAG(pcSlice->getExplicitScalingListUsed(), "slice_explicit_scaling_list_used_flag");
   }

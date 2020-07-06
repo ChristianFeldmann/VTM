@@ -119,7 +119,6 @@
 
 
 
-#define JVET_R0098_LMCS_AND_SCALING_LISTS_FOR_PH_IN_SH    1 // JVET-R0098: Only signall LMCS and explicit scaling list enable flags in SH when PH is not in SH
 
 #define JVET_R0388_DBF_CLEANUP                            1 // JVET-R0388: Cleanups on deblocking signalling
 

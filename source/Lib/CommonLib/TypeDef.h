@@ -82,7 +82,6 @@
 
 
 
-#define JVET_Q0764_WRAP_AROUND_WITH_RPR                   1 // JVET-Q0764: Combination of wrap around offset and RPR
 
 #define JVET_R0055_HANDLING_NON_EXISTENT_QM               1 // JVET-R0055: infer chroma scaling lists to be all 16 in 4:0:0 by copy mode flag
 

@@ -920,7 +920,6 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
   READ_FLAG(uiCode, "qp_delta_info_in_ph_flag");               pcPPS->setQpDeltaInfoInPhFlag(uiCode ? true : false);
 #endif
 
-#if JVET_Q0764_WRAP_AROUND_WITH_RPR
   READ_FLAG(uiCode, "pps_ref_wraparound_enabled_flag");           pcPPS->setWrapAroundEnabledFlag( uiCode ? true : false );
   if (pcPPS->getWrapAroundEnabledFlag())
   {
@@ -931,7 +930,6 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
   {
     pcPPS->setPicWidthMinusWrapAroundOffset(0);
   }
-#endif
 
   READ_FLAG( uiCode, "picture_header_extension_present_flag");
   pcPPS->setPictureHeaderExtensionPresentFlag(uiCode);
@@ -1803,13 +1801,6 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   
 
   READ_FLAG(uiCode, "sps_ref_wraparound_enabled_flag");                  pcSPS->setWrapAroundEnabledFlag( uiCode ? true : false );
-#if !JVET_Q0764_WRAP_AROUND_WITH_RPR
-
-  if (pcSPS->getWrapAroundEnabledFlag())
-  {
-    READ_UVLC(uiCode, "sps_ref_wraparound_offset");               pcSPS->setWrapAroundOffset((uiCode + 2 + pcSPS->getCTUSize() / (1 << pcSPS->getLog2MinCodingBlockSize()))*(1 << pcSPS->getLog2MinCodingBlockSize()));
-  }
-#endif
 
   if (pcSPS->getWrapAroundEnabledFlag())
   {
@@ -2867,7 +2858,6 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
 
   pps->initSubPic(*sps);
 
-#if JVET_Q0764_WRAP_AROUND_WITH_RPR
   // set wraparound offset from PPS and SPS info
   int minCbSizeY = (1 << sps->getLog2MinCodingBlockSize());
   CHECK( !sps->getWrapAroundEnabledFlag() && pps->getWrapAroundEnabledFlag(), "When sps_ref_wraparound_enabled_flag is equal to 0, the value of pps_ref_wraparound_enabled_flag shall be equal to 0.");
@@ -2881,7 +2871,6 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   {
     pps->setWrapAroundOffset( 0 );
   }
-#endif
 
   // virtual boundaries
   if( sps->getVirtualBoundariesEnabledFlag() && !sps->getVirtualBoundariesPresentFlag() )

@@ -584,7 +584,6 @@ void SEIReader::xParseSEIDecodingUnitInfo(SEIDecodingUnitInfo& sei, uint32_t pay
 
   if(!bp.m_decodingUnitCpbParamsInPicTimingSeiFlag)
   {
-#if JVET_R0100
     for (int i = temporalId; i <= bp.m_bpMaxSubLayers - 1; i++)
     {
       if (i < (bp.m_bpMaxSubLayers - 1))
@@ -596,12 +595,6 @@ void SEIReader::xParseSEIDecodingUnitInfo(SEIDecodingUnitInfo& sei, uint32_t pay
       {
         sei.m_duiSubLayerDelaysPresentFlag[i] = 1;
       }
-#else
-    for ( int i = temporalId; i < bp.m_bpMaxSubLayers - 1; i++)
-    {
-      sei_read_flag( pDecodedMessageOutputStream, val, "dui_sub_layer_delays_present_flag[i]" );
-      sei.m_duiSubLayerDelaysPresentFlag[i] = val;
-#endif
       if( sei.m_duiSubLayerDelaysPresentFlag[i] )
       {
         sei_read_code( pDecodedMessageOutputStream, bp.getDuCpbRemovalDelayIncrementLength(), val, "du_spt_cpb_removal_delay_increment[i]");

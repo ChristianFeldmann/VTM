@@ -140,7 +140,6 @@
 
 
 
-#define JVET_R0100                                        1 // JVET-R0100: Proposal 1 DUI Signalling and inference
 
 #define JVET_Q0397_SCAL_NESTING                           1 // JVET-Q0397: Scalable Nesting SEI related aspects
 

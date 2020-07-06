@@ -136,7 +136,6 @@
 
 
 
-#define JVET_R0045_TS_MIN_QP_CLEANUP                      1 // JVET-R0045: Cleanup for signalling of minimum QP of transform skip
 
 #define JVET_Q0394_TIMING_SEI                             1 // JVET_Q0394: Picture timing for OLSs
 

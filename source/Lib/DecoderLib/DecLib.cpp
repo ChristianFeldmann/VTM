@@ -1787,13 +1787,11 @@ void DecLib::xCheckParameterSetConstraints(const int layerId)
   }
 #endif
 
-#if JVET_R0278_CONSTRAINT  
   if( slice->getPicHeader()->getGdrOrIrapPicFlag() && !slice->getPicHeader()->getGdrPicFlag() && ( !vps || vps->getIndependentLayerFlag( vps->getGeneralLayerIdx( layerId ) ) ) )
   {
     CHECK( slice->getPicHeader()->getPicInterSliceAllowedFlag(),
       "When gdr_or_irap_pic_flag is equal to 1 and gdr_pic_flag is equal to 0 and vps_independent_layer_flag[ GeneralLayerIdx[ nuh_layer_id ] ] is equal to 1, ph_inter_slice_allowed_flag shall be equal to 0" );
   }
-#endif  
 
 #if JVET_R0275_SPS_PTL_DBP_HRD
   if( sps->getVPSId() && vps->m_numLayersInOls[vps->m_targetOlsIdx] == 1 )

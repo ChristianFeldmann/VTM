@@ -95,7 +95,6 @@
                                                             //               Constrain that each PTL, DPB, and HRD params in VPS are referred to at least once
 
 
-#define JVET_R0278_CONSTRAINT                             1 // JVET-R0278: ph_inter_slice_allowed_flag constraint
 
 #define JVET_R0276_REORDERED_SUBPICS                      1 // JVET-R0276: reference picture constraint for reordered sub-pictures
 

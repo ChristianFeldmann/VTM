@@ -110,7 +110,6 @@
 
 
 
-#define JVET_R0267_IDR_RPL                                1 // JVET-R0267: Add RPL constraint for IDR picture
 
 #define JVET_R0330_CRS_CLIP_REM                           1 // JVET-R0330: Remove redundant clipping in chroma residual scaling factor derivation
 

@@ -2000,11 +2000,7 @@ private:
 
 #if JVET_Q0764_WRAP_AROUND_WITH_RPR
   bool             m_wrapAroundEnabledFlag;               //< reference wrap around enabled or not
-#if JVET_R0162_WRAPAROUND_OFFSET_SIGNALING
   unsigned         m_picWidthMinusWrapAroundOffset;          // <pic_width_in_minCbSizeY - wraparound_offset_in_minCbSizeY
-#else
-  unsigned         m_wrapAroundOffsetMinusCtbSize;        //< reference wrap around offset minus ( CtbSizeY / MinCbSizeY ) + 2 in units of MinCbSizeY luma samples
-#endif
   unsigned         m_wrapAroundOffset;                    //< reference wrap around offset in luma samples
 #endif
 
@@ -2101,13 +2097,8 @@ public:
 #if JVET_Q0764_WRAP_AROUND_WITH_RPR
   void                   setWrapAroundEnabledFlag(bool b)                                 { m_wrapAroundEnabledFlag = b;                  }
   bool                   getWrapAroundEnabledFlag() const                                 { return m_wrapAroundEnabledFlag;               }  
-#if JVET_R0162_WRAPAROUND_OFFSET_SIGNALING
   void                   setPicWidthMinusWrapAroundOffset(unsigned offset)                { m_picWidthMinusWrapAroundOffset = offset;     }
   unsigned               getPicWidthMinusWrapAroundOffset() const                         { return m_picWidthMinusWrapAroundOffset;       }
-#else
-  void                   setWrapAroundOffsetMinusCtbSize(unsigned offset)                 { m_wrapAroundOffsetMinusCtbSize = offset;      }
-  unsigned               getWrapAroundOffsetMinusCtbSize() const                          { return m_wrapAroundOffsetMinusCtbSize;        }
-#endif
   void                   setWrapAroundOffset(unsigned offset)                             { m_wrapAroundOffset = offset;                  }
   unsigned               getWrapAroundOffset() const                                      { return m_wrapAroundOffset;                    }
 #endif

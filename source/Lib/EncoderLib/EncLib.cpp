@@ -320,22 +320,13 @@ void EncLib::init( bool isFieldCoding, AUWriterIf* auWriterIf )
     if( pps.getWrapAroundEnabledFlag() )
     {
       int minCbSizeY = (1 << sps0.getLog2MinCodingBlockSize());
-#if JVET_R0162_WRAPAROUND_OFFSET_SIGNALING
       pps.setPicWidthMinusWrapAroundOffset      ((pps.getPicWidthInLumaSamples()/minCbSizeY) - (m_wrapAroundOffset * pps.getPicWidthInLumaSamples() / pps0.getPicWidthInLumaSamples() / minCbSizeY) );
       pps.setWrapAroundOffset                   (minCbSizeY * (pps.getPicWidthInLumaSamples() / minCbSizeY - pps.getPicWidthMinusWrapAroundOffset()));
-#else
-      pps.setWrapAroundOffsetMinusCtbSize       ( ((m_wrapAroundOffset * pps.getPicWidthInLumaSamples() / pps0.getPicWidthInLumaSamples()) / minCbSizeY) - 2 - (sps0.getCTUSize() / minCbSizeY) );
-      pps.setWrapAroundOffset                   ( minCbSizeY * (pps.getWrapAroundOffsetMinusCtbSize() + 2 + sps0.getCTUSize() / minCbSizeY) );
-#endif
 
     }
     else 
     {
-#if JVET_R0162_WRAPAROUND_OFFSET_SIGNALING
       pps.setPicWidthMinusWrapAroundOffset      (0);
-#else
-      pps.setWrapAroundOffsetMinusCtbSize       ( 0 );
-#endif
       pps.setWrapAroundOffset                   ( 0 );       
     }
 #endif
@@ -1642,21 +1633,12 @@ void EncLib::xInitPPS(PPS &pps, const SPS &sps)
   pps.setWrapAroundEnabledFlag                ( m_wrapAround );
   if( m_wrapAround )
   {
-#if JVET_R0162_WRAPAROUND_OFFSET_SIGNALING
     pps.setPicWidthMinusWrapAroundOffset      ((pps.getPicWidthInLumaSamples()/minCbSizeY) - (m_wrapAroundOffset / minCbSizeY));
     pps.setWrapAroundOffset                   (minCbSizeY *(pps.getPicWidthInLumaSamples() / minCbSizeY- pps.getPicWidthMinusWrapAroundOffset()));
-#else
-    pps.setWrapAroundOffsetMinusCtbSize       ( (m_wrapAroundOffset / minCbSizeY) - 2 - (sps.getCTUSize() / minCbSizeY) );
-    pps.setWrapAroundOffset                   ( minCbSizeY * (pps.getWrapAroundOffsetMinusCtbSize() + 2 + sps.getCTUSize() / minCbSizeY) );
-#endif
   }
   else 
   {
-#if JVET_R0162_WRAPAROUND_OFFSET_SIGNALING
     pps.setPicWidthMinusWrapAroundOffset      ( 0 );
-#else
-    pps.setWrapAroundOffsetMinusCtbSize       ( 0 );
-#endif
     pps.setWrapAroundOffset                   ( 0 );       
   }
   CHECK( !sps.getWrapAroundEnabledFlag() && pps.getWrapAroundEnabledFlag(), "When sps_ref_wraparound_enabled_flag is equal to 0, the value of pps_ref_wraparound_enabled_flag shall be equal to 0.");

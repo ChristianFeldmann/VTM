@@ -77,7 +77,6 @@
 
 
 
-#define JVET_R0162_WRAPAROUND_OFFSET_SIGNALING            1 // JVET-R0162 proposal 1 : signal "picture width minus wraparound offset" instead of "wraparound offset"
 
 #define JVET_R0188                                        1 // JVET-R0188: Signalling slice_width_in_tiles_minus1[i] and slice_height_in_tiles_minus1[i]
 

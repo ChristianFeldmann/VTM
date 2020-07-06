@@ -1609,20 +1609,11 @@ void HLSWriter::codeVPS(const VPS* pcVPS)
       WRITE_CODE(pcVPS->getOlsPtlIdx(i), 8, "ols_ptl_idx");
   }
 
-#if JVET_R0185_OLS_DPB_CLEANUP
   if( !pcVPS->getEachLayerIsAnOlsFlag() )
   {
     WRITE_UVLC( pcVPS->m_numDpbParams - 1, "vps_num_dpb_params_minus1" );
 
     if( pcVPS->getMaxSubLayers() > 1 )
-#else
-  if( !pcVPS->getAllIndependentLayersFlag() )
-  {
-    WRITE_UVLC( pcVPS->m_numDpbParams, "vps_num_dpb_params" );
-  }
-
-  if( pcVPS->m_numDpbParams > 0 && pcVPS->getMaxSubLayers() > 1 )
-#endif
     {
       WRITE_FLAG( pcVPS->m_sublayerDpbParamsPresentFlag, "vps_sublayer_dpb_params_present_flag" );
     }
@@ -1682,9 +1673,7 @@ void HLSWriter::codeVPS(const VPS* pcVPS)
         }
       }
     }
-#if JVET_R0185_OLS_DPB_CLEANUP
   }
-#endif
   if (!pcVPS->getEachLayerIsAnOlsFlag())
   {
     WRITE_FLAG(pcVPS->getVPSGeneralHrdParamsPresentFlag(), "vps_general_hrd_params_present_flag");

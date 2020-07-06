@@ -2547,16 +2547,9 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
   }
 #endif
 
-#if JVET_R0185_OLS_DPB_CLEANUP
   if( !pcVPS->getEachLayerIsAnOlsFlag() )
   {
     READ_UVLC( uiCode, "vps_num_dpb_params_minus1" ); pcVPS->m_numDpbParams = uiCode + 1;
-#else
-  if( !pcVPS->getAllIndependentLayersFlag() )
-  {
-    READ_UVLC( uiCode, "vps_num_dpb_params" ); pcVPS->m_numDpbParams = uiCode;
-  }
-#endif
 
 #if JVET_R0191_ASPECT3
     CHECK( pcVPS->m_numDpbParams > pcVPS->getNumMultiLayeredOlss(),"The value of vps_num_dpb_params_minus1 shall be in the range of 0 to NumMultiLayerOlss - 1, inclusive");
@@ -2670,9 +2663,7 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
       CHECK( !isDPBParamReferred[i],"Each dpb_parameters( ) syntax structure in the VPS shall be referred to by at least one value of vps_ols_dpb_params_idx[i] for i in the range of 0 to NumMultiLayerOlss - 1, inclusive");
     }
 #endif
-#if JVET_R0185_OLS_DPB_CLEANUP
   }
-#endif
 
   if (!pcVPS->getEachLayerIsAnOlsFlag())
   {

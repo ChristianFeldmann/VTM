@@ -65,7 +65,6 @@
 
 
 
-#define RETRAIN_CABAC                                     1 // CABAC initial values retrained on VTM-9.0rc1
 
 #define JVET_R0351_HIGH_BIT_DEPTH_SUPPORT                 1 // JVET-R0351: high bit depth coding support (syntax changes, no mathematical differences for CTCs)
 #define JVET_R0351_HIGH_BIT_DEPTH_ENABLED                 0 // JVET-R0351: high bit depth coding enabled (increases accuracies of some calculations, e.g. transforms)

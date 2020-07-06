@@ -481,13 +481,10 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
 
   READ_FLAG( uiCode, "output_flag_present_flag" );                    pcPPS->setOutputFlagPresentFlag( uiCode==1 );
 
-#if JVET_R0186_CLEANUP
   READ_FLAG( uiCode, "pps_no_pic_partition_flag");                     pcPPS->setNoPicPartitionFlag(uiCode == 1);
-#endif  
   READ_FLAG( uiCode, "subpic_id_mapping_in_pps_flag" );           pcPPS->setSubPicIdMappingInPpsFlag( uiCode != 0 );
   if( pcPPS->getSubPicIdMappingInPpsFlag() )
   {
-#if JVET_R0186_CLEANUP
     if( !pcPPS->getNoPicPartitionFlag() )
     {
       READ_UVLC(uiCode, "pps_num_subpics_minus1");                         pcPPS->setNumSubPics(uiCode + 1);
@@ -496,9 +493,6 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
     {
       pcPPS->setNumSubPics(1);
     }
-#else
-    READ_UVLC( uiCode, "pps_num_subpics_minus1" );                         pcPPS->setNumSubPics( uiCode + 1 );
-#endif
     CHECK( uiCode > MAX_NUM_SUB_PICS-1,  "Number of sub-pictures exceeds limit");
 
     READ_UVLC( uiCode, "pps_subpic_id_len_minus1" );                       pcPPS->setSubPicIdLen( uiCode + 1 );
@@ -510,9 +504,6 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
       READ_CODE( pcPPS->getSubPicIdLen( ), uiCode, "pps_subpic_id[i]" );   pcPPS->setSubPicId( picIdx, uiCode );
     }
   }
-#if !JVET_R0186_CLEANUP
-  READ_FLAG( uiCode, "no_pic_partition_flag" );                       pcPPS->setNoPicPartitionFlag( uiCode == 1 );
-#endif
   if(!pcPPS->getNoPicPartitionFlag())
   {
     int colIdx, rowIdx;

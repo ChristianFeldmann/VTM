@@ -74,7 +74,6 @@
                                                             //             Signal DPB parameters for OLS in this case only if(!each_layer_is_an_ols_flag)
 
 
-#define JVET_R0062                                        1 // JVET-R0062: changes on uniform tile and rectangular slice partitioning
 
 #define JVET_R0078_DISABLE_CHROMA_DBF_OFFSET_SINGALLING   1 // JVET-R0078: disable chroma DBF offset signalling
 

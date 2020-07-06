@@ -409,21 +409,15 @@ void HLSWriter::codePPS( const PPS* pcPPS )
               }
             }
           }
-#if JVET_R0062
           uint32_t expSliceHeightSum = 0;
-#endif
           WRITE_UVLC(numExpSliceInTile, "num_exp_slices_in_tile[i]");
           for( int j = 0; j < numExpSliceInTile; j++ )
           {
             WRITE_UVLC(pcPPS->getSliceHeightInCtu(i + j) - 1, "exp_slice_height_in_ctus_minus1[i]");
-#if JVET_R0062
             expSliceHeightSum += pcPPS->getSliceHeightInCtu(i + j);
-#endif
           }
 
-#if JVET_R0062
           CHECK( expSliceHeightSum > pcPPS->getTileRowHeight(pcPPS->getSliceTileIdx(i) / pcPPS->getNumTileColumns()), "The sum of expressed slice heights is larger than the height of the tile containing the slices.");
-#endif
           i += (pcPPS->getNumSlicesInTile(i) - 1);
         }
 

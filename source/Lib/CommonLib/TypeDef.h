@@ -132,7 +132,6 @@
 
 
 
-#define JVET_R0156_ASPECT4_SPS_CLEANUP                    1 // JVET-R0071 #1, R0156 #4, R0284 #1: Condition sps_independent_subpics_flag on "sps_num_subpics_minus1 > 0"
 
 #define JVET_R0156_ASPECT3_SPS_CLEANUP                    1 // Condition sps_sublayer_dpb_params_flag on sps_ptl_dpb_hrd_params_present_flag, in addition to sps_max_sublayer_minus1,	JVET-R0156 proposal 3, JVET-R0170, JVET-R0222 proposal 2
 

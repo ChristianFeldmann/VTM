@@ -1364,18 +1364,14 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
       pcSPS->setSubPicWidth( 0, ( pcSPS->getMaxPicWidthInLumaSamples() + pcSPS->getCTUSize() - 1 ) >> floorLog2( pcSPS->getCTUSize() ) );
       pcSPS->setSubPicHeight( 0, ( pcSPS->getMaxPicHeightInLumaSamples() + pcSPS->getCTUSize() - 1 ) >> floorLog2( pcSPS->getCTUSize() ) );
 
-#if JVET_R0156_ASPECT4_SPS_CLEANUP
       pcSPS->setIndependentSubPicsFlag(1);
-#endif
 
       pcSPS->setSubPicTreatedAsPicFlag(0, 1);
       pcSPS->setLoopFilterAcrossSubpicEnabledFlag(0, 0);
     }
     else
     {
-#if JVET_R0156_ASPECT4_SPS_CLEANUP
     READ_FLAG(uiCode, "sps_independent_subpics_flag"); pcSPS->setIndependentSubPicsFlag(uiCode != 0);
-#endif
     for (int picIdx = 0; picIdx < pcSPS->getNumSubPics(); picIdx++)
     {
       if ((picIdx > 0) && (pcSPS->getMaxPicWidthInLumaSamples() > pcSPS->getCTUSize()))
@@ -1414,17 +1410,13 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
       {
         pcSPS->setSubPicHeight(picIdx, (pcSPS->getMaxPicHeightInLumaSamples() + pcSPS->getCTUSize() - 1) /pcSPS->getCTUSize() - pcSPS->getSubPicCtuTopLeftY(picIdx));
       }
-#if JVET_R0156_ASPECT4_SPS_CLEANUP
       if (!pcSPS->getIndependentSubPicsFlag())
       {
-#endif
         READ_FLAG(uiCode, "subpic_treated_as_pic_flag[ i ]");
         pcSPS->setSubPicTreatedAsPicFlag(picIdx, uiCode);
         READ_FLAG(uiCode, "loop_filter_across_subpic_enabled_flag[ i ]");
         pcSPS->setLoopFilterAcrossSubpicEnabledFlag(picIdx, uiCode);
-#if JVET_R0156_ASPECT4_SPS_CLEANUP
       }
-#endif
     }
     }
 

@@ -2716,9 +2716,7 @@ SPS::SPS()
 , m_maxHeightInLumaSamples    (288)
 , m_subPicInfoPresentFlag     (false)
 , m_numSubPics(1)
-#if JVET_R0156_ASPECT4_SPS_CLEANUP
 , m_independentSubPicsFlag     (false)
-#endif
 , m_subPicIdMappingExplicitlySignalledFlag ( false )
 , m_subPicIdMappingInSpsFlag ( false )
 , m_subPicIdLen(16)

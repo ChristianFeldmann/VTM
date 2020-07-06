@@ -80,7 +80,6 @@
 
 
 
-#define JVET_Q0488_SEI_REPETITION_CONSTRAINT              1 // JVET-Q0488: SEI repetition constraint
 
 #define JVET_R0332_HLS_ORDER                              1 // JVET-R0332: Grouping syntax elements in SPS based on slice type
 

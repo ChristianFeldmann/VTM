@@ -1014,7 +1014,6 @@ void DecLib::checkSEIInAccessUnit()
   }
 }
 
-#if JVET_Q0488_SEI_REPETITION_CONSTRAINT
 #define SEI_REPETITION_CONSTRAINT_LIST_SIZE  21
 
 /**
@@ -1122,7 +1121,6 @@ void DecLib::resetPictureSeiNalus()
   }
 }
 
-#endif
 /**
  - Determine if the first VCL NAL unit of a picture is also the first VCL NAL of an Access Unit
  */
@@ -2766,17 +2764,13 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay, i
     case NAL_UNIT_PREFIX_SEI:
       // Buffer up prefix SEI messages until SPS of associated VCL is known.
       m_prefixSEINALUs.push_back(new InputNALUnit(nalu));
-#if JVET_Q0488_SEI_REPETITION_CONSTRAINT
       m_pictureSeiNalus.push_back(new InputNALUnit(nalu));
-#endif
       return false;
 
     case NAL_UNIT_SUFFIX_SEI:
       if (m_pcPic)
       {
-#if JVET_Q0488_SEI_REPETITION_CONSTRAINT
         m_pictureSeiNalus.push_back(new InputNALUnit(nalu));
-#endif
         m_accessUnitSeiTids.push_back(nalu.m_temporalId);
         const SPS *sps = m_parameterSetManager.getActiveSPS();
         const VPS *vps = m_parameterSetManager.getVPS(sps->getVPSId());

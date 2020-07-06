@@ -122,9 +122,7 @@ namespace CU
   bool    isSbtMode                   (const uint8_t sbtInfo);
   bool    isSameSbtSize               (const uint8_t sbtInfo1, const uint8_t sbtInfo2);
   bool    getRprScaling               ( const SPS* sps, const PPS* curPPS, Picture* refPic, int& xScale, int& yScale );
-#if JVET_R0058
   void    checkConformanceILRP        (Slice *slice);
-#endif
 }
 // PU tools
 namespace PU

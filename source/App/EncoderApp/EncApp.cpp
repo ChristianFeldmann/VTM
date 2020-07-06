@@ -103,7 +103,6 @@ void EncApp::xInitLibCfg()
     if (!vps.getAllIndependentLayersFlag())
     {
       vps.setEachLayerIsAnOlsFlag(0);
-#if JVET_R0058
       for (int i = 0; i < m_maxTempLayer; i++)
       {
         vps.setPredDirection(i, 0);
@@ -115,7 +114,6 @@ void EncApp::xInitLibCfg()
           vps.setPredDirection(i >> 1, int(m_predDirectionArray[i] - 48));
         }
       }
-#endif
     }
   }
 
@@ -252,11 +250,7 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setSourceHeight                                      ( m_iSourceHeight );
   m_cEncLib.setConformanceWindow                                 ( m_confWinLeft / SPS::getWinUnitX( m_InputChromaFormatIDC ), m_confWinRight / SPS::getWinUnitX( m_InputChromaFormatIDC ), m_confWinTop / SPS::getWinUnitY( m_InputChromaFormatIDC ), m_confWinBottom / SPS::getWinUnitY( m_InputChromaFormatIDC ) );
   m_cEncLib.setScalingRatio                                      ( m_scalingRatioHor, m_scalingRatioVer );
-#if JVET_R0058
   m_cEncLib.setResChangeInClvsEnabled                            ( m_resChangeInClvsEnabled );
-#else
-  m_cEncLib.setRPREnabled                                        ( m_rprEnabled );
-#endif
   m_cEncLib.setSwitchPocPeriod                                   ( m_switchPocPeriod );
   m_cEncLib.setUpscaledOutput                                    ( m_upscaledOutput );
   m_cEncLib.setFramesToBeEncoded                                 ( m_framesToBeEncoded );
@@ -1181,11 +1175,7 @@ void EncApp::xWriteOutput( int iNumEncoded, std::list<PelUnitBuf*>& recBufList )
       const PelUnitBuf* pcPicYuvRec = *(iterPicYuvRec++);
       if (!m_reconFileName.empty())
       {
-#if JVET_R0058
         if( m_cEncLib.isResChangeInClvsEnabled() && m_cEncLib.getUpscaledOutput() )
-#else
-        if( m_cEncLib.isRPREnabled() && m_cEncLib.getUpscaledOutput() )
-#endif
         {
           const SPS& sps = *m_cEncLib.getSPS( 0 );
           const PPS& pps = *m_cEncLib.getPPS( ( sps.getMaxPicWidthInLumaSamples() != pcPicYuvRec->get( COMPONENT_Y ).width || sps.getMaxPicHeightInLumaSamples() != pcPicYuvRec->get( COMPONENT_Y ).height ) ? ENC_PPS_ID_RPR : 0 );

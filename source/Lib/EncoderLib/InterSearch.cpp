@@ -1408,10 +1408,8 @@ void InterSearch::xSetIntraSearchRange(PredictionUnit& pu, int iRoiWidth, int iR
 
   rcMvSrchRngLT <<= 2;
   rcMvSrchRngRB <<= 2;
-#if JVET_R0058
   bool temp = m_clipMvInSubPic;
   m_clipMvInSubPic = true;
-#endif
   xClipMv(rcMvSrchRngLT, pu.cu->lumaPos(),
          pu.cu->lumaSize(),
          sps
@@ -1422,9 +1420,7 @@ void InterSearch::xSetIntraSearchRange(PredictionUnit& pu, int iRoiWidth, int iR
          sps
       , *pu.cs->pps
   );
-#if JVET_R0058
   m_clipMvInSubPic = temp;
-#endif
   rcMvSrchRngLT >>= 2;
   rcMvSrchRngRB >>= 2;
 }
@@ -7792,11 +7788,7 @@ void InterSearch::xClipMv( Mv& rcMv, const Position& pos, const struct Size& siz
   int verMax = ( pps.getPicHeightInLumaSamples() + offset - (int)pos.y - 1 ) << mvShift;
   int verMin = ( -( int ) sps.getMaxCUHeight()   - offset - ( int ) pos.y + 1 ) << mvShift;
   const SubPic &curSubPic = pps.getSubPicFromPos(pos);
-#if JVET_R0058
   if (curSubPic.getTreatedAsPicFlag() && m_clipMvInSubPic)
-#else
-  if (curSubPic.getTreatedAsPicFlag())
-#endif
   {
     horMax = ((curSubPic.getSubPicRight() + 1)  + offset - (int)pos.x - 1) << mvShift;
     horMin = (-(int)sps.getMaxCUWidth()  - offset - ((int)pos.x - curSubPic.getSubPicLeft()) + 1) << mvShift;

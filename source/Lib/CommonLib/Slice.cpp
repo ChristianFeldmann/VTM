@@ -2261,12 +2261,10 @@ VPS::VPS()
   , m_sublayerDpbParamsPresentFlag( false )
   , m_targetOlsIdx( -1 )
 {
-#if JVET_R0058
   for (int i = 0; i < MAX_VPS_SUBLAYERS; i++)
   {
     m_vpsCfgPredDirection[i] = 0;
   }
-#endif
   for (int i = 0; i < MAX_VPS_LAYERS; i++)
   {
     m_vpsLayerId[i] = 0;
@@ -2852,9 +2850,7 @@ SPS::SPS()
 , m_GDREnabledFlag            ( true )
 , m_SubLayerCbpParametersPresentFlag ( true )
 , m_rprEnabledFlag            ( false )
-#if JVET_R0058
 , m_resChangeInClvsEnabledFlag ( false )
-#endif
 , m_maxNumMergeCand(MRG_MAX_NUM_CANDS)
 , m_maxNumAffineMergeCand(AFFINE_MRG_MAX_NUM_CANDS)
 , m_maxNumIBCMergeCand(IBC_MRG_MAX_NUM_CANDS)

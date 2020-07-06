@@ -135,7 +135,6 @@ bool CU::getRprScaling( const SPS* sps, const PPS* curPPS, Picture* refPic, int&
   return refPic->isRefScaled( curPPS );
 }
 
-#if JVET_R0058
 void CU::checkConformanceILRP(Slice *slice)
 {
   const int numRefList = (slice->getSliceType() == B_SLICE) ? (2) : (1);
@@ -190,7 +189,6 @@ void CU::checkConformanceILRP(Slice *slice)
 
   return;
 }
-#endif
 
 bool CU::isIntra(const CodingUnit &cu)
 {

@@ -1583,11 +1583,7 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
         for (int idx = 0; idx < n; idx++)
         {
           Picture *refPic = pcSlice->getRefPic((RefPicList)rlist, idx);
-#if JVET_R0058
           if (!refPic->getSubPicSaved() && refPic->numSubpics > 1)
-#else
-          if (!refPic->getSubPicSaved())
-#endif
           {
             refPic->saveSubPicBorder(refPic->getPOC(), subPicX, subPicY, subPicWidth, subPicHeight);
             refPic->extendSubPicBorder(refPic->getPOC(), subPicX, subPicY, subPicWidth, subPicHeight);

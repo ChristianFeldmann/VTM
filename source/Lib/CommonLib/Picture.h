@@ -224,13 +224,11 @@ public:
   int  poc;
   uint32_t temporalId;
   int      layerId;
-#if JVET_R0058
   int  numSubpics;
   std::vector<int> subpicWidthInCTUs;
   std::vector<int> subpicHeightInCTUs;
   std::vector<int> subpicCtuTopLeftX;
   std::vector<int> subpicCtuTopLeftY;
-#endif
   int numSlices;
   std::vector<int> sliceSubpicIdx;
 

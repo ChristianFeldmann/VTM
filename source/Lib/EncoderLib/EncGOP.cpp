@@ -2282,7 +2282,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     //  Set reference list
     pcSlice->constructRefPicList(rcListPic);
 
-#if JVET_R0058
     // store sub-picture numbers, sizes, and locations with a picture
     pcSlice->getPic()->numSubpics = pcPic->cs->pps->getNumSubPics();
     pcSlice->getPic()->subpicWidthInCTUs.clear();
@@ -2303,7 +2302,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     {
       CU::checkConformanceILRP(pcSlice);
     }
-#endif
 
     xPicInitHashME( pcPic, pcSlice->getPPS(), rcListPic );
 
@@ -2780,7 +2778,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         m_pcSliceEncoder->setLosslessSlice(pcPic, isLossless);
 #endif
 
-#if JVET_R0058
         if (pcSlice->getSliceType() != I_SLICE && pcSlice->getRefPic(REF_PIC_LIST_0, 0)->numSubpics > 1)
         {
           clipMv = clipMvInSubpic;
@@ -2791,7 +2788,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
           clipMv = clipMvInPic;
           m_pcEncLib->getInterSearch()->setClipMvInSubPic(false);
         }
-#endif
 
         m_pcSliceEncoder->precompressSlice( pcPic );
         m_pcSliceEncoder->compressSlice   ( pcPic, false, false );
@@ -4092,11 +4088,7 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
 
   PelStorage upscaledRec;
 
-#if JVET_R0058
   if (m_pcEncLib->isResChangeInClvsEnabled())
-#else
-  if (m_pcEncLib->isRPREnabled())
-#endif
   {
     const CPelBuf& upscaledOrg = sps.getUseLmcs() ? pcPic->M_BUFS( 0, PIC_TRUE_ORIGINAL_INPUT).get( COMPONENT_Y ) : pcPic->M_BUFS( 0, PIC_ORIGINAL_INPUT).get( COMPONENT_Y );
     upscaledRec.create( pic.chromaFormat, Area( Position(), upscaledOrg ) );
@@ -4124,11 +4116,7 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
 
     // when RPR is enabled, picture padding is picture specific due to possible different picture resoluitons, however only full resolution padding is stored in EncLib
     // get per picture padding from the conformance window, in this case if conformance window is set not equal to the padding then PSNR results may be inaccurate
-#if JVET_R0058
     if (m_pcEncLib->isResChangeInClvsEnabled())
-#else
-    if (m_pcEncLib->isRPREnabled())
-#endif
     {
       Window& conf = pcPic->getConformanceWindow();
       padX = conf.getWindowRightOffset() * SPS::getWinUnitX( format );
@@ -4161,11 +4149,7 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
     }
 #endif
 
-#if JVET_R0058
     if (m_pcEncLib->isResChangeInClvsEnabled())
-#else
-    if (m_pcEncLib->isRPREnabled())
-#endif
     {
       const CPelBuf& upscaledOrg = sps.getUseLmcs() ? pcPic->M_BUFS( 0, PIC_TRUE_ORIGINAL_INPUT ).get( compID ) : pcPic->M_BUFS( 0, PIC_ORIGINAL_INPUT ).get( compID );
 
@@ -4442,11 +4426,7 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
       }
       msg( NOTICE, "]" );
     }
-#if JVET_R0058
     if (m_pcEncLib->isResChangeInClvsEnabled())
-#else
-    if (m_pcEncLib->isRPREnabled())
-#endif
     {
       msg( NOTICE, "\nPSNR2: [Y %6.4lf dB    U %6.4lf dB    V %6.4lf dB]", upscaledPSNR[COMPONENT_Y], upscaledPSNR[COMPONENT_Cb], upscaledPSNR[COMPONENT_Cr] );
     }
@@ -5310,10 +5290,8 @@ void EncGOP::xCreateExplicitReferencePictureSetFromReference( Slice* slice, PicL
   Picture* pic = slice->getPic();
   const VPS* vps = slice->getPic()->cs->vps;
   int layerIdx = vps == nullptr ? 0 : vps->getGeneralLayerIdx( pic->layerId );
-#if JVET_R0058
   bool isIntraLayerPredAllowed = vps->getIndependentLayerFlag(layerIdx) || (vps->getPredDirection(slice->getTLayer()) != 1);
   bool isInterLayerPredAllowed = !vps->getIndependentLayerFlag(layerIdx) && (vps->getPredDirection(slice->getTLayer()) != 2);
-#endif
   ReferencePictureList* pLocalRPL0 = slice->getLocalRPL0();
   *pLocalRPL0 = ReferencePictureList( slice->getSPS()->getInterLayerPresentFlag() );
 
@@ -5323,10 +5301,8 @@ void EncGOP::xCreateExplicitReferencePictureSetFromReference( Slice* slice, PicL
   uint32_t numOfRefPic = rpl0->getNumberOfShorttermPictures() + rpl0->getNumberOfLongtermPictures();
   uint32_t refPicIdxL0 = 0;
 
-#if JVET_R0058
   if (isIntraLayerPredAllowed)
   {
-#endif
     for (int ii = 0; ii < numOfRefPic; ii++)
     {
       // loop through all pictures in the reference picture buffer
@@ -5362,16 +5338,10 @@ void EncGOP::xCreateExplicitReferencePictureSetFromReference( Slice* slice, PicL
         isAvailable = false;
       }
     }
-#if JVET_R0058
   }
-#endif
 
   // inter-layer reference pictures are added to the end of the reference picture list
-#if JVET_R0058
   if (layerIdx && vps && !vps->getAllIndependentLayersFlag() && isInterLayerPredAllowed)
-#else
-  if( layerIdx && vps && !vps->getAllIndependentLayersFlag() )
-#endif
   {
     numOfRefPic = rpl0->getNumberOfInterLayerPictures() ? rpl0->getNumberOfInterLayerPictures() : m_pcEncLib->getNumRefLayers( layerIdx );
 
@@ -5434,10 +5404,8 @@ void EncGOP::xCreateExplicitReferencePictureSetFromReference( Slice* slice, PicL
   numOfRefPic = rpl1->getNumberOfShorttermPictures() + rpl1->getNumberOfLongtermPictures();
   uint32_t refPicIdxL1 = 0;
 
-#if JVET_R0058
   if (isIntraLayerPredAllowed)
   {
-#endif
     for (int ii = 0; ii < numOfRefPic; ii++)
     {
       // loop through all pictures in the reference picture buffer
@@ -5471,17 +5439,11 @@ void EncGOP::xCreateExplicitReferencePictureSetFromReference( Slice* slice, PicL
         isAvailable = false;
       }
     }
-#if JVET_R0058
   }
-#endif
 
 
   // inter-layer reference pictures are added to the end of the reference picture list
-#if JVET_R0058
   if (layerIdx && vps && !vps->getAllIndependentLayersFlag() && isInterLayerPredAllowed)
-#else
-  if( layerIdx && vps && !vps->getAllIndependentLayersFlag() )
-#endif
   {
     numOfRefPic = rpl1->getNumberOfInterLayerPictures() ? rpl1->getNumberOfInterLayerPictures() : m_pcEncLib->getNumRefLayers( layerIdx );
 

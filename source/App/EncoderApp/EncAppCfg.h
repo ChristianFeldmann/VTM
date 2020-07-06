@@ -715,11 +715,7 @@ protected:
 
   double      m_scalingRatioHor;
   double      m_scalingRatioVer;
-#if JVET_R0058
   bool        m_resChangeInClvsEnabled;
-#else
-  bool        m_rprEnabled;
-#endif
   double      m_fractionOfFrames;                             ///< encode a fraction of the frames as specified in FramesToBeEncoded
   int         m_switchPocPeriod;
   int         m_upscaledOutput;                               ////< Output upscaled (2), decoded cropped but in full resolution buffer (1) or decoded cropped (0, default) picture for RPR.
@@ -737,9 +733,7 @@ protected:
   int         m_maxSublayers;
   bool        m_allLayersSameNumSublayersFlag;
   bool        m_allIndependentLayersFlag;
-#if JVET_R0058
   std::string m_predDirectionArray;
-#endif
 
   int         m_numRefLayers[MAX_VPS_LAYERS];
   std::string m_refLayerIdxStr[MAX_VPS_LAYERS];

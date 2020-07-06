@@ -135,7 +135,6 @@
 
 
 
-#define JVET_R0347_MTT_SIZE_CONSTRAIN                     1 // JVET-R0347: Set upper limit of minQtSize and maxTtSize to 64, set upper limit of maxBtSize to 64 in chroma-tree
 
 #define JVET_R0045_TS_MIN_QP_CLEANUP                      1 // JVET-R0045: Cleanup for signalling of minimum QP of transform skip
 

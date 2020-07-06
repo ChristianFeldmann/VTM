@@ -2666,14 +2666,12 @@ bool EncAppCfg::xCheckParameter()
   xConfirmPara( m_uiMaxCUWidth > MAX_CU_SIZE,                                               "MaxCUWith exceeds predefined MAX_CU_SIZE limit");
 
   const int minCuSize = 1 << m_log2MinCuSize;
-#if JVET_R0347_MTT_SIZE_CONSTRAIN
   xConfirmPara( m_uiMinQT[0] > 64,                                                          "Min Luma QT size in I slices should be smaller than or equal to 64");
   xConfirmPara( m_uiMinQT[1] > 64,                                                          "Min Luma QT size in non-I slices should be smaller than or equal to 64");
   xConfirmPara( m_uiMaxBT[2] > 64,                                                          "Maximum BT size for chroma block in I slice should be smaller than or equal to 64");
   xConfirmPara( m_uiMaxTT[0] > 64,                                                          "Maximum TT size for luma block in I slice should be smaller than or equal to 64");
   xConfirmPara( m_uiMaxTT[1] > 64,                                                          "Maximum TT size for luma block in non-I slice should be smaller than or equal to 64");
   xConfirmPara( m_uiMaxTT[2] > 64,                                                          "Maximum TT size for chroma block in I slice should be smaller than or equal to 64");
-#endif
   xConfirmPara( m_uiMinQT[0] < minCuSize,                                                   "Min Luma QT size in I slices should be larger than or equal to minCuSize");
   xConfirmPara( m_uiMinQT[1] < minCuSize,                                                   "Min Luma QT size in non-I slices should be larger than or equal to minCuSize");
   xConfirmPara((m_iSourceWidth % minCuSize ) || (m_iSourceHeight % minCuSize),              "Picture width or height is not a multiple of minCuSize");

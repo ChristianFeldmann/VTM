@@ -105,7 +105,6 @@
 
 
 
-#define JVET_R0225_SEPERATE_FLAGS_ALF_CHROMA              1 // Use two separate flags (one for Cb, one for Cr) to replace ph_alf_chroma_idc in PH and sh_alf_chroma_idc in SH
 
 #define JVET_R0266_DESC                                   1 // JVET-R0266: change the signalling of the PPS ID from ue(v) to u(6); Code virtual boundary positions using ue(v)
 

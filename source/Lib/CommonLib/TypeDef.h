@@ -152,7 +152,6 @@
 
 
 
-#define JVET_R0245_LEVEL_CODING                           1 // JVET-R0245: level coding numbering scheme
 
 #define STILL_PICTURE_PROFILES                            1 // Adds support for still picture profiles
 
@@ -803,7 +802,6 @@ namespace Level
 
   enum Name
   {
-#if JVET_R0245_LEVEL_CODING
     // code = (major_level * 16 + minor_level * 3)
     NONE     = 0,
     LEVEL1   = 16,
@@ -820,24 +818,6 @@ namespace Level
     LEVEL6_1 = 99,
     LEVEL6_2 = 102,
     LEVEL15_5 = 255,
-#else
-    // code = (level * 30)
-    NONE     = 0,
-    LEVEL1   = 30,
-    LEVEL2   = 60,
-    LEVEL2_1 = 63,
-    LEVEL3   = 90,
-    LEVEL3_1 = 93,
-    LEVEL4   = 120,
-    LEVEL4_1 = 123,
-    LEVEL5   = 150,
-    LEVEL5_1 = 153,
-    LEVEL5_2 = 156,
-    LEVEL6   = 180,
-    LEVEL6_1 = 183,
-    LEVEL6_2 = 186,
-    LEVEL8_5 = 255,
-#endif
   };
 }
 

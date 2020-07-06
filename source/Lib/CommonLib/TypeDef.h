@@ -145,7 +145,6 @@
 
 
 
-#define JVET_R0108_DCI_SIGNALING                          1 // JVET-R0108 Proposal 1 DCI signaling changes
 
 #define JVET_R0112_SEMANTICS_CLEANUP                      1 // JVET-R0112: Picture header semantics cleanup for gdr_or_irap_flag
 

@@ -1285,11 +1285,7 @@ void AdaptiveLoopFilter::filterBlk(AlfClassifier **classifier, const PelUnitBuf 
           }
           else
           {
-#if JVET_R0208_ALF_VB_ROUNDING_FIX
             sum = (sum + (1 << ((shift + 3) - 1))) >> (shift + 3);
-#else
-            sum = (sum + offset) >> (shift + 3);
-#endif
           }
           sum += curr;
           pRec1[jj] = ClipPel( sum, clpRng );

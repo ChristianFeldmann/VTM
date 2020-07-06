@@ -129,7 +129,6 @@
 
 
 
-#define JVET_R0208_ALF_VB_ROUNDING_FIX                    1 // JVET-R0208: Rounding offset fix for ALF virtual boundary processing
 
 #define JVET_R0232_CCALF_APS_CONSTRAINT                   1 // JVET-R0232 section 3.2: APS contraint for CCALF
 

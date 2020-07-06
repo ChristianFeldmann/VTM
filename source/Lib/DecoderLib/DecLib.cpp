@@ -459,9 +459,7 @@ DecLib::DecLib()
   , m_vps( nullptr )
   , m_maxDecSubPicIdx(0)
   , m_maxDecSliceAddrInSubPic(-1)
-#if JVET_Q0280_CONSTRAINT_ON_VPS_ID
   , m_clsVPSid(0)
-#endif
   , m_targetSubPicIdx(0)
   , m_dci(NULL)
   , m_apsMapEnc( nullptr )
@@ -1657,7 +1655,6 @@ void DecLib::xCheckParameterSetConstraints(const int layerId)
   const PPS *pps = slice->getPPS();
   const VPS *vps = slice->getVPS();
   
-#if JVET_Q0280_CONSTRAINT_ON_VPS_ID
   if (sps->getVPSId() && (vps != nullptr))
   {
     if ((layerId == vps->getLayerId(0)) && m_firstSliceInSequence[layerId])
@@ -1666,7 +1663,6 @@ void DecLib::xCheckParameterSetConstraints(const int layerId)
     }
     CHECK(m_clsVPSid != sps->getVPSId(), "The value of sps_video_parameter_set_id shall be the same in all SPSs that are referred to by CLVSs in a CVS.");
   }
-#endif
 
   if (((vps!=nullptr)&&(vps->getVPSGeneralHrdParamsPresentFlag()))||(sps->getGeneralHrdParametersPresentFlag()))
   {

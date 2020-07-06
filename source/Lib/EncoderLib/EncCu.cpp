@@ -3107,12 +3107,10 @@ void EncCu::xCheckRDCostAffineMerge2Nx2N( CodingStructure *&tempCS, CodingStruct
 
   AffineMergeCtx affineMergeCtx;
   const SPS &sps = *tempCS->sps;
-#if JVET_R0371_MAX_NUM_SUB_BLK_MRG_CAND
   if (sps.getMaxNumAffineMergeCand() == 0)
   {
     return;
   }
-#endif
 
   setAFFBestSATDCost(MAX_DOUBLE);
 

@@ -125,7 +125,6 @@
 
 
 
-#define JVET_R0371_MAX_NUM_SUB_BLK_MRG_CAND               1 // JVET-R0371: set the range of max number of subblock based merge candidate to 0 to 5 - sps_sbtmvp_enabled_flag. 
 
 #define JVET_R0113_AND_JVET_R0106_PPS_CLEANUP             1 // JVET-R0113 and JVET-R0106: Cleanup in Picture Parameter Set
 

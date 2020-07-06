@@ -89,12 +89,10 @@ private:
 #if !JVET_R0041
   int                     m_pocCRA;            ///< POC number of the latest CRA picture
 #endif
-#if JVET_R0042_SUBPIC_CHECK
   int                     m_prevGDRSubpicPOC[MAX_VPS_LAYERS][MAX_NUM_SUB_PICS];
   int                     m_prevIRAPSubpicPOC[MAX_VPS_LAYERS][MAX_NUM_SUB_PICS];
   NalUnitType             m_prevIRAPSubpicType[MAX_VPS_LAYERS][MAX_NUM_SUB_PICS];
   int                     m_prevIRAPSubpicDecOrderNo[MAX_VPS_LAYERS][MAX_NUM_SUB_PICS];
-#endif
   int                     m_pocRandomAccess;   ///< POC number of the random access point (the first IDR or CRA picture)
   int                     m_lastRasPoc;
 
@@ -238,9 +236,7 @@ public:
 #if JVET_R0041
   void  updatePrevGDRInSameLayer();
 #endif
-#if JVET_R0042_SUBPIC_CHECK
   void  updatePrevIRAPAndGDRSubpic();
-#endif
 
   bool  getNoOutputPriorPicsFlag () const   { return m_isNoOutputPriorPics; }
   void  setNoOutputPriorPicsFlag (bool val) { m_isNoOutputPriorPics = val; }

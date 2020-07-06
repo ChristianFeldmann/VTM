@@ -213,9 +213,7 @@ uint32_t DecApp::decode()
 #if JVET_R0041
       m_cDecLib.updatePrevGDRInSameLayer();
 #endif
-#if JVET_R0042_SUBPIC_CHECK
       m_cDecLib.updatePrevIRAPAndGDRSubpic();
-#endif
     }
     else if ( (bNewPicture || !bitstreamFile || nalu.m_nalUnitType == NAL_UNIT_EOS ) &&
       m_cDecLib.getFirstSliceInSequence(nalu.m_nuhLayerId))

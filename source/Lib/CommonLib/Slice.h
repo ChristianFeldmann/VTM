@@ -2680,11 +2680,9 @@ private:
 #endif
   int                        m_iAssociatedIRAP;
   NalUnitType                m_iAssociatedIRAPType;
-#if JVET_R0042_SUBPIC_CHECK
   int                        m_prevGDRSubpicPOC;
   int                        m_prevIRAPSubpicPOC;
   NalUnitType                m_prevIRAPSubpicType;
-#endif
   bool                       m_enableDRAPSEI;
   bool                       m_useLTforDRAP;
   bool                       m_isDRAP;
@@ -2837,7 +2835,6 @@ public:
   int                         getAssociatedIRAPPOC() const                           { return m_iAssociatedIRAP;                                     }
   void                        setAssociatedIRAPType(NalUnitType associatedIRAPType)  { m_iAssociatedIRAPType = associatedIRAPType;                   }
   NalUnitType                 getAssociatedIRAPType() const                          { return m_iAssociatedIRAPType;                                 }
-#if JVET_R0042_SUBPIC_CHECK
   void                        setPrevGDRSubpicPOC(int poc)                           { m_prevGDRSubpicPOC = poc;                                     }
   int                         getPrevGDRSubpicPOC() const                            { return m_prevGDRSubpicPOC;                                    }
   void                        setPrevIRAPSubpicPOC(int poc)                          { m_prevIRAPSubpicPOC = poc;                                    }
@@ -2845,7 +2842,6 @@ public:
   void                        setPrevIRAPSubpicType(NalUnitType type)                { m_prevIRAPSubpicType = type;                                  }
   NalUnitType                 getPrevIRAPSubpicType() const                          { return m_prevIRAPSubpicType;                                  }
   void                        checkSubpicTypeConstraints(PicList& rcListPic, const ReferencePictureList* pRPL0, const ReferencePictureList* pRPL1, const int prevIRAPSubpicDecOrderNo);
-#endif
   SliceType                   getSliceType() const                                   { return m_eSliceType;                                          }
   int                         getPOC() const                                         { return m_iPOC;                                                }
   int                         getSliceQp() const                                     { return m_iSliceQp;                                            }

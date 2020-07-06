@@ -54,11 +54,9 @@ Slice::Slice()
 #endif
 , m_iAssociatedIRAP               ( 0 )
 , m_iAssociatedIRAPType           ( NAL_UNIT_INVALID )
-#if JVET_R0042_SUBPIC_CHECK
 , m_prevGDRSubpicPOC              ( MAX_INT )
 , m_prevIRAPSubpicPOC             ( 0 )
 , m_prevIRAPSubpicType            ( NAL_UNIT_INVALID )
-#endif
 , m_rpl0Idx                       ( -1 )
 , m_rpl1Idx                       ( -1 )
 , m_colourPlaneId                 ( 0 )
@@ -1421,7 +1419,6 @@ void Slice::checkLeadingPictureRestrictions(PicList& rcListPic, const PPS& pps) 
   }
 }
 
-#if JVET_R0042_SUBPIC_CHECK
 void Slice::checkSubpicTypeConstraints(PicList& rcListPic, const ReferencePictureList* pRPL0, const ReferencePictureList* pRPL1, const int prevIRAPSubpicDecOrderNo)
 {
   int curSubpicIdx = getPPS()->getSubPicIdxFromSubPicId(getSliceSubPicId());
@@ -1706,7 +1703,6 @@ void Slice::checkSubpicTypeConstraints(PicList& rcListPic, const ReferencePictur
     }
   }
 }
-#endif
 
 
 //Function for applying picture marking based on the Reference Picture List

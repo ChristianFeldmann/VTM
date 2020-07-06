@@ -231,10 +231,8 @@ public:
   std::vector<int> subpicCtuTopLeftX;
   std::vector<int> subpicCtuTopLeftY;
 #endif
-#if JVET_R0042_SUBPIC_CHECK
   int numSlices;
   std::vector<int> sliceSubpicIdx;
-#endif
 
   bool subLayerNonReferencePictureDueToSTSA;
 

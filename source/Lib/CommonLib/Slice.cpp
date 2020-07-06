@@ -49,16 +49,12 @@
 Slice::Slice()
 : m_iPOC                          ( 0 )
 , m_iLastIDR                      ( 0 )
-#if JVET_R0041
 , m_prevGDRInSameLayerPOC         ( MAX_INT )
-#endif
 , m_iAssociatedIRAP               ( 0 )
 , m_iAssociatedIRAPType           ( NAL_UNIT_INVALID )
-#if JVET_R0042_SUBPIC_CHECK
 , m_prevGDRSubpicPOC              ( MAX_INT )
 , m_prevIRAPSubpicPOC             ( 0 )
 , m_prevIRAPSubpicType            ( NAL_UNIT_INVALID )
-#endif
 , m_rpl0Idx                       ( -1 )
 , m_rpl1Idx                       ( -1 )
 , m_colourPlaneId                 ( 0 )
@@ -77,10 +73,8 @@ Slice::Slice()
 , m_deblockingFilterCbTcOffsetDiv2  ( 0 )
 , m_deblockingFilterCrBetaOffsetDiv2( 0 )
 , m_deblockingFilterCrTcOffsetDiv2  ( 0 )
-#if JVET_R0271_SLICE_LEVEL_DQ_SDH_RRC
 , m_depQuantEnabledFlag             ( false )
 , m_signDataHidingEnabledFlag       ( false )
-#endif
 , m_tsResidualCodingDisabledFlag  ( false )
 , m_pendingRasInit                ( false )
 , m_bCheckLDC                     ( false )
@@ -232,15 +226,12 @@ void Slice::inheritFromPicHeader( PicHeader *picHeader, const PPS *pps, const SP
   setDeblockingFilterDisable( picHeader->getDeblockingFilterDisable() );
   setDeblockingFilterBetaOffsetDiv2( picHeader->getDeblockingFilterBetaOffsetDiv2() );
   setDeblockingFilterTcOffsetDiv2( picHeader->getDeblockingFilterTcOffsetDiv2() );
-#if JVET_R0078_DISABLE_CHROMA_DBF_OFFSET_SINGALLING
   if (pps->getPPSChromaToolFlag())
   {
-#endif
     setDeblockingFilterCbBetaOffsetDiv2 ( picHeader->getDeblockingFilterCbBetaOffsetDiv2() );
     setDeblockingFilterCbTcOffsetDiv2   ( picHeader->getDeblockingFilterCbTcOffsetDiv2()   );
     setDeblockingFilterCrBetaOffsetDiv2 ( picHeader->getDeblockingFilterCrBetaOffsetDiv2() );
     setDeblockingFilterCrTcOffsetDiv2   ( picHeader->getDeblockingFilterCrTcOffsetDiv2()   );
-#if JVET_R0078_DISABLE_CHROMA_DBF_OFFSET_SINGALLING
   }
   else
   {
@@ -249,7 +240,6 @@ void Slice::inheritFromPicHeader( PicHeader *picHeader, const PPS *pps, const SP
     setDeblockingFilterCrBetaOffsetDiv2 ( getDeblockingFilterBetaOffsetDiv2() );
     setDeblockingFilterCrTcOffsetDiv2   ( getDeblockingFilterTcOffsetDiv2()   );
   }
-#endif
 
   setSaoEnabledFlag(CHANNEL_TYPE_LUMA,     picHeader->getSaoEnabledFlag(CHANNEL_TYPE_LUMA));
   setSaoEnabledFlag(CHANNEL_TYPE_CHROMA,   picHeader->getSaoEnabledFlag(CHANNEL_TYPE_CHROMA));
@@ -294,12 +284,10 @@ void Slice::setNumEntryPoints(const SPS *sps, const PPS *pps)
   uint32_t prevCtuAddr, prevCtuX, prevCtuY;
   m_numEntryPoints = 0;
 
-#if JVET_R0165_OPTIONAL_ENTRY_POINT
   if (!sps->getEntryPointsPresentFlag())
   {
     return;
   }
-#endif
 
   // count the number of CTUs that align with either the start of a tile, or with an entropy coding sync point
   // ignore the first CTU since it doesn't count as an entry point
@@ -312,11 +300,7 @@ void Slice::setNumEntryPoints(const SPS *sps, const PPS *pps)
     prevCtuX    = (prevCtuAddr % pps->getPicWidthInCtu());
     prevCtuY    = (prevCtuAddr / pps->getPicWidthInCtu());
 
-#if JVET_R0165_OPTIONAL_ENTRY_POINT
     if (pps->ctuToTileRowBd(ctuY) != pps->ctuToTileRowBd(prevCtuY) || pps->ctuToTileColBd(ctuX) != pps->ctuToTileColBd(prevCtuX) || (ctuY != prevCtuY && sps->getEntropyCodingSyncEnabledFlag()))
-#else
-    if (pps->ctuToTileRowBd(ctuY) != pps->ctuToTileRowBd(prevCtuY) || pps->ctuToTileColBd(ctuX) != pps->ctuToTileColBd(prevCtuX) || (ctuY != prevCtuY && sps->getEntropyCodingSyncEntryPointsPresentFlag()))
-#endif
     {
       m_numEntryPoints++;
     }
@@ -516,11 +500,7 @@ void Slice::constructRefPicList(PicList& rcListPic)
       pcRefPic = xGetLongTermRefPic( rcListPic, ltrpPoc, m_localRPL0.getDeltaPocMSBPresentFlag( ii ), m_pcPic->layerId );
       pcRefPic->longTerm = true;
     }
-#if JVET_Q0764_WRAP_AROUND_WITH_RPR  
     pcRefPic->extendPicBorder( getPPS() );
-#else
-    pcRefPic->extendPicBorder();
-#endif
     m_apcRefPicList[REF_PIC_LIST_0][ii] = pcRefPic;
     m_bIsUsedAsLongTerm[REF_PIC_LIST_0][ii] = pcRefPic->longTerm;
   }
@@ -556,11 +536,7 @@ void Slice::constructRefPicList(PicList& rcListPic)
       pcRefPic = xGetLongTermRefPic( rcListPic, ltrpPoc, m_localRPL1.getDeltaPocMSBPresentFlag( ii ), m_pcPic->layerId );
       pcRefPic->longTerm = true;
     }
-#if JVET_Q0764_WRAP_AROUND_WITH_RPR  
     pcRefPic->extendPicBorder( getPPS() );
-#else
-    pcRefPic->extendPicBorder();
-#endif
     m_apcRefPicList[REF_PIC_LIST_1][ii] = pcRefPic;
     m_bIsUsedAsLongTerm[REF_PIC_LIST_1][ii] = pcRefPic->longTerm;
   }
@@ -665,25 +641,6 @@ void Slice::checkRPL(const ReferencePictureList* pRPL0, const ReferencePictureLi
 
   bool fieldSeqFlag = getSPS()->getFieldSeqFlag();
 
-#if !JVET_R0041
-  int currentPictureIsTrailing = 0;
-  if (getPic()->getDecodingOrderNumber() > associatedIRAPDecodingOrderNumber)
-  {
-    switch (m_eNalUnitType)
-    {
-    case NAL_UNIT_CODED_SLICE_STSA:
-    case NAL_UNIT_CODED_SLICE_IDR_W_RADL:
-    case NAL_UNIT_CODED_SLICE_IDR_N_LP:
-    case NAL_UNIT_CODED_SLICE_CRA:
-    case NAL_UNIT_CODED_SLICE_RADL:
-    case NAL_UNIT_CODED_SLICE_RASL:
-      currentPictureIsTrailing = 0;
-      break;
-    default:
-      currentPictureIsTrailing = 1;
-    }
-  }
-#endif
 
   int layerIdx = m_pcPic->cs->vps == nullptr ? 0 : m_pcPic->cs->vps->getGeneralLayerIdx(m_pcPic->layerId);
 
@@ -714,62 +671,28 @@ void Slice::checkRPL(const ReferencePictureList* pRPL0, const ReferencePictureLi
     }
     refPicDecodingOrderNumber = pcRefPic->getDecodingOrderNumber();
 
-#if !JVET_R0041
-    // Checking this: "When the current picture follows an IRAP picture having the same value of nuh_layer_id in both decoding order 
-    // and output order, there shall be no picture referred to by an active entry in RefPicList[ 0 ] or RefPicList[ 1 ] that
-    // precedes that IRAP picture in output order or decoding order."
-#endif
-#if JVET_R0267_IDR_RPL
     if (m_eNalUnitType == NAL_UNIT_CODED_SLICE_CRA || m_eNalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL || m_eNalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP )
-#else
-    if (m_eNalUnitType == NAL_UNIT_CODED_SLICE_CRA)
-#endif
     {
-#if JVET_R0041
       CHECK(refPicPOC < irapPOC || refPicDecodingOrderNumber < associatedIRAPDecodingOrderNumber, "When the current picture, with nuh_layer_id equal to a particular value layerId, "
            "is an IRAP picture, there shall be no picture referred to by an entry in RefPicList[ 0 ] that precedes, in output order or decoding order, any preceding IRAP picture "
            "with nuh_layer_id equal to layerId in decoding order (when present).");
-#else
-      CHECK(refPicPOC < irapPOC || refPicDecodingOrderNumber < associatedIRAPDecodingOrderNumber, "IRAP picture detected that violate the rule that no entry in RefPicList[] shall precede, in output order or decoding order, any preceding IRAP picture in decoding order (when present).");
-#endif
     }
 
-#if JVET_R0041
     if (irapPOC < getPOC() && !fieldSeqFlag)
     {
       CHECK(refPicPOC < irapPOC || refPicDecodingOrderNumber < associatedIRAPDecodingOrderNumber, "When the current picture follows an IRAP picture having the same value "
             "of nuh_layer_id and the leading pictures, if any, associated with that IRAP picture, in both decoding order and output order, there shall be no picture referred "
             "to by an entry in RefPicList[ 0 ] or RefPicList[ 1 ] that precedes that IRAP picture in output order or decoding order.");
     }
-#else
-    // Checking this: "When the current picture is a trailing picture that follows in both decoding orderand output order one
-    // or more leading pictures associated with the same IRAP picture, if any, there shall be no picture referred to by an
-    // entry in RefPicList[0] or RefPicList[1] that precedes the associated IRAP picture in output order or decoding order"
-    // Note that when not in field coding, we know that all leading pictures of an IRAP precedes all trailing pictures of the
-    // same IRAP picture.
-    if (currentPictureIsTrailing && !fieldSeqFlag)
-    {
-      CHECK(refPicPOC < irapPOC || refPicDecodingOrderNumber < associatedIRAPDecodingOrderNumber, "Trailing picture detected that follows one or more leading pictures, if any, and violates the rule that no entry in RefPicList[] shall precede the associated IRAP picture in output order or decoding order.");
-    }
-#endif
 
     if (i < numActiveEntriesL0)
     {
-#if JVET_R0041
       if (irapPOC < getPOC())
       {
         CHECK(refPicPOC < irapPOC || refPicDecodingOrderNumber < associatedIRAPDecodingOrderNumber, "When the current picture follows an IRAP picture having the same value "
               "of nuh_layer_id in both decoding order and output order, there shall be no picture referred to by an active entry in RefPicList[ 0 ] or RefPicList[ 1 ] that "
               "precedes that IRAP picture in output order or decoding order.");
       }
-#else
-      // Checking this "When the current picture is a trailing picture, there shall be no picture referred to by an active
-      // entry in RefPicList[ 0 ] or RefPicList[ 1 ] that precedes the associated IRAP picture in output order or decoding order"
-      if (currentPictureIsTrailing)
-      {
-        CHECK(refPicPOC < irapPOC || refPicDecodingOrderNumber < associatedIRAPDecodingOrderNumber, "Trailing picture detected that violate the rule that no active entry in RefPicList[] shall precede the associated IRAP picture in output order or decoding order");
-      }
-#endif
 
       // Checking this: "When the current picture is a RADL picture, there shall be no active entry in RefPicList[ 0 ] or
       // RefPicList[ 1 ] that is any of the following: A picture that precedes the associated IRAP picture in decoding order"
@@ -807,49 +730,28 @@ void Slice::checkRPL(const ReferencePictureList* pRPL0, const ReferencePictureLi
     }
     refPicDecodingOrderNumber = pcRefPic->getDecodingOrderNumber();
 
-#if JVET_R0041
     if ((m_eNalUnitType == NAL_UNIT_CODED_SLICE_CRA || m_eNalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL || m_eNalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP))
     {
         CHECK(refPicPOC < irapPOC || refPicDecodingOrderNumber < associatedIRAPDecodingOrderNumber, "When the current picture, with nuh_layer_id equal to a particular value layerId, "
              "is an IRAP picture, there shall be no picture referred to by an entry in RefPicList[ 1 ] that precedes, in output order or decoding order, any preceding IRAP picture "
              "with nuh_layer_id equal to layerId in decoding order (when present).");
     }
-#else
-    if (m_eNalUnitType == NAL_UNIT_CODED_SLICE_CRA)
-    {
-      CHECK(refPicPOC < irapPOC || refPicDecodingOrderNumber < associatedIRAPDecodingOrderNumber, "CRA picture detected that violate the rule that no entry in RefPicList[] shall precede, in output order or decoding order, any preceding IRAP picture in decoding order (when present).");
-    }
-#endif
 
-#if JVET_R0041
     if (irapPOC < getPOC() && !fieldSeqFlag)
     {
       CHECK(refPicPOC < irapPOC || refPicDecodingOrderNumber < associatedIRAPDecodingOrderNumber, "When the current picture follows an IRAP picture having the same value of "
             "nuh_layer_id and the leading pictures, if any, associated with that IRAP picture, in both decoding order and output order, there shall be no picture referred to "
             "by an entry in RefPicList[ 0 ] or RefPicList[ 1 ] that precedes that IRAP picture in output order or decoding order.");
     }
-#else
-    if (currentPictureIsTrailing && !fieldSeqFlag)
-    {
-      CHECK(refPicPOC < irapPOC || refPicDecodingOrderNumber < associatedIRAPDecodingOrderNumber, "Trailing picture detected that follows one or more leading pictures, if any, and violates the rule that no entry in RefPicList[] shall precede the associated IRAP picture in output order or decoding order.");
-    }
-#endif
 
     if (i < numActiveEntriesL1)
     {
-#if JVET_R0041
       if (irapPOC < getPOC())
       {
         CHECK(refPicPOC < irapPOC || refPicDecodingOrderNumber < associatedIRAPDecodingOrderNumber, "When the current picture follows an IRAP picture having the same value "
               "of nuh_layer_id in both decoding order and output order, there shall be no picture referred to by an active entry in RefPicList[ 0 ] or RefPicList[ 1 ] that "
               "precedes that IRAP picture in output order or decoding order.");
       }
-#else
-      if (currentPictureIsTrailing)
-      {
-        CHECK(refPicPOC < irapPOC || refPicDecodingOrderNumber < associatedIRAPDecodingOrderNumber, "Trailing picture detected that violate the rule that no active entry in RefPicList[] shall precede the associated IRAP picture in output order or decoding order");
-      }
-#endif
       if (m_eNalUnitType == NAL_UNIT_CODED_SLICE_RADL)
       {
         CHECK(refPicDecodingOrderNumber < associatedIRAPDecodingOrderNumber, "RADL picture detected that violate the rule that no active entry in RefPicList[] shall precede the associated IRAP picture in decoding order");
@@ -1026,10 +928,8 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
   m_deblockingFilterCbTcOffsetDiv2    = pSrc->m_deblockingFilterCbTcOffsetDiv2;
   m_deblockingFilterCrBetaOffsetDiv2  = pSrc->m_deblockingFilterCrBetaOffsetDiv2;
   m_deblockingFilterCrTcOffsetDiv2    = pSrc->m_deblockingFilterCrTcOffsetDiv2;
-#if JVET_R0271_SLICE_LEVEL_DQ_SDH_RRC
   m_depQuantEnabledFlag               = pSrc->m_depQuantEnabledFlag;
   m_signDataHidingEnabledFlag         = pSrc->m_signDataHidingEnabledFlag;
-#endif
   m_tsResidualCodingDisabledFlag      = pSrc->m_tsResidualCodingDisabledFlag;
 
   for (i = 0; i < NUM_REF_PIC_LIST_01; i++)
@@ -1123,9 +1023,7 @@ void Slice::copySliceInfo(Slice *pSrc, bool cpyAlmostAll)
   m_tileGroupLumaApsId            = pSrc->m_tileGroupLumaApsId;
   m_tileGroupChromaApsId          = pSrc->m_tileGroupChromaApsId;
   m_disableSATDForRd              = pSrc->m_disableSATDForRd;
-#if JVET_R0110_MIXED_LOSSLESS
   m_isLossless = pSrc->m_isLossless;
-#endif
 
   if( cpyAlmostAll ) m_encCABACTableIdx  = pSrc->m_encCABACTableIdx;
   for( int i = 0; i < NUM_REF_PIC_LIST_01; i ++ )
@@ -1205,7 +1103,6 @@ void Slice::checkLeadingPictureRestrictions(PicList& rcListPic, const PPS& pps) 
     }
   }
 
-#if JVET_R0041
   if (this->getAssociatedIRAPPOC() <= this->getPOC())
   {
     if (pps.getMixedNaluTypesInPicFlag() == 0)
@@ -1213,19 +1110,6 @@ void Slice::checkLeadingPictureRestrictions(PicList& rcListPic, const PPS& pps) 
       CHECK(nalUnitType == NAL_UNIT_CODED_SLICE_RASL || nalUnitType == NAL_UNIT_CODED_SLICE_RADL, "When a picture is not a leading picture, it shall not be a RADL or RASL picture.");
     }
   }
-#else
-  // When a picture is a trailing picture, it shall not be a RADL or RASL picture.
-  if(this->getAssociatedIRAPPOC() < this->getPOC())
-  {
-      //check this only when mixed_nalu_types_in_pic_flag is equal to 0
-    if (pps.getMixedNaluTypesInPicFlag() == 0)
-    {
-      CHECK(nalUnitType == NAL_UNIT_CODED_SLICE_RASL ||
-            nalUnitType == NAL_UNIT_CODED_SLICE_RADL, "Invalid NAL unit type");
-    }
-
-  }
-#endif
 
   // No RASL pictures shall be present in the bitstream that are associated with
   // an IDR picture.
@@ -1245,11 +1129,7 @@ void Slice::checkLeadingPictureRestrictions(PicList& rcListPic, const PPS& pps) 
 
   // loop through all pictures in the reference picture buffer
   PicList::iterator iterPic = rcListPic.begin();
-#if JVET_R0041
   int numNonLPFound = 0;
-#else
-  int numLeadingPicsFound = 0;
-#endif
   while ( iterPic != rcListPic.end())
   {
     Picture* pcPic = *(iterPic++);
@@ -1263,7 +1143,6 @@ void Slice::checkLeadingPictureRestrictions(PicList& rcListPic, const PPS& pps) 
     }
     const Slice* pcSlice = pcPic->slices[0];
 
-#if JVET_R0041
     if (pcSlice->getPicHeader()->getPicOutputFlag() == 1 && !this->getPicHeader()->getNoOutputOfPriorPicsFlag() && pcPic->layerId == this->m_nuhLayerId)
     {
       if (nalUnitType == NAL_UNIT_CODED_SLICE_CRA || nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP || nalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL)
@@ -1272,22 +1151,7 @@ void Slice::checkLeadingPictureRestrictions(PicList& rcListPic, const PPS& pps) 
               "equal to layerId in decoding order shall precede the IRAP picture in output order.");
       }
     }
-#else
-    // Any picture that has PicOutputFlag equal to 1 that precedes an IRAP picture
-    // in decoding order shall precede the IRAP picture in output order.
-    // (Note that any picture following in output order would be present in the DPB)
-    if(pcSlice->getPicHeader()->getPicOutputFlag() == 1 && !this->getPicHeader()->getNoOutputOfPriorPicsFlag())
-    {
-      if (nalUnitType == NAL_UNIT_CODED_SLICE_CRA ||
-          nalUnitType == NAL_UNIT_CODED_SLICE_IDR_N_LP ||
-          nalUnitType == NAL_UNIT_CODED_SLICE_IDR_W_RADL)
-      {
-        CHECK(pcPic->poc >= this->getPOC(), "Invalid POC");
-      }
-    }
-#endif
 
-#if JVET_R0041
     if (pcSlice->getPicHeader()->getPicOutputFlag() == 1 && pcPic->layerId == this->m_nuhLayerId)
     {
       if (nalUnitType == NAL_UNIT_CODED_SLICE_RADL)
@@ -1302,28 +1166,7 @@ void Slice::checkLeadingPictureRestrictions(PicList& rcListPic, const PPS& pps) 
         }
       }
     }
-#else
-    // Any picture that has PicOutputFlag equal to 1 that precedes an IRAP picture
-    // in decoding order shall precede any RADL picture associated with the IRAP
-    // picture in output order.
-    if(pcSlice->getPicHeader()->getPicOutputFlag() == 1)
-    {
-      if (nalUnitType == NAL_UNIT_CODED_SLICE_RADL)
-      {
-        // rpcPic precedes the IRAP in decoding order
-        if(this->getAssociatedIRAPPOC() > pcSlice->getAssociatedIRAPPOC())
-        {
-          // rpcPic must not be the IRAP picture
-          if(this->getAssociatedIRAPPOC() != pcPic->poc)
-          {
-            CHECK( pcPic->poc >= this->getPOC(), "Invalid POC");
-          }
-        }
-      }
-    }
-#endif
 
-#if JVET_R0041
     if (pcSlice->getPicHeader()->getPicOutputFlag() == 1 && !this->getPicHeader()->getNoOutputBeforeRecoveryFlag() && pcPic->layerId == this->m_nuhLayerId
         && nalUnitType != NAL_UNIT_CODED_SLICE_GDR && this->getPicHeader()->getRecoveryPocCnt() != -1)
     {
@@ -1333,9 +1176,7 @@ void Slice::checkLeadingPictureRestrictions(PicList& rcListPic, const PPS& pps) 
               "nuh_layer_id equal to layerId in decoding order shall precede the recovery point picture in output order.");
       }
     }
-#endif
 
-#if JVET_R0041
     if ((nalUnitType == NAL_UNIT_CODED_SLICE_RASL || nalUnitType == NAL_UNIT_CODED_SLICE_RADL) && 
       (pcSlice->getNalUnitType() != NAL_UNIT_CODED_SLICE_RASL && pcSlice->getNalUnitType() != NAL_UNIT_CODED_SLICE_RADL))
     {
@@ -1354,27 +1195,7 @@ void Slice::checkLeadingPictureRestrictions(PicList& rcListPic, const PPS& pps) 
               "decoding order, and there shall be no non-leading picture with nuh_layer_id equal to layerId between picA and picB in decoding order.");
       }
     }
-#else
-    // When a picture, with nuh_layer_id equal to a particular value layerId, is a leading picture, it shall precede, in decoding order,
-    // all non-leading pictures that are associated with the same IRAP picture.
-    if ((nalUnitType == NAL_UNIT_CODED_SLICE_RASL || nalUnitType == NAL_UNIT_CODED_SLICE_RADL) &&
-        (pcSlice->getNalUnitType() != NAL_UNIT_CODED_SLICE_RASL && pcSlice->getNalUnitType() != NAL_UNIT_CODED_SLICE_RADL)  )
-    {
-      if (pcSlice->getAssociatedIRAPPOC() == this->getAssociatedIRAPPOC())
-      {
-        numLeadingPicsFound++;
-        int limitNonLP = 0;
-        if (pcSlice->getSPS()->getFieldSeqFlag())
-          limitNonLP = 1;
-        CHECK(pcPic->poc > this->getAssociatedIRAPPOC() && numLeadingPicsFound > limitNonLP, "Invalid POC");
-      }
-    }
-#endif
 
-#if !JVET_R0041
-    // Any RASL picture associated with a CRA or BLA picture shall precede any
-    // RADL picture associated with the CRA or BLA picture in output order
-#endif
     if (nalUnitType == NAL_UNIT_CODED_SLICE_RASL)
     {
       if ((this->getAssociatedIRAPType() == NAL_UNIT_CODED_SLICE_CRA) &&
@@ -1382,19 +1203,11 @@ void Slice::checkLeadingPictureRestrictions(PicList& rcListPic, const PPS& pps) 
       {
         if (pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_RADL)
         {
-#if JVET_R0041
           CHECK(pcPic->poc <= this->getPOC(), "Any RASL picture associated with a CRA picture shall precede any RADL picture associated with the CRA picture in output order.");
-#else
-          CHECK(pcPic->poc <= this->getPOC(), "Invalid POC");
-#endif
         }
       }
     }
 
-#if !JVET_R0041
-    // Any RASL picture associated with a CRA picture shall follow, in output
-    // order, any IRAP picture that precedes the CRA picture in decoding order.
-#endif
     if (nalUnitType == NAL_UNIT_CODED_SLICE_RASL)
     {
       if(this->getAssociatedIRAPType() == NAL_UNIT_CODED_SLICE_CRA)
@@ -1403,25 +1216,18 @@ void Slice::checkLeadingPictureRestrictions(PicList& rcListPic, const PPS& pps) 
           (
             pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_N_LP   ||
             pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_W_RADL ||
-#if JVET_R0041
             pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA ||
             pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR) &&
             pcPic->layerId == this->m_nuhLayerId)
         {
           CHECK(this->getPOC() <= pcSlice->getPOC(), "Any RASL picture, with nuh_layer_id equal to a particular value layerId, associated with a CRA picture shall follow, "
                "in output order, any IRAP or GDR picture with nuh_layer_id equal to layerId that precedes the CRA picture in decoding order.");
-#else
-            pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA))
-        {
-          CHECK(this->getPOC() <= pcSlice->getPOC(), "Invalid POC");
-#endif
         }
       }
     }
   }
 }
 
-#if JVET_R0042_SUBPIC_CHECK
 void Slice::checkSubpicTypeConstraints(PicList& rcListPic, const ReferencePictureList* pRPL0, const ReferencePictureList* pRPL1, const int prevIRAPSubpicDecOrderNo)
 {
   int curSubpicIdx = getPPS()->getSubPicIdxFromSubPicId(getSliceSubPicId());
@@ -1706,7 +1512,6 @@ void Slice::checkSubpicTypeConstraints(PicList& rcListPic, const ReferencePictur
     }
   }
 }
-#endif
 
 
 //Function for applying picture marking based on the Reference Picture List
@@ -2421,26 +2226,20 @@ VPS::VPS()
   , m_vpsSublayerCpbParamsPresentFlag(false)
   , m_numOlsHrdParamsMinus1(0)
   , m_totalNumOLSs( 0 )
-#if JVET_R0191_ASPECT3
   , m_numMultiLayeredOlss( 0 )
-#endif
   , m_numDpbParams( 0 )
   , m_sublayerDpbParamsPresentFlag( false )
   , m_targetOlsIdx( -1 )
 {
-#if JVET_R0058
   for (int i = 0; i < MAX_VPS_SUBLAYERS; i++)
   {
     m_vpsCfgPredDirection[i] = 0;
   }
-#endif
   for (int i = 0; i < MAX_VPS_LAYERS; i++)
   {
     m_vpsLayerId[i] = 0;
     m_vpsIndependentLayerFlag[i] = true;
-#if JVET_Q0398_SUBLAYER_DEP
     m_vpsMaxTidIlRefPicsPlus1[i] = 7;
-#endif
     m_generalLayerIdx[i] = 0;
     for (int j = 0; j < MAX_VPS_LAYERS; j++)
     {
@@ -2490,14 +2289,10 @@ void VPS::deriveOutputLayerSets()
   m_numOutputLayersInOls.resize( m_totalNumOLSs );
   m_numLayersInOls.resize( m_totalNumOLSs );
   m_outputLayerIdInOls.resize( m_totalNumOLSs, std::vector<int>( m_uiMaxLayers, NOT_VALID ) );
-#if JVET_Q0398_SUBLAYER_DEP
   m_numSubLayersInLayerInOLS.resize( m_totalNumOLSs, std::vector<int>( m_uiMaxLayers, NOT_VALID ) );
-#endif
   m_layerIdInOls.resize( m_totalNumOLSs, std::vector<int>( m_uiMaxLayers, NOT_VALID ) );
-#if JVET_R0066_DPB_NO_OUTPUT_PRIOR_PIC_FLAG
   m_olsDpbChromaFormatIdc.resize(m_totalNumOLSs);
   m_olsDpbBitDepthMinus8.resize(m_totalNumOLSs);
-#endif
 
   std::vector<int> numRefLayers( m_uiMaxLayers );
   std::vector<std::vector<int>> outputLayerIdx( m_totalNumOLSs, std::vector<int>( m_uiMaxLayers, NOT_VALID ) );
@@ -2538,9 +2333,7 @@ void VPS::deriveOutputLayerSets()
 
   m_numOutputLayersInOls[0] = 1;
   m_outputLayerIdInOls[0][0] = m_vpsLayerId[0];
-#if JVET_Q0398_SUBLAYER_DEP
   m_numSubLayersInLayerInOLS[0][0] = m_vpsMaxSubLayers;
-#endif
   layerUsedAsOutputLayerFlag[0] = 1;
   for (int i = 1; i < m_uiMaxLayers; i++)
   {
@@ -2560,13 +2353,11 @@ void VPS::deriveOutputLayerSets()
     {
       m_numOutputLayersInOls[i] = 1;
       m_outputLayerIdInOls[i][0] = m_vpsLayerId[i];
-#if JVET_Q0398_SUBLAYER_DEP
       for(int  j = 0; j < i  &&  ( m_vpsOlsModeIdc  ==  0 ); j++ )
       {
         m_numSubLayersInLayerInOLS[i][j] = m_vpsMaxTidIlRefPicsPlus1[i];
       }
       m_numSubLayersInLayerInOLS[i][i] = m_vpsMaxSubLayers;
-#endif
     }
     else if( m_vpsOlsModeIdc == 1 )
     {
@@ -2575,21 +2366,17 @@ void VPS::deriveOutputLayerSets()
       for( int j = 0; j < m_numOutputLayersInOls[i]; j++ )
       {
         m_outputLayerIdInOls[i][j] = m_vpsLayerId[j];
-#if JVET_Q0398_SUBLAYER_DEP
         m_numSubLayersInLayerInOLS[i][j] = m_vpsMaxSubLayers;
-#endif
       }
     }
     else if( m_vpsOlsModeIdc == 2 )
     {
       int j = 0;
-#if JVET_Q0398_SUBLAYER_DEP
       for( j = 0; j  <  m_uiMaxLayers; j++ )
       {
         m_numSubLayersInLayerInOLS[i][j] = 0;
       }
       j = 0;
-#endif
       for( int k = 0; k < m_uiMaxLayers; k++ )
       {
         if( m_vpsOlsOutputLayerFlag[i][k] )
@@ -2598,9 +2385,7 @@ void VPS::deriveOutputLayerSets()
           layerUsedAsOutputLayerFlag[k] = 1;
           outputLayerIdx[i][j] = k;
           m_outputLayerIdInOls[i][j++] = m_vpsLayerId[k];
-#if JVET_Q0398_SUBLAYER_DEP
           m_numSubLayersInLayerInOLS[i][k] = m_vpsMaxSubLayers;
-#endif
         }
       }
       m_numOutputLayersInOls[i] = j;
@@ -2611,12 +2396,10 @@ void VPS::deriveOutputLayerSets()
         for( int k = 0; k < numRefLayers[idx]; k++ )
         {
           layerIncludedInOlsFlag[i][refLayerIdx[idx][k]] = 1;
-#if JVET_Q0398_SUBLAYER_DEP
           if( m_numSubLayersInLayerInOLS[i][ refLayerIdx[idx][k] ] < m_vpsMaxTidIlRefPicsPlus1[ m_outputLayerIdInOls[i][j] ] )
           {
             m_numSubLayersInLayerInOLS[i][ refLayerIdx[idx][k] ] =  m_vpsMaxTidIlRefPicsPlus1[ m_outputLayerIdInOls[i][j] ];
           }
-#endif
         }
       }
     }
@@ -2628,9 +2411,7 @@ void VPS::deriveOutputLayerSets()
 
   m_numLayersInOls[0] = 1;
   m_layerIdInOls[0][0] = m_vpsLayerId[0];
-#if JVET_R0191_ASPECT3
   m_numMultiLayeredOlss = 0;
-#endif
   for( int i = 1; i < m_totalNumOLSs; i++ )
   {
     if( m_vpsEachLayerIsAnOlsFlag )
@@ -2659,13 +2440,11 @@ void VPS::deriveOutputLayerSets()
 
       m_numLayersInOls[i] = j;
     }
-#if JVET_R0191_ASPECT3
     if( m_numLayersInOls[i] > 1 )
     {
       m_multiLayerOlsIdx[i] = m_numMultiLayeredOlss;
       m_numMultiLayeredOlss++;
     }
-#endif
   }
 }
 
@@ -2730,10 +2509,6 @@ PicHeader::PicHeader()
 , m_numAlfAps                                     ( 0 )
 , m_alfApsId                                      ( 0 )
 , m_alfChromaApsId                                ( 0 )
-#if !JVET_R0271_SLICE_LEVEL_DQ_SDH_RRC
-, m_depQuantEnabledFlag                           ( 0 )
-, m_signDataHidingEnabledFlag                     ( 0 )
-#endif
 , m_deblockingFilterOverrideFlag                  ( 0 )
 , m_deblockingFilterDisable                       ( 0 )
 , m_deblockingFilterBetaOffsetDiv2                ( 0 )
@@ -2823,10 +2598,6 @@ void PicHeader::initPicHeader()
   m_qpDelta                                       = 0;
   m_numAlfAps                                     = 0;
   m_alfChromaApsId                                = 0;
-#if !JVET_R0271_SLICE_LEVEL_DQ_SDH_RRC
-  m_depQuantEnabledFlag                           = 0;
-  m_signDataHidingEnabledFlag                     = 0;
-#endif
   m_deblockingFilterOverrideFlag                  = 0;
   m_deblockingFilterDisable                       = 0;
   m_deblockingFilterBetaOffsetDiv2                = 0;
@@ -2913,9 +2684,7 @@ SPSRExt::SPSRExt()
 SPS::SPS()
 : m_SPSId                     (  0)
 , m_VPSId                     ( 0 )
-#if JVET_R0194_CONSTRAINT_PS_SHARING_REFERENCING
 , m_layerId                   ( 0 )
-#endif
 , m_affineAmvrEnabledFlag     ( false )
 , m_DMVR                      ( false )
 , m_MMVD                      ( false )
@@ -2931,9 +2700,7 @@ SPS::SPS()
 , m_maxHeightInLumaSamples    (288)
 , m_subPicInfoPresentFlag     (false)
 , m_numSubPics(1)
-#if JVET_R0156_ASPECT4_SPS_CLEANUP
 , m_independentSubPicsFlag     (false)
-#endif
 , m_subPicIdMappingExplicitlySignalledFlag ( false )
 , m_subPicIdMappingInSpsFlag ( false )
 , m_subPicIdLen(16)
@@ -2957,11 +2724,7 @@ SPS::SPS()
 , m_BDPCMEnabledFlag          (false)
 , m_JointCbCrEnabledFlag      (false)
 , m_entropyCodingSyncEnabledFlag(false)
-#if JVET_R0165_OPTIONAL_ENTRY_POINT
 , m_entryPointPresentFlag(false)
-#else
-, m_entropyCodingSyncEntryPointPresentFlag(false)
-#endif
 , m_internalMinusInputBitDepth{ 0, 0 }
 , m_sbtmvpEnabledFlag         (false)
 , m_bdofEnabledFlag           (false)
@@ -2992,9 +2755,6 @@ SPS::SPS()
 , m_vuiParametersPresentFlag  (false)
 , m_vuiParameters             ()
 , m_wrapAroundEnabledFlag     (false)
-#if !JVET_Q0764_WRAP_AROUND_WITH_RPR
-, m_wrapAroundOffset          (  0)
-#endif
 , m_IBCFlag                   (  0)
 , m_PLTMode                   (  0)
 , m_lmcsEnabled               (false)
@@ -3021,20 +2781,14 @@ SPS::SPS()
 , m_GDREnabledFlag            ( true )
 , m_SubLayerCbpParametersPresentFlag ( true )
 , m_rprEnabledFlag            ( false )
-#if JVET_R0058
 , m_resChangeInClvsEnabledFlag ( false )
-#endif
 , m_maxNumMergeCand(MRG_MAX_NUM_CANDS)
 , m_maxNumAffineMergeCand(AFFINE_MRG_MAX_NUM_CANDS)
 , m_maxNumIBCMergeCand(IBC_MRG_MAX_NUM_CANDS)
 , m_maxNumGeoCand(0)
-#if JVET_R0380_SCALING_MATRIX_DISABLE_YCC_OR_RGB
 , m_scalingMatrixAlternativeColourSpaceDisabledFlag( false )
 , m_scalingMatrixDesignatedColourSpaceFlag( true )
-#endif
-#if JVET_R0064
 , m_disableScalingMatrixForLfnstBlks( true)
-#endif
 {
   for(int ch=0; ch<MAX_NUM_CHANNEL_TYPE; ch++)
   {
@@ -3194,9 +2948,7 @@ PPS::PPS()
 , m_SPSId                            (0)
 , m_picInitQPMinus26                 (0)
 , m_useDQP                           (false)
-#if JVET_R0078_DISABLE_CHROMA_DBF_OFFSET_SINGALLING
 , m_usePPSChromaTool                 (false)
-#endif
 , m_bSliceChromaQpFlag               (false)
 , m_chromaCbQpOffset                 (0)
 , m_chromaCrQpOffset                 (0)
@@ -3232,20 +2984,12 @@ PPS::PPS()
 , m_wpInfoInPhFlag                   (0)
 , m_qpDeltaInfoInPhFlag              (0)
 , m_mixedNaluTypesInPicFlag          ( false )
-#if JVET_R0068_ASPECT1_ASPECT6
 , m_conformanceWindowFlag            (false)
-#endif
 , m_picWidthInLumaSamples(352)
 , m_picHeightInLumaSamples( 288 )
-#if JVET_Q0764_WRAP_AROUND_WITH_RPR
 , m_wrapAroundEnabledFlag            (false)
-#if JVET_R0162_WRAPAROUND_OFFSET_SIGNALING
 , m_picWidthMinusWrapAroundOffset    (0)
-#else
-, m_wrapAroundOffsetMinusCtbSize     (0)
-#endif
 , m_wrapAroundOffset                 (0)
-#endif
 , pcv                                (NULL)
 {
   m_ChromaQpAdjTableIncludingNullEntry[0].u.comp.CbOffset = 0; // Array includes entry [0] for the null offset used when cu_chroma_qp_offset_flag=0. This is initialised here and never subsequently changed.
@@ -3653,10 +3397,8 @@ void PPS::initSubPic(const SPS &sps)
     else
     {
       int numSlicesInSubPic = 0;
-#if R0091_CONSTRAINT_SLICE_ORDER
       int idxLastSliceInSubpic = -1;
       int idxFirstSliceAfterSubpic = m_numSlicesInPic;
-#endif
       for (int j = 0; j < m_numSlicesInPic; j++)
       {
         uint32_t ctu = m_sliceMap[j].getCtuAddrInSlice(0);
@@ -3670,20 +3412,14 @@ void PPS::initSubPic(const SPS &sps)
           // add ctus in a slice to the subpicture it belongs to
           m_subPics[i].addCTUsToSubPic(m_sliceMap[j].getCtuAddrList());
 	  numSlicesInSubPic++;
-#if R0091_CONSTRAINT_SLICE_ORDER
           idxLastSliceInSubpic = j;
-#endif
         }
-#if R0091_CONSTRAINT_SLICE_ORDER
         else if (idxFirstSliceAfterSubpic == m_numSlicesInPic && idxLastSliceInSubpic != -1)
         {
           idxFirstSliceAfterSubpic = j;
         }
-#endif
       }
-#if R0091_CONSTRAINT_SLICE_ORDER
       CHECK( idxFirstSliceAfterSubpic < idxLastSliceInSubpic, "The signalling order of slices shall follow the coding order" );
-#endif
       m_subPics[i].setNumSlicesInSubPic(numSlicesInSubPic);
     }
     m_subPics[i].setTreatedAsPicFlag(sps.getSubPicTreatedAsPicFlag(i));
@@ -3884,9 +3620,6 @@ void ReferencePictureList::printRefPicInfo() const
 
 ScalingList::ScalingList()
 {
-#if !JVET_R0064
-  m_disableScalingMatrixForLfnstBlks = true;
-#endif
   m_chromaScalingListPresentFlag = true;
   for (uint32_t scalingListId = 0; scalingListId < 28; scalingListId++)
   {
@@ -4493,12 +4226,8 @@ void Slice::scaleRefPicList( Picture *scaledRefPic[ ], PicHeader *picHeader, APS
                                    scaledRefPic[j]->getRecoBuf(), pps->getScalingWindow(),
                                    sps->getChromaFormatIdc(), sps->getBitDepths(), true, downsampling,
                                    sps->getHorCollocatedChromaFlag(), sps->getVerCollocatedChromaFlag() );
-#if JVET_Q0764_WRAP_AROUND_WITH_RPR
           scaledRefPic[j]->unscaledPic = m_apcRefPicList[refList][rIdx];
           scaledRefPic[j]->extendPicBorder( getPPS() );
-#else
-          scaledRefPic[j]->extendPicBorder();
-#endif
 
           m_scaledRefPicList[refList][rIdx] = scaledRefPic[j];
         }
@@ -4577,10 +4306,6 @@ bool Slice::checkRPR()
 
 bool             operator == (const ConstraintInfo& op1, const ConstraintInfo& op2)
 {
-#if !JVET_R0090_VUI
-  if( op1.m_progressiveSourceFlag                        != op2.m_progressiveSourceFlag                          ) return false;
-  if( op1.m_interlacedSourceFlag                         != op2.m_interlacedSourceFlag                           ) return false;
-#endif
   if( op1.m_nonPackedConstraintFlag                      != op2.m_nonPackedConstraintFlag                        ) return false;
   if( op1.m_frameOnlyConstraintFlag                      != op2.m_frameOnlyConstraintFlag                        ) return false;
   if( op1.m_intraOnlyConstraintFlag                      != op2.m_intraOnlyConstraintFlag                        ) return false;
@@ -4589,7 +4314,6 @@ bool             operator == (const ConstraintInfo& op1, const ConstraintInfo& o
   if( op1.m_onePictureOnlyConstraintFlag                 != op2.m_onePictureOnlyConstraintFlag                   ) return false;
   if( op1.m_lowerBitRateConstraintFlag                   != op2.m_lowerBitRateConstraintFlag                     ) return false;
 
-#if JVET_R0286_GCI_CLEANUP
   if (op1.m_singleLayerConstraintFlag                    != op2.m_singleLayerConstraintFlag                      ) return false;
   if (op1.m_allLayersIndependentConstraintFlag           != op2.m_allLayersIndependentConstraintFlag             ) return false;
   if (op1.m_noMrlConstraintFlag                          != op2.m_noMrlConstraintFlag                            ) return false;
@@ -4602,7 +4326,6 @@ bool             operator == (const ConstraintInfo& op1, const ConstraintInfo& o
   if (op1.m_noPaletteConstraintFlag                      != op2.m_noPaletteConstraintFlag                        ) return false;
   if (op1.m_noActConstraintFlag                          != op2.m_noActConstraintFlag                            ) return false;
   if (op1.m_noLmcsConstraintFlag                         != op2.m_noLmcsConstraintFlag                           ) return false;
-#endif
 
   if( op1.m_noQtbttDualTreeIntraConstraintFlag           != op2.m_noQtbttDualTreeIntraConstraintFlag             ) return false;
   if( op1.m_noPartitionConstraintsOverrideConstraintFlag != op2.m_noPartitionConstraintsOverrideConstraintFlag   ) return false;
@@ -4622,9 +4345,6 @@ bool             operator == (const ConstraintInfo& op1, const ConstraintInfo& o
   if( op1.m_noBcwConstraintFlag                          != op2.m_noBcwConstraintFlag                            ) return false;
   if( op1.m_noIbcConstraintFlag                          != op2.m_noIbcConstraintFlag                            ) return false;
   if( op1.m_noCiipConstraintFlag                         != op2.m_noCiipConstraintFlag                           ) return false;
-#if !JVET_R0214_MMVD_SYNTAX_MODIFICATION
-  if( op1.m_noFPelMmvdConstraintFlag                     != op2.m_noFPelMmvdConstraintFlag                       ) return false;
-#endif
   if( op1.m_noLadfConstraintFlag                         != op2.m_noLadfConstraintFlag                           ) return false;
   if( op1.m_noTransformSkipConstraintFlag                != op2.m_noTransformSkipConstraintFlag                  ) return false;
   if( op1.m_noBDPCMConstraintFlag                        != op2.m_noBDPCMConstraintFlag                          ) return false;

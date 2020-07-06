@@ -72,29 +72,17 @@ private:
   bool m_isFirstGeneralHrd;
   GeneralHrdParams        m_prevGeneralHrdParams;
 
-#if JVET_R0041
   int                     m_prevGDRInSameLayerPOC[MAX_VPS_LAYERS]; ///< POC number of the latest GDR picture
   NalUnitType             m_associatedIRAPType[MAX_VPS_LAYERS]; ///< NAL unit type of the previous IRAP picture
   int                     m_pocCRA[MAX_VPS_LAYERS];            ///< POC number of the previous CRA picture
   int                     m_associatedIRAPDecodingOrderNumber[MAX_VPS_LAYERS]; ///< Decoding order number of the previous IRAP picture
-#else
-  NalUnitType             m_associatedIRAPType; ///< NAL unit type of the associated IRAP picture
-  int                     m_associatedIRAPDecodingOrderNumber; ///< Decoding order number of the associated IRAP picture
-#endif
   int                     m_decodingOrderCounter;
-#if JVET_P0359_PARAMETER_SETS_INCLUSION_SEI
   int                     m_puCounter;
   bool                    m_seiInclusionFlag;
-#endif
-#if !JVET_R0041
-  int                     m_pocCRA;            ///< POC number of the latest CRA picture
-#endif
-#if JVET_R0042_SUBPIC_CHECK
   int                     m_prevGDRSubpicPOC[MAX_VPS_LAYERS][MAX_NUM_SUB_PICS];
   int                     m_prevIRAPSubpicPOC[MAX_VPS_LAYERS][MAX_NUM_SUB_PICS];
   NalUnitType             m_prevIRAPSubpicType[MAX_VPS_LAYERS][MAX_NUM_SUB_PICS];
   int                     m_prevIRAPSubpicDecOrderNo[MAX_VPS_LAYERS][MAX_NUM_SUB_PICS];
-#endif
   int                     m_pocRandomAccess;   ///< POC number of the random access point (the first IDR or CRA picture)
   int                     m_lastRasPoc;
 
@@ -132,9 +120,7 @@ private:
   uint32_t                m_uiSliceSegmentIdx;
   uint32_t                m_prevLayerID;
   int                     m_prevPOC;
-#if JVET_R0068_ASPECT1_ASPECT6
   int                     m_prevPicPOC;
-#endif
   int                     m_prevTid0POC;
   bool                    m_bFirstSliceInPicture;
   bool                    m_firstSliceInSequence[MAX_VPS_LAYERS];
@@ -143,11 +129,7 @@ private:
   int                     m_skippedPOC;
   int                     m_lastPOCNoOutputPriorPics;
   bool                    m_isNoOutputPriorPics;
-#if JVET_R0041
   bool                    m_lastNoOutputBeforeRecoveryFlag[MAX_VPS_LAYERS];    //value of variable NoOutputBeforeRecoveryFlag of the assocated CRA/GDR pic
-#else
-  bool                    m_lastNoOutputBeforeRecoveryFlag;    //value of variable NoOutputBeforeRecoveryFlag  of the last CRA / GDR pic
-#endif
   int                     m_sliceLmcsApsId;         //value of LmcsApsId, constraint is same id for all slices in one picture
   std::ostream           *m_pDecodedSEIOutputStream;
 
@@ -175,9 +157,7 @@ private:
     int             m_POC;
   };
   std::vector<AccessUnitPicInfo> m_accessUnitPicInfo;
-#if JVET_R0065
   std::vector<AccessUnitPicInfo> m_firstAccessUnitPicInfo;
-#endif
   struct NalUnitInfo
   {
     NalUnitType     m_nalUnitType; ///< nal_unit_type
@@ -188,26 +168,18 @@ private:
   std::vector<NalUnitInfo> m_nalUnitInfo[MAX_VPS_LAYERS];
   std::vector<int> m_accessUnitApsNals;
   std::vector<int> m_accessUnitSeiTids;
-#if JVET_R0066_DPB_NO_OUTPUT_PRIOR_PIC_FLAG
   std::vector<bool> m_accessUnitNoOutputPriorPicFlags;
-#endif
 
   // NAL unit type, layer ID, and SEI payloadType
   std::vector<std::tuple<NalUnitType, int, SEI::PayloadType>> m_accessUnitSeiPayLoadTypes;
 
-#if JVET_R0201_PREFIX_SUFFIX_APS_CLEANUP
   std::vector<NalUnitType> m_pictureUnitNals;
-#endif
-#if JVET_Q0488_SEI_REPETITION_CONSTRAINT
   std::list<InputNALUnit*> m_pictureSeiNalus; 
-#endif 
 
   VPS*                    m_vps;
   int                     m_maxDecSubPicIdx;
   int                     m_maxDecSliceAddrInSubPic;
-#if JVET_Q0280_CONSTRAINT_ON_VPS_ID
   int                     m_clsVPSid;
-#endif
 
 public:
   int                     m_targetSubPicIdx;
@@ -237,12 +209,8 @@ public:
   void  checkNoOutputPriorPics (PicList* rpcListPic);
   void  checkNalUnitConstraints( uint32_t naluType );
   void  updateAssociatedIRAP();
-#if JVET_R0041
   void  updatePrevGDRInSameLayer();
-#endif
-#if JVET_R0042_SUBPIC_CHECK
   void  updatePrevIRAPAndGDRSubpic();
-#endif
 
   bool  getNoOutputPriorPicsFlag () const   { return m_isNoOutputPriorPics; }
   void  setNoOutputPriorPicsFlag (bool val) { m_isNoOutputPriorPics = val; }
@@ -264,24 +232,16 @@ public:
   void checkTidLayerIdInAccessUnit();
   void resetAccessUnitSeiPayLoadTypes()   { m_accessUnitSeiPayLoadTypes.clear(); }
   void checkSEIInAccessUnit();
-#if JVET_R0065
   void isCvsStart();
   void checkIncludedInFirstAu();
-#endif
-#if JVET_R0066_DPB_NO_OUTPUT_PRIOR_PIC_FLAG
   void CheckNoOutputPriorPicFlagsInAccessUnit();
   void resetAccessUnitNoOutputPriorPicFlags() { m_accessUnitNoOutputPriorPicFlags.clear(); }
-#endif
-#if JVET_Q0488_SEI_REPETITION_CONSTRAINT
   void checkSeiInPictureUnit();
   void resetPictureSeiNalus();
-#endif 
   bool isSliceNaluFirstInAU( bool newPicture, InputNALUnit &nalu );
 
-#if JVET_R0201_PREFIX_SUFFIX_APS_CLEANUP
   void checkAPSInPictureUnit();
   void resetPictureUnitNals() { m_pictureUnitNals.clear(); }
-#endif
 
   const VPS* getVPS()                     { return m_vps; }
   void deriveTargetOutputLayerSet( const int targetOlsIdx ) { if( m_vps != nullptr ) m_vps->deriveTargetOutputLayerSet( targetOlsIdx ); }
@@ -300,12 +260,8 @@ protected:
   Picture * xGetNewPicBuffer( const SPS &sps, const PPS &pps, const uint32_t temporalLayer, const int layerId );
   void  xCreateLostPicture( int iLostPOC, const int layerId );
   void  xCreateUnavailablePicture(int iUnavailablePoc, bool longTermFlag, const int layerId, const bool interLayerRefPicFlag);
-#if JVET_P0359_PARAMETER_SETS_INCLUSION_SEI
   void  checkParameterSetsInclusionSEIconstraints(const InputNALUnit nalu);
   void  xActivateParameterSets( const InputNALUnit nalu );
-#else
-  void  xActivateParameterSets( const int layerId );
-#endif
   void  xCheckParameterSetConstraints( const int layerId );
   void      xDecodePicHeader( InputNALUnit& nalu );
   bool      xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDisplay);

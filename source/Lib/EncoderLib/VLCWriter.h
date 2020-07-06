@@ -101,11 +101,7 @@ public:
   AUDWriter() {};
   virtual ~AUDWriter() {};
 
-#if JVET_R0065
   void  codeAUD(OutputBitstream& bs, const bool audIrapOrGdrAuFlag, const int pictureType);
-#else
-  void  codeAUD(OutputBitstream& bs, const int pictureType);
-#endif
 };
 
 
@@ -117,11 +113,7 @@ public:
   virtual ~HLSWriter() {}
 
 private:
-#if JVET_R0059_RPL_CLEANUP
   void xCodeRefPicList( const ReferencePictureList* rpl, bool isLongTermPresent, uint32_t ltLsbBitsCount, const bool isForbiddenZeroDeltaPoc, int rplIdx);
-#else
-  void xCodeRefPicList( const ReferencePictureList* rpl, bool isLongTermPresent, uint32_t ltLsbBitsCount, const bool isForbiddenZeroDeltaPoc);
-#endif
   bool xFindMatchingLTRP        ( Slice* pcSlice, uint32_t *ltrpsIndex, int ltrpPOC, bool usedFlag );
   void xCodePredWeightTable     ( Slice* pcSlice );
   void xCodePredWeightTable     ( PicHeader *picHeader, const SPS *sps );

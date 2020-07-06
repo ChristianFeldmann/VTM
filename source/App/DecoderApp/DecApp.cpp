@@ -210,12 +210,8 @@ uint32_t DecApp::decode()
       }
 
       m_cDecLib.updateAssociatedIRAP();
-#if JVET_R0041
       m_cDecLib.updatePrevGDRInSameLayer();
-#endif
-#if JVET_R0042_SUBPIC_CHECK
       m_cDecLib.updatePrevIRAPAndGDRSubpic();
-#endif
     }
     else if ( (bNewPicture || !bitstreamFile || nalu.m_nalUnitType == NAL_UNIT_EOS ) &&
       m_cDecLib.getFirstSliceInSequence(nalu.m_nuhLayerId))
@@ -276,32 +272,24 @@ uint32_t DecApp::decode()
         xWriteOutput( pcListPic, nalu.m_temporalId );
       }
     }
-#if JVET_Q0488_SEI_REPETITION_CONSTRAINT
     if( bNewPicture )
     {
       m_cDecLib.checkSeiInPictureUnit();
       m_cDecLib.resetPictureSeiNalus();
     }
-#endif
-#if JVET_R0201_PREFIX_SUFFIX_APS_CLEANUP
     if (bNewPicture || !bitstreamFile || nalu.m_nalUnitType == NAL_UNIT_EOS)
     {
       m_cDecLib.checkAPSInPictureUnit();
       m_cDecLib.resetPictureUnitNals();
     }
-#endif
-#if JVET_R0066_DPB_NO_OUTPUT_PRIOR_PIC_FLAG
     if (bNewAccessUnit || !bitstreamFile)
     {
       m_cDecLib.CheckNoOutputPriorPicFlagsInAccessUnit();
       m_cDecLib.resetAccessUnitNoOutputPriorPicFlags();
     }
-#endif
     if(bNewAccessUnit)
     {
-#if JVET_R0065
       m_cDecLib.isCvsStart();
-#endif
       m_cDecLib.checkTidLayerIdInAccessUnit();
       m_cDecLib.resetAccessUnitSeiTids();
       m_cDecLib.checkSEIInAccessUnit();

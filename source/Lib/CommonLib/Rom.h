@@ -180,9 +180,7 @@ extern const int g_quantInterDefault8x8[8*8];
 
 extern const uint32_t g_scalingListSize [SCALING_LIST_SIZE_NUM];
 extern const uint32_t g_scalingListSizeX[SCALING_LIST_SIZE_NUM];
-#if JVET_R0166_SCALING_LISTS_CHROMA_444
 extern const uint32_t g_scalingListId[SCALING_LIST_SIZE_NUM][SCALING_LIST_NUM];
-#endif
 
 extern MsgLevel g_verbosity;
 

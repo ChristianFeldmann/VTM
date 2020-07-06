@@ -80,11 +80,9 @@ void SEIWriter::xWriteSEIpayloadData(OutputBitstream &bs, const SEI& sei, const 
   case SEI::FRAME_PACKING:
     xWriteSEIFramePacking(*static_cast<const SEIFramePacking*>(&sei));
     break;
-#if JVET_P0359_PARAMETER_SETS_INCLUSION_SEI
   case SEI::PARAMETER_SETS_INCLUSION_INDICATION:
     xWriteSEIParameterSetsInclusionIndication(*static_cast<const SEIParameterSetsInclusionIndication*>(&sei));
     break;
-#endif
   case SEI::MASTERING_DISPLAY_COLOUR_VOLUME:
     xWriteSEIMasteringDisplayColourVolume(*static_cast<const SEIMasteringDisplayColourVolume*>(&sei));
     break;
@@ -243,19 +241,12 @@ void SEIWriter::xWriteSEIDecodingUnitInfo(const SEIDecodingUnitInfo& sei, const 
   WRITE_UVLC(sei.m_decodingUnitIdx, "decoding_unit_idx");
   if( !bp.m_decodingUnitCpbParamsInPicTimingSeiFlag )
   {
-#if JVET_R0100
     for (int i = temporalId; i <= bp.m_bpMaxSubLayers - 1; i++)
     {
       if (i < bp.m_bpMaxSubLayers - 1)
       {
-#else
-    for (int i = temporalId; i < bp.m_bpMaxSubLayers - 1; i++)
-    {
-#endif
       WRITE_FLAG(sei.m_duiSubLayerDelaysPresentFlag[i], "dui_sub_layer_delays_present_flag[i]");
-#if JVET_R0100
       }
-#endif
       if( sei.m_duiSubLayerDelaysPresentFlag[i] )
         WRITE_CODE( sei.m_duSptCpbRemovalDelayIncrement[i], bp.getDuCpbRemovalDelayIncrementLength(), "du_spt_cpb_removal_delay_increment[i]");
     }
@@ -333,7 +324,6 @@ void SEIWriter::xWriteSEIBufferingPeriod(const SEIBufferingPeriod& sei)
       }
     }
   }
-#if JVET_R0094_DPB_TID_OFFSET
   WRITE_FLAG(sei.m_sublayerDpbOutputOffsetsPresentFlag, "sublayer_dpb_output_offsets_present_flag");
   if(sei.m_sublayerDpbOutputOffsetsPresentFlag)
   {
@@ -342,7 +332,6 @@ void SEIWriter::xWriteSEIBufferingPeriod(const SEIBufferingPeriod& sei)
       WRITE_UVLC( sei.m_dpbOutputTidOffset[i], "dpb_output_tid_offset[i]" );
     }
   }
-#endif
   if (sei.m_altCpbParamsPresentFlag)
   {
     WRITE_FLAG(sei.m_useAltCpbParamsFlag, "use_alt_cpb_params_flag");
@@ -359,7 +348,6 @@ void SEIWriter::xWriteSEIPictureTiming(const SEIPictureTiming& sei, const SEIBuf
     WRITE_FLAG( sei.m_cpbAltTimingInfoPresentFlag, "cpb_alt_timing_info_present_flag" );
     if( sei.m_cpbAltTimingInfoPresentFlag )
     {
-#if JVET_R0413_HRD_TIMING_INFORMATION
       if (bp.m_bpNalCpbParamsPresentFlag)
       {
         for (int i = (bp.m_sublayerInitialCpbRemovalDelayPresentFlag ? 0 : bp.m_bpMaxSubLayers - 1); i <= bp.m_bpMaxSubLayers - 1; ++i)
@@ -371,13 +359,8 @@ void SEIWriter::xWriteSEIPictureTiming(const SEIPictureTiming& sei, const SEIBuf
             WRITE_CODE(sei.m_nalCpbAltInitialRemovalOffsetDelta[i][j], bp.m_initialCpbRemovalDelayLength,
                        "nal_cpb_alt_initial_cpb_removal_offset_delta[ i ][ j ]");
           }
-#if JVET_R0101_PROPOSAL2
           WRITE_CODE(sei.m_nalCpbDelayOffset[i], bp.m_cpbRemovalDelayLength, "nal_cpb_delay_offset[ i ]");
           WRITE_CODE(sei.m_nalDpbDelayOffset[i], bp.m_dpbOutputDelayLength, "nal_dpb_delay_offset[ i ]");
-#else
-          WRITE_CODE(sei.m_nalCpbDelayOffset[i], bp.m_initialCpbRemovalDelayLength, "nal_cpb_delay_offset[ i ]");
-          WRITE_CODE(sei.m_nalDpbDelayOffset[i], bp.m_initialCpbRemovalDelayLength, "nal_dpb_delay_offset[ i ]");
-#endif
         }
       }
 
@@ -393,30 +376,10 @@ void SEIWriter::xWriteSEIPictureTiming(const SEIPictureTiming& sei, const SEIBuf
             WRITE_CODE(sei.m_vclCpbAltInitialRemovalOffsetDelta[i][j], bp.m_initialCpbRemovalDelayLength,
                        "vcl_cpb_alt_initial_cpb_removal_offset_delta[ i ][ j ]");
           }
-#if JVET_R0101_PROPOSAL2
           WRITE_CODE(sei.m_vclCpbDelayOffset[i], bp.m_cpbRemovalDelayLength, "vcl_cpb_delay_offset[ i ]");
           WRITE_CODE(sei.m_vclDpbDelayOffset[i], bp.m_dpbOutputDelayLength,  "vcl_dpb_delay_offset[ i ]");
-#else
-          WRITE_CODE(sei.m_vclCpbDelayOffset[i], bp.m_initialCpbRemovalDelayLength, "vcl_cpb_delay_offset[ i ]");
-          WRITE_CODE(sei.m_vclDpbDelayOffset[i], bp.m_initialCpbRemovalDelayLength, "vcl_dpb_delay_offset[ i ]");
-#endif
         }
       }
-#else
-      for (int i = (bp.m_sublayerInitialCpbRemovalDelayPresentFlag ? 0 : bp.m_bpMaxSubLayers - 1);
-           i <= bp.m_bpMaxSubLayers - 1; ++i)
-      {
-        for (int j = 0; j < bp.m_bpCpbCnt; j++)
-        {
-          WRITE_CODE(sei.m_cpbAltInitialCpbRemovalDelayDelta[i][j], bp.m_initialCpbRemovalDelayLength,
-                     "cpb_alt_initial_cpb_removal_delay_delta[ i ][ j ]");
-          WRITE_CODE(sei.m_cpbAltInitialCpbRemovalOffsetDelta[i][j], bp.m_initialCpbRemovalDelayLength,
-                     "cpb_alt_initial_cpb_removal_offset_delta[ i ][ j ]");
-        }
-        WRITE_CODE(sei.m_cpbDelayOffset[i], bp.m_initialCpbRemovalDelayLength, "cpb_delay_offset[ i ]");
-        WRITE_CODE(sei.m_dpbDelayOffset[i], bp.m_initialCpbRemovalDelayLength, "dpb_delay_offset[ i ]");
-      }
-#endif
     }
   }
   for( int i = temporalId; i < bp.m_bpMaxSubLayers - 1; i ++ )
@@ -450,10 +413,8 @@ void SEIWriter::xWriteSEIPictureTiming(const SEIPictureTiming& sei, const SEIBuf
   if( bp.m_bpDecodingUnitHrdParamsPresentFlag && bp.m_decodingUnitCpbParamsInPicTimingSeiFlag )
   {
     WRITE_UVLC( sei.m_numDecodingUnitsMinus1, "num_decoding_units_minus1" );
-#if JVET_R0103_DU_SIGNALLING
     if (sei.m_numDecodingUnitsMinus1 > 0)
     {
-#endif
       WRITE_FLAG( sei.m_duCommonCpbRemovalDelayFlag, "du_commmon_cpb_removal_delay_flag" );
       if( sei.m_duCommonCpbRemovalDelayFlag )
       {
@@ -475,9 +436,7 @@ void SEIWriter::xWriteSEIPictureTiming(const SEIPictureTiming& sei, const SEIBuf
           }
         }
       }
-#if JVET_R0103_DU_SIGNALLING
     }
-#endif
   }
   WRITE_UVLC( sei.m_ptDisplayElementalPeriodsMinus1,          "pt_display_elemental_periods_minus1" );
 }
@@ -517,9 +476,7 @@ void SEIWriter::xWriteSEIScalableNesting(OutputBitstream& bs, const SEIScalableN
   CHECK (sei.m_nestedSEIs.size()<1, "There must be at lease one SEI message nested in the scalable nesting SEI.")
 
   WRITE_FLAG(sei.m_snOlsFlag, "sn_ols_flag");
-#if JVET_Q0397_SCAL_NESTING
   WRITE_FLAG(sei.m_snSubpicFlag, "sn_subpic_flag");
-#endif
   if (sei.m_snOlsFlag)
   {
     WRITE_UVLC(sei.m_snNumOlssMinus1, "sn_num_olss_minus1");
@@ -540,7 +497,6 @@ void SEIWriter::xWriteSEIScalableNesting(OutputBitstream& bs, const SEIScalableN
       }
     }
   }
-#if JVET_Q0397_SCAL_NESTING
   if (sei.m_snSubpicFlag)
   {
     WRITE_UVLC( sei.m_snNumSubpics - 1, "sn_num_subpics_minus1");
@@ -551,7 +507,6 @@ void SEIWriter::xWriteSEIScalableNesting(OutputBitstream& bs, const SEIScalableN
       WRITE_CODE(sei.m_snSubpicId[i], sei.m_snSubpicIdLen, "sn_subpic_id[i]");
     }
   }
-#endif
 
   WRITE_UVLC( (uint32_t)sei.m_nestedSEIs.size() - 1, "sn_num_seis_minus1");
 
@@ -607,12 +562,10 @@ void SEIWriter::xWriteSEIFramePacking(const SEIFramePacking& sei)
 }
 
 
-#if JVET_P0359_PARAMETER_SETS_INCLUSION_SEI
 void SEIWriter::xWriteSEIParameterSetsInclusionIndication(const SEIParameterSetsInclusionIndication& sei)
 {
   WRITE_FLAG(sei.m_selfContainedClvsFlag, "self_contained_clvs_flag");
 }
-#endif
 
 void SEIWriter::xWriteSEIMasteringDisplayColourVolume(const SEIMasteringDisplayColourVolume& sei)
 {
@@ -785,9 +738,7 @@ void SEIWriter::xWriteSEISubpictureLevelInfo(const SEISubpicureLevelInfo &sei)
     CHECK(sei.m_numRefLevels != (int)sei.m_refLevelFraction.size(), "SEISubpicureLevelInfo: numRefLevels must be equal to the number of fractions");
   }
   WRITE_CODE( (uint32_t)sei.m_numRefLevels - 1, 3,                            "sli_num_ref_levels_minus1");
-#if JVET_Q0404_CBR_SUBPIC
   WRITE_FLAG(           sei.m_cbrConstraintFlag,                              "sli_cbr_constraint_flag");
-#endif
   WRITE_FLAG(           sei.m_explicitFractionPresentFlag,                    "sli_explicit_fraction_present_flag");
   if (sei.m_explicitFractionPresentFlag)
   {

@@ -96,9 +96,7 @@ EncGOP::EncGOP()
   m_pcListPic           = NULL;
   m_HLSWriter           = NULL;
   m_bSeqFirst           = true;
-#if JVET_R0065
   m_audIrapOrGdrAuFlag  = false;
-#endif
 
   m_bRefreshPending     = 0;
   m_pocCRA              = 0;
@@ -108,16 +106,11 @@ EncGOP::EncGOP()
   ::memset(m_lastBPSEI, 0, sizeof(m_lastBPSEI));
   m_rapWithLeading      = false;
   m_bufferingPeriodSEIPresentInAU = false;
-#if JVET_R0041
   for (int i = 0; i < MAX_VPS_LAYERS; i++)
   {
     m_associatedIRAPType[i] = NAL_UNIT_CODED_SLICE_IDR_N_LP;
   }
   ::memset(m_associatedIRAPPOC, 0, sizeof(m_associatedIRAPPOC));
-#else
-  m_associatedIRAPType  = NAL_UNIT_CODED_SLICE_IDR_N_LP;
-  m_associatedIRAPPOC   = 0;
-#endif
 #if W0038_DB_OPT
   m_pcDeblockingTempPicYuv = NULL;
 #endif
@@ -431,11 +424,7 @@ void EncGOP::xWriteAccessUnitDelimiter (AccessUnit &accessUnit, Slice *slice)
   }
   CHECK( nalu.m_temporalId != accessUnit.temporalId, "TemporalId shall be equal to the TemporalId of the AU containing the NAL unit" );
   int picType = slice->isIntra() ? 0 : (slice->isInterP() ? 1 : 2);
-#if JVET_R0065
   audWriter.codeAUD(nalu.m_Bitstream, m_audIrapOrGdrAuFlag, picType);
-#else
-  audWriter.codeAUD(nalu.m_Bitstream, picType);
-#endif
   accessUnit.push_front(new NALUnitEBSP(nalu));
 }
 
@@ -632,14 +621,12 @@ void EncGOP::xCreateIRAPLeadingSEIMessages (SEIMessages& seiMessages, const SPS 
     seiMessages.push_back(sei);
   }
 
-#if JVET_P0359_PARAMETER_SETS_INCLUSION_SEI
   if (m_pcCfg->getParameterSetsInclusionIndicationSEIEnabled())
   {
     SEIParameterSetsInclusionIndication* sei = new SEIParameterSetsInclusionIndication;
     m_seiEncoder.initSEIParameterSetsInclusionIndication(sei);
     seiMessages.push_back(sei);
   }
-#endif
 
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
   if(m_pcCfg->getSEIAlternativeTransferCharacteristicsSEIEnable())
@@ -765,11 +752,7 @@ void EncGOP::xCreatePerPictureSEIMessages (int picInGOP, SEIMessages& seiMessage
 
 }
 
-#if JVET_Q0397_SCAL_NESTING
 void EncGOP::xCreateScalableNestingSEI(SEIMessages& seiMessages, SEIMessages& nestedSeiMessages, const std::vector<uint16_t>& subpicIDs)
-#else
-void EncGOP::xCreateScalableNestingSEI(SEIMessages& seiMessages, SEIMessages& nestedSeiMessages)
-#endif
 {
   SEIMessages tmpMessages;
   while (!nestedSeiMessages.empty())
@@ -778,11 +761,7 @@ void EncGOP::xCreateScalableNestingSEI(SEIMessages& seiMessages, SEIMessages& ne
     nestedSeiMessages.pop_front();
     tmpMessages.push_back(sei);
     SEIScalableNesting *nestingSEI = new SEIScalableNesting();
-#if JVET_Q0397_SCAL_NESTING
     m_seiEncoder.initSEIScalableNesting(nestingSEI, tmpMessages, subpicIDs);
-#else
-    m_seiEncoder.initSEIScalableNesting(nestingSEI, tmpMessages);
-#endif
     seiMessages.push_back(nestingSEI);
     tmpMessages.clear();
   }
@@ -1031,11 +1010,7 @@ void EncGOP::xCreatePictureTimingSEI  (int IRAPGOPid, SEIMessages& seiMessages, 
     {
       seiMessages.push_back(pictureTimingSEI);
 
-#if JVET_Q0394_TIMING_SEI
       if (m_pcCfg->getScalableNestingSEIEnabled() && !m_pcCfg->getSamePicTimingInAllOLS())
-#else
-      if (m_pcCfg->getScalableNestingSEIEnabled())
-#endif
       {
         SEIPictureTiming *pictureTimingSEIcopy = new SEIPictureTiming();
         pictureTimingSEI->copyTo(*pictureTimingSEIcopy);
@@ -1206,11 +1181,7 @@ validateMinCrRequirements(const ProfileLevelTierFeatures &plt, std::size_t numBy
   //  numBytesInVclNalUnits shall be less than or equal to
   //     FormatCapabilityFactor * MaxLumaSr * framePeriod / MinCr,
   //     ( = FormatCapabilityFactor * MaxLumaSr / (MinCr * frameRate),
-#if JVET_R0245_LEVEL_CODING
   if (plt.getLevelTierFeatures() && plt.getProfileFeatures() && plt.getLevelTierFeatures()->level!=Level::LEVEL15_5)
-#else
-  if (plt.getLevelTierFeatures() && plt.getProfileFeatures() && plt.getLevelTierFeatures()->level!=Level::LEVEL8_5)
-#endif
   {
     const uint32_t formatCapabilityFactorx1000 = plt.getProfileFeatures()->formatCapabilityFactorx1000;
     const uint64_t maxLumaSr = plt.getLevelTierFeatures()->maxLumaSr;
@@ -2121,21 +2092,11 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         || pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_N_LP
         || pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA)  // IRAP picture
       {
-#if JVET_R0041
         m_associatedIRAPType[pcPic->layerId] = pcSlice->getNalUnitType();
         m_associatedIRAPPOC[pcPic->layerId] = pocCurr;
-#else
-        m_associatedIRAPType = pcSlice->getNalUnitType();
-        m_associatedIRAPPOC = pocCurr;
-#endif
       }
-#if JVET_R0041
       pcSlice->setAssociatedIRAPType(m_associatedIRAPType[pcPic->layerId]);
       pcSlice->setAssociatedIRAPPOC(m_associatedIRAPPOC[pcPic->layerId]);
-#else
-      pcSlice->setAssociatedIRAPType(m_associatedIRAPType);
-      pcSlice->setAssociatedIRAPPOC(m_associatedIRAPPOC);
-#endif
     }
 
     pcSlice->decodingRefreshMarking(m_pocCRA, m_bRefreshPending, rcListPic, m_pcCfg->getEfficientFieldIRAPEnabled());
@@ -2169,21 +2130,11 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         || pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_N_LP
         || pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA)  // IRAP picture
       {
-#if JVET_R0041
         m_associatedIRAPType[pcPic->layerId] = pcSlice->getNalUnitType();
         m_associatedIRAPPOC[pcPic->layerId] = pocCurr;
-#else
-        m_associatedIRAPType = pcSlice->getNalUnitType();
-        m_associatedIRAPPOC = pocCurr;
-#endif
       }
-#if JVET_R0041
       pcSlice->setAssociatedIRAPType(m_associatedIRAPType[pcPic->layerId]);
       pcSlice->setAssociatedIRAPPOC(m_associatedIRAPPOC[pcPic->layerId]);
-#else
-      pcSlice->setAssociatedIRAPType(m_associatedIRAPType);
-      pcSlice->setAssociatedIRAPPOC(m_associatedIRAPPOC);
-#endif
     }
 
     pcSlice->setEnableDRAPSEI(m_pcEncLib->getDependentRAPIndicationSEIEnabled());
@@ -2313,7 +2264,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     //  Set reference list
     pcSlice->constructRefPicList(rcListPic);
 
-#if JVET_R0058
     // store sub-picture numbers, sizes, and locations with a picture
     pcSlice->getPic()->numSubpics = pcPic->cs->pps->getNumSubPics();
     pcSlice->getPic()->subpicWidthInCTUs.clear();
@@ -2334,7 +2284,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     {
       CU::checkConformanceILRP(pcSlice);
     }
-#endif
 
     xPicInitHashME( pcPic, pcSlice->getPPS(), rcListPic );
 
@@ -2751,14 +2700,12 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
     // now compress (trial encode) the various slice segments (slices, and dependent slices)
     {
       DTRACE_UPDATE( g_trace_ctx, ( std::make_pair( "poc", pocCurr ) ) );
-#if JVET_R0110_MIXED_LOSSLESS
       const std::vector<uint16_t> sliceLosslessArray = *(m_pcCfg->getSliceLosslessArray());
       bool mixedLossyLossless = m_pcCfg->getMixedLossyLossless();
       if (m_pcCfg->getCostMode() == COST_LOSSLESS_CODING)
       {
         pcPic->fillSliceLossyLosslessArray(sliceLosslessArray, mixedLossyLossless);
       }
-#endif
 
       for(uint32_t sliceIdx = 0; sliceIdx < pcPic->cs->pps->getNumSlicesInPic(); sliceIdx++ )
       {
@@ -2802,16 +2749,13 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
           }
         }
 
-#if JVET_R0110_MIXED_LOSSLESS
         bool isLossless = false;
         if (m_pcCfg->getCostMode() == COST_LOSSLESS_CODING)
         {
           isLossless = pcPic->losslessSlice(sliceIdx);
         }
         m_pcSliceEncoder->setLosslessSlice(pcPic, isLossless);
-#endif
 
-#if JVET_R0058
         if (pcSlice->getSliceType() != I_SLICE && pcSlice->getRefPic(REF_PIC_LIST_0, 0)->numSubpics > 1)
         {
           clipMv = clipMvInSubpic;
@@ -2822,7 +2766,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
           clipMv = clipMvInPic;
           m_pcEncLib->getInterSearch()->setClipMvInSubPic(false);
         }
-#endif
 
         m_pcSliceEncoder->precompressSlice( pcPic );
         m_pcSliceEncoder->compressSlice   ( pcPic, false, false );
@@ -2918,7 +2861,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         }
   #endif
       }
-#if JVET_R0110_MIXED_LOSSLESS
       if (m_pcCfg->getCostMode() == COST_LOSSLESS_CODING) 
       {
         for (int s = 0; s < uiNumSliceSegments; s++)
@@ -2929,7 +2871,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
           }
         }
       }
-#endif
       m_pcLoopFilter->loopFilterPic( cs );
 
       CS::setRefinedMotionField(cs);
@@ -2948,7 +2889,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         for (int s = 0; s < uiNumSliceSegments; s++)
         {
 
-#if  JVET_R0110_MIXED_LOSSLESS
           if (pcPic->slices[s]->isLossless() && m_pcCfg->getCostMode() == COST_LOSSLESS_CODING)
           {
             pcPic->slices[s]->setSaoEnabledFlag(CHANNEL_TYPE_LUMA, false);
@@ -2956,14 +2896,11 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
           }
           else
           {
-#endif          
             pcPic->slices[s]->setSaoEnabledFlag(CHANNEL_TYPE_LUMA, sliceEnabled[COMPONENT_Y]);
             CHECK(!(sliceEnabled[COMPONENT_Cb] == sliceEnabled[COMPONENT_Cr]), "Unspecified error");
             pcPic->slices[s]->setSaoEnabledFlag(CHANNEL_TYPE_CHROMA, sliceEnabled[COMPONENT_Cb]);
 
-#if  JVET_R0110_MIXED_LOSSLESS
         }
-#endif
 
         }
       }
@@ -2982,9 +2919,7 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 #if ENABLE_QPA
           , (m_pcCfg->getUsePerceptQPA() && !m_pcCfg->getUseRateCtrl() && pcSlice->getPPS()->getUseDQP() ? m_pcEncLib->getRdCost(PARL_PARAM0(0))->getChromaWeight() : 0.0)
 #endif
-#if JVET_R0110_MIXED_LOSSLESS
           , pcPic, uiNumSliceSegments
-#endif
         );
 
         pcSlice->m_ccAlfFilterParam      = m_pcALF->getCcAlfFilterParam();
@@ -2993,7 +2928,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         //assign ALF slice header
         for (int s = 0; s < uiNumSliceSegments; s++)
         {
-#if JVET_R0110_MIXED_LOSSLESS
            //For the first slice, even if it is lossless, slice level ALF is not disabled and ALF-APS is signaled so that the later lossy slices can use APS of the first slice. 
            //However, if the first slice is lossless, the ALF process is disabled for all of the CTUs ( m_ctuEnableFlag == 0) of that slice which is implemented in the function void EncAdaptiveLoopFilter::ALFProcess.         
       
@@ -3005,14 +2939,11 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
           }
           else
           {
-#endif          
             pcPic->slices[s]->setTileGroupAlfEnabledFlag(COMPONENT_Y, cs.slice->getTileGroupAlfEnabledFlag(COMPONENT_Y));
             pcPic->slices[s]->setTileGroupAlfEnabledFlag(COMPONENT_Cb, cs.slice->getTileGroupAlfEnabledFlag(COMPONENT_Cb));
             pcPic->slices[s]->setTileGroupAlfEnabledFlag(COMPONENT_Cr, cs.slice->getTileGroupAlfEnabledFlag(COMPONENT_Cr));
 
-#if JVET_R0110_MIXED_LOSSLESS
           }
-#endif
           if (pcPic->slices[s]->getTileGroupAlfEnabledFlag(COMPONENT_Y))
           {
             pcPic->slices[s]->setTileGroupNumAps(cs.slice->getTileGroupNumAps());
@@ -3161,14 +3092,12 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
       int layerIdx = m_pcEncLib->getVPS() == nullptr ? 0 : m_pcEncLib->getVPS()->getGeneralLayerIdx( m_pcEncLib->getLayerId() );
 
-#if JVET_R0065
       // it is assumed that layerIdx equal to 0 is always present
       m_audIrapOrGdrAuFlag = pcSlice->getPicHeader()->getGdrPicFlag() || (pcSlice->isIRAP() && !pcSlice->getPPS()->getMixedNaluTypesInPicFlag());
       if ((( m_pcEncLib->getVPS()->getMaxLayers() > 1 && m_audIrapOrGdrAuFlag) || m_pcCfg->getAccessUnitDelimiter()) && !layerIdx )
       {
         xWriteAccessUnitDelimiter(accessUnit, pcSlice);
       }
-#endif
 
       // it is assumed that layerIdx equal to 0 is always present
       actualTotalBits += xWriteParameterSets(accessUnit, pcSlice, writePS, layerIdx);
@@ -3181,13 +3110,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         m_bSeqFirst = false;
       }
 
-#if !JVET_R0065
-      // it is assumed that layerIdx equal to 0 is always present
-      if( m_pcCfg->getAccessUnitDelimiter() && !layerIdx )
-      {
-        xWriteAccessUnitDelimiter(accessUnit, pcSlice);
-      }
-#endif
 
       //send LMCS APS when LMCSModel is updated. It can be updated even current slice does not enable reshaper.
       //For example, in RA, update is on intra slice, but intra slice may not use reshaper
@@ -3370,12 +3292,10 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
           {
             pcSlice->setPictureHeaderInSliceHeader(true);
           }
-#if JVET_R0118_PH_IN_SH_CONSTRAINT_FLAG
           if (pcSlice->getSPS()->getProfileTierLevel()->getConstraintInfo()->getPicHeaderInSliceHeaderConstraintFlag())
           {
             CHECK(pcSlice->getPictureHeaderInSliceHeader() == false, "PH shall be present in SH, when pic_header_in_slice_header_constraint_flag is equal to 1");
           }
-#endif
         }
         pcSlice->setPicHeader( pcPic->cs->picHeader );
 	pcSlice->setNalUnitLayerId( m_pcEncLib->getLayerId() );
@@ -3520,7 +3440,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
 
       if (m_pcCfg->getScalableNestingSEIEnabled())
       {
-#if JVET_Q0397_SCAL_NESTING
         const SPS* sps = pcSlice->getSPS();
         const PPS* pps = pcSlice->getPPS();
 
@@ -3549,9 +3468,6 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
           }
         }
         xCreateScalableNestingSEI(leadingSeiMessages, nestedSeiMessages, subpicIDs);
-#else
-        xCreateScalableNestingSEI(leadingSeiMessages, nestedSeiMessages);
-#endif
       }
 
       xWriteLeadingSEIMessages( leadingSeiMessages, duInfoSeiMessages, accessUnit, pcSlice->getTLayer(), pcSlice->getSPS(), duData );
@@ -4134,11 +4050,7 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
 
   PelStorage upscaledRec;
 
-#if JVET_R0058
   if (m_pcEncLib->isResChangeInClvsEnabled())
-#else
-  if (m_pcEncLib->isRPREnabled())
-#endif
   {
     const CPelBuf& upscaledOrg = sps.getUseLmcs() ? pcPic->M_BUFS( 0, PIC_TRUE_ORIGINAL_INPUT).get( COMPONENT_Y ) : pcPic->M_BUFS( 0, PIC_ORIGINAL_INPUT).get( COMPONENT_Y );
     upscaledRec.create( pic.chromaFormat, Area( Position(), upscaledOrg ) );
@@ -4166,11 +4078,7 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
 
     // when RPR is enabled, picture padding is picture specific due to possible different picture resoluitons, however only full resolution padding is stored in EncLib
     // get per picture padding from the conformance window, in this case if conformance window is set not equal to the padding then PSNR results may be inaccurate
-#if JVET_R0058
     if (m_pcEncLib->isResChangeInClvsEnabled())
-#else
-    if (m_pcEncLib->isRPREnabled())
-#endif
     {
       Window& conf = pcPic->getConformanceWindow();
       padX = conf.getWindowRightOffset() * SPS::getWinUnitX( format );
@@ -4203,11 +4111,7 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
     }
 #endif
 
-#if JVET_R0058
     if (m_pcEncLib->isResChangeInClvsEnabled())
-#else
-    if (m_pcEncLib->isRPREnabled())
-#endif
     {
       const CPelBuf& upscaledOrg = sps.getUseLmcs() ? pcPic->M_BUFS( 0, PIC_TRUE_ORIGINAL_INPUT ).get( compID ) : pcPic->M_BUFS( 0, PIC_ORIGINAL_INPUT ).get( compID );
 
@@ -4484,11 +4388,7 @@ void EncGOP::xCalculateAddPSNR(Picture* pcPic, PelUnitBuf cPicD, const AccessUni
       }
       msg( NOTICE, "]" );
     }
-#if JVET_R0058
     if (m_pcEncLib->isResChangeInClvsEnabled())
-#else
-    if (m_pcEncLib->isRPREnabled())
-#endif
     {
       msg( NOTICE, "\nPSNR2: [Y %6.4lf dB    U %6.4lf dB    V %6.4lf dB]", upscaledPSNR[COMPONENT_Y], upscaledPSNR[COMPONENT_Cb], upscaledPSNR[COMPONENT_Cr] );
     }
@@ -4979,11 +4879,7 @@ void EncGOP::updateCompositeReference(Slice* pcSlice, PicList& rcListPic, int po
   // Update background reference
   if (pcSlice->isIRAP())//(pocCurr == 0)
   {
-#if JVET_Q0764_WRAP_AROUND_WITH_RPR  
     curPic->extendPicBorder( pcSlice->getPPS() );
-#else
-    curPic->extendPicBorder();
-#endif
     curPic->setBorderExtension(true);
 
     m_picBg->getRecoBuf().copyFrom(curPic->getRecoBuf());
@@ -5022,27 +4918,15 @@ void EncGOP::updateCompositeReference(Slice* pcSlice, PicList& rcListPic, int po
       }
     }
     m_picBg->setBorderExtension(false);
-#if JVET_Q0764_WRAP_AROUND_WITH_RPR  
     m_picBg->extendPicBorder( pcSlice->getPPS() );
-#else
-    m_picBg->extendPicBorder();
-#endif
     m_picBg->setBorderExtension(true);
 
-#if JVET_Q0764_WRAP_AROUND_WITH_RPR  
     curPic->extendPicBorder( pcSlice->getPPS() );
-#else
-    curPic->extendPicBorder();
-#endif
     curPic->setBorderExtension(true);
     m_picOrig->getOrigBuf().copyFrom(curPic->getOrigBuf());
 
     m_picBg->setBorderExtension(false);
-#if JVET_Q0764_WRAP_AROUND_WITH_RPR  
     m_picBg->extendPicBorder( pcSlice->getPPS() );
-#else
-    m_picBg->extendPicBorder();
-#endif
     m_picBg->setBorderExtension(true);
   }
 }
@@ -5322,7 +5206,6 @@ void EncGOP::applyDeblockingFilterParameterSelection( Picture* pcPic, const uint
 }
 #endif
 
-#if JVET_Q0398_SUBLAYER_DEP
 bool EncGOP::xCheckMaxTidILRefPics(Picture* refPic, bool currentPicIsIRAP)
 {
   const int maxTidILRefPicsPlus1 = m_pcCfg->getVPSParameters().m_maxTidILRefPicsPlus1;
@@ -5342,7 +5225,6 @@ bool EncGOP::xCheckMaxTidILRefPics(Picture* refPic, bool currentPicIsIRAP)
   // all other cases filter by temporalID
   return ( refPic->temporalId < maxTidILRefPicsPlus1 );
 }
-#endif
 
 void EncGOP::xCreateExplicitReferencePictureSetFromReference( Slice* slice, PicList& rcListPic, const ReferencePictureList *rpl0, const ReferencePictureList *rpl1 )
 {
@@ -5352,10 +5234,8 @@ void EncGOP::xCreateExplicitReferencePictureSetFromReference( Slice* slice, PicL
   Picture* pic = slice->getPic();
   const VPS* vps = slice->getPic()->cs->vps;
   int layerIdx = vps == nullptr ? 0 : vps->getGeneralLayerIdx( pic->layerId );
-#if JVET_R0058
   bool isIntraLayerPredAllowed = vps->getIndependentLayerFlag(layerIdx) || (vps->getPredDirection(slice->getTLayer()) != 1);
   bool isInterLayerPredAllowed = !vps->getIndependentLayerFlag(layerIdx) && (vps->getPredDirection(slice->getTLayer()) != 2);
-#endif
   ReferencePictureList* pLocalRPL0 = slice->getLocalRPL0();
   *pLocalRPL0 = ReferencePictureList( slice->getSPS()->getInterLayerPresentFlag() );
 
@@ -5365,10 +5245,8 @@ void EncGOP::xCreateExplicitReferencePictureSetFromReference( Slice* slice, PicL
   uint32_t numOfRefPic = rpl0->getNumberOfShorttermPictures() + rpl0->getNumberOfLongtermPictures();
   uint32_t refPicIdxL0 = 0;
 
-#if JVET_R0058
   if (isIntraLayerPredAllowed)
   {
-#endif
     for (int ii = 0; ii < numOfRefPic; ii++)
     {
       // loop through all pictures in the reference picture buffer
@@ -5404,16 +5282,10 @@ void EncGOP::xCreateExplicitReferencePictureSetFromReference( Slice* slice, PicL
         isAvailable = false;
       }
     }
-#if JVET_R0058
   }
-#endif
 
   // inter-layer reference pictures are added to the end of the reference picture list
-#if JVET_R0058
   if (layerIdx && vps && !vps->getAllIndependentLayersFlag() && isInterLayerPredAllowed)
-#else
-  if( layerIdx && vps && !vps->getAllIndependentLayersFlag() )
-#endif
   {
     numOfRefPic = rpl0->getNumberOfInterLayerPictures() ? rpl0->getNumberOfInterLayerPictures() : m_pcEncLib->getNumRefLayers( layerIdx );
 
@@ -5426,12 +5298,8 @@ void EncGOP::xCreateExplicitReferencePictureSetFromReference( Slice* slice, PicL
       {
         rpcPic = *( iterPic++ );
         int refLayerIdx = vps->getGeneralLayerIdx( rpcPic->layerId );
-#if JVET_Q0398_SUBLAYER_DEP
         if (rpcPic->referenced && rpcPic->getPOC() == pic->getPOC() && vps->getDirectRefLayerFlag(layerIdx, refLayerIdx)
             && xCheckMaxTidILRefPics(rpcPic, slice->isIRAP()) )
-#else
-        if (rpcPic->referenced && rpcPic->getPOC() == pic->getPOC() && vps->getDirectRefLayerFlag(layerIdx, refLayerIdx))
-#endif
         {
           pLocalRPL0->setRefPicIdentifier( refPicIdxL0, 0, true, true, vps->getInterLayerRefIdc( layerIdx, refLayerIdx ) );
           refPicIdxL0++;
@@ -5476,10 +5344,8 @@ void EncGOP::xCreateExplicitReferencePictureSetFromReference( Slice* slice, PicL
   numOfRefPic = rpl1->getNumberOfShorttermPictures() + rpl1->getNumberOfLongtermPictures();
   uint32_t refPicIdxL1 = 0;
 
-#if JVET_R0058
   if (isIntraLayerPredAllowed)
   {
-#endif
     for (int ii = 0; ii < numOfRefPic; ii++)
     {
       // loop through all pictures in the reference picture buffer
@@ -5513,17 +5379,11 @@ void EncGOP::xCreateExplicitReferencePictureSetFromReference( Slice* slice, PicL
         isAvailable = false;
       }
     }
-#if JVET_R0058
   }
-#endif
 
 
   // inter-layer reference pictures are added to the end of the reference picture list
-#if JVET_R0058
   if (layerIdx && vps && !vps->getAllIndependentLayersFlag() && isInterLayerPredAllowed)
-#else
-  if( layerIdx && vps && !vps->getAllIndependentLayersFlag() )
-#endif
   {
     numOfRefPic = rpl1->getNumberOfInterLayerPictures() ? rpl1->getNumberOfInterLayerPictures() : m_pcEncLib->getNumRefLayers( layerIdx );
 
@@ -5536,12 +5396,8 @@ void EncGOP::xCreateExplicitReferencePictureSetFromReference( Slice* slice, PicL
       {
         rpcPic = *( iterPic++ );
         int refLayerIdx = vps->getGeneralLayerIdx( rpcPic->layerId );
-#if JVET_Q0398_SUBLAYER_DEP
         if (rpcPic->referenced && rpcPic->getPOC() == pic->getPOC() && vps->getDirectRefLayerFlag(layerIdx, refLayerIdx)
             && xCheckMaxTidILRefPics( rpcPic, slice->isIRAP() ) )
-#else
-        if (rpcPic->referenced && rpcPic->getPOC() == pic->getPOC() && vps->getDirectRefLayerFlag(layerIdx, refLayerIdx))
-#endif
         {
           pLocalRPL1->setRefPicIdentifier( refPicIdxL1, 0, true, true, vps->getInterLayerRefIdc( layerIdx, refLayerIdx ) );
           refPicIdxL1++;
@@ -5596,11 +5452,7 @@ void EncGOP::xCreateExplicitReferencePictureSetFromReference( Slice* slice, PicL
   int numPics = numOfLTRPL0 + numOfSTRPL0;
 
   pLocalRPL0->setNumberOfActivePictures( ( numPics < rpl0->getNumberOfActivePictures() ? numPics : rpl0->getNumberOfActivePictures() ) + numOfILRPL0 );
-#if JVET_R0059_RPL_CLEANUP
   pLocalRPL0->setLtrpInSliceHeaderFlag( 1 );
-#else
-  pLocalRPL0->setLtrpInSliceHeaderFlag( rpl0->getLtrpInSliceHeaderFlag() );
-#endif
   slice->setRPL0idx( -1 );
   slice->setRPL0( pLocalRPL0 );
 
@@ -5644,11 +5496,7 @@ void EncGOP::xCreateExplicitReferencePictureSetFromReference( Slice* slice, PicL
   numPics = numOfLTRPL1 + numOfSTRPL1;
 
   pLocalRPL1->setNumberOfActivePictures( ( isDisallowMixedRefPic ? numPics : ( numPics < rpl1->getNumberOfActivePictures() ? numPics : rpl1->getNumberOfActivePictures() ) ) + numOfILRPL1 );
-#if JVET_R0059_RPL_CLEANUP
   pLocalRPL1->setLtrpInSliceHeaderFlag( 1 );
-#else
-  pLocalRPL1->setLtrpInSliceHeaderFlag( rpl1->getLtrpInSliceHeaderFlag() );
-#endif
   slice->setRPL1idx( -1 );
   slice->setRPL1( pLocalRPL1 );
 }

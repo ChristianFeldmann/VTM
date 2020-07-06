@@ -44,7 +44,6 @@
 
 namespace EncCfgParam {
 
-#if JVET_Q0398_SUBLAYER_DEP
 class CfgVPSParameters
 {
 public:
@@ -56,7 +55,6 @@ public:
 
   int m_maxTidILRefPicsPlus1;
 };
-#endif
 
 class CfgSEISubpictureLevel
 {

@@ -175,15 +175,12 @@ protected:
   bool      m_printSequenceMSE;
   bool      m_cabacZeroWordPaddingEnabled;
 
-#if STILL_PICTURE_PROFILES
   bool      m_onePictureOnlyConstraintFlag;
-#endif
   bool      m_bIntraOnlyConstraintFlag;
   uint32_t  m_maxBitDepthConstraintIdc;
   uint32_t  m_maxChromaFormatConstraintIdc;
   bool      m_bFrameConstraintFlag;
 
-#if JVET_R0286_GCI_CLEANUP
   bool      m_singleLayerConstraintFlag;
   bool      m_allLayersIndependentConstraintFlag;
   bool      m_noMrlConstraintFlag;
@@ -196,7 +193,6 @@ protected:
   bool      m_noPaletteConstraintFlag;
   bool      m_noActConstraintFlag;
   bool      m_noLmcsConstraintFlag;
-#endif
 
   bool      m_bNoQtbttDualTreeIntraConstraintFlag;
   bool      m_noPartitionConstraintsOverrideConstraintFlag;
@@ -216,9 +212,6 @@ protected:
   bool      m_bNoBcwConstraintFlag;
   bool      m_noIbcConstraintFlag;
   bool      m_bNoCiipConstraintFlag;
-#if !JVET_R0214_MMVD_SYNTAX_MODIFICATION
-  bool      m_noFPelMmvdConstraintFlag;
-#endif
   bool      m_noGeoConstraintFlag;
   bool      m_bNoLadfConstraintFlag;
   bool      m_noTransformSkipConstraintFlag;
@@ -242,17 +235,11 @@ protected:
   Level::Name   m_level;
   std::vector<uint32_t>      m_subProfile;
   uint8_t       m_numSubProfile;
-#if !JVET_R0090_VUI
-  bool m_progressiveSourceFlag;
-  bool m_interlacedSourceFlag;
-#endif
   bool m_nonPackedConstraintFlag;
   bool m_nonProjectedConstraintFlag;
   bool m_noResChangeInClvsConstraintFlag;
   bool m_oneTilePerPicConstraintFlag;
-#if JVET_R0118_PH_IN_SH_CONSTRAINT_FLAG
   bool m_picHeaderInSliceHeaderConstraintFlag;
-#endif
   bool m_oneSlicePerPicConstraintFlag;
   bool m_oneSubpicPerPicConstraintFlag;
   bool m_frameOnlyConstraintFlag;
@@ -498,10 +485,8 @@ protected:
   bool      m_bUseBLambdaForNonKeyLowDelayPictures;
   bool      m_gopBasedTemporalFilterEnabled;
   bool      m_noPicPartitionFlag;                             ///< no picture partitioning flag (single tile, single slice)
-#if JVET_R0110_MIXED_LOSSLESS
   bool      m_mixedLossyLossless;                             ///< enable mixed lossy/lossless coding
   std::vector<uint16_t> m_sliceLosslessArray;                      ///< Slice lossless array
-#endif
   std::vector<uint32_t> m_tileColumnWidth;                    ///< tile column widths in units of CTUs (last column width will be repeated uniformly to cover any remaining picture width)
   std::vector<uint32_t> m_tileRowHeight;                      ///< tile row heights in units of CTUs (last row height will be repeated uniformly to cover any remaining picture height)
   bool      m_rectSliceFlag;                                  ///< indicates if using rectangular or raster-scan slices
@@ -516,11 +501,7 @@ protected:
   //====== Sub-picture and Slices ========
   bool      m_singleSlicePerSubPicFlag;
   bool      m_entropyCodingSyncEnabledFlag;
-#if JVET_R0165_OPTIONAL_ENTRY_POINT
   bool      m_entryPointPresentFlag;                           ///< flag for the presence of entry points
-#else
-  bool      m_entropyCodingSyncEntryPointPresentFlag;          ///< flag for the presence of entry points for WPP
-#endif
 
   HashType  m_decodedPictureHashSEIType;
   bool      m_bufferingPeriodSEIEnabled;
@@ -532,10 +513,8 @@ protected:
   int       m_framePackingSEIId;
   int       m_framePackingSEIQuincunx;
   int       m_framePackingSEIInterpretation;
-#if JVET_P0359_PARAMETER_SETS_INCLUSION_SEI
   bool      m_parameterSetsInclusionIndicationSEIEnabled;
   bool      m_selfContainedClvsFlag;
-#endif
   bool      m_bpDeltasGOPStructure;
   bool      m_decodingUnitInfoSEIEnabled;
 
@@ -659,10 +638,8 @@ protected:
   uint32_t      m_maxNumIBCMergeCand;                 ///< Max number of IBC merge candidates
   ScalingListMode m_useScalingListId;             ///< Using quantization matrix i.e. 0=off, 1=default, 2=file.
   std::string m_scalingListFileName;              ///< quantization matrix file name
-#if JVET_R0380_SCALING_MATRIX_DISABLE_YCC_OR_RGB
   bool      m_disableScalingMatrixForAlternativeColourSpace;
   bool      m_scalingMatrixDesignatedColourSpace;
-#endif
   bool      m_sliceLevelRpl;                      ///< code reference picture lists in slice headers rather than picture header
   bool      m_sliceLevelDblk;                     ///< code deblocking filter parameters in slice headers rather than picture header
   bool      m_sliceLevelSao;                      ///< code SAO parameters in slice headers rather than picture header
@@ -694,9 +671,7 @@ protected:
   double    m_RCInitialCpbFullness;
 #endif
   CostMode  m_costMode;                                       ///< The cost function to use, primarily when considering lossless coding.
-#if JVET_R0143_TSRCdisableLL
   bool      m_TSRCdisableLL;                                  ///< Disable TSRC for lossless
-#endif
 
   DCI       m_dci;
   bool      m_DCIEnabled;                                     ///< enable Decoding Capability Information (DCI)
@@ -704,9 +679,7 @@ protected:
   bool      m_recalculateQPAccordingToLambda;                 ///< recalculate QP value according to the lambda value
   bool      m_hrdParametersPresentFlag;                       ///< enable generation of HRD parameters
   bool      m_vuiParametersPresentFlag;                       ///< enable generation of VUI parameters
-#if JVET_Q0394_TIMING_SEI
   bool      m_samePicTimingInAllOLS;                          ///< same picture timing SEI message is used in all OLS
-#endif
   bool      m_aspectRatioInfoPresentFlag;                     ///< Signals whether aspect_ratio_idc is present
   int       m_aspectRatioIdc;                                 ///< aspect_ratio_idc
   int       m_sarWidth;                                       ///< horizontal size of the sample aspect ratio
@@ -715,10 +688,8 @@ protected:
   int       m_colourPrimaries;                                ///< Indicates chromaticity coordinates of the source primaries
   int       m_transferCharacteristics;                        ///< Indicates the opto-electronic transfer characteristics of the source
   int       m_matrixCoefficients;                             ///< Describes the matrix coefficients used in deriving luma and chroma from RGB primaries
-#if JVET_R0090_VUI
   bool      m_progressiveSourceFlag;                          ///< Indicates if the content is progressive
   bool      m_interlacedSourceFlag;                           ///< Indicates if the content is interlaced
-#endif
   bool      m_chromaLocInfoPresentFlag;                       ///< Signals whether chroma_sample_loc_type_top_field and chroma_sample_loc_type_bottom_field are present
   int       m_chromaSampleLocTypeTopField;                    ///< Specifies the location of chroma samples for top field
   int       m_chromaSampleLocTypeBottomField;                 ///< Specifies the location of chroma samples for bottom field
@@ -744,9 +715,7 @@ protected:
   int         m_debugCTU;                                     ///< dbg ctu
   bool        m_bs2ModPOCAndType;
 
-#if JVET_Q0398_SUBLAYER_DEP
   CfgVPSParameters m_cfgVPSParameters;
-#endif
 
 #if ENABLE_SPLIT_PARALLELISM
   int         m_numSplitThreads;
@@ -772,11 +741,7 @@ protected:
 #endif
   double      m_scalingRatioHor;
   double      m_scalingRatioVer;
-#if JVET_R0058
   bool        m_resChangeInClvsEnabled;
-#else
-  bool        m_rprEnabled;
-#endif
   int         m_switchPocPeriod;
   int         m_upscaledOutput;
   int         m_numRefLayers[MAX_VPS_LAYERS];
@@ -795,10 +760,8 @@ public:
   void setNumSubProfile( uint8_t numSubProfile) { m_numSubProfile = numSubProfile; m_subProfile.resize(m_numSubProfile); }
   void setSubProfile( int i, uint32_t subProfile) { m_subProfile[i] = subProfile; }
 
-#if STILL_PICTURE_PROFILES
   bool      getOnePictureOnlyConstraintFlag() const                        { return m_onePictureOnlyConstraintFlag; }
   void      setOnePictureOnlyConstraintFlag(bool b)                        { m_onePictureOnlyConstraintFlag=b; }
-#endif
 
   bool      getIntraOnlyConstraintFlag() const { return m_bIntraOnlyConstraintFlag; }
   void      setIntraOnlyConstraintFlag(bool bVal) { m_bIntraOnlyConstraintFlag = bVal; }
@@ -809,7 +772,6 @@ public:
   bool      getFrameConstraintFlag() const { return m_bFrameConstraintFlag; }
   void      setFrameConstraintFlag(bool bVal) { m_bFrameConstraintFlag = bVal; }
 
-#if JVET_R0286_GCI_CLEANUP
   bool          getSingleLayerConstraintFlag() const { return m_singleLayerConstraintFlag; }
   void          setSingleLayerConstraintFlag(bool bVal) { m_singleLayerConstraintFlag = bVal; }
   bool          getAllLayersIndependentConstraintFlag() const { return m_allLayersIndependentConstraintFlag; }
@@ -834,7 +796,6 @@ public:
   void          setNoActConstraintFlag(bool bVal) { m_noActConstraintFlag = bVal; }
   bool          getNoLmcsConstraintFlag() const { return m_noLmcsConstraintFlag; }
   void          setNoLmcsConstraintFlag(bool bVal) { m_noLmcsConstraintFlag = bVal; }
-#endif
 
   bool      getNoQtbttDualTreeIntraConstraintFlag() const { return m_bNoQtbttDualTreeIntraConstraintFlag; }
   void      setNoQtbttDualTreeIntraConstraintFlag(bool bVal) { m_bNoQtbttDualTreeIntraConstraintFlag = bVal; }
@@ -872,10 +833,6 @@ public:
   void      setNoIbcConstraintFlag(bool bVal) { m_noIbcConstraintFlag = bVal; }
   bool      getNoCiipConstraintFlag() const { return m_bNoCiipConstraintFlag; }
   void      setNoCiipConstraintFlag(bool bVal) { m_bNoCiipConstraintFlag = bVal; }
-#if !JVET_R0214_MMVD_SYNTAX_MODIFICATION
-  bool      getNoFPelMmvdConstraintFlag() const { return m_noFPelMmvdConstraintFlag; }
-  void      setNoFPelMmvdConstraintFlag(bool bVal) { m_noFPelMmvdConstraintFlag = bVal; }
-#endif
   bool      getNoGeoConstraintFlag() const { return m_noGeoConstraintFlag; }
   void      setNoGeoConstraintFlag(bool bVal) { m_noGeoConstraintFlag = bVal; }
   bool      getNoLadfConstraintFlag() const { return m_bNoLadfConstraintFlag; }
@@ -1439,12 +1396,10 @@ public:
   const int* getdQPs                        () const { return m_aidQP;       }
   uint32_t      getDeltaQpRD                    () const { return m_uiDeltaQpRD; }
   bool      getFastDeltaQp                  () const { return m_bFastDeltaQP; }
-#if JVET_R0110_MIXED_LOSSLESS
   void      setMixedLossyLossless(bool b) { m_mixedLossyLossless = b; }
   bool      getMixedLossyLossless()       { return m_mixedLossyLossless; }
   void      setSliceLosslessArray(std::vector<uint16_t> sliceLosslessArray) { m_sliceLosslessArray = sliceLosslessArray; }
   const     std::vector<uint16_t>*   getSliceLosslessArray() const { return &m_sliceLosslessArray; }
-#endif
   //====== Tiles and Slices ========
   void      setNoPicPartitionFlag( bool b )                                { m_noPicPartitionFlag = b;              }
   bool      getNoPicPartitionFlag()                                        { return m_noPicPartitionFlag;           }
@@ -1487,11 +1442,7 @@ public:
   bool  getSaoGreedyMergeEnc           ()                            { return m_saoGreedyMergeEnc; }
   void  setEntropyCodingSyncEnabledFlag(bool b)                      { m_entropyCodingSyncEnabledFlag = b; }
   bool  getEntropyCodingSyncEnabledFlag() const                      { return m_entropyCodingSyncEnabledFlag; }
-#if JVET_R0165_OPTIONAL_ENTRY_POINT
   void  setEntryPointPresentFlag(bool b)                             { m_entryPointPresentFlag = b; }
-#else
-  void  setEntropyCodingSyncEntryPointPresentFlag(bool b)            { m_entropyCodingSyncEntryPointPresentFlag = b; }
-#endif
   void  setDecodedPictureHashSEIType(HashType m)                     { m_decodedPictureHashSEIType = m; }
   HashType getDecodedPictureHashSEIType() const                      { return m_decodedPictureHashSEIType; }
   void  setBufferingPeriodSEIEnabled(bool b)                         { m_bufferingPeriodSEIEnabled = b; }
@@ -1512,12 +1463,10 @@ public:
   int   getFramePackingArrangementSEIQuincunx()                      { return m_framePackingSEIQuincunx; }
   void  setFramePackingArrangementSEIInterpretation(int b)           { m_framePackingSEIInterpretation = b; }
   int   getFramePackingArrangementSEIInterpretation()                { return m_framePackingSEIInterpretation; }
-#if JVET_P0359_PARAMETER_SETS_INCLUSION_SEI
   void  setParameterSetsInclusionIndicationSEIEnabled(bool b)        { m_parameterSetsInclusionIndicationSEIEnabled = b; }
   bool  getParameterSetsInclusionIndicationSEIEnabled() const        { return m_parameterSetsInclusionIndicationSEIEnabled; }
   void  setSelfContainedClvsFlag(bool b)                             { m_selfContainedClvsFlag = b; }
   int   getSelfContainedClvsFlag()                                   { return m_selfContainedClvsFlag; }
-#endif
   void  setBpDeltasGOPStructure(bool b)                              { m_bpDeltasGOPStructure = b;    }
   bool  getBpDeltasGOPStructure() const                              { return m_bpDeltasGOPStructure; }
   void  setDecodingUnitInfoSEIEnabled(bool b)                        { m_decodingUnitInfoSEIEnabled = b;    }
@@ -1751,12 +1700,10 @@ public:
   ScalingListMode getUseScalingListId    ()                          { return m_useScalingListId;      }
   void         setScalingListFileName       ( const std::string &s ) { m_scalingListFileName = s;      }
   const std::string& getScalingListFileName () const                 { return m_scalingListFileName;   }
-#if JVET_R0380_SCALING_MATRIX_DISABLE_YCC_OR_RGB
   void         setDisableScalingMatrixForAlternativeColourSpace(bool b) { m_disableScalingMatrixForAlternativeColourSpace = b; }
   bool         getDisableScalingMatrixForAlternativeColourSpace()    { return m_disableScalingMatrixForAlternativeColourSpace; }
   void         setScalingMatrixDesignatedColourSpace (bool b)        { m_scalingMatrixDesignatedColourSpace = b; }
   bool         getScalingMatrixDesignatedColourSpace ()              { return m_scalingMatrixDesignatedColourSpace; }
-#endif
   void         setSliceLevelRpl  ( bool b )                          { m_sliceLevelRpl = b;     }
   bool         getSliceLevelRpl  ()                                  { return m_sliceLevelRpl;  }
   void         setSliceLevelDblk ( bool b )                          { m_sliceLevelDblk = b;    }
@@ -1803,10 +1750,8 @@ public:
 #endif
   CostMode     getCostMode( ) const                                  { return m_costMode; }
   void         setCostMode(CostMode m )                              { m_costMode = m; }
-#if JVET_R0143_TSRCdisableLL
   bool         getTSRCdisableLL       ()                             { return m_TSRCdisableLL;         }
   void         setTSRCdisableLL       ( bool b )                     { m_TSRCdisableLL = b;            }
-#endif
 
   void         setDCI(DCI *p)                                        { m_dci = *p; }
   DCI*         getDCI()                                              { return &m_dci; }
@@ -1826,10 +1771,8 @@ public:
   void         setHrdParametersPresentFlag(bool i)                   { m_hrdParametersPresentFlag = i; }
   bool         getVuiParametersPresentFlag()                         { return m_vuiParametersPresentFlag; }
   void         setVuiParametersPresentFlag(bool i)                   { m_vuiParametersPresentFlag = i; }
-#if JVET_Q0394_TIMING_SEI
   bool         getSamePicTimingInAllOLS() const                      { return m_samePicTimingInAllOLS; }
   void         setSamePicTimingInAllOLS(bool b)                      { m_samePicTimingInAllOLS = b; }
-#endif
   bool         getAspectRatioInfoPresentFlag()                       { return m_aspectRatioInfoPresentFlag; }
   void         setAspectRatioInfoPresentFlag(bool i)                 { m_aspectRatioInfoPresentFlag = i; }
   int          getAspectRatioIdc()                                   { return m_aspectRatioIdc; }
@@ -1879,10 +1822,8 @@ public:
   bool         getOneTilePerPicConstraintFlag() const                { return m_oneTilePerPicConstraintFlag; }
   void         setOneTilePerPicConstraintFlag(bool b)                { m_oneTilePerPicConstraintFlag = b; }
 
-#if JVET_R0118_PH_IN_SH_CONSTRAINT_FLAG
   bool         getPicHeaderInSliceHeaderConstraintFlag() const { return m_picHeaderInSliceHeaderConstraintFlag; }
   void         setPicHeaderInSliceHeaderConstraintFlag(bool b) { m_picHeaderInSliceHeaderConstraintFlag = b; }
-#endif
 
   bool         getOneSlicePerPicConstraintFlag() const               { return m_oneSlicePerPicConstraintFlag; }
   void         setOneSlicePerPicConstraintFlag(bool b)               { m_oneSlicePerPicConstraintFlag = b; }
@@ -1968,13 +1909,8 @@ public:
 #endif
 
   void        setScalingRatio( double hor, double ver )              { m_scalingRatioHor = hor, m_scalingRatioVer = ver;  }
-#if JVET_R0058
   void        setResChangeInClvsEnabled(bool b)                      { m_resChangeInClvsEnabled = b; }
   bool        isResChangeInClvsEnabled()                        const { return m_resChangeInClvsEnabled; }
-#else
-  void        setRPREnabled(bool b) { m_rprEnabled = b; }
-  bool        isRPREnabled()                                   const { return m_rprEnabled; }
-#endif
   void        setSwitchPocPeriod( int p )                            { m_switchPocPeriod = p;}
   void        setUpscaledOutput( int b )                             { m_upscaledOutput = b; }
   int         getUpscaledOutput()                              const { return m_upscaledOutput; }
@@ -1985,10 +1921,8 @@ public:
   void        setAvoidIntraInDepLayer(bool b)                        { m_avoidIntraInDepLayer = b; }
   bool        getAvoidIntraInDepLayer()                        const { return m_avoidIntraInDepLayer; }
 
-#if JVET_Q0398_SUBLAYER_DEP
   const CfgVPSParameters& getVPSParameters() const                                  { return m_cfgVPSParameters; }
   void                    setVPSParameters(const CfgVPSParameters& cfg)             { m_cfgVPSParameters = cfg; }
-#endif
 };
 
 //! \}

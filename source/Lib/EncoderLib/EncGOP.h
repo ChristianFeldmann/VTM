@@ -155,22 +155,15 @@ private:
   RateCtrl*                 m_pcRateCtrl;
   // indicate sequence first
   bool                    m_bSeqFirst;
-#if JVET_R0065
   bool                    m_audIrapOrGdrAuFlag;
-#endif
 
   EncHRD*                 m_HRD;
 
   // clean decoding refresh
   bool                    m_bRefreshPending;
   int                     m_pocCRA;
-#if JVET_R0041
   NalUnitType             m_associatedIRAPType[MAX_VPS_LAYERS];
   int                     m_associatedIRAPPOC[MAX_VPS_LAYERS];
-#else
-  NalUnitType             m_associatedIRAPType;
-  int                     m_associatedIRAPPOC;
-#endif
 
   std::vector<int>        m_vRVM_RP;
   uint32_t                    m_lastBPSEI[MAX_TLAYER];
@@ -314,11 +307,7 @@ protected:
   void xUpdateDuData(AccessUnit &testAU, std::deque<DUData> &duData);
   void xUpdateTimingSEI(SEIPictureTiming *pictureTimingSEI, std::deque<DUData> &duData, const SPS *sps);
   void xUpdateDuInfoSEI(SEIMessages &duInfoSeiMessages, SEIPictureTiming *pictureTimingSEI, int maxSubLayers);
-#if JVET_Q0397_SCAL_NESTING
   void xCreateScalableNestingSEI(SEIMessages& seiMessages, SEIMessages& nestedSeiMessages, const std::vector<uint16_t>& subpicIDs);
-#else
-  void xCreateScalableNestingSEI(SEIMessages& seiMessages, SEIMessages& nestedSeiMessages);
-#endif
   void xWriteSEI (NalUnitType naluType, SEIMessages& seiMessages, AccessUnit &accessUnit, AccessUnit::iterator &auPos, int temporalId, const SPS *sps);
   void xWriteSEISeparately (NalUnitType naluType, SEIMessages& seiMessages, AccessUnit &accessUnit, AccessUnit::iterator &auPos, int temporalId, const SPS *sps);
   void xClearSEIs(SEIMessages& seiMessages, bool deleteMessages);
@@ -340,9 +329,7 @@ protected:
   void applyDeblockingFilterParameterSelection( Picture* pcPic, const uint32_t numSlices, const int gopID );
 #endif
   void xCreateExplicitReferencePictureSetFromReference( Slice* slice, PicList& rcListPic, const ReferencePictureList *rpl0, const ReferencePictureList *rpl1 );
-#if JVET_Q0398_SUBLAYER_DEP
   bool xCheckMaxTidILRefPics(Picture* refPic, bool currentPicIsIRAP);
-#endif
 };// END CLASS DEFINITION EncGOP
 
 //! \}

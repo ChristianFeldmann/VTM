@@ -129,11 +129,7 @@ class AUDReader: public VLCReader
 public:
   AUDReader() {};
   virtual ~AUDReader() {};
-#if JVET_R0065
   void parseAccessUnitDelimiter(InputBitstream* bs, uint32_t &audIrapOrGdrAuFlag, uint32_t &picType);
-#else
-  void parseAccessUnitDelimiter(InputBitstream* bs, uint32_t &picType);
-#endif
 };
 
 
@@ -156,11 +152,7 @@ public:
 
 protected:
   void  copyRefPicList(SPS* pcSPS, ReferencePictureList* source_rpl, ReferencePictureList* dest_rpl);
-#if JVET_R0059_RPL_CLEANUP
   void  parseRefPicList(SPS* pcSPS, ReferencePictureList* rpl, int rplIdx);
-#else
-  void  parseRefPicList(SPS* pcSPS, ReferencePictureList* rpl);
-#endif
 
 public:
   void  setBitstream        ( InputBitstream* p )   { m_pcBitstream = p; }
@@ -179,11 +171,7 @@ public:
   void parseGeneralHrdParameters(GeneralHrdParams *generalHrd);
   void  parsePictureHeader  ( PicHeader* picHeader, ParameterSetManager *parameterSetManager, bool readRbspTrailingBits );
   void  checkAlfNaluTidAndPicTid(Slice* pcSlice, PicHeader* picHeader, ParameterSetManager *parameterSetManager);
-#if JVET_R0068_ASPECT1_ASPECT6
   void  parseSliceHeader    ( Slice* pcSlice, PicHeader* picHeader, ParameterSetManager *parameterSetManager, const int prevTid0POC, const int prevPicPOC );
-#else
-  void  parseSliceHeader    ( Slice* pcSlice, PicHeader* picHeader, ParameterSetManager *parameterSetManager, const int prevTid0POC );
-#endif
   void  getSlicePoc ( Slice* pcSlice, PicHeader* picHeader, ParameterSetManager *parameterSetManager, const int prevTid0POC );
   void  parseTerminatingBit ( uint32_t& ruiBit );
   void  parseRemainingBytes ( bool noTrailingBytesExpected );

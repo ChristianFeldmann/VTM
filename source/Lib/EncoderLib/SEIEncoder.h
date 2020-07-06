@@ -66,19 +66,13 @@ public:
 
   // leading SEIs
   void initSEIFramePacking(SEIFramePacking *sei, int currPicNum);
-#if JVET_P0359_PARAMETER_SETS_INCLUSION_SEI
   void initSEIParameterSetsInclusionIndication(SEIParameterSetsInclusionIndication* sei);
-#endif
   void initSEIDependentRAPIndication(SEIDependentRAPIndication *sei);
   void initSEIBufferingPeriod(SEIBufferingPeriod *sei, bool noLeadingPictures);
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
   void initSEIAlternativeTransferCharacteristics(SEIAlternativeTransferCharacteristics *sei);
 #endif
-#if JVET_Q0397_SCAL_NESTING
   void initSEIScalableNesting(SEIScalableNesting *scalableNestingSEI, SEIMessages &nestedSEIs, const std::vector<uint16_t> &subpictureIDs);
-#else
-  void initSEIScalableNesting(SEIScalableNesting *sei, SEIMessages &nestedSEIs);
-#endif
   // trailing SEIs
   void initDecodedPictureHashSEI(SEIDecodedPictureHash *sei, PelUnitBuf& pic, std::string &rHashString, const BitDepths &bitDepths);
   void initSEIErp(SEIEquirectangularProjection *sei);

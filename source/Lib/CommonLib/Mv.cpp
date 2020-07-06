@@ -51,7 +51,6 @@ void roundAffineMv( int& mvx, int& mvy, int nShift )
   mvy = (mvy + nOffset - (mvy >= 0)) >> nShift;
 }
 
-#if JVET_R0058
 void (*clipMv) ( Mv& rcMv, const struct Position& pos, const struct Size& size, const class SPS& sps, const class PPS& pps );
 
 void clipMvInPic ( Mv& rcMv, const struct Position& pos, const struct Size& size, const class SPS& sps, const class PPS& pps )
@@ -101,39 +100,6 @@ void clipMvInSubpic ( Mv& rcMv, const struct Position& pos, const struct Size& s
   rcMv.setHor(std::min(horMax, std::max(horMin, rcMv.getHor())));
   rcMv.setVer(std::min(verMax, std::max(verMin, rcMv.getVer())));
 }
-#else
-void clipMv( Mv& rcMv, const Position& pos, const struct Size& size, const SPS& sps, const PPS& pps )
-{
-#if JVET_Q0764_WRAP_AROUND_WITH_RPR
-  if (pps.getWrapAroundEnabledFlag())
-#else
-  if (sps.getWrapAroundEnabledFlag())
-#endif
-  {
-    wrapClipMv(rcMv, pos, size, &sps, &pps);
-    return;
-  }
-
-  int iMvShift = MV_FRACTIONAL_BITS_INTERNAL;
-  int iOffset = 8;
-  int iHorMax = ( pps.getPicWidthInLumaSamples() + iOffset - (int)pos.x - 1 ) << iMvShift;
-  int iHorMin = ( -( int ) sps.getMaxCUWidth()   - iOffset - ( int ) pos.x + 1 ) << iMvShift;
-
-  int iVerMax = ( pps.getPicHeightInLumaSamples() + iOffset - (int)pos.y - 1 ) << iMvShift;
-  int iVerMin = ( -( int ) sps.getMaxCUHeight()   - iOffset - ( int ) pos.y + 1 ) << iMvShift;
-  const SubPic& curSubPic = pps.getSubPicFromPos(pos);
-  if (curSubPic.getTreatedAsPicFlag())
-  {
-    iHorMax = ((curSubPic.getSubPicRight() + 1)  + iOffset - (int)pos.x - 1 ) << iMvShift;
-    iHorMin = (-(int)sps.getMaxCUWidth() -  iOffset - ((int)pos.x - curSubPic.getSubPicLeft()) + 1) << iMvShift;
-
-    iVerMax = ((curSubPic.getSubPicBottom() + 1) + iOffset - (int)pos.y - 1) << iMvShift;
-    iVerMin = (-(int)sps.getMaxCUHeight() - iOffset - ((int)pos.y - curSubPic.getSubPicTop()) + 1) << iMvShift;
-  }
-  rcMv.setHor( std::min( iHorMax, std::max( iHorMin, rcMv.getHor() ) ) );
-  rcMv.setVer( std::min( iVerMax, std::max( iVerMin, rcMv.getVer() ) ) );
-}
-#endif
 
 bool wrapClipMv( Mv& rcMv, const Position& pos, const struct Size& size, const SPS *sps, const PPS *pps )
 {
@@ -143,7 +109,6 @@ bool wrapClipMv( Mv& rcMv, const Position& pos, const struct Size& size, const S
   int iHorMax = ( pps->getPicWidthInLumaSamples() + sps->getMaxCUWidth() - size.width + iOffset - (int)pos.x - 1 ) << iMvShift;
   int iHorMin = ( -( int ) sps->getMaxCUWidth()                                      - iOffset - ( int ) pos.x + 1 ) << iMvShift;
 
-#if JVET_R0184_WRAPAROUND_SUBPICS
   int iVerMax = ( pps->getPicHeightInLumaSamples() + iOffset - ( int ) pos.y - 1 ) << iMvShift;
   int iVerMin = ( -( int ) sps->getMaxCUHeight() - iOffset - ( int ) pos.y + 1 ) << iMvShift;
 
@@ -153,29 +118,17 @@ bool wrapClipMv( Mv& rcMv, const Position& pos, const struct Size& size, const S
     iVerMax = ( ( curSubPic.getSubPicBottom() + 1 ) + iOffset - ( int ) pos.y - 1 ) << iMvShift;
     iVerMin = ( -( int ) sps->getMaxCUHeight() - iOffset - ( ( int ) pos.y - curSubPic.getSubPicTop() ) + 1 ) << iMvShift;
   }
-#else
-  int iVerMax = ( pps->getPicHeightInLumaSamples() + iOffset - (int)pos.y - 1 ) << iMvShift;
-  int iVerMin = ( -( int ) sps->getMaxCUHeight()   - iOffset - ( int ) pos.y + 1 ) << iMvShift;
-#endif
   int mvX = rcMv.getHor();
 
   if(mvX > iHorMax)
   {
-#if JVET_Q0764_WRAP_AROUND_WITH_RPR
     mvX -= ( pps->getWrapAroundOffset() << iMvShift );
-#else
-    mvX -= ( sps->getWrapAroundOffset() << iMvShift );
-#endif
     mvX = std::min( iHorMax, std::max( iHorMin, mvX ) );
     wrapRef = false;
   }
   if(mvX < iHorMin)
   {
-#if JVET_Q0764_WRAP_AROUND_WITH_RPR
     mvX += ( pps->getWrapAroundOffset() << iMvShift );
-#else
-    mvX += ( sps->getWrapAroundOffset() << iMvShift );
-#endif
     mvX = std::min( iHorMax, std::max( iHorMin, mvX ) );
     wrapRef = false;
   }

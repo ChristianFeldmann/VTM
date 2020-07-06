@@ -73,9 +73,7 @@ protected:
   bool xIsSPSUpdate(int spsId)     { return (std::find(m_updatedSPSList.begin(),m_updatedSPSList.end(), spsId) != m_updatedSPSList.end()); }
   void xClearSPSUpdated(int spsId) { m_updatedSPSList.erase(std::remove(m_updatedSPSList.begin(), m_updatedSPSList.end(), spsId)); };
 
-#if JVET_Q0398_SUBLAYER_DEP
   bool xCheckNumSubLayers(InputNALUnit &nalu, VPS *vps);
-#endif
 
   void xWriteVPS(VPS *vps, std::ostream& out, int layerId, int temporalId);
   void xWriteSPS(SPS *sps, std::ostream& out, int layerId, int temporalId);
@@ -86,15 +84,11 @@ protected:
   HLSWriter             m_hlSyntaxWriter;
   SEIReader             m_seiReader;
   int                   m_vpsId;
-#if JVET_Q0394_TIMING_SEI
   bool                  m_removeTimingSEI;
-#endif
 
   PicHeader             m_picHeader;
   int                   m_prevTid0Poc;
-#if JVET_R0068_ASPECT1_ASPECT6
   int                   m_prevPicPOC;
-#endif
   std::vector<int>      m_updatedVPSList;
   std::vector<int>      m_updatedSPSList;
   std::vector<int>      m_updatedPPSList;

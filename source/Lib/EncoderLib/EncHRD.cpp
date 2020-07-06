@@ -109,9 +109,7 @@ void EncHRD::initHRDParameters(EncCfg* encCfg)
   m_generalHrdParams.setGeneralNalHrdParametersPresentFlag(rateCnt);
   m_generalHrdParams.setGeneralVclHrdParametersPresentFlag(rateCnt);
 
-#if JVET_Q0394_TIMING_SEI
   m_generalHrdParams.setGeneralSamePicTimingInAllOlsFlag(encCfg->getSamePicTimingInAllOLS());
-#endif
   useSubCpbParams &= (m_generalHrdParams.getGeneralNalHrdParametersPresentFlag() || m_generalHrdParams.getGeneralVclHrdParametersPresentFlag());
   m_generalHrdParams.setGeneralDecodingUnitHrdParamsPresentFlag(useSubCpbParams);
 

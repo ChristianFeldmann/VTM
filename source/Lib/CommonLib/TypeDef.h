@@ -99,7 +99,6 @@
 
 
 
-#define JVET_R0286_GCI_CLEANUP                            1 // JVET-R0286: Sensibility constraints and general constraints on tools
 
 #define JVET_R0090_VUI                                    1 // JVET-R0090: Fix parsing dependencies in VUI syntax
 

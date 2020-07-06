@@ -183,7 +183,6 @@ protected:
   uint32_t  m_maxChromaFormatConstraintIdc;
   bool      m_bFrameConstraintFlag;
 
-#if JVET_R0286_GCI_CLEANUP
   bool      m_singleLayerConstraintFlag;
   bool      m_allLayersIndependentConstraintFlag;
   bool      m_noMrlConstraintFlag;
@@ -196,7 +195,6 @@ protected:
   bool      m_noPaletteConstraintFlag;
   bool      m_noActConstraintFlag;
   bool      m_noLmcsConstraintFlag;
-#endif
 
   bool      m_bNoQtbttDualTreeIntraConstraintFlag;
   bool      m_noPartitionConstraintsOverrideConstraintFlag;
@@ -795,7 +793,6 @@ public:
   bool      getFrameConstraintFlag() const { return m_bFrameConstraintFlag; }
   void      setFrameConstraintFlag(bool bVal) { m_bFrameConstraintFlag = bVal; }
 
-#if JVET_R0286_GCI_CLEANUP
   bool          getSingleLayerConstraintFlag() const { return m_singleLayerConstraintFlag; }
   void          setSingleLayerConstraintFlag(bool bVal) { m_singleLayerConstraintFlag = bVal; }
   bool          getAllLayersIndependentConstraintFlag() const { return m_allLayersIndependentConstraintFlag; }
@@ -820,7 +817,6 @@ public:
   void          setNoActConstraintFlag(bool bVal) { m_noActConstraintFlag = bVal; }
   bool          getNoLmcsConstraintFlag() const { return m_noLmcsConstraintFlag; }
   void          setNoLmcsConstraintFlag(bool bVal) { m_noLmcsConstraintFlag = bVal; }
-#endif
 
   bool      getNoQtbttDualTreeIntraConstraintFlag() const { return m_bNoQtbttDualTreeIntraConstraintFlag; }
   void      setNoQtbttDualTreeIntraConstraintFlag(bool bVal) { m_bNoQtbttDualTreeIntraConstraintFlag = bVal; }

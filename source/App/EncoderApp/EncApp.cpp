@@ -225,10 +225,8 @@ void EncApp::xInitLibCfg()
 #endif
   m_cEncLib.setNonPackedConstraintFlag                           ( m_nonPackedConstraintFlag);
   m_cEncLib.setNonProjectedConstraintFlag                        ( m_nonProjectedConstraintFlag );
-#if JVET_R0286_GCI_CLEANUP
   m_cEncLib.setSingleLayerConstraintFlag                         ( m_singleLayerConstraintFlag );
   m_cEncLib.setAllLayersIndependentConstraintFlag                ( m_allLayersIndependentConstraintFlag );
-#endif
   m_cEncLib.setNoResChangeInClvsConstraintFlag                   ( m_noResChangeInClvsConstraintFlag );
   m_cEncLib.setOneTilePerPicConstraintFlag                       ( m_oneTilePerPicConstraintFlag );
   m_cEncLib.setPicHeaderInSliceHeaderConstraintFlag              ( m_picHeaderInSliceHeaderConstraintFlag );
@@ -302,7 +300,6 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setNoCraConstraintFlag                               ( m_iDecodingRefreshType != 1 );
   m_cEncLib.setNoGdrConstraintFlag                               ( false ); // Not yet possible to encode GDR using config parameters
   m_cEncLib.setNoApsConstraintFlag                               ( !m_alf && !m_lmcsEnabled && m_useScalingListId == SCALING_LIST_OFF);
-#if JVET_R0286_GCI_CLEANUP
   m_cEncLib.setNoMrlConstraintFlag                               ( !m_MRL );
   m_cEncLib.setNoIspConstraintFlag                               ( !m_ISP );
   m_cEncLib.setNoMipConstraintFlag                               ( !m_MIP );
@@ -313,7 +310,6 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setNoPaletteConstraintFlag                           ( m_PLTMode == 1 ? false : true );
   m_cEncLib.setNoActConstraintFlag                               ( !m_useColorTrans );
   m_cEncLib.setNoLmcsConstraintFlag                              ( !m_lmcsEnabled );
-#endif
 
 
   //====== Coding Structure ========

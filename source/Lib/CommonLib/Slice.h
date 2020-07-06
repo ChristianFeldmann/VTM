@@ -253,7 +253,6 @@ class ConstraintInfo
   bool              m_onePictureOnlyConstraintFlag;
   bool              m_lowerBitRateConstraintFlag;
 
-#if JVET_R0286_GCI_CLEANUP
   bool              m_singleLayerConstraintFlag;
   bool              m_allLayersIndependentConstraintFlag;
   bool              m_noMrlConstraintFlag;
@@ -266,7 +265,6 @@ class ConstraintInfo
   bool              m_noPaletteConstraintFlag;
   bool              m_noActConstraintFlag;
   bool              m_noLmcsConstraintFlag;
-#endif
 
   bool              m_noQtbttDualTreeIntraConstraintFlag;
   bool              m_noPartitionConstraintsOverrideConstraintFlag;
@@ -329,7 +327,6 @@ public:
     , m_onePictureOnlyConstraintFlag (false)
     , m_lowerBitRateConstraintFlag (false )
 
-#if JVET_R0286_GCI_CLEANUP
     , m_singleLayerConstraintFlag(false)
     , m_allLayersIndependentConstraintFlag(false)
     , m_noMrlConstraintFlag(false)
@@ -342,7 +339,6 @@ public:
     , m_noPaletteConstraintFlag(false)
     , m_noActConstraintFlag(false)
     , m_noLmcsConstraintFlag(false)
-#endif
 
     , m_noQtbttDualTreeIntraConstraintFlag(false)
     , m_noPartitionConstraintsOverrideConstraintFlag(false)
@@ -431,7 +427,6 @@ public:
   bool          getLowerBitRateConstraintFlag() const { return m_lowerBitRateConstraintFlag; }
   void          setLowerBitRateConstraintFlag(bool b) { m_lowerBitRateConstraintFlag = b; }
 
-#if JVET_R0286_GCI_CLEANUP
   bool          getSingleLayerConstraintFlag() const { return m_singleLayerConstraintFlag; }
   void          setSingleLayerConstraintFlag(bool b) { m_singleLayerConstraintFlag = b; }
   bool          getAllLayersIndependentConstraintFlag() const { return m_allLayersIndependentConstraintFlag; }
@@ -456,7 +451,6 @@ public:
   void          setNoActConstraintFlag(bool b) { m_noActConstraintFlag = b; }
   bool          getNoLmcsConstraintFlag() const { return m_noLmcsConstraintFlag; }
   void          setNoLmcsConstraintFlag(bool b) { m_noLmcsConstraintFlag = b; }
-#endif
 
   bool          getNoQtbttDualTreeIntraConstraintFlag() const { return m_noQtbttDualTreeIntraConstraintFlag; }
   void          setNoQtbttDualTreeIntraConstraintFlag(bool bVal) { m_noQtbttDualTreeIntraConstraintFlag = bVal; }

@@ -1109,7 +1109,6 @@ void EncLib::xInitSPS( SPS& sps )
   cinfo->setIntraOnlyConstraintFlag         (m_intraConstraintFlag);
   cinfo->setMaxBitDepthConstraintIdc    (m_maxBitDepthConstraintIdc);
   cinfo->setMaxChromaFormatConstraintIdc((ChromaFormat)m_maxChromaFormatConstraintIdc);
-#if JVET_R0286_GCI_CLEANUP
   cinfo->setSingleLayerConstraintFlag (m_singleLayerConstraintFlag);
   cinfo->setAllLayersIndependentConstraintFlag (m_allLayersIndependentConstraintFlag);
   cinfo->setNoMrlConstraintFlag (m_noMrlConstraintFlag);
@@ -1122,7 +1121,6 @@ void EncLib::xInitSPS( SPS& sps )
   cinfo->setNoPaletteConstraintFlag (m_noPaletteConstraintFlag);
   cinfo->setNoActConstraintFlag (m_noActConstraintFlag);
   cinfo->setNoLmcsConstraintFlag (m_noLmcsConstraintFlag);
-#endif
   cinfo->setNoQtbttDualTreeIntraConstraintFlag(m_bNoQtbttDualTreeIntraConstraintFlag);
   cinfo->setNoPartitionConstraintsOverrideConstraintFlag(m_noPartitionConstraintsOverrideConstraintFlag);
   cinfo->setNoSaoConstraintFlag(m_bNoSaoConstraintFlag);

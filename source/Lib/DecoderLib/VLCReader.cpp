@@ -2123,26 +2123,15 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
     }
     else
       pcVPS->setPtPresentFlag(0, 1);
-#if JVET_R0107_VPS_SIGNALING
     if (!pcVPS->getAllLayersSameNumSublayersFlag())
-#else
-    if(pcVPS->getMaxSubLayers() > 1 && !pcVPS->getAllLayersSameNumSublayersFlag())
-#endif
     {
       READ_CODE(3, uiCode, "ptl_max_temporal_id");
       pcVPS->setPtlMaxTemporalId(i, uiCode);
     }
-#if JVET_R0107_VPS_SIGNALING
     else
     {
       pcVPS->setPtlMaxTemporalId(i, pcVPS->getMaxSubLayers() - 1);
     }
-#else
-    else if(pcVPS->getMaxSubLayers() > 1)
-      pcVPS->setPtlMaxTemporalId(i, pcVPS->getMaxSubLayers() - 1);
-    else
-      pcVPS->setPtlMaxTemporalId(i, 0);
-#endif
   }
   int cnt = 0;
   while (m_pcBitstream->getNumBitsUntilByteAligned())
@@ -2195,7 +2184,6 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
 
     for( int i = 0; i < pcVPS->m_numDpbParams; i++ )
     {
-#if JVET_R0107_VPS_SIGNALING
       if (!pcVPS->getAllLayersSameNumSublayersFlag())
       {
         READ_CODE(3, uiCode, "dpb_max_temporal_id[i]");
@@ -2205,25 +2193,6 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
       {
         pcVPS->m_dpbMaxTemporalId.push_back(pcVPS->getMaxSubLayers() - 1);
       }
-#else
-      if( pcVPS->getMaxSubLayers() == 1 )
-      {
-        // When vps_max_sublayers_minus1 is equal to 0, the value of dpb_max_temporal_id[ i ] is inferred to be equal to 0.
-        pcVPS->m_dpbMaxTemporalId.push_back( 0 );
-      }
-      else
-      {
-        if( pcVPS->getAllLayersSameNumSublayersFlag() )
-        {
-          // When vps_max_sublayers_minus1 is greater than 0 and vps_all_layers_same_num_sublayers_flag is equal to 1, the value of dpb_max_temporal_id[ i ] is inferred to be equal to vps_max_sublayers_minus1.
-          pcVPS->m_dpbMaxTemporalId.push_back( pcVPS->getMaxSubLayers() - 1 );
-        }
-        else
-        {
-          READ_CODE( 3, uiCode, "dpb_max_temporal_id[i]" );  pcVPS->m_dpbMaxTemporalId.push_back( uiCode );
-        }
-      }
-#endif
 
       for( int j = ( pcVPS->m_sublayerDpbParamsPresentFlag ? 0 : pcVPS->m_dpbMaxTemporalId[i] ); j <= pcVPS->m_dpbMaxTemporalId[i]; j++ )
       {
@@ -2314,28 +2283,13 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
     pcVPS->m_olsHrdParams.resize(pcVPS->getNumOlsHrdParamsMinus1(), std::vector<OlsHrdParams>(pcVPS->getMaxSubLayers()));
     for (int i = 0; i <= pcVPS->getNumOlsHrdParamsMinus1(); i++)
     {
-#if JVET_R0107_VPS_SIGNALING
       if (!pcVPS->getAllLayersSameNumSublayersFlag())
-#else
-      if (((pcVPS->getMaxSubLayers() - 1) > 0) && (!pcVPS->getAllLayersSameNumSublayersFlag()))
-#endif
       {
         READ_CODE(3, uiCode, "hrd_max_tid[i]");  pcVPS->setHrdMaxTid(i, uiCode);
       }
       else
       {
-#if JVET_R0107_VPS_SIGNALING
         pcVPS->setHrdMaxTid(i, pcVPS->getMaxSubLayers() - 1);
-#else
-        if (pcVPS->getMaxSubLayers() == 1)
-        {
-          pcVPS->setHrdMaxTid(i, 0);
-        }
-        else if ((pcVPS->getMaxSubLayers() >= 1)&&(pcVPS->getAllLayersSameNumSublayersFlag()))
-        {
-          pcVPS->setHrdMaxTid(i, pcVPS->getMaxSubLayers()- 1);
-        }
-#endif
 
       }
       uint32_t firstSublayer = pcVPS->getVPSSublayerCpbParamsPresentFlag() ? 0 : pcVPS->getHrdMaxTid(i);

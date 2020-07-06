@@ -376,9 +376,7 @@ uint32_t BitstreamExtractorApp::decode()
   bitstreamFileIn.seekg( 0, std::ios::beg );
 
   int unitCnt = 0;
-#if JVET_Q0404_CBR_SUBPIC
   bool lastSliceWritten= false;   // stores status of previous slice for associated filler data NAL units
-#endif
 
   VPS *vpsIdZero = new VPS();
   std::vector<uint8_t> empty;
@@ -633,12 +631,10 @@ uint32_t BitstreamExtractorApp::decode()
           // check for subpicture ID
           writeInpuNalUnitToStream = xCheckSliceSubpicture(nalu, m_subPicId);
         }
-#if JVET_Q0404_CBR_SUBPIC
         if (nalu.m_nalUnitType == NAL_UNIT_FD)
         {
           writeInpuNalUnitToStream = lastSliceWritten;
         }
-#endif
       }
       unitCnt++;
 
@@ -661,7 +657,6 @@ uint32_t BitstreamExtractorApp::decode()
         writeNaluContent (bitstreamFileOut, out);
       }
 
-#if JVET_Q0404_CBR_SUBPIC
       // update status of previous slice
       if (nalu.isSlice())
       {
@@ -674,7 +669,6 @@ uint32_t BitstreamExtractorApp::decode()
           lastSliceWritten=false;
         }
       }
-#endif
     }
   }
 

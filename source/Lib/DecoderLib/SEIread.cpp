@@ -1418,9 +1418,7 @@ void SEIReader::xParseSEISubpictureLevelInfo(SEISubpicureLevelInfo& sei, uint32_
   output_sei_message_header(sei, pDecodedMessageOutputStream, payloadSize);
   uint32_t val;
   sei_read_code( pDecodedMessageOutputStream,   3,  val,    "sli_num_ref_levels_minus1" );            sei.m_numRefLevels  = val + 1;
-#if JVET_Q0404_CBR_SUBPIC
   sei_read_flag( pDecodedMessageOutputStream,       val,    "sli_cbr_constraint_flag" );              sei.m_cbrConstraintFlag = val;
-#endif
   sei_read_flag( pDecodedMessageOutputStream,       val,    "sli_explicit_fraction_present_flag" );   sei.m_explicitFractionPresentFlag = val;
   if (sei.m_explicitFractionPresentFlag)
   {

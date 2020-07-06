@@ -661,18 +661,14 @@ public:
   SEISubpicureLevelInfo()
   : m_numRefLevels(0)
   , m_explicitFractionPresentFlag (false)
-#if JVET_Q0404_CBR_SUBPIC
   , m_cbrConstraintFlag (false)
-#endif
   , m_numSubpics(0)
   {}
   virtual ~SEISubpicureLevelInfo() {}
 
   int       m_numRefLevels;
   bool      m_explicitFractionPresentFlag;
-#if JVET_Q0404_CBR_SUBPIC
   bool      m_cbrConstraintFlag;
-#endif
   int       m_numSubpics;
   std::vector<Level::Name>      m_refLevelIdc;
   std::vector<std::vector<int>> m_refLevelFraction;

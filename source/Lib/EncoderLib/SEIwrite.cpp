@@ -779,9 +779,7 @@ void SEIWriter::xWriteSEISubpictureLevelInfo(const SEISubpicureLevelInfo &sei)
     CHECK(sei.m_numRefLevels != (int)sei.m_refLevelFraction.size(), "SEISubpicureLevelInfo: numRefLevels must be equal to the number of fractions");
   }
   WRITE_CODE( (uint32_t)sei.m_numRefLevels - 1, 3,                            "sli_num_ref_levels_minus1");
-#if JVET_Q0404_CBR_SUBPIC
   WRITE_FLAG(           sei.m_cbrConstraintFlag,                              "sli_cbr_constraint_flag");
-#endif
   WRITE_FLAG(           sei.m_explicitFractionPresentFlag,                    "sli_explicit_fraction_present_flag");
   if (sei.m_explicitFractionPresentFlag)
   {

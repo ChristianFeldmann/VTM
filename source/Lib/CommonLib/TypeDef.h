@@ -139,7 +139,6 @@
 
 
 
-#define JVET_Q0404_CBR_SUBPIC                             1 // JVET_Q0404: Constant bitrate extraction for subpictures
 
 #define JVET_R0100                                        1 // JVET-R0100: Proposal 1 DUI Signalling and inference
 

@@ -219,10 +219,6 @@ void EncApp::xInitLibCfg()
   {
     m_cEncLib.setSubProfile(i, m_subProfile[i]);
   }
-#if !JVET_R0090_VUI
-  m_cEncLib.setProgressiveSourceFlag                             ( m_progressiveSourceFlag);
-  m_cEncLib.setInterlacedSourceFlag                              ( m_interlacedSourceFlag);
-#endif
   m_cEncLib.setNonPackedConstraintFlag                           ( m_nonPackedConstraintFlag);
   m_cEncLib.setNonProjectedConstraintFlag                        ( m_nonProjectedConstraintFlag );
   m_cEncLib.setSingleLayerConstraintFlag                         ( m_singleLayerConstraintFlag );
@@ -813,10 +809,8 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setColourPrimaries                                   ( m_colourPrimaries );
   m_cEncLib.setTransferCharacteristics                           ( m_transferCharacteristics );
   m_cEncLib.setMatrixCoefficients                                ( m_matrixCoefficients );
-#if JVET_R0090_VUI
   m_cEncLib.setProgressiveSourceFlag                             ( m_progressiveSourceFlag);
   m_cEncLib.setInterlacedSourceFlag                              ( m_interlacedSourceFlag);
-#endif
   m_cEncLib.setChromaLocInfoPresentFlag                          ( m_chromaLocInfoPresentFlag );
   m_cEncLib.setChromaSampleLocTypeTopField                       ( m_chromaSampleLocTypeTopField );
   m_cEncLib.setChromaSampleLocTypeBottomField                    ( m_chromaSampleLocTypeBottomField );

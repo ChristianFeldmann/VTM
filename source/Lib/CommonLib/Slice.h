@@ -235,10 +235,6 @@ private:
 
 class ConstraintInfo
 {
-#if !JVET_R0090_VUI
-  bool              m_progressiveSourceFlag;
-  bool              m_interlacedSourceFlag;
-#endif
   bool              m_nonPackedConstraintFlag;
   bool              m_nonProjectedConstraintFlag;
   bool              m_noResChangeInClvsConstraintFlag;
@@ -307,13 +303,7 @@ class ConstraintInfo
 
 public:
   ConstraintInfo()
-#if !JVET_R0090_VUI
-    : m_progressiveSourceFlag (false)
-    , m_interlacedSourceFlag (false)
-    , m_nonPackedConstraintFlag (false)
-#else
     : m_nonPackedConstraintFlag (false)
-#endif
     , m_nonProjectedConstraintFlag(false)
     , m_noResChangeInClvsConstraintFlag(false)
     , m_oneTilePerPicConstraintFlag(false)
@@ -380,13 +370,6 @@ public:
     , m_noApsConstraintFlag (false)
   {}
 
-#if !JVET_R0090_VUI
-  bool          getProgressiveSourceFlag() const { return m_progressiveSourceFlag; }
-  void          setProgressiveSourceFlag(bool b) { m_progressiveSourceFlag = b; }
-
-  bool          getInterlacedSourceFlag() const { return m_interlacedSourceFlag; }
-  void          setInterlacedSourceFlag(bool b) { m_interlacedSourceFlag = b; }
-#endif
 
   bool          getNonPackedConstraintFlag() const { return m_nonPackedConstraintFlag; }
   void          setNonPackedConstraintFlag(bool b) { m_nonPackedConstraintFlag = b; }
@@ -1151,10 +1134,8 @@ private:
   int        m_colourPrimaries;
   int        m_transferCharacteristics;
   int        m_matrixCoefficients;
-#if JVET_R0090_VUI
   bool       m_progressiveSourceFlag;
   bool       m_interlacedSourceFlag;
-#endif
   bool       m_chromaLocInfoPresentFlag;
   int        m_chromaSampleLocTypeTopField;
   int        m_chromaSampleLocTypeBottomField;
@@ -1174,10 +1155,8 @@ public:
     , m_colourPrimaries                   (2)
     , m_transferCharacteristics           (2)
     , m_matrixCoefficients                (2)
-#if JVET_R0090_VUI
     , m_progressiveSourceFlag             (false)
     , m_interlacedSourceFlag              (false)
-#endif
     , m_chromaLocInfoPresentFlag          (false)
     , m_chromaSampleLocTypeTopField       (0)
     , m_chromaSampleLocTypeBottomField    (0)
@@ -1215,13 +1194,11 @@ public:
   int               getMatrixCoefficients() const                          { return m_matrixCoefficients;                   }
   void              setMatrixCoefficients(int i)                           { m_matrixCoefficients = i;                      }
 
-#if JVET_R0090_VUI
   bool              getProgressiveSourceFlag() const                       { return m_progressiveSourceFlag; }
   void              setProgressiveSourceFlag(bool b)                       { m_progressiveSourceFlag = b; }
 
   bool              getInterlacedSourceFlag() const                        { return m_interlacedSourceFlag; }
   void              setInterlacedSourceFlag(bool b)                        { m_interlacedSourceFlag = b; }
-#endif
 
   bool              getChromaLocInfoPresentFlag() const                    { return m_chromaLocInfoPresentFlag;             }
   void              setChromaLocInfoPresentFlag(bool i)                    { m_chromaLocInfoPresentFlag = i;                }

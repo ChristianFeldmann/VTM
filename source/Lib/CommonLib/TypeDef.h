@@ -100,7 +100,6 @@
 
 
 
-#define JVET_R0090_VUI                                    1 // JVET-R0090: Fix parsing dependencies in VUI syntax
 
 #define JVET_R0205                                        1 // JVET-R0205: Condition presence of inter_layer_ref_pics_present_flag on sps_video_parameter_set_id 
 

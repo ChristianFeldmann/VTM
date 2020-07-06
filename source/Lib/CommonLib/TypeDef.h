@@ -98,7 +98,6 @@
 
 
 
-#define JVET_R0334_PLT_CLEANUP                            1 // JVET-R0334: Disable chroma palette for local dual tree
 
 #define JVET_R0286_GCI_CLEANUP                            1 // JVET-R0286: Sensibility constraints and general constraints on tools
 

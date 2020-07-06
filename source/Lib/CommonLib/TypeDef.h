@@ -107,7 +107,6 @@
 
 
 
-#define JVET_R0094_DPB_TID_OFFSET                         1 // JVET-R0094: DPB output temporal ID offsets
 
 #define JVET_R0437_BS_DERIVATION                          1 // JVET-R0437: fix the bS derivation for palette mode
 

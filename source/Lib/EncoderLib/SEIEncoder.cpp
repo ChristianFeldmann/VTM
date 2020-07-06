@@ -188,7 +188,6 @@ void SEIEncoder::initSEIBufferingPeriod(SEIBufferingPeriod *bufferingPeriodSEI, 
         break;
     }
   }
-#if JVET_R0094_DPB_TID_OFFSET
   bufferingPeriodSEI->m_sublayerDpbOutputOffsetsPresentFlag = true;
   for(int i = 0; i < bufferingPeriodSEI->m_bpMaxSubLayers; i++)
   {
@@ -202,7 +201,6 @@ void SEIEncoder::initSEIBufferingPeriod(SEIBufferingPeriod *bufferingPeriodSEI, 
       bufferingPeriodSEI->m_dpbOutputTidOffset[i] = 0;
     }
   }
-#endif
   // A commercial encoder should track the buffer state for all layers and sub-layers
   // to ensure CPB conformance. Such tracking is required for calculating alternative
   // CPB parameters.

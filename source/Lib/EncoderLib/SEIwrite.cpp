@@ -331,7 +331,6 @@ void SEIWriter::xWriteSEIBufferingPeriod(const SEIBufferingPeriod& sei)
       }
     }
   }
-#if JVET_R0094_DPB_TID_OFFSET
   WRITE_FLAG(sei.m_sublayerDpbOutputOffsetsPresentFlag, "sublayer_dpb_output_offsets_present_flag");
   if(sei.m_sublayerDpbOutputOffsetsPresentFlag)
   {
@@ -340,7 +339,6 @@ void SEIWriter::xWriteSEIBufferingPeriod(const SEIBufferingPeriod& sei)
       WRITE_UVLC( sei.m_dpbOutputTidOffset[i], "dpb_output_tid_offset[i]" );
     }
   }
-#endif
   if (sei.m_altCpbParamsPresentFlag)
   {
     WRITE_FLAG(sei.m_useAltCpbParamsFlag, "use_alt_cpb_params_flag");

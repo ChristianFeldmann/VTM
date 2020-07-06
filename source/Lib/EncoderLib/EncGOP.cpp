@@ -106,16 +106,11 @@ EncGOP::EncGOP()
   ::memset(m_lastBPSEI, 0, sizeof(m_lastBPSEI));
   m_rapWithLeading      = false;
   m_bufferingPeriodSEIPresentInAU = false;
-#if JVET_R0041
   for (int i = 0; i < MAX_VPS_LAYERS; i++)
   {
     m_associatedIRAPType[i] = NAL_UNIT_CODED_SLICE_IDR_N_LP;
   }
   ::memset(m_associatedIRAPPOC, 0, sizeof(m_associatedIRAPPOC));
-#else
-  m_associatedIRAPType  = NAL_UNIT_CODED_SLICE_IDR_N_LP;
-  m_associatedIRAPPOC   = 0;
-#endif
 #if W0038_DB_OPT
   m_pcDeblockingTempPicYuv = NULL;
 #endif
@@ -2115,21 +2110,11 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         || pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_N_LP
         || pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA)  // IRAP picture
       {
-#if JVET_R0041
         m_associatedIRAPType[pcPic->layerId] = pcSlice->getNalUnitType();
         m_associatedIRAPPOC[pcPic->layerId] = pocCurr;
-#else
-        m_associatedIRAPType = pcSlice->getNalUnitType();
-        m_associatedIRAPPOC = pocCurr;
-#endif
       }
-#if JVET_R0041
       pcSlice->setAssociatedIRAPType(m_associatedIRAPType[pcPic->layerId]);
       pcSlice->setAssociatedIRAPPOC(m_associatedIRAPPOC[pcPic->layerId]);
-#else
-      pcSlice->setAssociatedIRAPType(m_associatedIRAPType);
-      pcSlice->setAssociatedIRAPPOC(m_associatedIRAPPOC);
-#endif
     }
 
     pcSlice->decodingRefreshMarking(m_pocCRA, m_bRefreshPending, rcListPic, m_pcCfg->getEfficientFieldIRAPEnabled());
@@ -2163,21 +2148,11 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
         || pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_IDR_N_LP
         || pcSlice->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA)  // IRAP picture
       {
-#if JVET_R0041
         m_associatedIRAPType[pcPic->layerId] = pcSlice->getNalUnitType();
         m_associatedIRAPPOC[pcPic->layerId] = pocCurr;
-#else
-        m_associatedIRAPType = pcSlice->getNalUnitType();
-        m_associatedIRAPPOC = pocCurr;
-#endif
       }
-#if JVET_R0041
       pcSlice->setAssociatedIRAPType(m_associatedIRAPType[pcPic->layerId]);
       pcSlice->setAssociatedIRAPPOC(m_associatedIRAPPOC[pcPic->layerId]);
-#else
-      pcSlice->setAssociatedIRAPType(m_associatedIRAPType);
-      pcSlice->setAssociatedIRAPPOC(m_associatedIRAPPOC);
-#endif
     }
 
     pcSlice->setEnableDRAPSEI(m_pcEncLib->getDependentRAPIndicationSEIEnabled());

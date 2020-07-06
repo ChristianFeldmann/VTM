@@ -210,9 +210,7 @@ uint32_t DecApp::decode()
       }
 
       m_cDecLib.updateAssociatedIRAP();
-#if JVET_R0041
       m_cDecLib.updatePrevGDRInSameLayer();
-#endif
       m_cDecLib.updatePrevIRAPAndGDRSubpic();
     }
     else if ( (bNewPicture || !bitstreamFile || nalu.m_nalUnitType == NAL_UNIT_EOS ) &&

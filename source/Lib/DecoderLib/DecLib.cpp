@@ -393,21 +393,13 @@ DecLib::DecLib()
   : m_iMaxRefPicNum(0)
   , m_isFirstGeneralHrd(true)
   , m_prevGeneralHrdParams()
-#if JVET_R0041
   , m_prevGDRInSameLayerPOC{ MAX_INT }
   , m_pocCRA{ MAX_INT }
   , m_associatedIRAPDecodingOrderNumber{ 0 }
-#else
-  , m_associatedIRAPType(NAL_UNIT_INVALID)
-  , m_associatedIRAPDecodingOrderNumber(0)
-#endif
   , m_decodingOrderCounter(0)
 #if JVET_P0359_PARAMETER_SETS_INCLUSION_SEI
   , m_puCounter(0)
   , m_seiInclusionFlag(false)
-#endif
-#if !JVET_R0041
-  , m_pocCRA(0)
 #endif
   , m_pocRandomAccess(MAX_INT)
   , m_lastRasPoc(MAX_INT)
@@ -441,11 +433,7 @@ DecLib::DecLib()
   , m_skippedPOC(0)
   , m_lastPOCNoOutputPriorPics(-1)
   , m_isNoOutputPriorPics(false)
-#if JVET_R0041
   , m_lastNoOutputBeforeRecoveryFlag{ false }
-#else
-  , m_lastNoOutputBeforeRecoveryFlag( false )
-#endif
   , m_sliceLmcsApsId(-1)
   , m_pDecodedSEIOutputStream(NULL)
   , m_decodedPictureHashSEIEnabled(false)
@@ -465,7 +453,6 @@ DecLib::DecLib()
 #if ENABLE_SIMD_OPT_BUFFER
   g_pelBufOP.initPelBufOpsX86();
 #endif
-#if JVET_R0041
   for (int i = 0; i < MAX_VPS_LAYERS; i++)
   {
     m_associatedIRAPType[i] = NAL_UNIT_INVALID;
@@ -474,7 +461,6 @@ DecLib::DecLib()
     memset(m_prevIRAPSubpicDecOrderNo[i], 0, sizeof(int)*MAX_NUM_SUB_PICS);
     std::fill_n(m_prevIRAPSubpicType[i], MAX_NUM_SUB_PICS, NAL_UNIT_INVALID);
   }
-#endif
 }
 
 DecLib::~DecLib()
@@ -2031,14 +2017,9 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
 
   xUpdatePreviousTid0POC(m_apcSlicePilot);
 
-#if JVET_R0041
   m_apcSlicePilot->setPrevGDRInSameLayerPOC(m_prevGDRInSameLayerPOC[nalu.m_nuhLayerId]);
   m_apcSlicePilot->setAssociatedIRAPPOC(m_pocCRA[nalu.m_nuhLayerId]);
   m_apcSlicePilot->setAssociatedIRAPType(m_associatedIRAPType[nalu.m_nuhLayerId]);
-#else
-  m_apcSlicePilot->setAssociatedIRAPPOC(m_pocCRA);
-  m_apcSlicePilot->setAssociatedIRAPType(m_associatedIRAPType);
-#endif
 
   if( m_apcSlicePilot->getRapPicFlag() || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR )
   {
@@ -2075,11 +2056,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
 
     if (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR)
     {
-#if JVET_R0041
       m_lastNoOutputBeforeRecoveryFlag[nalu.m_nuhLayerId] = m_picHeader.getNoOutputBeforeRecoveryFlag();
-#else
-      m_lastNoOutputBeforeRecoveryFlag = m_picHeader.getNoOutputBeforeRecoveryFlag();
-#endif
     }
 
     if( m_picHeader.getNoOutputOfPriorPicsFlag() )
@@ -2096,11 +2073,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   //For inference of PicOutputFlag
   if( !pps->getMixedNaluTypesInPicFlag() && ( m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_RASL ) )
   {
-#if JVET_R0041
     if( m_lastNoOutputBeforeRecoveryFlag[nalu.m_nuhLayerId] )
-#else
-    if( m_lastNoOutputBeforeRecoveryFlag )
-#endif
     {
       m_picHeader.setPicOutputFlag(false);
     }
@@ -2133,11 +2106,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   }
 
   //Reset POC MSB when CRA or GDR has NoOutputBeforeRecoveryFlag equal to 1
-#if JVET_R0041
   if (!pps->getMixedNaluTypesInPicFlag() && (m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR) && m_lastNoOutputBeforeRecoveryFlag[nalu.m_nuhLayerId])
-#else
-  if( !pps->getMixedNaluTypesInPicFlag() && ( m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_CRA || m_apcSlicePilot->getNalUnitType() == NAL_UNIT_CODED_SLICE_GDR ) && m_lastNoOutputBeforeRecoveryFlag )
-#endif
   {
     int iMaxPOClsb = 1 << sps->getBitsForPOC();
     m_apcSlicePilot->setPOC( m_apcSlicePilot->getPOC() & (iMaxPOClsb - 1) );
@@ -2319,22 +2288,14 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
     pcSlice->getPic()->sliceSubpicIdx.clear();
   }
   pcSlice->getPic()->sliceSubpicIdx.push_back(pps->getSubPicIdxFromSubPicId(pcSlice->getSliceSubPicId()));
-#if JVET_R0041
   pcSlice->checkCRA(pcSlice->getRPL0(), pcSlice->getRPL1(), m_pocCRA[nalu.m_nuhLayerId], m_cListPic);
-#else
-  pcSlice->checkCRA(pcSlice->getRPL0(), pcSlice->getRPL1(), m_pocCRA, m_cListPic);
-#endif
   pcSlice->constructRefPicList(m_cListPic);
   pcSlice->setPrevGDRSubpicPOC(m_prevGDRSubpicPOC[nalu.m_nuhLayerId][currSubPicIdx]);
   pcSlice->setPrevIRAPSubpicPOC(m_prevIRAPSubpicPOC[nalu.m_nuhLayerId][currSubPicIdx]);
   pcSlice->setPrevIRAPSubpicType(m_prevIRAPSubpicType[nalu.m_nuhLayerId][currSubPicIdx]);
   pcSlice->setPrevIRAPSubpicType(m_prevIRAPSubpicType[nalu.m_nuhLayerId][currSubPicIdx]);
   pcSlice->checkSubpicTypeConstraints(m_cListPic, pcSlice->getRPL0(), pcSlice->getRPL1(), m_prevIRAPSubpicDecOrderNo[nalu.m_nuhLayerId][currSubPicIdx]);
-#if JVET_R0041
   pcSlice->checkRPL(pcSlice->getRPL0(), pcSlice->getRPL1(), m_associatedIRAPDecodingOrderNumber[nalu.m_nuhLayerId], m_cListPic);
-#else
-  pcSlice->checkRPL(pcSlice->getRPL0(), pcSlice->getRPL1(), m_associatedIRAPDecodingOrderNumber, m_cListPic);
-#endif
   pcSlice->checkSTSA(m_cListPic);
 #if JVET_R0058
   if (m_pcPic->cs->vps && !m_pcPic->cs->vps->getIndependentLayerFlag(m_pcPic->cs->vps->getGeneralLayerIdx(nalu.m_nuhLayerId)) && m_pcPic->cs->pps->getNumSubPics() > 1)
@@ -2662,7 +2623,6 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   return false;
 }
 
-#if JVET_R0041
 void DecLib::updatePrevGDRInSameLayer()
 {
   const NalUnitType pictureType = m_pcPic->getPictureType();
@@ -2672,7 +2632,6 @@ void DecLib::updatePrevGDRInSameLayer()
     m_prevGDRInSameLayerPOC[m_pcPic->layerId] = m_pcPic->getPOC();
   }
 }
-#endif
 
 void DecLib::updateAssociatedIRAP()
 {
@@ -2680,15 +2639,9 @@ void DecLib::updateAssociatedIRAP()
 
   if (pictureType == NAL_UNIT_CODED_SLICE_IDR_W_RADL || pictureType == NAL_UNIT_CODED_SLICE_IDR_N_LP || pictureType == NAL_UNIT_CODED_SLICE_CRA)
   {
-#if JVET_R0041
     m_associatedIRAPDecodingOrderNumber[m_pcPic->layerId] = m_pcPic->getDecodingOrderNumber();
     m_pocCRA[m_pcPic->layerId] = m_pcPic->getPOC();
     m_associatedIRAPType[m_pcPic->layerId] = pictureType;
-#else
-    m_associatedIRAPDecodingOrderNumber = m_pcPic->getDecodingOrderNumber();
-    m_pocCRA = m_pcPic->getPOC();
-    m_associatedIRAPType = pictureType;
-#endif
   }
 }
 
@@ -2878,14 +2831,9 @@ bool DecLib::decode(InputNALUnit& nalu, int& iSkipFrame, int& iPOCLastDisplay, i
       return ret;
 
     case NAL_UNIT_EOS:
-#if JVET_R0041
       m_associatedIRAPType[nalu.m_nuhLayerId] = NAL_UNIT_INVALID;
       m_pocCRA[nalu.m_nuhLayerId] = MAX_INT;
       m_prevGDRInSameLayerPOC[nalu.m_nuhLayerId] = MAX_INT;
-#else
-      m_associatedIRAPType = NAL_UNIT_INVALID;
-      m_pocCRA = 0;
-#endif
       std::fill_n(m_prevGDRSubpicPOC[nalu.m_nuhLayerId], MAX_NUM_SUB_PICS, MAX_INT);
       memset(m_prevIRAPSubpicPOC[nalu.m_nuhLayerId], 0, sizeof(int)*MAX_NUM_SUB_PICS);
       memset(m_prevIRAPSubpicDecOrderNo[nalu.m_nuhLayerId], 0, sizeof(int)*MAX_NUM_SUB_PICS);

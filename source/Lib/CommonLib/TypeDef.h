@@ -63,7 +63,6 @@
 
                                                             //            Add a flag aud_irap_or_gdr_au_flag to the AUD, and mandate the presence of AUD in each IRAP or GDR AU when vps_max_layers_minus1 is greater than 0
 
-#define JVET_R0041                                        1 // JVET-R0041: Picture types related constraints
 
 #define JVET_R0064                                        1 // JVET-R0064, aspect 2: Move the flag scaling_matrix_for_lfnst_disabled_flag from the scaling_list_data( ) syntax to the SPS.
 

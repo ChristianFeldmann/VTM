@@ -191,9 +191,7 @@ protected:
 
   uint32_t          m_bitDepthConstraint;
   ChromaFormat  m_chromaFormatConstraint;
-#if STILL_PICTURE_PROFILES
   bool          m_onePictureOnlyConstraintFlag;
-#endif
   bool          m_intraConstraintFlag;
   bool          m_nonPackedConstraintFlag;
   bool          m_nonProjectedConstraintFlag;

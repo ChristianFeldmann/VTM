@@ -153,7 +153,6 @@
 
 
 
-#define STILL_PICTURE_PROFILES                            1 // Adds support for still picture profiles
 
 //########### place macros to be be kept below this line ###############
 

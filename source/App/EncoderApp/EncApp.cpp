@@ -252,9 +252,7 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setAvoidIntraInDepLayer                              ( m_avoidIntraInDepLayer );
 
   //====== SPS constraint flags =======
-#if STILL_PICTURE_PROFILES
   m_cEncLib.setOnePictureOnlyConstraintFlag                      ( m_onePictureOnlyConstraintFlag );
-#endif
   m_cEncLib.setIntraOnlyConstraintFlag                           ( m_intraConstraintFlag );  // NOTE: This setting is not used, and is confused with setIntraConstraintFlag
   m_cEncLib.setMaxBitDepthConstraintIdc                          ( m_bitDepthConstraint - 8 );
   m_cEncLib.setMaxChromaFormatConstraintIdc                      ( m_chromaFormatConstraint );

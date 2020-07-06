@@ -175,9 +175,7 @@ protected:
   bool      m_printSequenceMSE;
   bool      m_cabacZeroWordPaddingEnabled;
 
-#if STILL_PICTURE_PROFILES
   bool      m_onePictureOnlyConstraintFlag;
-#endif
   bool      m_bIntraOnlyConstraintFlag;
   uint32_t  m_maxBitDepthConstraintIdc;
   uint32_t  m_maxChromaFormatConstraintIdc;
@@ -762,10 +760,8 @@ public:
   void setNumSubProfile( uint8_t numSubProfile) { m_numSubProfile = numSubProfile; m_subProfile.resize(m_numSubProfile); }
   void setSubProfile( int i, uint32_t subProfile) { m_subProfile[i] = subProfile; }
 
-#if STILL_PICTURE_PROFILES
   bool      getOnePictureOnlyConstraintFlag() const                        { return m_onePictureOnlyConstraintFlag; }
   void      setOnePictureOnlyConstraintFlag(bool b)                        { m_onePictureOnlyConstraintFlag=b; }
-#endif
 
   bool      getIntraOnlyConstraintFlag() const { return m_bIntraOnlyConstraintFlag; }
   void      setIntraOnlyConstraintFlag(bool bVal) { m_bIntraOnlyConstraintFlag = bVal; }

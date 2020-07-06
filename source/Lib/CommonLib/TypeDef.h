@@ -137,7 +137,6 @@
 
 
 
-#define JVET_Q0394_TIMING_SEI                             1 // JVET_Q0394: Picture timing for OLSs
 
 #define JVET_Q0398_SUBLAYER_DEP                           1 // JVET_Q0398: sub-layer dependency
 

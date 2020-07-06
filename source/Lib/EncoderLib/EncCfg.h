@@ -684,9 +684,7 @@ protected:
   bool      m_recalculateQPAccordingToLambda;                 ///< recalculate QP value according to the lambda value
   bool      m_hrdParametersPresentFlag;                       ///< enable generation of HRD parameters
   bool      m_vuiParametersPresentFlag;                       ///< enable generation of VUI parameters
-#if JVET_Q0394_TIMING_SEI
   bool      m_samePicTimingInAllOLS;                          ///< same picture timing SEI message is used in all OLS
-#endif
   bool      m_aspectRatioInfoPresentFlag;                     ///< Signals whether aspect_ratio_idc is present
   int       m_aspectRatioIdc;                                 ///< aspect_ratio_idc
   int       m_sarWidth;                                       ///< horizontal size of the sample aspect ratio
@@ -1786,10 +1784,8 @@ public:
   void         setHrdParametersPresentFlag(bool i)                   { m_hrdParametersPresentFlag = i; }
   bool         getVuiParametersPresentFlag()                         { return m_vuiParametersPresentFlag; }
   void         setVuiParametersPresentFlag(bool i)                   { m_vuiParametersPresentFlag = i; }
-#if JVET_Q0394_TIMING_SEI
   bool         getSamePicTimingInAllOLS() const                      { return m_samePicTimingInAllOLS; }
   void         setSamePicTimingInAllOLS(bool b)                      { m_samePicTimingInAllOLS = b; }
-#endif
   bool         getAspectRatioInfoPresentFlag()                       { return m_aspectRatioInfoPresentFlag; }
   void         setAspectRatioInfoPresentFlag(bool i)                 { m_aspectRatioInfoPresentFlag = i; }
   int          getAspectRatioIdc()                                   { return m_aspectRatioIdc; }

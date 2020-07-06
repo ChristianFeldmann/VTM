@@ -47,9 +47,7 @@
 
 BitstreamExtractorApp::BitstreamExtractorApp()
 :m_vpsId(0)
-#if JVET_Q0394_TIMING_SEI
 , m_removeTimingSEI (false)
-#endif
 
 {
 }
@@ -461,9 +459,7 @@ uint32_t BitstreamExtractorApp::decode()
 #if JVET_Q0398_SUBLAYER_DEP
         writeInpuNalUnitToStream &= !xCheckNumSubLayers(nalu, vps);
 #endif
-#if JVET_Q0394_TIMING_SEI
         m_removeTimingSEI = !vps->getGeneralHrdParameters()->getGeneralSamePicTimingInAllOlsFlag();
-#endif
       }
       if( nalu.m_nalUnitType == NAL_UNIT_SPS )
       {
@@ -622,11 +618,7 @@ uint32_t BitstreamExtractorApp::decode()
               }
             }
             // remove unqualified timing related SEI
-#if JVET_Q0394_TIMING_SEI
             if (sei->payloadType() == SEI::BUFFERING_PERIOD || (m_removeTimingSEI && sei->payloadType() == SEI::PICTURE_TIMING ) || sei->payloadType() == SEI::DECODING_UNIT_INFO)
-#else
-            if (sei->payloadType() == SEI::BUFFERING_PERIOD || sei->payloadType() == SEI::PICTURE_TIMING || sei->payloadType() == SEI::DECODING_UNIT_INFO)
-#endif
             {
               bool targetOlsIdxGreaterThanZero = m_targetOlsIdx > 0;
               writeInpuNalUnitToStream &= !targetOlsIdxGreaterThanZero;

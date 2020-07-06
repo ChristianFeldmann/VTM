@@ -1747,12 +1747,10 @@ void DecLib::xCheckParameterSetConstraints(const int layerId)
       "When gdr_or_irap_pic_flag is equal to 1 and gdr_pic_flag is equal to 0 and vps_independent_layer_flag[ GeneralLayerIdx[ nuh_layer_id ] ] is equal to 1, ph_inter_slice_allowed_flag shall be equal to 0" );
   }
 
-#if JVET_R0275_SPS_PTL_DBP_HRD
   if( sps->getVPSId() && vps->m_numLayersInOls[vps->m_targetOlsIdx] == 1 )
   {    
     CHECK( !sps->getPtlDpbHrdParamsPresentFlag(), "When sps_video_parameter_set_id is greater than 0 and there is an OLS that contains only one layer with nuh_layer_id equal to the nuh_layer_id of the SPS, the value of sps_ptl_dpb_hrd_params_present_flag shall be equal to 1" );
   }
-#endif
 }
 
 

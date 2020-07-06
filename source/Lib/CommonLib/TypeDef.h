@@ -103,7 +103,6 @@
 
 
 
-#define JVET_R0275_SPS_PTL_DBP_HRD                        1 // JVET-R0275: Modified constraint for sps_ptl_dpb_hrd_params_present_flag
 
 #define JVET_R0186_CLEANUP                                1 // JVET-R0186 aspect 1: Signal the pps_no_pic_partition_flag ahead in the PPS.
 

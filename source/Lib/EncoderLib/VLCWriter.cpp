@@ -820,12 +820,10 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   WRITE_CODE(0,                          4, "sps_reserved_zero_4bits");
   WRITE_FLAG(pcSPS->getPtlDpbHrdParamsPresentFlag(), "sps_ptl_dpb_hrd_params_present_flag");
 
-#if JVET_R0275_SPS_PTL_DBP_HRD
   if( !pcSPS->getVPSId() )
   {
     CHECK( !pcSPS->getPtlDpbHrdParamsPresentFlag(), "When sps_video_parameter_set_id is equal to 0, the value of sps_ptl_dpb_hrd_params_present_flag shall be equal to 1" );
   }
-#endif
 
   if (pcSPS->getPtlDpbHrdParamsPresentFlag())
   {

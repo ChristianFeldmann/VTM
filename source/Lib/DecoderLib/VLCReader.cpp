@@ -866,10 +866,8 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
       CHECK(  pcPPS->getDeblockingFilterTcOffsetDiv2() < -12 ||
               pcPPS->getDeblockingFilterTcOffsetDiv2() > 12, "Invalid deblocking filter configuration" );
 
-#if JVET_R0078_DISABLE_CHROMA_DBF_OFFSET_SINGALLING
       if( pcPPS->getPPSChromaToolFlag() )
       {
-#endif
         READ_SVLC( iCode, "pps_cb_beta_offset_div2" );                   pcPPS->setDeblockingFilterCbBetaOffsetDiv2( iCode );
         CHECK( pcPPS->getDeblockingFilterCbBetaOffsetDiv2() < -12 ||
           pcPPS->getDeblockingFilterCbBetaOffsetDiv2() > 12, "Invalid deblocking filter configuration" );
@@ -885,7 +883,6 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
         READ_SVLC( iCode, "pps_cr_tc_offset_div2" );                     pcPPS->setDeblockingFilterCrTcOffsetDiv2( iCode );
         CHECK(pcPPS->getDeblockingFilterCrTcOffsetDiv2() < -12 ||
           pcPPS->getDeblockingFilterCrTcOffsetDiv2() > 12, "Invalid deblocking filter configuration");
-#if JVET_R0078_DISABLE_CHROMA_DBF_OFFSET_SINGALLING
       }
       else
       {
@@ -894,7 +891,6 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
         pcPPS->setDeblockingFilterCrBetaOffsetDiv2 ( pcPPS->getDeblockingFilterBetaOffsetDiv2() );
         pcPPS->setDeblockingFilterCrTcOffsetDiv2   ( pcPPS->getDeblockingFilterTcOffsetDiv2()   );
       }
-#endif
     }
   }
   else
@@ -3637,10 +3633,8 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
         CHECK(  picHeader->getDeblockingFilterTcOffsetDiv2() < -12 ||
                 picHeader->getDeblockingFilterTcOffsetDiv2() > 12, "Invalid deblocking filter configuration");
 
-#if JVET_R0078_DISABLE_CHROMA_DBF_OFFSET_SINGALLING
         if( pps->getPPSChromaToolFlag() )
         {
-#endif
           READ_SVLC( iCode, "ph_cb_beta_offset_div2" );
           picHeader->setDeblockingFilterCbBetaOffsetDiv2(iCode);
           CHECK(  picHeader->getDeblockingFilterCbBetaOffsetDiv2() < -12 ||
@@ -3660,7 +3654,6 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
           picHeader->setDeblockingFilterCrTcOffsetDiv2(iCode);
           CHECK(  picHeader->getDeblockingFilterCrTcOffsetDiv2() < -12 ||
                   picHeader->getDeblockingFilterCrTcOffsetDiv2() > 12, "Invalid deblocking filter configuration");
-#if JVET_R0078_DISABLE_CHROMA_DBF_OFFSET_SINGALLING
         }
         else
         {
@@ -3669,7 +3662,6 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
           picHeader->setDeblockingFilterCrBetaOffsetDiv2 ( picHeader->getDeblockingFilterBetaOffsetDiv2() );
           picHeader->setDeblockingFilterCrTcOffsetDiv2   ( picHeader->getDeblockingFilterTcOffsetDiv2()   );
         }
-#endif
       }
     }
     else
@@ -4631,10 +4623,8 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
           CHECK(  pcSlice->getDeblockingFilterTcOffsetDiv2() < -12 ||
                   pcSlice->getDeblockingFilterTcOffsetDiv2() > 12, "Invalid deblocking filter configuration");
 
-#if JVET_R0078_DISABLE_CHROMA_DBF_OFFSET_SINGALLING
           if( pps->getPPSChromaToolFlag() )
           {
-#endif
             READ_SVLC( iCode, "slice_cb_beta_offset_div2" );                  pcSlice->setDeblockingFilterCbBetaOffsetDiv2( iCode );
             CHECK( pcSlice->getDeblockingFilterCbBetaOffsetDiv2() < -12 ||
               pcSlice->getDeblockingFilterCbBetaOffsetDiv2() > 12, "Invalid deblocking filter configuration" );
@@ -4648,7 +4638,6 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
             READ_SVLC( iCode, "slice_cr_tc_offset_div2" );                    pcSlice->setDeblockingFilterCrTcOffsetDiv2( iCode );
             CHECK( pcSlice->getDeblockingFilterCrTcOffsetDiv2() < -12 ||
               pcSlice->getDeblockingFilterCrTcOffsetDiv2() > 12, "Invalid deblocking filter configuration" );
-#if JVET_R0078_DISABLE_CHROMA_DBF_OFFSET_SINGALLING
           }
           else
           {
@@ -4657,7 +4646,6 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
             pcSlice->setDeblockingFilterCrBetaOffsetDiv2 ( pcSlice->getDeblockingFilterBetaOffsetDiv2() );
             pcSlice->setDeblockingFilterCrTcOffsetDiv2   ( pcSlice->getDeblockingFilterTcOffsetDiv2()   );
           }
-#endif
         }
       }
       else

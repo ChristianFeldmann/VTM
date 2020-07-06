@@ -503,17 +503,13 @@ void HLSWriter::codePPS( const PPS* pcPPS )
     {
       WRITE_SVLC( pcPPS->getDeblockingFilterBetaOffsetDiv2(),             "pps_beta_offset_div2" );
       WRITE_SVLC( pcPPS->getDeblockingFilterTcOffsetDiv2(),               "pps_tc_offset_div2" );
-#if JVET_R0078_DISABLE_CHROMA_DBF_OFFSET_SINGALLING
       if( pcPPS->getPPSChromaToolFlag() )
       {
-#endif
         WRITE_SVLC( pcPPS->getDeblockingFilterCbBetaOffsetDiv2(),           "pps_cb_beta_offset_div2" );
         WRITE_SVLC( pcPPS->getDeblockingFilterCbTcOffsetDiv2(),             "pps_cb_tc_offset_div2" );
         WRITE_SVLC( pcPPS->getDeblockingFilterCrBetaOffsetDiv2(),           "pps_cr_beta_offset_div2" );
         WRITE_SVLC( pcPPS->getDeblockingFilterCrTcOffsetDiv2(),             "pps_cr_tc_offset_div2" );
-#if JVET_R0078_DISABLE_CHROMA_DBF_OFFSET_SINGALLING
       }
-#endif
     }
   }
 #if JVET_R0113_AND_JVET_R0106_PPS_CLEANUP
@@ -2297,17 +2293,13 @@ void HLSWriter::codePictureHeader( PicHeader* picHeader, bool writeRbspTrailingB
       {
         WRITE_SVLC( picHeader->getDeblockingFilterBetaOffsetDiv2(), "ph_beta_offset_div2" );
         WRITE_SVLC( picHeader->getDeblockingFilterTcOffsetDiv2(), "ph_tc_offset_div2" );
-#if JVET_R0078_DISABLE_CHROMA_DBF_OFFSET_SINGALLING
         if( pps->getPPSChromaToolFlag() )
         {
-#endif
           WRITE_SVLC( picHeader->getDeblockingFilterCbBetaOffsetDiv2(), "ph_cb_beta_offset_div2" );
           WRITE_SVLC( picHeader->getDeblockingFilterCbTcOffsetDiv2(), "ph_cb_tc_offset_div2" );
           WRITE_SVLC( picHeader->getDeblockingFilterCrBetaOffsetDiv2(), "ph_cr_beta_offset_div2" );
           WRITE_SVLC( picHeader->getDeblockingFilterCrTcOffsetDiv2(), "ph_cr_tc_offset_div2" );
-#if JVET_R0078_DISABLE_CHROMA_DBF_OFFSET_SINGALLING
         }
-#endif
       }
     }
     else
@@ -2749,17 +2741,13 @@ void HLSWriter::codeSliceHeader         ( Slice* pcSlice )
         {
           WRITE_SVLC (pcSlice->getDeblockingFilterBetaOffsetDiv2(), "slice_beta_offset_div2");
           WRITE_SVLC (pcSlice->getDeblockingFilterTcOffsetDiv2(),   "slice_tc_offset_div2");
-#if JVET_R0078_DISABLE_CHROMA_DBF_OFFSET_SINGALLING
           if( pcSlice->getPPS()->getPPSChromaToolFlag() )
           {
-#endif
             WRITE_SVLC (pcSlice->getDeblockingFilterCbBetaOffsetDiv2(), "slice_cb_beta_offset_div2");
             WRITE_SVLC (pcSlice->getDeblockingFilterCbTcOffsetDiv2(),   "slice_cb_tc_offset_div2");
             WRITE_SVLC (pcSlice->getDeblockingFilterCrBetaOffsetDiv2(), "slice_cr_beta_offset_div2");
             WRITE_SVLC (pcSlice->getDeblockingFilterCrTcOffsetDiv2(),   "slice_cr_tc_offset_div2");
-#if JVET_R0078_DISABLE_CHROMA_DBF_OFFSET_SINGALLING
           }
-#endif
         }
       }
       else

@@ -142,7 +142,6 @@
 
 
 
-#define JVET_R0413_HRD_TIMING_INFORMATION                 1 // JVET-R0413: HRD timing parameters signalling
 
 #define JVET_R0214_MMVD_SYNTAX_MODIFICATION               1 // JVET-R0214: MMVD syntax modifications
 

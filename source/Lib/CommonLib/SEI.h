@@ -362,7 +362,6 @@ public:
   std::vector<uint32_t> m_numNalusInDuMinus1;
   std::vector<uint32_t> m_duCpbRemovalDelayMinus1;
   bool     m_cpbAltTimingInfoPresentFlag;
-#if JVET_R0413_HRD_TIMING_INFORMATION
   std::vector<std::vector<uint32_t>> m_nalCpbAltInitialRemovalDelayDelta;
   std::vector<std::vector<uint32_t>> m_nalCpbAltInitialRemovalOffsetDelta;
   std::vector<uint32_t>              m_nalCpbDelayOffset;
@@ -371,12 +370,6 @@ public:
   std::vector<std::vector<uint32_t>> m_vclCpbAltInitialRemovalOffsetDelta;
   std::vector<uint32_t>              m_vclCpbDelayOffset;
   std::vector<uint32_t>              m_vclDpbDelayOffset;
-#else
-  std::vector<std::vector<uint32_t>> m_cpbAltInitialCpbRemovalDelayDelta;
-  std::vector<std::vector<uint32_t>> m_cpbAltInitialCpbRemovalOffsetDelta;
-  std::vector<uint32_t>              m_cpbDelayOffset;
-  std::vector<uint32_t>              m_dpbDelayOffset;
-#endif
   int m_ptDisplayElementalPeriodsMinus1;
 };
 

@@ -89,7 +89,6 @@
 
 
 
-#define JVET_R0165_OPTIONAL_ENTRY_POINT                   1 // JVET-R0165: Optional entry point offset
 
 #define JVET_R0166_SCALING_LISTS_CHROMA_444               1 // JVET-R0166: Scaling list for Chroma 444
 

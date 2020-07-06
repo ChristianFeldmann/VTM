@@ -1817,11 +1817,7 @@ void EncSlice::encodeSlice   ( Picture* pcPic, OutputBitstream* pcSubstreams, ui
 
   Slice *const pcSlice               = pcPic->slices[getSliceSegmentIdx()];
   const bool wavefrontsEnabled         = pcSlice->getSPS()->getEntropyCodingSyncEnabledFlag();
-#if JVET_R0165_OPTIONAL_ENTRY_POINT
   const bool entryPointsPresentFlag    = pcSlice->getSPS()->getEntryPointsPresentFlag();
-#else
-  const bool wavefrontsEntryPointsFlag = (wavefrontsEnabled) ? pcSlice->getSPS()->getEntropyCodingSyncEntryPointsPresentFlag() : false;
-#endif
   uint32_t substreamSize               = 0;
   pcSlice->resetNumberOfSubstream();
 
@@ -1911,11 +1907,7 @@ void EncSlice::encodeSlice   ( Picture* pcPic, OutputBitstream* pcSubstreams, ui
         // write sub-stream size
         substreamSize += (pcSubstreams[uiSubStrm].getNumberOfWrittenBits() >> 3) + pcSubstreams[uiSubStrm].countStartCodeEmulations();
         pcSlice->increaseNumberOfSubstream();
-#if JVET_R0165_OPTIONAL_ENTRY_POINT
         if( entryPointsPresentFlag )
-#else
-        if( isLastCTUinTile || (isLastCTUinWPP && wavefrontsEntryPointsFlag) )
-#endif
         {
           pcSlice->addSubstreamSize(substreamSize);
           substreamSize = 0;

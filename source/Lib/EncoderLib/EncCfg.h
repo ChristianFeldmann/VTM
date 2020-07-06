@@ -720,9 +720,7 @@ protected:
   int         m_debugCTU;                                     ///< dbg ctu
   bool        m_bs2ModPOCAndType;
 
-#if JVET_Q0398_SUBLAYER_DEP
   CfgVPSParameters m_cfgVPSParameters;
-#endif
 
 #if ENABLE_SPLIT_PARALLELISM
   int         m_numSplitThreads;
@@ -1934,10 +1932,8 @@ public:
   void        setAvoidIntraInDepLayer(bool b)                        { m_avoidIntraInDepLayer = b; }
   bool        getAvoidIntraInDepLayer()                        const { return m_avoidIntraInDepLayer; }
 
-#if JVET_Q0398_SUBLAYER_DEP
   const CfgVPSParameters& getVPSParameters() const                                  { return m_cfgVPSParameters; }
   void                    setVPSParameters(const CfgVPSParameters& cfg)             { m_cfgVPSParameters = cfg; }
-#endif
 };
 
 //! \}

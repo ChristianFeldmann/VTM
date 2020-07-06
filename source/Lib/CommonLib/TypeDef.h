@@ -138,7 +138,6 @@
 
 
 
-#define JVET_Q0398_SUBLAYER_DEP                           1 // JVET_Q0398: sub-layer dependency
 
 #define JVET_Q0404_CBR_SUBPIC                             1 // JVET_Q0404: Constant bitrate extraction for subpictures
 

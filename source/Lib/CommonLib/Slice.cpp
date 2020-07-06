@@ -2239,9 +2239,7 @@ VPS::VPS()
   {
     m_vpsLayerId[i] = 0;
     m_vpsIndependentLayerFlag[i] = true;
-#if JVET_Q0398_SUBLAYER_DEP
     m_vpsMaxTidIlRefPicsPlus1[i] = 7;
-#endif
     m_generalLayerIdx[i] = 0;
     for (int j = 0; j < MAX_VPS_LAYERS; j++)
     {
@@ -2291,9 +2289,7 @@ void VPS::deriveOutputLayerSets()
   m_numOutputLayersInOls.resize( m_totalNumOLSs );
   m_numLayersInOls.resize( m_totalNumOLSs );
   m_outputLayerIdInOls.resize( m_totalNumOLSs, std::vector<int>( m_uiMaxLayers, NOT_VALID ) );
-#if JVET_Q0398_SUBLAYER_DEP
   m_numSubLayersInLayerInOLS.resize( m_totalNumOLSs, std::vector<int>( m_uiMaxLayers, NOT_VALID ) );
-#endif
   m_layerIdInOls.resize( m_totalNumOLSs, std::vector<int>( m_uiMaxLayers, NOT_VALID ) );
   m_olsDpbChromaFormatIdc.resize(m_totalNumOLSs);
   m_olsDpbBitDepthMinus8.resize(m_totalNumOLSs);
@@ -2337,9 +2333,7 @@ void VPS::deriveOutputLayerSets()
 
   m_numOutputLayersInOls[0] = 1;
   m_outputLayerIdInOls[0][0] = m_vpsLayerId[0];
-#if JVET_Q0398_SUBLAYER_DEP
   m_numSubLayersInLayerInOLS[0][0] = m_vpsMaxSubLayers;
-#endif
   layerUsedAsOutputLayerFlag[0] = 1;
   for (int i = 1; i < m_uiMaxLayers; i++)
   {
@@ -2359,13 +2353,11 @@ void VPS::deriveOutputLayerSets()
     {
       m_numOutputLayersInOls[i] = 1;
       m_outputLayerIdInOls[i][0] = m_vpsLayerId[i];
-#if JVET_Q0398_SUBLAYER_DEP
       for(int  j = 0; j < i  &&  ( m_vpsOlsModeIdc  ==  0 ); j++ )
       {
         m_numSubLayersInLayerInOLS[i][j] = m_vpsMaxTidIlRefPicsPlus1[i];
       }
       m_numSubLayersInLayerInOLS[i][i] = m_vpsMaxSubLayers;
-#endif
     }
     else if( m_vpsOlsModeIdc == 1 )
     {
@@ -2374,21 +2366,17 @@ void VPS::deriveOutputLayerSets()
       for( int j = 0; j < m_numOutputLayersInOls[i]; j++ )
       {
         m_outputLayerIdInOls[i][j] = m_vpsLayerId[j];
-#if JVET_Q0398_SUBLAYER_DEP
         m_numSubLayersInLayerInOLS[i][j] = m_vpsMaxSubLayers;
-#endif
       }
     }
     else if( m_vpsOlsModeIdc == 2 )
     {
       int j = 0;
-#if JVET_Q0398_SUBLAYER_DEP
       for( j = 0; j  <  m_uiMaxLayers; j++ )
       {
         m_numSubLayersInLayerInOLS[i][j] = 0;
       }
       j = 0;
-#endif
       for( int k = 0; k < m_uiMaxLayers; k++ )
       {
         if( m_vpsOlsOutputLayerFlag[i][k] )
@@ -2397,9 +2385,7 @@ void VPS::deriveOutputLayerSets()
           layerUsedAsOutputLayerFlag[k] = 1;
           outputLayerIdx[i][j] = k;
           m_outputLayerIdInOls[i][j++] = m_vpsLayerId[k];
-#if JVET_Q0398_SUBLAYER_DEP
           m_numSubLayersInLayerInOLS[i][k] = m_vpsMaxSubLayers;
-#endif
         }
       }
       m_numOutputLayersInOls[i] = j;
@@ -2410,12 +2396,10 @@ void VPS::deriveOutputLayerSets()
         for( int k = 0; k < numRefLayers[idx]; k++ )
         {
           layerIncludedInOlsFlag[i][refLayerIdx[idx][k]] = 1;
-#if JVET_Q0398_SUBLAYER_DEP
           if( m_numSubLayersInLayerInOLS[i][ refLayerIdx[idx][k] ] < m_vpsMaxTidIlRefPicsPlus1[ m_outputLayerIdInOls[i][j] ] )
           {
             m_numSubLayersInLayerInOLS[i][ refLayerIdx[idx][k] ] =  m_vpsMaxTidIlRefPicsPlus1[ m_outputLayerIdInOls[i][j] ];
           }
-#endif
         }
       }
     }

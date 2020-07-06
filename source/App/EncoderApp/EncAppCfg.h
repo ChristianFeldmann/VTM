@@ -722,9 +722,7 @@ protected:
 
   int         m_numPtlsInVps;
 
-#if JVET_Q0398_SUBLAYER_DEP
   CfgVPSParameters m_cfgVPSParameters;
-#endif
   Level::Name m_levelPtl[MAX_NUM_OLSS];
   int         m_olsPtlIdx[MAX_NUM_OLSS];
 

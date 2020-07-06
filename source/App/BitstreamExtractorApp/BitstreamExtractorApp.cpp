@@ -350,7 +350,6 @@ void BitstreamExtractorApp::xWritePPS(PPS *pps, std::ostream& out, int layerId, 
   writeAnnexB (out, tmpAu);
 }
 
-#if JVET_Q0398_SUBLAYER_DEP
 // returns true, if the NAL unit is to be discarded
 bool BitstreamExtractorApp::xCheckNumSubLayers(InputNALUnit &nalu, VPS *vps)
 {
@@ -360,7 +359,6 @@ bool BitstreamExtractorApp::xCheckNumSubLayers(InputNALUnit &nalu, VPS *vps)
 
   return retval;
 }
-#endif
 
 uint32_t BitstreamExtractorApp::decode()
 {
@@ -456,9 +454,7 @@ uint32_t BitstreamExtractorApp::decode()
         std::vector<int> layerIdInOls = vps->getLayerIdsInOls(m_targetOlsIdx);
         bool isIncludedInTargetOls = std::find(layerIdInOls.begin(), layerIdInOls.end(), nalu.m_nuhLayerId) != layerIdInOls.end();
         writeInpuNalUnitToStream &= (isSpecialNalTypes || isIncludedInTargetOls);
-#if JVET_Q0398_SUBLAYER_DEP
         writeInpuNalUnitToStream &= !xCheckNumSubLayers(nalu, vps);
-#endif
         m_removeTimingSEI = !vps->getGeneralHrdParameters()->getGeneralSamePicTimingInAllOlsFlag();
       }
       if( nalu.m_nalUnitType == NAL_UNIT_SPS )

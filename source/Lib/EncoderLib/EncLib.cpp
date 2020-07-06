@@ -1306,7 +1306,6 @@ void EncLib::xInitSPS( SPS& sps )
   }
 
   sps.setScalingListFlag ( (m_useScalingListId == SCALING_LIST_OFF) ? 0 : 1 );
-#if JVET_R0380_SCALING_MATRIX_DISABLE_YCC_OR_RGB
   if (sps.getUseColorTrans() && sps.getScalingListFlag())
   {
     sps.setScalingMatrixForAlternativeColourSpaceDisabledFlag( m_disableScalingMatrixForAlternativeColourSpace );
@@ -1323,7 +1322,6 @@ void EncLib::xInitSPS( SPS& sps )
   {
     sps.setScalingMatrixDesignatedColourSpaceFlag( true );
   }
-#endif
   sps.setALFEnabledFlag( m_alf );
   sps.setCCALFEnabledFlag( m_ccalf );
   sps.setFieldSeqFlag(false);

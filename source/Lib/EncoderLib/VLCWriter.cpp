@@ -1225,7 +1225,6 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
     WRITE_FLAG(pcSPS->getDisableScalingMatrixForLfnstBlks(), "scaling_matrix_for_lfnst_disabled_flag");
   }
 
-#if JVET_R0380_SCALING_MATRIX_DISABLE_YCC_OR_RGB
   if (pcSPS->getUseColorTrans() && pcSPS->getScalingListFlag())
   {
     WRITE_FLAG(pcSPS->getScalingMatrixForAlternativeColourSpaceDisabledFlag(), "sps_scaling_matrix_for_alternative_colour_space_disabled_flag");
@@ -1234,7 +1233,6 @@ void HLSWriter::codeSPS( const SPS* pcSPS )
   {
     WRITE_FLAG(pcSPS->getScalingMatrixDesignatedColourSpaceFlag(), "sps_scaling_matrix_designated_colour_space_flag");
   }
-#endif
   WRITE_FLAG(pcSPS->getDepQuantEnabledFlag(), "sps_dep_quant_enabled_flag");
   WRITE_FLAG(pcSPS->getSignDataHidingEnabledFlag(), "sps_sign_data_hiding_enabled_flag");
 

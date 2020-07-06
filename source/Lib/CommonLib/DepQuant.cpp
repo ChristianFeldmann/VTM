@@ -1602,12 +1602,8 @@ void DepQuant::quant( TransformUnit &tu, const ComponentID &compID, const CCoeff
 
     const bool        disableSMForLFNST = tu.cs->slice->getExplicitScalingListUsed() ? tu.cs->slice->getSPS()->getDisableScalingMatrixForLfnstBlks() : false;
     const bool        isLfnstApplied = tu.cu->lfnstIdx > 0 && (tu.cu->isSepTree() ? true : isLuma(compID));
-#if JVET_R0380_SCALING_MATRIX_DISABLE_YCC_OR_RGB
     const bool        disableSMForACT = tu.cs->slice->getSPS()->getScalingMatrixForAlternativeColourSpaceDisabledFlag() && (tu.cs->slice->getSPS()->getScalingMatrixDesignatedColourSpaceFlag() == tu.cu->colorTransform);
     const bool        enableScalingLists = getUseScalingList(width, height, (tu.mtsIdx[compID] == MTS_SKIP), isLfnstApplied, disableSMForLFNST, disableSMForACT);
-#else
-    const bool        enableScalingLists = getUseScalingList(width, height, (tu.mtsIdx[compID] == MTS_SKIP), isLfnstApplied, disableSMForLFNST);
-#endif
     static_cast<DQIntern::DepQuant*>(p)->quant( tu, pSrc, compID, cQP, Quant::m_dLambda, ctx, uiAbsSum, enableScalingLists, Quant::getQuantCoeff(scalingListType, qpRem, log2TrWidth, log2TrHeight) );
   }
   else
@@ -1638,12 +1634,8 @@ void DepQuant::dequant( const TransformUnit &tu, CoeffBuf &dstCoeff, const Compo
 
     const bool disableSMForLFNST = tu.cs->slice->getExplicitScalingListUsed() ? tu.cs->slice->getSPS()->getDisableScalingMatrixForLfnstBlks() : false;
     const bool isLfnstApplied = tu.cu->lfnstIdx > 0 && (tu.cu->isSepTree() ? true : isLuma(compID));
-#if JVET_R0380_SCALING_MATRIX_DISABLE_YCC_OR_RGB
     const bool disableSMForACT = tu.cs->slice->getSPS()->getScalingMatrixForAlternativeColourSpaceDisabledFlag() && (tu.cs->slice->getSPS()->getScalingMatrixDesignatedColourSpaceFlag() == tu.cu->colorTransform);
     const bool enableScalingLists = getUseScalingList(width, height, (tu.mtsIdx[compID] == MTS_SKIP), isLfnstApplied, disableSMForLFNST, disableSMForACT);
-#else
-    const bool enableScalingLists = getUseScalingList(width, height, (tu.mtsIdx[compID] == MTS_SKIP), isLfnstApplied, disableSMForLFNST);
-#endif
     static_cast<DQIntern::DepQuant*>(p)->dequant( tu, dstCoeff, compID, cQP, enableScalingLists, Quant::getDequantCoeff(scalingListType, qpRem, log2TrWidth, log2TrHeight) );
   }
   else

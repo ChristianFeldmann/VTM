@@ -637,12 +637,8 @@ void QuantRDOQ::xRateDistOptQuant(TransformUnit &tu, const ComponentID &compID, 
 
   const bool   disableSMForLFNST = tu.cs->slice->getExplicitScalingListUsed() ? tu.cs->slice->getSPS()->getDisableScalingMatrixForLfnstBlks() : false;
   const bool   isLfnstApplied = tu.cu->lfnstIdx > 0 && (tu.cu->isSepTree() ? true : isLuma(compID));
-#if JVET_R0380_SCALING_MATRIX_DISABLE_YCC_OR_RGB
   const bool   disableSMForACT = tu.cs->slice->getSPS()->getScalingMatrixForAlternativeColourSpaceDisabledFlag() && (tu.cs->slice->getSPS()->getScalingMatrixDesignatedColourSpaceFlag() == tu.cu->colorTransform);
   const bool   enableScalingLists = getUseScalingList(uiWidth, uiHeight, isTransformSkip, isLfnstApplied, disableSMForLFNST, disableSMForACT);
-#else
-  const bool   enableScalingLists = getUseScalingList(uiWidth, uiHeight, isTransformSkip, isLfnstApplied, disableSMForLFNST);
-#endif
   const int    defaultQuantisationCoefficient = g_quantScales[ needSqrtAdjustment ?1:0][cQP.rem(isTransformSkip)];
   const double defaultErrorScale              = xGetErrScaleCoeffNoScalingList(scalingListType, uiLog2BlockWidth, uiLog2BlockHeight, cQP.rem(isTransformSkip));
   const int iQBits = QUANT_SHIFT + cQP.per(isTransformSkip) + iTransformShift + (needSqrtAdjustment?-1:0);                   // Right shift of non-RDOQ quantizer;  level = (coeff*uiQ + offset)>>q_bits

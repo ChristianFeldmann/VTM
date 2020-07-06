@@ -86,7 +86,6 @@
 
 
 
-#define JVET_R0380_SCALING_MATRIX_DISABLE_YCC_OR_RGB      1 // JVET-R0380 solution3-3: Disable scaling matrix for blocks coded in alternative colour space.
 
 #define R0091_CONSTRAINT_SLICE_ORDER                      1 // JVET-R0091: constraint slice signalling order to be the same as slice coding order
 

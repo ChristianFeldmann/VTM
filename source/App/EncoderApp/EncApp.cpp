@@ -783,7 +783,6 @@ void EncApp::xInitLibCfg()
   m_cEncLib.setUseScalingListId                                  ( m_useScalingListId  );
   m_cEncLib.setScalingListFileName                               ( m_scalingListFileName );
   m_cEncLib.setDisableScalingMatrixForLfnstBlks                  ( m_disableScalingMatrixForLfnstBlks);
-#if JVET_R0380_SCALING_MATRIX_DISABLE_YCC_OR_RGB
   if ( m_cEncLib.getUseColorTrans() && m_cEncLib.getUseScalingListId() )
   {
     m_cEncLib.setDisableScalingMatrixForAlternativeColourSpace(m_disableScalingMatrixForAlternativeColourSpace);
@@ -792,7 +791,6 @@ void EncApp::xInitLibCfg()
   {
     m_cEncLib.setScalingMatrixDesignatedColourSpace(m_scalingMatrixDesignatedColourSpace);
   }
-#endif
   m_cEncLib.setDepQuantEnabledFlag                               ( m_depQuantEnabledFlag);
   m_cEncLib.setSignDataHidingEnabledFlag                         ( m_signDataHidingEnabledFlag);
   m_cEncLib.setUseRateCtrl                                       ( m_RCEnableRateControl );

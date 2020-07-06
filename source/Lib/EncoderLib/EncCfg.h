@@ -250,9 +250,7 @@ protected:
   bool m_nonProjectedConstraintFlag;
   bool m_noResChangeInClvsConstraintFlag;
   bool m_oneTilePerPicConstraintFlag;
-#if JVET_R0118_PH_IN_SH_CONSTRAINT_FLAG
   bool m_picHeaderInSliceHeaderConstraintFlag;
-#endif
   bool m_oneSlicePerPicConstraintFlag;
   bool m_oneSubpicPerPicConstraintFlag;
   bool m_frameOnlyConstraintFlag;
@@ -1879,10 +1877,8 @@ public:
   bool         getOneTilePerPicConstraintFlag() const                { return m_oneTilePerPicConstraintFlag; }
   void         setOneTilePerPicConstraintFlag(bool b)                { m_oneTilePerPicConstraintFlag = b; }
 
-#if JVET_R0118_PH_IN_SH_CONSTRAINT_FLAG
   bool         getPicHeaderInSliceHeaderConstraintFlag() const { return m_picHeaderInSliceHeaderConstraintFlag; }
   void         setPicHeaderInSliceHeaderConstraintFlag(bool b) { m_picHeaderInSliceHeaderConstraintFlag = b; }
-#endif
 
   bool         getOneSlicePerPicConstraintFlag() const               { return m_oneSlicePerPicConstraintFlag; }
   void         setOneSlicePerPicConstraintFlag(bool b)               { m_oneSlicePerPicConstraintFlag = b; }

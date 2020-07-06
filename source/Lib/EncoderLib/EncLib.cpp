@@ -1138,9 +1138,7 @@ void EncLib::xInitSPS( SPS& sps )
   cinfo->setNonProjectedConstraintFlag(m_nonProjectedConstraintFlag);
   cinfo->setNoResChangeInClvsConstraintFlag(m_noResChangeInClvsConstraintFlag);
   cinfo->setOneTilePerPicConstraintFlag(m_oneTilePerPicConstraintFlag);
-#if JVET_R0118_PH_IN_SH_CONSTRAINT_FLAG
   cinfo->setPicHeaderInSliceHeaderConstraintFlag(m_picHeaderInSliceHeaderConstraintFlag);
-#endif
   cinfo->setOneSlicePerPicConstraintFlag(m_oneSlicePerPicConstraintFlag);
   cinfo->setOneSubpicPerPicConstraintFlag(m_oneSubpicPerPicConstraintFlag);
   cinfo->setFrameOnlyConstraintFlag     (m_frameOnlyConstraintFlag);

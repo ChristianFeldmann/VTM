@@ -3370,12 +3370,10 @@ void EncGOP::compressGOP( int iPOCLast, int iNumPicRcvd, PicList& rcListPic,
           {
             pcSlice->setPictureHeaderInSliceHeader(true);
           }
-#if JVET_R0118_PH_IN_SH_CONSTRAINT_FLAG
           if (pcSlice->getSPS()->getProfileTierLevel()->getConstraintInfo()->getPicHeaderInSliceHeaderConstraintFlag())
           {
             CHECK(pcSlice->getPictureHeaderInSliceHeader() == false, "PH shall be present in SH, when pic_header_in_slice_header_constraint_flag is equal to 1");
           }
-#endif
         }
         pcSlice->setPicHeader( pcPic->cs->picHeader );
 	pcSlice->setNalUnitLayerId( m_pcEncLib->getLayerId() );

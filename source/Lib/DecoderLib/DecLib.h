@@ -77,10 +77,8 @@ private:
   int                     m_pocCRA[MAX_VPS_LAYERS];            ///< POC number of the previous CRA picture
   int                     m_associatedIRAPDecodingOrderNumber[MAX_VPS_LAYERS]; ///< Decoding order number of the previous IRAP picture
   int                     m_decodingOrderCounter;
-#if JVET_P0359_PARAMETER_SETS_INCLUSION_SEI
   int                     m_puCounter;
   bool                    m_seiInclusionFlag;
-#endif
   int                     m_prevGDRSubpicPOC[MAX_VPS_LAYERS][MAX_NUM_SUB_PICS];
   int                     m_prevIRAPSubpicPOC[MAX_VPS_LAYERS][MAX_NUM_SUB_PICS];
   NalUnitType             m_prevIRAPSubpicType[MAX_VPS_LAYERS][MAX_NUM_SUB_PICS];
@@ -266,12 +264,8 @@ protected:
   Picture * xGetNewPicBuffer( const SPS &sps, const PPS &pps, const uint32_t temporalLayer, const int layerId );
   void  xCreateLostPicture( int iLostPOC, const int layerId );
   void  xCreateUnavailablePicture(int iUnavailablePoc, bool longTermFlag, const int layerId, const bool interLayerRefPicFlag);
-#if JVET_P0359_PARAMETER_SETS_INCLUSION_SEI
   void  checkParameterSetsInclusionSEIconstraints(const InputNALUnit nalu);
   void  xActivateParameterSets( const InputNALUnit nalu );
-#else
-  void  xActivateParameterSets( const int layerId );
-#endif
   void  xCheckParameterSetConstraints( const int layerId );
   void      xDecodePicHeader( InputNALUnit& nalu );
   bool      xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDisplay);

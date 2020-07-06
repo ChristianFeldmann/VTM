@@ -397,10 +397,8 @@ DecLib::DecLib()
   , m_pocCRA{ MAX_INT }
   , m_associatedIRAPDecodingOrderNumber{ 0 }
   , m_decodingOrderCounter(0)
-#if JVET_P0359_PARAMETER_SETS_INCLUSION_SEI
   , m_puCounter(0)
   , m_seiInclusionFlag(false)
-#endif
   , m_pocRandomAccess(MAX_INT)
   , m_lastRasPoc(MAX_INT)
   , m_cListPic()
@@ -680,9 +678,7 @@ void DecLib::finishPictureLight(int& poc, PicList*& rpcListPic )
   Slice::sortPicList( m_cListPic ); // sorting for application output
   poc                 = pcSlice->getPOC();
   rpcListPic          = &m_cListPic;
-#if JVET_P0359_PARAMETER_SETS_INCLUSION_SEI
   m_puCounter++;
-#endif
 }
 
 void DecLib::finishPicture(int& poc, PicList*& rpcListPic, MsgLevel msgl )
@@ -783,9 +779,7 @@ void DecLib::finishPicture(int& poc, PicList*& rpcListPic, MsgLevel msgl )
   m_pcPic->cs->destroyCoeffs();
   m_pcPic->cs->releaseIntermediateData();
   m_pcPic->cs->picHeader->initPicHeader();
-#if JVET_P0359_PARAMETER_SETS_INCLUSION_SEI
   m_puCounter++;
-#endif
 }
 
 void DecLib::checkNoOutputPriorPics (PicList* pcListPic)
@@ -1341,7 +1335,6 @@ void activateAPS(PicHeader* picHeader, Slice* pSlice, ParameterSetManager& param
   picHeader->setScalingListAPS(scalingListAPS);
 }
 
-#if JVET_P0359_PARAMETER_SETS_INCLUSION_SEI
 void DecLib::checkParameterSetsInclusionSEIconstraints(const InputNALUnit nalu)
 {
   const PPS* pps = m_pcPic->cs->pps;
@@ -1375,16 +1368,10 @@ void DecLib::checkParameterSetsInclusionSEIconstraints(const InputNALUnit nalu)
           scalinglistAPS->getPuCounter() > m_puCounter, "Violating Parameter Sets Inclusion Indication SEI constraint");
   }
 }
-#endif
 
-#if JVET_P0359_PARAMETER_SETS_INCLUSION_SEI
 void DecLib::xActivateParameterSets( const InputNALUnit nalu )
 {
   const int layerId = nalu.m_nuhLayerId;
-#else
-void DecLib::xActivateParameterSets( const int layerId )
-{
-#endif
   if (m_bFirstSliceInPicture)
   {
     APS** apss = m_parameterSetManager.getAPSs();
@@ -1495,21 +1482,17 @@ void DecLib::xActivateParameterSets( const int layerId )
         isField    = ff->m_fieldPicFlag;
         isTopField = isField && (!ff->m_bottomFieldFlag);
       }
-#if JVET_P0359_PARAMETER_SETS_INCLUSION_SEI
       SEIMessages inclusionSEIs = getSeisByType(m_SEIs, SEI::PARAMETER_SETS_INCLUSION_INDICATION);
       const SEIParameterSetsInclusionIndication* inclusion = (inclusionSEIs.size() > 0) ? (SEIParameterSetsInclusionIndication*)*(inclusionSEIs.begin()) : NULL;
       if (inclusion != NULL)
       {
         m_seiInclusionFlag = inclusion->m_selfContainedClvsFlag;
       }
-#endif
     }
-#if JVET_P0359_PARAMETER_SETS_INCLUSION_SEI
     if (m_seiInclusionFlag)
     {
       checkParameterSetsInclusionSEIconstraints(nalu);
     }
-#endif
 
     //Set Field/Frame coding mode
     m_pcPic->fieldPic = isField;
@@ -1608,12 +1591,10 @@ void DecLib::xActivateParameterSets( const int layerId )
        picSEI.insert(picSEI.end(), decodingUnitInfos.begin(), decodingUnitInfos.end());
        deleteSEIs(m_SEIs);
      }
-#if JVET_P0359_PARAMETER_SETS_INCLUSION_SEI
      if (m_seiInclusionFlag)
      {
        checkParameterSetsInclusionSEIconstraints(nalu);
      }
-#endif
   }
   xCheckParameterSetConstraints(layerId);
 }
@@ -2174,11 +2155,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
   }
 
   // actual decoding starts here
-#if JVET_P0359_PARAMETER_SETS_INCLUSION_SEI
   xActivateParameterSets( nalu );
-#else
-  xActivateParameterSets( nalu.m_nuhLayerId );
-#endif
 
   m_firstSliceInSequence[nalu.m_nuhLayerId] = false;
   m_firstSliceInBitstream  = false;
@@ -2687,9 +2664,7 @@ void DecLib::xDecodePPS( InputNALUnit& nalu )
   m_HLSReader.parsePPS( pps );
   pps->setLayerId( nalu.m_nuhLayerId );
   pps->setTemporalId( nalu.m_temporalId );
-#if JVET_P0359_PARAMETER_SETS_INCLUSION_SEI
   pps->setPuCounter( m_puCounter );
-#endif
   m_parameterSetManager.storePPS( pps, nalu.getBitstream().getFifo() );
 }
 
@@ -2703,9 +2678,7 @@ void DecLib::xDecodeAPS(InputNALUnit& nalu)
 #if JVET_R0201_PREFIX_SUFFIX_APS_CLEANUP
   aps->setHasPrefixNalUnitType( nalu.m_nalUnitType == NAL_UNIT_PREFIX_APS );
 #endif
-#if JVET_P0359_PARAMETER_SETS_INCLUSION_SEI
   aps->setPuCounter( m_puCounter );
-#endif
   m_parameterSetManager.checkAuApsContent( aps, m_accessUnitApsNals );
   if( m_apsMapEnc )
   {

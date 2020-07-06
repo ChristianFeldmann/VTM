@@ -80,11 +80,9 @@ void SEIWriter::xWriteSEIpayloadData(OutputBitstream &bs, const SEI& sei, const 
   case SEI::FRAME_PACKING:
     xWriteSEIFramePacking(*static_cast<const SEIFramePacking*>(&sei));
     break;
-#if JVET_P0359_PARAMETER_SETS_INCLUSION_SEI
   case SEI::PARAMETER_SETS_INCLUSION_INDICATION:
     xWriteSEIParameterSetsInclusionIndication(*static_cast<const SEIParameterSetsInclusionIndication*>(&sei));
     break;
-#endif
   case SEI::MASTERING_DISPLAY_COLOUR_VOLUME:
     xWriteSEIMasteringDisplayColourVolume(*static_cast<const SEIMasteringDisplayColourVolume*>(&sei));
     break;
@@ -607,12 +605,10 @@ void SEIWriter::xWriteSEIFramePacking(const SEIFramePacking& sei)
 }
 
 
-#if JVET_P0359_PARAMETER_SETS_INCLUSION_SEI
 void SEIWriter::xWriteSEIParameterSetsInclusionIndication(const SEIParameterSetsInclusionIndication& sei)
 {
   WRITE_FLAG(sei.m_selfContainedClvsFlag, "self_contained_clvs_flag");
 }
-#endif
 
 void SEIWriter::xWriteSEIMasteringDisplayColourVolume(const SEIMasteringDisplayColourVolume& sei)
 {

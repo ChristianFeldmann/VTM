@@ -621,14 +621,12 @@ void EncGOP::xCreateIRAPLeadingSEIMessages (SEIMessages& seiMessages, const SPS 
     seiMessages.push_back(sei);
   }
 
-#if JVET_P0359_PARAMETER_SETS_INCLUSION_SEI
   if (m_pcCfg->getParameterSetsInclusionIndicationSEIEnabled())
   {
     SEIParameterSetsInclusionIndication* sei = new SEIParameterSetsInclusionIndication;
     m_seiEncoder.initSEIParameterSetsInclusionIndication(sei);
     seiMessages.push_back(sei);
   }
-#endif
 
 #if U0033_ALTERNATIVE_TRANSFER_CHARACTERISTICS_SEI
   if(m_pcCfg->getSEIAlternativeTransferCharacteristicsSEIEnable())

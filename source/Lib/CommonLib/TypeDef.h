@@ -54,107 +54,10 @@
 //########### place macros to be removed in next cycle below this line ###############
 
 
-                                                            //             The value of no_output_of_prior_pics_flag, when present, is required to be the same for all pictures in an AU
-
-
-
-
-
-
-                                                            //            Add a flag aud_irap_or_gdr_au_flag to the AUD, and mandate the presence of AUD in each IRAP or GDR AU when vps_max_layers_minus1 is greater than 0
-
-
-
-
-#define JVET_R0351_HIGH_BIT_DEPTH_SUPPORT                 1 // JVET-R0351: high bit depth coding support (syntax changes, no mathematical differences for CTCs)
-#define JVET_R0351_HIGH_BIT_DEPTH_ENABLED                 0 // JVET-R0351: high bit depth coding enabled (increases accuracies of some calculations, e.g. transforms)
-
-
-                                                            //             Change vps_num_dpb_params to vps_num_dpb_params_minus1 and change the semantics to a two-way constraint
-                                                            //             Signal DPB parameters for OLS in this case only if(!each_layer_is_an_ols_flag)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                                                            //               Constrain that each PTL, DPB, and HRD params in VPS are referred to at least once
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 //########### place macros to be be kept below this line ###############
+#define JVET_R0351_HIGH_BIT_DEPTH_SUPPORT                 1 // JVET-R0351: high bit depth coding support (syntax changes, no mathematical differences for CTCs)
+#define JVET_R0351_HIGH_BIT_DEPTH_ENABLED                 0 // JVET-R0351: high bit depth coding enabled (increases accuracies of some calculations, e.g. transforms)
 
 #define JVET_R0164_MEAN_SCALED_SATD                       1 // JVET-R0164: Use a mean scaled version of SATD in encoder decisions
 

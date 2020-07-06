@@ -1461,11 +1461,7 @@ void HLSWriter::codeVPS(const VPS* pcVPS)
   }
   for (int i = 0; i < totalNumOlss; i++)
   {
-#if JVET_R0161_CONDITION_SIGNAL_PTL_IDX
     if (pcVPS->getNumPtls() > 1 && pcVPS->getNumPtls() != pcVPS->getTotalNumOLSs())
-#else
-    if(pcVPS->getNumPtls() > 1)
-#endif
       WRITE_CODE(pcVPS->getOlsPtlIdx(i), 8, "ols_ptl_idx");
   }
 

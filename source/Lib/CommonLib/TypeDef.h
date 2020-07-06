@@ -88,7 +88,6 @@
 
 
 
-#define JVET_R0161_CONDITION_SIGNAL_PTL_IDX               1 // JVET_R0161 proposal 2: skip PTL index signaling when number of signaled PTL structure is equal to number of OLSs
 
 #define JVET_R0165_OPTIONAL_ENTRY_POINT                   1 // JVET-R0165: Optional entry point offset
 

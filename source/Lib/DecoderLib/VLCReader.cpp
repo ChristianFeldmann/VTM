@@ -2322,21 +2322,15 @@ void HLSyntaxReader::parseVPS(VPS* pcVPS)
   pcVPS->setProfileTierLevel(ptls);
   for (int i = 0; i < pcVPS->getTotalNumOLSs(); i++)
   {
-#if JVET_R0161_CONDITION_SIGNAL_PTL_IDX
     if (pcVPS->getNumPtls() > 1 && pcVPS->getNumPtls() != pcVPS->getTotalNumOLSs())
-#else
-    if(pcVPS->getNumPtls() > 1)
-#endif
     {
       READ_CODE(8, uiCode, "ols_ptl_idx");
       pcVPS->setOlsPtlIdx(i, uiCode);
     }
-#if JVET_R0161_CONDITION_SIGNAL_PTL_IDX
     else if (pcVPS->getNumPtls() == pcVPS->getTotalNumOLSs())
     {
       pcVPS->setOlsPtlIdx(i, i);
     }
-#endif
     else
       pcVPS->setOlsPtlIdx(i, 0);
 #if JVET_R0191_ASPECT3

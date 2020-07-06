@@ -450,9 +450,7 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
   READ_UVLC( uiCode, "pic_width_in_luma_samples" );          pcPPS->setPicWidthInLumaSamples( uiCode );
   READ_UVLC( uiCode, "pic_height_in_luma_samples" );         pcPPS->setPicHeightInLumaSamples( uiCode );
   READ_FLAG(uiCode, "pps_conformance_window_flag");
-#if JVET_R0068_ASPECT1_ASPECT6
   pcPPS->setConformanceWindowFlag( uiCode );
-#endif
   if (uiCode != 0)
   {
     Window& conf = pcPPS->getConformanceWindow();
@@ -3036,7 +3034,6 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
   {
     picHeader->setExplicitScalingListEnabledFlag(false);
   }
-#if JVET_R0068_ASPECT1_ASPECT6
   if (pps->getPicWidthInLumaSamples() == sps->getMaxPicWidthInLumaSamples() && pps->getPicHeightInLumaSamples() == sps->getMaxPicHeightInLumaSamples())
   {
     CHECK(pps->getConformanceWindowFlag(), "When pic_width_in_luma_samples is equal to pic_width_max_in_luma_samples and pic_height_in_luma_samples is equal to pic_height_max_in_luma_samples, the value of pps_conformance_window_flag shall be equal to 0");
@@ -3045,7 +3042,6 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
     pps->getConformanceWindow().setWindowTopOffset(sps->getConformanceWindow().getWindowTopOffset());
     pps->getConformanceWindow().setWindowBottomOffset(sps->getConformanceWindow().getWindowBottomOffset());
   }
-#endif
 
   // initialize tile/slice info for no partitioning case
 
@@ -3831,11 +3827,7 @@ void  HLSyntaxReader::checkAlfNaluTidAndPicTid(Slice* pcSlice, PicHeader* picHea
     }
   }
 }
-#if JVET_R0068_ASPECT1_ASPECT6
 void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, ParameterSetManager *parameterSetManager, const int prevTid0POC, const int prevPicPOC)
-#else
-void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, ParameterSetManager *parameterSetManager, const int prevTid0POC)
-#endif
 {
   uint32_t  uiCode;
   int   iCode;
@@ -4024,17 +4016,9 @@ void HLSyntaxReader::parseSliceHeader (Slice* pcSlice, PicHeader* picHeader, Par
   {
     READ_UVLC (    uiCode, "slice_type" );            pcSlice->setSliceType((SliceType)uiCode);
     VPS *vps = parameterSetManager->getVPS(sps->getVPSId());
-#if JVET_R0068_ASPECT1_ASPECT6
     if (pcSlice->isIRAP() && (sps->getVPSId() == 0 || pcSlice->getPOC() != prevPicPOC || vps->getIndependentLayerFlag(vps->getGeneralLayerIdx(pcSlice->getNalUnitLayerId())) == 1))
-#else
-    if (pcSlice->isIRAP() && (sps->getVPSId() == 0 || vps->getIndependentLayerFlag(vps->getGeneralLayerIdx(pcSlice->getNalUnitLayerId())) == 1))
-#endif
     {
-#if JVET_R0068_ASPECT1_ASPECT6
       CHECK(uiCode != 2, "When nal_unit_type is in the range of IDR_W_RADL to CRA_NUT, inclusive, and vps_independent_layer_flag[ GeneralLayerIdx[ nuh_layer_id ] ] is equal to 1 or the current picture is the first picture in the current AU, slice_type shall be equal to 2");
-#else
-      CHECK(uiCode != 2, "When nal_unit_type is in the range of IDR_W_RADL to CRA_NUT, inclusive, and vps_independent_layer_flag[ GeneralLayerIdx[ nuh_layer_id ] ] is equal to 1, slice_type shall be equal to 2");
-#endif
     }
   }
   else

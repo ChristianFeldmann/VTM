@@ -130,9 +130,7 @@ private:
   uint32_t                m_uiSliceSegmentIdx;
   uint32_t                m_prevLayerID;
   int                     m_prevPOC;
-#if JVET_R0068_ASPECT1_ASPECT6
   int                     m_prevPicPOC;
-#endif
   int                     m_prevTid0POC;
   bool                    m_bFirstSliceInPicture;
   bool                    m_firstSliceInSequence[MAX_VPS_LAYERS];

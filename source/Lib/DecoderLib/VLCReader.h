@@ -179,11 +179,7 @@ public:
   void parseGeneralHrdParameters(GeneralHrdParams *generalHrd);
   void  parsePictureHeader  ( PicHeader* picHeader, ParameterSetManager *parameterSetManager, bool readRbspTrailingBits );
   void  checkAlfNaluTidAndPicTid(Slice* pcSlice, PicHeader* picHeader, ParameterSetManager *parameterSetManager);
-#if JVET_R0068_ASPECT1_ASPECT6
   void  parseSliceHeader    ( Slice* pcSlice, PicHeader* picHeader, ParameterSetManager *parameterSetManager, const int prevTid0POC, const int prevPicPOC );
-#else
-  void  parseSliceHeader    ( Slice* pcSlice, PicHeader* picHeader, ParameterSetManager *parameterSetManager, const int prevTid0POC );
-#endif
   void  getSlicePoc ( Slice* pcSlice, PicHeader* picHeader, ParameterSetManager *parameterSetManager, const int prevTid0POC );
   void  parseTerminatingBit ( uint32_t& ruiBit );
   void  parseRemainingBytes ( bool noTrailingBytesExpected );

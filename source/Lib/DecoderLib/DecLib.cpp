@@ -432,9 +432,7 @@ DecLib::DecLib()
   , m_pcPic(NULL)
   , m_prevLayerID(MAX_INT)
   , m_prevPOC(MAX_INT)
-#if JVET_R0068_ASPECT1_ASPECT6
   , m_prevPicPOC(MAX_INT)
-#endif
   , m_prevTid0POC(0)
   , m_bFirstSliceInPicture(true)
   , m_firstSliceInSequence{ true }
@@ -714,9 +712,7 @@ void DecLib::finishPicture(int& poc, PicList*& rpcListPic, MsgLevel msgl )
 #endif
 
   Slice*  pcSlice = m_pcPic->cs->slice;
-#if JVET_R0068_ASPECT1_ASPECT6
   m_prevPicPOC = pcSlice->getPOC();
-#endif
 
   char c = (pcSlice->isIntra() ? 'I' : pcSlice->isInterP() ? 'P' : 'B');
   if (!m_pcPic->referenced)
@@ -1944,11 +1940,7 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
 
   m_HLSReader.setBitstream( &nalu.getBitstream() );
   m_apcSlicePilot->m_ccAlfFilterParam = m_cALF.getCcAlfFilterParam();
-#if JVET_R0068_ASPECT1_ASPECT6
   m_HLSReader.parseSliceHeader( m_apcSlicePilot, &m_picHeader, &m_parameterSetManager, m_prevTid0POC, m_prevPicPOC );
-#else
-  m_HLSReader.parseSliceHeader( m_apcSlicePilot, &m_picHeader, &m_parameterSetManager, m_prevTid0POC );
-#endif
 
   if (m_picHeader.getGdrOrIrapPicFlag() && m_bFirstSliceInPicture)
   {

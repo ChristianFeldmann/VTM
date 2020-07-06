@@ -3144,7 +3144,6 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
 
     if (picHeader->getEnableTMVPFlag() && pps->getRplInfoInPhFlag())
     {
-#if R0324_PH_SYNTAX_CONDITION_MODIFY
       if (picHeader->getRPL(1)->getNumRefEntries() > 0)
       {
         READ_CODE(1, uiCode, "ph_collocated_from_l0_flag");
@@ -3154,10 +3153,6 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
       {
         picHeader->setPicColFromL0Flag(1);
       }
-#else
-      READ_CODE( 1, uiCode, "ph_collocated_from_l0_flag");
-      picHeader->setPicColFromL0Flag(uiCode);
-#endif
       if ((picHeader->getPicColFromL0Flag() == 1 && picHeader->getRPL(0)->getNumRefEntries() > 1) ||
         (picHeader->getPicColFromL0Flag() == 0 && picHeader->getRPL(1)->getNumRefEntries() > 1))
       {
@@ -3175,7 +3170,6 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
     }
 
   // mvd L1 zero flag
-#if R0324_PH_SYNTAX_CONDITION_MODIFY
     if (!pps->getRplInfoInPhFlag() || picHeader->getRPL(1)->getNumRefEntries() > 0)
     {
       READ_FLAG(uiCode, "pic_mvd_l1_zero_flag");
@@ -3184,9 +3178,6 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
     {
       uiCode = 1;
     }
-#else
-    READ_FLAG(uiCode, "mvd_l1_zero_flag");
-#endif
     picHeader->setMvdL1ZeroFlag( uiCode != 0 );
 
   // merge candidate list size
@@ -3212,17 +3203,12 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
     }
 
   // picture level BDOF disable flags
-#if R0324_PH_SYNTAX_CONDITION_MODIFY
     if (sps->getBdofControlPresentFlag() && (!pps->getRplInfoInPhFlag() || picHeader->getRPL(1)->getNumRefEntries() > 0))
-#else
-    if (sps->getBdofControlPresentFlag())
-#endif
     {
       READ_FLAG(uiCode, "ph_disable_bdof_flag");  picHeader->setDisBdofFlag(uiCode != 0);
     }
     else
     {
-#if R0324_PH_SYNTAX_CONDITION_MODIFY
       if (sps->getBdofControlPresentFlag() == 0)
       {
         picHeader->setDisBdofFlag(1 - (int)(sps->getBDOFEnabledFlag()));
@@ -3231,23 +3217,15 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
       {
         picHeader->setDisBdofFlag(1);
       }
-#else
-      picHeader->setDisBdofFlag(0);
-#endif
     }
 
   // picture level DMVR disable flags
-#if R0324_PH_SYNTAX_CONDITION_MODIFY
     if (sps->getDmvrControlPresentFlag() && (!pps->getRplInfoInPhFlag() || picHeader->getRPL(1)->getNumRefEntries() > 0))
-#else
-    if (sps->getDmvrControlPresentFlag())
-#endif
     {
       READ_FLAG(uiCode, "ph_disable_dmvr_flag");  picHeader->setDisDmvrFlag(uiCode != 0);
     }
     else
     {
-#if R0324_PH_SYNTAX_CONDITION_MODIFY
       if (sps->getDmvrControlPresentFlag() == 0)
       {
         picHeader->setDisDmvrFlag(1 - (int)(sps->getUseDMVR()));
@@ -3256,9 +3234,6 @@ void HLSyntaxReader::parsePictureHeader( PicHeader* picHeader, ParameterSetManag
       {
         picHeader->setDisDmvrFlag(1);
       }
-#else
-      picHeader->setDisDmvrFlag(0);
-#endif
     }
 
   // picture level PROF disable flags
@@ -5198,7 +5173,6 @@ void HLSyntaxReader::parsePredWeightTable(PicHeader *picHeader, const SPS *sps)
 
     if (numRef == 0)
     {
-#if R0324_PH_SYNTAX_CONDITION_MODIFY
       if (picHeader->getRPL(1)->getNumRefEntries() > 0)
       {
         READ_UVLC(numLxWeights, "num_l1_weights");
@@ -5207,9 +5181,6 @@ void HLSyntaxReader::parsePredWeightTable(PicHeader *picHeader, const SPS *sps)
       {
         numLxWeights = 0;
       }
-#else
-      READ_UVLC(numLxWeights, "num_l1_weights");
-#endif
       moreSyntaxToBeParsed = (numLxWeights == 0) ? false : true;
       picHeader->setNumL1Weights(numLxWeights);
     }

@@ -94,7 +94,6 @@
 
                                                             //               Constrain that each PTL, DPB, and HRD params in VPS are referred to at least once
 
-#define R0324_PH_SYNTAX_CONDITION_MODIFY                  1 // JVET-R0324 add conditions on PH syntax to conder whether current pic is bi-predictive picture
 
 #define JVET_R0278_CONSTRAINT                             1 // JVET-R0278: ph_inter_slice_allowed_flag constraint
 

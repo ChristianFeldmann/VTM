@@ -96,7 +96,6 @@
 
 
 
-#define JVET_R0276_REORDERED_SUBPICS                      1 // JVET-R0276: reference picture constraint for reordered sub-pictures
 
 #define JVET_R0130_TC_DERIVATION_BUGFIX                   1 // JVET-R0130: Cleanup of tC derivation for deblocking filter
 

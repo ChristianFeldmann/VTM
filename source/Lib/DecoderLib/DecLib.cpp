@@ -1740,52 +1740,6 @@ void DecLib::xCheckParameterSetConstraints(const int layerId)
     CHECK(levelIdcSps > maxLevelIdxDci, "max level signaled in the DCI shall not be less than the level signaled in the SPS");
   }
 
-#if !JVET_R0276_REORDERED_SUBPICS
-  // When the current picture is not the first picture of the CLVS, if the value of SubpicId[ i ] is not equal to the value of SubpicId[ i ] of previous picture in decoding order in the same layer,
-  // the nal_unit_type for all coded slice NAL units of the the subpicture with subpicture index i shall be in the range of IDR_W_RADL to CRA_NUT, inclusive.
-  if( sps->getSubPicInfoPresentFlag() )
-  {
-    static std::unordered_map<int, std::vector<int>> previousSubPicIds;
-
-    if( m_firstSliceInSequence[layerId] )
-    {
-      for( int subPicIdx = 0; subPicIdx < sps->getNumSubPics(); subPicIdx++ )
-      {
-        previousSubPicIds[layerId].push_back( pps->getSubPic( subPicIdx ).getSubPicID() );
-      }
-    }
-    else
-    {
-      int currentSubPicIdx = NOT_VALID;
-      for( int subPicIdx = 0; subPicIdx < sps->getNumSubPics(); subPicIdx++ )
-      {
-        if( pps->getSubPic( subPicIdx ).getSubPicID() == slice->getSliceSubPicId() )
-        {
-          currentSubPicIdx = subPicIdx;
-          break;
-        }
-      }
-
-      CHECK( currentSubPicIdx == NOT_VALID, "Sub-picture was not found" );
-      CHECK( !previousSubPicIds.count( layerId ), "Sub-picture information of the previously decoded picture was not stored" );
-      
-      if( previousSubPicIds[layerId][currentSubPicIdx] != slice->getSliceSubPicId() )
-      {
-        CHECK( !slice->isIRAP(), "For reordered sub-pictures, the slice NAL shall be in the range of IDR_W_RADL to CRA_NUT, inclusive" )
-      }
-
-      // store PPS ID to have sub-picture info for the next pictures when last rectangular slice in the picture is encountered
-      if( slice->getSliceID() + 1 == pps->getNumSlicesInPic() )
-      {
-        previousSubPicIds[layerId].clear();
-        for( int subPicIdx = 0; subPicIdx < sps->getNumSubPics(); subPicIdx++ )
-        {
-          previousSubPicIds[layerId].push_back( pps->getSubPic( subPicIdx ).getSubPicID() );
-        }
-      }
-    }
-  }
-#endif
 
   if( slice->getPicHeader()->getGdrOrIrapPicFlag() && !slice->getPicHeader()->getGdrPicFlag() && ( !vps || vps->getIndependentLayerFlag( vps->getGeneralLayerIdx( layerId ) ) ) )
   {
@@ -2251,7 +2205,6 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
 
   pcSlice->scaleRefPicList( scaledRefPic, m_pcPic->cs->picHeader, m_parameterSetManager.getAPSs(), m_picHeader.getLmcsAPS(), m_picHeader.getScalingListAPS(), true );
 
-#if JVET_R0276_REORDERED_SUBPICS
   // For each value of i in the range of 0 to sps_num_subpics_minus1, inclusive, when the value of SubpicIdVal[ i ] of a current picture is not equal to the value of SubpicIdVal[ i ] of a reference picture,
   // the active entries of the RPLs of the coded slices in the i-th subpicture of the current picture shall not include that reference picture.
 
@@ -2298,7 +2251,6 @@ bool DecLib::xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDispl
       }
     }
   }
-#endif
 
     if (!pcSlice->isIntra())
     {

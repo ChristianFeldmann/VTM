@@ -236,9 +236,7 @@ public:
 #endif
   bool interLayerRefPicFlag;
 
-#if JVET_R0276_REORDERED_SUBPICS
   std::vector<int> subPicIDs;
-#endif
 
 #if ENABLE_SPLIT_PARALLELISM
   PelStorage m_bufs[PARL_SPLIT_MAX_NUM_JOBS][NUM_PIC_TYPES];

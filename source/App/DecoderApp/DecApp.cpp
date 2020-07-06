@@ -288,13 +288,11 @@ uint32_t DecApp::decode()
       m_cDecLib.resetPictureUnitNals();
     }
 #endif
-#if JVET_R0066_DPB_NO_OUTPUT_PRIOR_PIC_FLAG
     if (bNewAccessUnit || !bitstreamFile)
     {
       m_cDecLib.CheckNoOutputPriorPicFlagsInAccessUnit();
       m_cDecLib.resetAccessUnitNoOutputPriorPicFlags();
     }
-#endif
     if(bNewAccessUnit)
     {
 #if JVET_R0065

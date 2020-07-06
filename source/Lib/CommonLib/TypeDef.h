@@ -54,7 +54,6 @@
 //########### place macros to be removed in next cycle below this line ###############
 
 
-#define JVET_R0066_DPB_NO_OUTPUT_PRIOR_PIC_FLAG           1 // JVET-R0066: Signal the maximum values of chroma_format_idc and bit_depth_minus8 for all pictures of all layers in the VPS
                                                             //             The value of no_output_of_prior_pics_flag, when present, is required to be the same for all pictures in an AU
 
 #define JVET_R0068_ASPECT1_ASPECT6                        1 // JVET-R0068 aspect 1: On slice_type constraint; JVET-R0068 aspect 6: On signalling of conformance window parameters

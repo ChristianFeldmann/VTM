@@ -164,10 +164,6 @@ public:
              ScalingList();
   virtual    ~ScalingList()                                                 { }
   
-#if !JVET_R0064
-  bool       getDisableScalingMatrixForLfnstBlks() const     { return m_disableScalingMatrixForLfnstBlks;}
-  void       setDisableScalingMatrixForLfnstBlks(bool flag)  { m_disableScalingMatrixForLfnstBlks = flag;}
-#endif
   int*       getScalingListAddress(uint32_t scalingListId)                    { return &(m_scalingListCoef[scalingListId][0]);            } //!< get matrix coefficient
   const int* getScalingListAddress(uint32_t scalingListId) const              { return &(m_scalingListCoef[scalingListId][0]);            } //!< get matrix coefficient
   void       checkPredMode(uint32_t scalingListId);
@@ -229,9 +225,6 @@ public:
 
 private:
   void             outputScalingLists(std::ostream &os) const;
-#if !JVET_R0064
-  bool             m_disableScalingMatrixForLfnstBlks;
-#endif
   bool             m_scalingListPredModeFlagIsCopy [30]; //!< reference list index
   int              m_scalingListDC                 [30]; //!< the DC value of the matrix coefficient for 16x16
   uint32_t         m_refMatrixId                   [30]; //!< RefMatrixID
@@ -1517,9 +1510,7 @@ private:
   bool              m_scalingMatrixDesignatedColourSpaceFlag;
 #endif
 
-#if JVET_R0064
   bool m_disableScalingMatrixForLfnstBlks; 
-#endif
 
 public:
 
@@ -1589,10 +1580,8 @@ public:
   void      setSubPicTreatedAsPicFlag                   (const std::vector<bool> &v)       { CHECK(v.size()!=m_numSubPics, "number of vector entries must be equal to numSubPics") ;m_subPicTreatedAsPicFlag = v; }
   void      setLoopFilterAcrossSubpicEnabledFlag        (const std::vector<bool> &v)       { CHECK(v.size()!=m_numSubPics, "number of vector entries must be equal to numSubPics") ;m_loopFilterAcrossSubpicEnabledFlag = v; }
 
-#if JVET_R0064
   bool       getDisableScalingMatrixForLfnstBlks() const { return m_disableScalingMatrixForLfnstBlks; }
   void       setDisableScalingMatrixForLfnstBlks(bool flag) { m_disableScalingMatrixForLfnstBlks = flag; }
-#endif
 
   void                    setSubPicIdMappingExplicitlySignalledFlag( bool b )                             { m_subPicIdMappingExplicitlySignalledFlag = b;    }
   bool                    getSubPicIdMappingExplicitlySignalledFlag() const                               { return m_subPicIdMappingExplicitlySignalledFlag; }

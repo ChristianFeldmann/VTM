@@ -2190,12 +2190,10 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 #endif
   READ_FLAG(uiCode, "sps_explicit_scaling_list_enabled_flag");                 pcSPS->setScalingListFlag(uiCode);
 
-#if JVET_R0064
   if (pcSPS->getUseLFNST() && pcSPS->getScalingListFlag())
   {
     READ_FLAG(uiCode, "scaling_matrix_for_lfnst_disabled_flag"); pcSPS->setDisableScalingMatrixForLfnstBlks(uiCode ? true : false);
   }
-#endif
 
 #if JVET_R0380_SCALING_MATRIX_DISABLE_YCC_OR_RGB
   if (pcSPS->getUseColorTrans() && pcSPS->getScalingListFlag())
@@ -5494,9 +5492,6 @@ void HLSyntaxReader::parseScalingList(ScalingList* scalingList)
   uint32_t  code;
   bool scalingListCopyModeFlag;
 
-#if !JVET_R0064
-  READ_FLAG(code, "scaling_matrix_for_lfnst_disabled_flag"); scalingList->setDisableScalingMatrixForLfnstBlks(code ? true : false);
-#endif
   READ_FLAG(code, "scaling_list_chroma_present_flag");
   scalingList->setChromaScalingListPresentFlag(code ? true : false);
   for (int scalingListId = 0; scalingListId < 28; scalingListId++)

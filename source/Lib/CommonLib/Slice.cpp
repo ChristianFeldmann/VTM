@@ -2863,9 +2863,7 @@ SPS::SPS()
 , m_scalingMatrixAlternativeColourSpaceDisabledFlag( false )
 , m_scalingMatrixDesignatedColourSpaceFlag( true )
 #endif
-#if JVET_R0064
 , m_disableScalingMatrixForLfnstBlks( true)
-#endif
 {
   for(int ch=0; ch<MAX_NUM_CHANNEL_TYPE; ch++)
   {
@@ -3713,9 +3711,6 @@ void ReferencePictureList::printRefPicInfo() const
 
 ScalingList::ScalingList()
 {
-#if !JVET_R0064
-  m_disableScalingMatrixForLfnstBlks = true;
-#endif
   m_chromaScalingListPresentFlag = true;
   for (uint32_t scalingListId = 0; scalingListId < 28; scalingListId++)
   {

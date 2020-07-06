@@ -81,7 +81,6 @@
 
 
 
-#define JVET_R0332_HLS_ORDER                              1 // JVET-R0332: Grouping syntax elements in SPS based on slice type
 
 #define JVET_Q0764_WRAP_AROUND_WITH_RPR                   1 // JVET-Q0764: Combination of wrap around offset and RPR
 

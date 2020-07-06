@@ -1562,10 +1562,6 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     READ_FLAG(uiCode, "sps_wpp_entry_point_offsets_present_flag");   pcSPS->setEntropyCodingSyncEntryPointsPresentFlag(uiCode == 1);
   }
 #endif
-#if !JVET_R0332_HLS_ORDER
-  READ_FLAG( uiCode, "sps_weighted_pred_flag" );                    pcSPS->setUseWP( uiCode ? true : false );
-  READ_FLAG( uiCode, "sps_weighted_bipred_flag" );                  pcSPS->setUseWPBiPred( uiCode ? true : false );
-#endif
   READ_CODE(4, uiCode, "log2_max_pic_order_cnt_lsb_minus4");     pcSPS->setBitsForPOC( 4 + uiCode );
   CHECK(uiCode > 12, "log2_max_pic_order_cnt_lsb_minus4 shall be in the range of 0 to 12");
 
@@ -1599,67 +1595,6 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
 #endif
     dpb_parameters(pcSPS->getMaxTLayers() - 1, pcSPS->getSubLayerDpbParamsFlag(), pcSPS);
   }
-#if !JVET_R0332_HLS_ORDER 
-  READ_FLAG(uiCode, "long_term_ref_pics_flag");          pcSPS->setLongTermRefsPresent(uiCode);
-#if JVET_R0205
-  if (pcSPS->getVPSId() > 0)
-  {
-    READ_FLAG( uiCode, "sps_inter_layer_ref_pics_present_flag" );  pcSPS->setInterLayerPresentFlag( uiCode );
-  }
-  else
-  {
-    pcSPS->setInterLayerPresentFlag(0);
-  }
-#else
-  READ_FLAG( uiCode, "inter_layer_ref_pics_present_flag" );  pcSPS->setInterLayerPresentFlag( uiCode );
-#endif
-  READ_FLAG( uiCode, "sps_idr_rpl_present_flag" );       pcSPS->setIDRRefParamListPresent( (bool) uiCode );
-  READ_FLAG(uiCode, "rpl1_copy_from_rpl0_flag");
-  pcSPS->setRPL1CopyFromRPL0Flag(uiCode);
-
-  //Read candidate for List0
-  READ_UVLC(uiCode, "num_ref_pic_lists_in_sps[0]");
-  uint32_t numberOfRPL = uiCode;
-  pcSPS->createRPLList0(numberOfRPL);
-  RPLList* rplList = pcSPS->getRPLList0();
-  ReferencePictureList* rpl;
-  for (uint32_t ii = 0; ii < numberOfRPL; ii++)
-  {
-    rpl = rplList->getReferencePictureList(ii);
-#if JVET_R0059_RPL_CLEANUP
-    parseRefPicList(pcSPS, rpl, ii);
-#else
-    parseRefPicList(pcSPS, rpl);
-#endif
-  }
-
-  //Read candidate for List1
-  if (!pcSPS->getRPL1CopyFromRPL0Flag())
-  {
-    READ_UVLC(uiCode, "num_ref_pic_lists_in_sps[1]");
-    numberOfRPL = uiCode;
-    pcSPS->createRPLList1(numberOfRPL);
-    rplList = pcSPS->getRPLList1();
-    for (uint32_t ii = 0; ii < numberOfRPL; ii++)
-    {
-      rpl = rplList->getReferencePictureList(ii);
-#if JVET_R0059_RPL_CLEANUP
-      parseRefPicList(pcSPS, rpl, ii);
-#else
-      parseRefPicList(pcSPS, rpl);
-#endif
-    }
-  }
-  else
-  {
-    numberOfRPL = pcSPS->getNumRPL0();
-    pcSPS->createRPLList1(numberOfRPL);
-    RPLList* rplListSource = pcSPS->getRPLList0();
-    RPLList* rplListDest = pcSPS->getRPLList1();
-    for (uint32_t ii = 0; ii < numberOfRPL; ii++)
-      copyRefPicList(pcSPS, rplListSource->getReferencePictureList(ii), rplListDest->getReferencePictureList(ii));
-  }
-#endif
   unsigned  minQT[3] = { 0, 0, 0 };
   unsigned  maxBTD[3] = { 0, 0, 0 };
 
@@ -1803,7 +1738,6 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     READ_FLAG(uiCode, "sps_bdpcm_enabled_flag"); pcSPS->setBDPCMEnabledFlag(uiCode ? true : false);
   }
 
-#if JVET_R0332_HLS_ORDER
   READ_FLAG( uiCode, "sps_weighted_pred_flag" );                    pcSPS->setUseWP( uiCode ? true : false );
   READ_FLAG( uiCode, "sps_weighted_bipred_flag" );                  pcSPS->setUseWPBiPred( uiCode ? true : false );
 
@@ -1867,7 +1801,6 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
       copyRefPicList(pcSPS, rplListSource->getReferencePictureList(ii), rplListDest->getReferencePictureList(ii));
   }
   
-#endif
 
   READ_FLAG(uiCode, "sps_ref_wraparound_enabled_flag");                  pcSPS->setWrapAroundEnabledFlag( uiCode ? true : false );
 #if !JVET_Q0764_WRAP_AROUND_WITH_RPR
@@ -1928,7 +1861,6 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   }
 #endif
 
-#if JVET_R0332_HLS_ORDER
   READ_UVLC(uiCode, "six_minus_max_num_merge_cand");
   CHECK(MRG_MAX_NUM_CANDS <= uiCode, "Incorrrect max number of merge candidates!");
   pcSPS->setMaxNumMergeCand(MRG_MAX_NUM_CANDS - uiCode);
@@ -1991,7 +1923,6 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   CHECK(uiCode + 2 > ctbLog2SizeY, "The value of log2_parallel_merge_level_minus2 shall be in the range of 0 to ctbLog2SizeY - 2");
   pcSPS->setLog2ParallelMergeLevelMinus2(uiCode);
 
-#endif
 
   READ_FLAG(uiCode, "sps_isp_enabled_flag");                        pcSPS->setUseISP( uiCode != 0 );
   READ_FLAG(uiCode, "sps_mrl_enabled_flag");                        pcSPS->setUseMRL( uiCode != 0 );
@@ -2021,37 +1952,6 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     READ_FLAG( uiCode,    "sps_explicit_mts_intra_enabled_flag" );               pcSPS->setUseIntraMTS            ( uiCode != 0 );
     READ_FLAG( uiCode,    "sps_explicit_mts_inter_enabled_flag" );               pcSPS->setUseInterMTS            ( uiCode != 0 );
   }
-#if !JVET_R0332_HLS_ORDER
-  READ_UVLC(uiCode, "six_minus_max_num_merge_cand");
-  CHECK(MRG_MAX_NUM_CANDS <= uiCode, "Incorrrect max number of merge candidates!");
-  pcSPS->setMaxNumMergeCand(MRG_MAX_NUM_CANDS - uiCode);
-  READ_FLAG(uiCode, "sps_sbt_enabled_flag");                        pcSPS->setUseSBT                 ( uiCode != 0 );
-  READ_FLAG( uiCode,    "sps_affine_enabled_flag" );                            pcSPS->setUseAffine              ( uiCode != 0 );
-  if ( pcSPS->getUseAffine() )
-  {
-    READ_UVLC(uiCode, "five_minus_max_num_subblock_merge_cand");
-#if JVET_R0371_MAX_NUM_SUB_BLK_MRG_CAND
-    CHECK(uiCode > 5 - (pcSPS->getSBTMVPEnabledFlag() ? 1 : 0), "The value of five_minus_max_num_subblock_merge_cand shall be in the range of 0 to 5 - sps_sbtmvp_enabled_flag");
-    CHECK(AFFINE_MRG_MAX_NUM_CANDS < uiCode, "The value of five_minus_max_num_subblock_merge_cand shall be in the range of 0 to 5 - sps_sbtmvp_enabled_flag");
-#else
-    CHECK(AFFINE_MRG_MAX_NUM_CANDS < uiCode, "Incorrrect max number of affine merge candidates!");
-#endif
-    pcSPS->setMaxNumAffineMergeCand(AFFINE_MRG_MAX_NUM_CANDS - uiCode);
-    READ_FLAG( uiCode,  "sps_affine_type_flag" );                       pcSPS->setUseAffineType          ( uiCode != 0 );
-    if( pcSPS->getAMVREnabledFlag())
-    {
-      READ_FLAG( uiCode, "sps_affine_amvr_enabled_flag" );            pcSPS->setAffineAmvrEnabledFlag  ( uiCode != 0 );
-    }
-    READ_FLAG( uiCode, "sps_affine_prof_enabled_flag" );            pcSPS->setUsePROF                ( uiCode != 0 );
-    if (pcSPS->getUsePROF())
-    {
-      READ_FLAG(uiCode, "sps_prof_pic_present_flag");               pcSPS->setProfControlPresentFlag ( uiCode != 0 );
-    }
-    else {
-      pcSPS->setProfControlPresentFlag( false );
-    }
-  }
-#endif
   READ_FLAG( uiCode,  "sps_palette_enabled_flag");                                pcSPS->setPLTMode                ( uiCode != 0 );
   if (chromaArrayType == CHROMA_444 && pcSPS->getLog2MaxTbSize() != 6)
   {
@@ -2075,9 +1975,6 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
     pcSPS->setMinQpPrimeTsMinus4(CHANNEL_TYPE_CHROMA, uiCode);
 #endif
   }
-#if !JVET_R0332_HLS_ORDER
-  READ_FLAG( uiCode,    "sps_bcw_enabled_flag" );                   pcSPS->setUseBcw( uiCode != 0 );
-#endif
   READ_FLAG(uiCode, "sps_ibc_enabled_flag");                                    pcSPS->setIBCFlag(uiCode);
   if (pcSPS->getIBCFlag())
   {
@@ -2087,34 +1984,6 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   }
   else
     pcSPS->setMaxNumIBCMergeCand(0);
-#if !JVET_R0332_HLS_ORDER
-  // KJS: sps_ciip_enabled_flag
-  READ_FLAG( uiCode,     "sps_ciip_enabled_flag" );                           pcSPS->setUseCiip             ( uiCode != 0 );
-#if !JVET_R0214_MMVD_SYNTAX_MODIFICATION
-  if ( pcSPS->getUseMMVD() )
-  {
-    READ_FLAG( uiCode,  "sps_fpel_mmvd_enabled_flag" );             pcSPS->setFpelMmvdEnabledFlag ( uiCode != 0 );
-  }
-#endif
-  if (pcSPS->getMaxNumMergeCand() >= 2)
-  {
-    READ_FLAG(uiCode, "sps_gpm_enabled_flag");
-    pcSPS->setUseGeo(uiCode != 0);
-    if (pcSPS->getUseGeo() && pcSPS->getMaxNumMergeCand() >= 3)
-    {
-      READ_UVLC(uiCode, "max_num_merge_cand_minus_max_num_gpm_cand");
-      CHECK(pcSPS->getMaxNumMergeCand() < uiCode, "Incorrrect max number of GEO candidates!");
-      pcSPS->setMaxNumGeoCand((uint32_t)(pcSPS->getMaxNumMergeCand() - uiCode));
-    }
-    else if (pcSPS->getUseGeo())
-      pcSPS->setMaxNumGeoCand(2);
-  }
-  else
-  {
-    pcSPS->setUseGeo(0);
-    pcSPS->setMaxNumGeoCand(0);
-  }
-#endif
   READ_FLAG(uiCode, "sps_lmcs_enable_flag");                   pcSPS->setUseLmcs(uiCode == 1);
   READ_FLAG( uiCode, "sps_lfnst_enabled_flag" );                    pcSPS->setUseLFNST( uiCode != 0 );
 
@@ -2132,11 +2001,6 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
       pcSPS->setLadfIntervalLowerBound(uiCode + pcSPS->getLadfIntervalLowerBound(k - 1) + 1, k);
     }
   }
-#endif
-#if !JVET_R0332_HLS_ORDER
-  READ_UVLC(uiCode, "log2_parallel_merge_level_minus2");
-  CHECK(uiCode + 2 > ctbLog2SizeY, "The value of log2_parallel_merge_level_minus2 shall be in the range of 0 to ctbLog2SizeY - 2");
-  pcSPS->setLog2ParallelMergeLevelMinus2(uiCode);
 #endif
   READ_FLAG(uiCode, "sps_explicit_scaling_list_enabled_flag");                 pcSPS->setScalingListFlag(uiCode);
 

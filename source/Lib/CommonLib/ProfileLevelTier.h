@@ -78,11 +78,7 @@ struct ProfileFeatures
   uint32_t                 cpbVclFactor;
   uint32_t                 cpbNalFactor;
   uint32_t                 formatCapabilityFactorx1000;
-#if JVET_R0244_CPB_AND_MINCR
   uint32_t                 minCrScaleFactorx100;
-#else
-  uint32_t                 minCrScaleFactorx10;
-#endif
   const LevelTierFeatures *pLevelTiersListInfo;
 #if STILL_PICTURE_PROFILES
   bool                     onePictureOnlyFlagMustBe1;

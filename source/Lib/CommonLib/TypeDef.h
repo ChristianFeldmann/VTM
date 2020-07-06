@@ -113,7 +113,6 @@
 
 
 
-#define JVET_R0202_WHEN_PH_IN_SH_INFO_FLAGS_EQUAL_0       1 // JVET-R0202 When sh_picture_header_in_slice_header_flag is equal to 1, rpl_info_in_ph_flag, dbf_info_in_ph_flag, sao_info_in_ph_flag, wp_info_in_ph_flag, qp_delta_info_in_ph_flag shall be be equal to 0
 
 #define JVET_R0201_PREFIX_SUFFIX_APS_CLEANUP              1 // JVET-R0201 Cleanups on Prefix and Suffix APS
 

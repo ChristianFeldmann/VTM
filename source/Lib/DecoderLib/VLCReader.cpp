@@ -587,7 +587,6 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
         pcPPS->setSliceTileIdx( i, tileIdx );
 
         // complete tiles within a single slice
-#if JVET_R0188
         if( ( tileIdx % pcPPS->getNumTileColumns() ) != pcPPS->getNumTileColumns() - 1 )
         {
           READ_UVLC( uiCode, "slice_width_in_tiles_minus1[i]" );
@@ -597,16 +596,7 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
         {
           pcPPS->setSliceWidthInTiles( i, 1 );
         }
-#else
-        uiCode = 0;
-        if( pcPPS->getNumTileColumns() > 1 )
-        {
-          READ_UVLC( uiCode, "slice_width_in_tiles_minus1[i]" );
-        }
-        pcPPS->setSliceWidthInTiles ( i, uiCode + 1 );
-#endif
 
-#if JVET_R0188
         if( tileIdx / pcPPS->getNumTileColumns() != pcPPS->getNumTileRows() - 1  &&
          ( pcPPS->getTileIdxDeltaPresentFlag() || tileIdx % pcPPS->getNumTileColumns() == 0 ) ) 
         {
@@ -624,21 +614,6 @@ void HLSyntaxReader::parsePPS( PPS* pcPPS )
             pcPPS->setSliceHeightInTiles( i, pcPPS->getSliceHeightInTiles( i - 1 ) );
           }
       }
-#else
-        if( pcPPS->getTileIdxDeltaPresentFlag() || ( (tileIdx % pcPPS->getNumTileColumns()) == 0 ) )
-        {
-          uiCode = 0;
-          if( pcPPS->getNumTileRows() > 1 )
-          {
-            READ_UVLC( uiCode, "slice_height_in_tiles_minus1[i]" );
-          }
-          pcPPS->setSliceHeightInTiles( i, uiCode + 1 );
-        }
-        else
-        {
-          pcPPS->setSliceHeightInTiles( i, pcPPS->getSliceHeightInTiles(i-1) );
-        }
-#endif
 
         // multiple slices within a single tile special case
         if( pcPPS->getSliceWidthInTiles(i) == 1 && pcPPS->getSliceHeightInTiles(i) == 1 )

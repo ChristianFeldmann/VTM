@@ -155,9 +155,7 @@ private:
   RateCtrl*                 m_pcRateCtrl;
   // indicate sequence first
   bool                    m_bSeqFirst;
-#if JVET_R0065
   bool                    m_audIrapOrGdrAuFlag;
-#endif
 
   EncHRD*                 m_HRD;
 

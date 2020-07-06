@@ -295,9 +295,7 @@ uint32_t DecApp::decode()
     }
     if(bNewAccessUnit)
     {
-#if JVET_R0065
       m_cDecLib.isCvsStart();
-#endif
       m_cDecLib.checkTidLayerIdInAccessUnit();
       m_cDecLib.resetAccessUnitSeiTids();
       m_cDecLib.checkSEIInAccessUnit();

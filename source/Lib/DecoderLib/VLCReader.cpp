@@ -248,11 +248,7 @@ void VLCReader::xReadRbspTrailingBits()
   CHECK(cnt >= 8, "Read more than '8' trailing bits");
 }
 
-#if JVET_R0065
 void AUDReader::parseAccessUnitDelimiter(InputBitstream* bs, uint32_t &audIrapOrGdrAuFlag, uint32_t &picType)
-#else
-void AUDReader::parseAccessUnitDelimiter(InputBitstream* bs, uint32_t &picType)
-#endif
 {
   setBitstream(bs);
 
@@ -260,9 +256,7 @@ void AUDReader::parseAccessUnitDelimiter(InputBitstream* bs, uint32_t &picType)
   xTraceAccessUnitDelimiter();
 #endif
 
-#if JVET_R0065
   READ_FLAG (audIrapOrGdrAuFlag, "aud_irap_or_gdr_au_flag");
-#endif
   READ_CODE (3, picType, "pic_type");
   xReadRbspTrailingBits();
 }

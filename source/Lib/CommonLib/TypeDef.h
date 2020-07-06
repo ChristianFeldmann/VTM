@@ -61,7 +61,6 @@
 
 
 
-#define JVET_R0065                                        1 //JVET-R0065: Each picture in an AU in a CVS shall have nuh_layer_id equal to the nuh_layer_id of one of the pictures present in the first AU of the CVS
                                                             //            Add a flag aud_irap_or_gdr_au_flag to the AUD, and mandate the presence of AUD in each IRAP or GDR AU when vps_max_layers_minus1 is greater than 0
 
 #define JVET_R0041                                        1 // JVET-R0041: Picture types related constraints

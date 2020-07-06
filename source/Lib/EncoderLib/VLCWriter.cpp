@@ -167,11 +167,7 @@ void VLCWriter::xWriteRbspTrailingBits()
   CHECK(cnt>=8, "More than '8' alignment bytes read");
 }
 
-#if JVET_R0065
 void AUDWriter::codeAUD(OutputBitstream& bs, const bool audIrapOrGdrAuFlag, const int pictureType)
-#else
-void AUDWriter::codeAUD(OutputBitstream& bs, const int pictureType)
-#endif
 {
 #if ENABLE_TRACING
   xTraceAccessUnitDelimiter();
@@ -179,9 +175,7 @@ void AUDWriter::codeAUD(OutputBitstream& bs, const int pictureType)
 
   CHECK(pictureType >= 3, "Invalid picture type");
   setBitstream(&bs);
-#if JVET_R0065
   WRITE_FLAG(audIrapOrGdrAuFlag, "aud_irap_or_gdr_au_flag");
-#endif
   WRITE_CODE(pictureType, 3, "pic_type");
   xWriteRbspTrailingBits();
 }

@@ -129,11 +129,7 @@ class AUDReader: public VLCReader
 public:
   AUDReader() {};
   virtual ~AUDReader() {};
-#if JVET_R0065
   void parseAccessUnitDelimiter(InputBitstream* bs, uint32_t &audIrapOrGdrAuFlag, uint32_t &picType);
-#else
-  void parseAccessUnitDelimiter(InputBitstream* bs, uint32_t &picType);
-#endif
 };
 
 

@@ -171,9 +171,7 @@ private:
     int             m_POC;
   };
   std::vector<AccessUnitPicInfo> m_accessUnitPicInfo;
-#if JVET_R0065
   std::vector<AccessUnitPicInfo> m_firstAccessUnitPicInfo;
-#endif
   struct NalUnitInfo
   {
     NalUnitType     m_nalUnitType; ///< nal_unit_type
@@ -254,10 +252,8 @@ public:
   void checkTidLayerIdInAccessUnit();
   void resetAccessUnitSeiPayLoadTypes()   { m_accessUnitSeiPayLoadTypes.clear(); }
   void checkSEIInAccessUnit();
-#if JVET_R0065
   void isCvsStart();
   void checkIncludedInFirstAu();
-#endif
   void CheckNoOutputPriorPicFlagsInAccessUnit();
   void resetAccessUnitNoOutputPriorPicFlags() { m_accessUnitNoOutputPriorPicFlags.clear(); }
 #if JVET_Q0488_SEI_REPETITION_CONSTRAINT

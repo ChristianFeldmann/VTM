@@ -539,15 +539,9 @@ void Quant::setScalingList(ScalingList *scalingList, const int maxLog2TrDynamicR
   {
     for(uint32_t list = 0; list < SCALING_LIST_NUM; list++)
     {
-#if JVET_R0166_SCALING_LISTS_CHROMA_444
       if (size == SCALING_LIST_2x2 && list < 4)   // skip 2x2 luma
-#else
-      if ((size == SCALING_LIST_2x2 && list < 4) || (size == SCALING_LIST_64x64 && list % (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES) != 0))   // skip 2x2 luma
-#endif
         continue;
-#if JVET_R0166_SCALING_LISTS_CHROMA_444
       scalingListId = g_scalingListId[size][list];
-#endif
       if (scalingList->getChromaScalingListPresentFlag() || scalingList->isLumaScalingList(scalingListId))
       {
         for(int qp = minimumQp; qp < maximumQp; qp++)
@@ -560,9 +554,6 @@ void Quant::setScalingList(ScalingList *scalingList, const int maxLog2TrDynamicR
       {
          scalingList->processDefaultMatrix(scalingListId);
       }
-#if !JVET_R0166_SCALING_LISTS_CHROMA_444
-      scalingListId++;
-#endif
     }
   }
   //based on square result and apply downsample technology
@@ -574,15 +565,8 @@ void Quant::setScalingList(ScalingList *scalingList, const int maxLog2TrDynamicR
       for (uint32_t list = 0; list < SCALING_LIST_NUM; list++) //9
       {
         int largerSide = (sizew > sizeh) ? sizew : sizeh;
-#if !JVET_R0166_SCALING_LISTS_CHROMA_444
-        if (largerSide == SCALING_LIST_64x64 && list % (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES) != 0) continue;
-#endif
         if (largerSide < SCALING_LIST_4x4) printf("Rectangle Error !\n");
-#if JVET_R0166_SCALING_LISTS_CHROMA_444
         recScalingListId = g_scalingListId[largerSide][list];
-#else
-        recScalingListId = SCALING_LIST_NUM * (largerSide - 2) + 2 + (list / ((largerSide == SCALING_LIST_64x64) ? 3 : 1));
-#endif
         for (int qp = minimumQp; qp < maximumQp; qp++)
         {
           xSetRecScalingListEnc(scalingList, list, sizew, sizeh, qp, recScalingListId);
@@ -607,22 +591,13 @@ void Quant::setScalingListDec(const ScalingList &scalingList)
   {
     for(uint32_t list = 0; list < SCALING_LIST_NUM; list++)
     {
-#if JVET_R0166_SCALING_LISTS_CHROMA_444
       if (size == SCALING_LIST_2x2 && list < 4)   // skip 2x2 luma
-#else
-      if ((size == SCALING_LIST_2x2 && list < 4) || (size == SCALING_LIST_64x64 && list % (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES) != 0))   // skip 2x2 luma
-#endif
         continue;
-#if JVET_R0166_SCALING_LISTS_CHROMA_444
       scalingListId = g_scalingListId[size][list];
-#endif
       for(int qp = minimumQp; qp < maximumQp; qp++)
       {
         xSetScalingListDec(scalingList, list, size, qp, scalingListId);
       }
-#if !JVET_R0166_SCALING_LISTS_CHROMA_444
-      scalingListId++;
-#endif
     }
   }
   //based on square result and apply downsample technology
@@ -635,15 +610,8 @@ void Quant::setScalingListDec(const ScalingList &scalingList)
       for (uint32_t list = 0; list < SCALING_LIST_NUM; list++) //9
       {
         int largerSide = (sizew > sizeh) ? sizew : sizeh;
-#if !JVET_R0166_SCALING_LISTS_CHROMA_444
-        if (largerSide == SCALING_LIST_64x64 && list % (SCALING_LIST_NUM / SCALING_LIST_PRED_MODES) != 0) continue;
-#endif
         if (largerSide < SCALING_LIST_4x4) printf("Rectangle Error !\n");
-#if JVET_R0166_SCALING_LISTS_CHROMA_444
         recScalingListId = g_scalingListId[largerSide][list];
-#else
-        recScalingListId = SCALING_LIST_NUM * (largerSide - 2) + 2 + (list / ((largerSide == SCALING_LIST_64x64) ? 3 : 1));
-#endif
         for (int qp = minimumQp; qp < maximumQp; qp++)
         {
           xSetRecScalingListDec(scalingList, list, sizew, sizeh, qp, recScalingListId);

@@ -90,7 +90,6 @@
 
 
 
-#define JVET_R0166_SCALING_LISTS_CHROMA_444               1 // JVET-R0166: Scaling list for Chroma 444
 
 #define JVET_P0359_PARAMETER_SETS_INCLUSION_SEI           1 // JVET-P0359: Parameter sets inclusion indication SEI message
 

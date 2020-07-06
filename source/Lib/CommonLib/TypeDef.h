@@ -133,7 +133,6 @@
 
 
 
-#define JVET_R0156_ASPECT3_SPS_CLEANUP                    1 // Condition sps_sublayer_dpb_params_flag on sps_ptl_dpb_hrd_params_present_flag, in addition to sps_max_sublayer_minus1,	JVET-R0156 proposal 3, JVET-R0170, JVET-R0222 proposal 2
 
 #define JVET_R0350_MIP_CHROMA_444_SINGLETREE              1 // JVET-R0350: MIP for chroma in case of 4:4:4 format and single tree
 

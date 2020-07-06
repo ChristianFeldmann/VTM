@@ -148,7 +148,6 @@
 
 
 
-#define JVET_R0103_DU_SIGNALLING                          1 // JVET-R0103: Proposal 1 decoding unit signalling change
 
 #define JVET_R0099_DPB_HRD_PARAMETERS_SIGNALLING          1   // JVET-R0099: DPB and HRD parameter signalling for OLS
 

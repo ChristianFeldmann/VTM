@@ -118,11 +118,8 @@
 
 
 
-#define JVET_R0200_MOVE_LMCS_AND_SCALING_LIST_SE          1 // JVET-R0200 Move the SH flags slice_lmcs_enabled_flag and slice_explicit_scaling_list_used_flag to be just after the ALF parameters
 
-#if JVET_R0200_MOVE_LMCS_AND_SCALING_LIST_SE
 #define JVET_R0098_LMCS_AND_SCALING_LISTS_FOR_PH_IN_SH    1 // JVET-R0098: Only signall LMCS and explicit scaling list enable flags in SH when PH is not in SH
-#endif
 
 #define JVET_R0388_DBF_CLEANUP                            1 // JVET-R0388: Cleanups on deblocking signalling
 

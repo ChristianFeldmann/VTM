@@ -1677,17 +1677,13 @@ void HLSyntaxReader::parseSPS(SPS* pcSPS)
   pcSPS->setMaxBTSize(maxBTSize[1], maxBTSize[0], maxBTSize[2]);
   pcSPS->setMaxTTSize(maxTTSize[1], maxTTSize[0], maxTTSize[2]);
 
-#if JVET_R0097_MAX_TRSIZE_CONDITIONALY_SIGNALING
   if (pcSPS->getCTUSize() > 32) {
-#endif
     READ_FLAG(uiCode, "sps_max_luma_transform_size_64_flag");        pcSPS->setLog2MaxTbSize((uiCode ? 1 : 0) + 5);
-#if JVET_R0097_MAX_TRSIZE_CONDITIONALY_SIGNALING
   }
   else
   {
     pcSPS->setLog2MaxTbSize(5);
   }
-#endif
 
   if (chromaArrayType != CHROMA_400)
   {

@@ -57,7 +57,6 @@
                                                             //             The value of no_output_of_prior_pics_flag, when present, is required to be the same for all pictures in an AU
 
 
-#define JVET_R0067_PICTURE_OUTPUT_FLAG                    1 // JVET-R0067: Update the derivation of PictureOutputFlag
 
 #define JVET_R0080                                        1 // JVET-R0080: Change the syntax condition for pps_tile_idx_delta_present_flag. When the value of pps_num_slices_in_pic_minus1 is greater than 1 instead of 0, the syntax element of pps_tile_idx_delta_present_flag is signalled.
 

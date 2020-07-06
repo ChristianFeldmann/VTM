@@ -4946,7 +4946,6 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
       predIntraChromaLM( COMPONENT_Cb, piPredCb, pu, cbArea, predMode );
       predIntraChromaLM( COMPONENT_Cr, piPredCr, pu, crArea, predMode );
     }
-#if JVET_R0350_MIP_CHROMA_444_SINGLETREE
     else if (PU::isMIP(pu, CHANNEL_TYPE_CHROMA))
     {
       initIntraMip(pu, cbArea);
@@ -4955,7 +4954,6 @@ ChromaCbfs IntraSearch::xRecurIntraChromaCodingQT( CodingStructure &cs, Partitio
       initIntraMip(pu, crArea);
       predIntraMip(COMPONENT_Cr, piPredCr, pu);
     }
-#endif
     else
     {
       predIntraAng( COMPONENT_Cb, piPredCb, pu);

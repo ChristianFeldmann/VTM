@@ -229,18 +229,30 @@ void TrQuant::init( const Quant* otherQuant,
   }
 }
 
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+void TrQuant::fwdLfnstNxN( TCoeff* src, TCoeff* dst, const uint32_t mode, const uint32_t index, const uint32_t size, int zeroOutSize )
+#else
 void TrQuant::fwdLfnstNxN( int* src, int* dst, const uint32_t mode, const uint32_t index, const uint32_t size, int zeroOutSize )
+#endif
 {
   const int8_t* trMat  = ( size > 4 ) ? g_lfnst8x8[ mode ][ index ][ 0 ] : g_lfnst4x4[ mode ][ index ][ 0 ];
   const int     trSize = ( size > 4 ) ? 48 : 16;
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+  TCoeff           coef;
+  TCoeff*          out    = dst;
+#else
   int           coef;
   int*          out    = dst;
-
+#endif
   assert( index < 3 );
 
   for( int j = 0; j < zeroOutSize; j++ )
   {
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+    TCoeff*          srcPtr   = src;
+#else
     int*          srcPtr   = src;
+#endif
     const int8_t* trMatTmp = trMat;
     coef = 0;
     for( int i = 0; i < trSize; i++ )
@@ -254,29 +266,46 @@ void TrQuant::fwdLfnstNxN( int* src, int* dst, const uint32_t mode, const uint32
   ::memset( out, 0, ( trSize - zeroOutSize ) * sizeof( int ) );
 }
 
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+void TrQuant::invLfnstNxN( TCoeff* src, TCoeff* dst, const uint32_t mode, const uint32_t index, const uint32_t size, int zeroOutSize, const int maxLog2TrDynamicRange )
+{
+#else
 void TrQuant::invLfnstNxN( int* src, int* dst, const uint32_t mode, const uint32_t index, const uint32_t size, int zeroOutSize )
 {
   int             maxLog2TrDynamicRange =  15;
+#endif
   const TCoeff    outputMinimum         = -( 1 << maxLog2TrDynamicRange );
   const TCoeff    outputMaximum         =  ( 1 << maxLog2TrDynamicRange ) - 1;
   const int8_t*   trMat                 =  ( size > 4 ) ? g_lfnst8x8[ mode ][ index ][ 0 ] : g_lfnst4x4[ mode ][ index ][ 0 ];
   const int       trSize                =  ( size > 4 ) ? 48 : 16;
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+  TCoeff          resi;
+  TCoeff*         out                   =  dst;
+#else
   int             resi;
   int*            out                   =  dst;
-
+#endif
   assert( index < 3 );
 
   for( int j = 0; j < trSize; j++ )
   {
     resi = 0;
     const int8_t* trMatTmp = trMat;
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+    TCoeff*       srcPtr   = src;
+#else
     int*          srcPtr   = src;
+#endif
     for( int i = 0; i < zeroOutSize; i++ )
     {
       resi += *srcPtr++ * *trMatTmp;
       trMatTmp += trSize;
     }
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+    *out++ = Clip3<TCoeff>( outputMinimum, outputMaximum, ( resi + 64 ) >> 7 );
+#else
     *out++ = Clip3( outputMinimum, outputMaximum, ( int ) ( resi + 64 ) >> 7 );
+#endif
     trMat++;
   }
 }
@@ -309,6 +338,9 @@ bool TrQuant::getTransposeFlag( uint32_t intraMode )
 
 void TrQuant::xInvLfnst( const TransformUnit &tu, const ComponentID compID )
 {
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+  const int maxLog2TrDynamicRange = tu.cs->sps->getMaxLog2TrDynamicRange(toChannelType(compID));
+#endif
   const CompArea& area     = tu.blocks[ compID ];
   const uint32_t  width    = area.width;
   const uint32_t  height   = area.height;
@@ -331,7 +363,7 @@ void TrQuant::xInvLfnst( const TransformUnit &tu, const ComponentID compID )
 
     if( lfnstIdx < 3 )
     {
-      intraMode = getLFNSTIntraMode( PU::getWideAngIntraMode( tu, intraMode, compID ) );
+      intraMode = getLFNSTIntraMode( PU::getWideAngle( tu, intraMode, compID ) );
 #if RExt__DECODER_DEBUG_TOOL_STATISTICS
       CodingStatistics::IncrementStatisticTool( CodingStatisticsClassType { STATS__TOOL_LFNST, width, height, compID } );
 #endif
@@ -352,8 +384,11 @@ void TrQuant::xInvLfnst( const TransformUnit &tu, const ComponentID compID )
             scanPtr++;
           }
 
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+          invLfnstNxN( m_tempInMatrix, m_tempOutMatrix, g_lfnstLut[ intraMode ], lfnstIdx - 1, sbSize, ( tu4x4Flag || tu8x8Flag ) ? 8 : 16, maxLog2TrDynamicRange );
+#else
           invLfnstNxN( m_tempInMatrix, m_tempOutMatrix, g_lfnstLut[ intraMode ], lfnstIdx - 1, sbSize, ( tu4x4Flag || tu8x8Flag ) ? 8 : 16 );
-
+#endif
           lfnstTemp = m_tempOutMatrix; // inverse spectral rearrangement
 
           if( transposeFlag )
@@ -422,7 +457,7 @@ void TrQuant::xFwdLfnst( const TransformUnit &tu, const ComponentID compID, cons
 
     if( lfnstIdx < 3 )
     {
-      intraMode = getLFNSTIntraMode( PU::getWideAngIntraMode( tu, intraMode, compID ) );
+      intraMode = getLFNSTIntraMode( PU::getWideAngle( tu, intraMode, compID ) );
 
       bool            transposeFlag   = getTransposeFlag( intraMode );
       const int       sbSize          = whge3 ? 8 : 4;

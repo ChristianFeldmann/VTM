@@ -114,9 +114,7 @@ private:
   CostMode                m_costMode;
   double                  m_distortionWeight[MAX_NUM_COMPONENT]; // only chroma values are used.
   double                  m_dLambda;
-#if JVET_R0110_MIXED_LOSSLESS
   bool                   m_isLosslessRDCost;
-#endif
 
 #if WCG_EXT
   double                  m_dLambda_unadjusted; // TODO: check is necessary
@@ -168,9 +166,7 @@ public:
 #endif
 
   void          setCostMode(CostMode m) { m_costMode = m; }
-#if JVET_R0110_MIXED_LOSSLESS
   void          setLosslessRDCost(bool m) { m_isLosslessRDCost = m; }
-#endif
 
   // Distortion Functions
   void          init();

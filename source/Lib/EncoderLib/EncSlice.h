@@ -118,9 +118,7 @@ public:
 
   /// preparation of slice encoding (reference marking, QP and lambda)
   void    initEncSlice        ( Picture*  pcPic, const int pocLast, const int pocCurr,
-                                const int iGOPid, Slice*& rpcSlice, const bool isField
-    , bool isEncodeLtRef
-  );
+                                const int iGOPid, Slice*& rpcSlice, const bool isField, bool isEncodeLtRef, int layerId );
 
   void    resetQP             ( Picture* pic, int sliceQP, double lambda );
 
@@ -129,9 +127,7 @@ public:
   void    compressSlice       ( Picture* pcPic, const bool bCompressEntireSlice, const bool bFastDeltaQP );      ///< analysis stage of slice
   void    calCostSliceI       ( Picture* pcPic );
   void    calCostPictureI     ( Picture* picture );
-#if JVET_R0110_MIXED_LOSSLESS
   void    setLosslessSlice(Picture* pcPic, bool b);      ///< Set if the slice is lossless or not
-#endif
   void    encodeSlice         ( Picture* pcPic, OutputBitstream* pcSubstreams, uint32_t &numBinsCoded );
   void    encodeCtus          ( Picture* pcPic, const bool bCompressEntireSlice, const bool bFastDeltaQP, EncLib* pcEncLib );
   void    checkDisFracMmvd    ( Picture* pcPic, uint32_t startCtuTsAddr, uint32_t boundingCtuTsAddr );

@@ -175,16 +175,14 @@ Picture::Picture()
   cs                   = nullptr;
   m_isSubPicBorderSaved = false;
   m_bIsBorderExtended  = false;
-#if JVET_Q0764_WRAP_AROUND_WITH_RPR
   m_wrapAroundValid    = false;
   m_wrapAroundOffset   = 0;
-#endif
   usedByCurr           = false;
   longTerm             = false;
   reconstructed        = false;
   neededForOutput      = false;
   referenced           = false;
-  layer                = std::numeric_limits<uint32_t>::max();
+  temporalId           = std::numeric_limits<uint32_t>::max();
   fieldPic             = false;
   topField             = false;
   precedingDRAP        = false;
@@ -195,9 +193,8 @@ Picture::Picture()
   m_spliceIdx = NULL;
   m_ctuNums = 0;
   layerId = NOT_VALID;
-#if JVET_R0058
   numSubpics = 1;
-#endif
+  numSlices = 1;
 }
 
 void Picture::create( const ChromaFormat &_chromaFormat, const Size &size, const unsigned _maxCUSize, const unsigned _margin, const bool _decoder, const int _layerId )
@@ -394,7 +391,6 @@ void Picture::allocateNewSlice()
     slice.initSlice();
   }
 }
-#if JVET_R0110_MIXED_LOSSLESS
 void Picture::fillSliceLossyLosslessArray(std::vector<uint16_t> sliceLosslessIndexArray, bool mixedLossyLossless)
 {
   uint16_t numElementsinsliceLosslessIndexArray = (uint16_t)sliceLosslessIndexArray.size();
@@ -415,7 +411,6 @@ void Picture::fillSliceLossyLosslessArray(std::vector<uint16_t> sliceLosslessInd
   CHECK(m_lossylosslessSliceArray.size() < numSlices, "sliceLosslessArray size is less than number of slices");
 
 }
-#endif
 
 Slice *Picture::swapSliceObject(Slice * p, uint32_t i)
 {
@@ -777,6 +772,8 @@ void Picture::saveSubPicBorder(int POC, int subPicX0, int subPicY0, int subPicWi
   m_bufSubPicBelow.create(unitAreaAboveBelow);
   m_bufSubPicLeft.create(unitAreaLeftRight);
   m_bufSubPicRight.create(unitAreaLeftRight);
+  m_bufWrapSubPicAbove.create(unitAreaAboveBelow);
+  m_bufWrapSubPicBelow.create(unitAreaAboveBelow);
 
   for (int comp = 0; comp < getNumberValidComponents(cs->area.chromaFormat); comp++)
   {
@@ -832,6 +829,30 @@ void Picture::saveSubPicBorder(int POC, int subPicX0, int subPicY0, int subPicWi
     {
       ::memcpy(dstTop    + y *    dBufTop.stride, srcTop    + y * s.stride, sizeof(Pel) * (2 * xmargin + width));
       ::memcpy(dstBottom + y * dBufBottom.stride, srcBottom + y * s.stride, sizeof(Pel) * (2 * xmargin + width));
+    }
+
+    // back up recon wrap buffer
+    if (cs->sps->getWrapAroundEnabledFlag())
+    {
+      PelBuf sWrap = M_BUFS(0, PIC_RECON_WRAP).get(compID);
+      Pel *srcWrap = sWrap.bufAt(left, top);
+
+      // 3.4.1 set back up buffer for above
+      PelBuf dBufTopWrap = m_bufWrapSubPicAbove.getBuf(compID);
+      Pel    *dstTopWrap = dBufTopWrap.bufAt(0, 0);
+
+      // 3.4.2 set back up buffer for below
+      PelBuf dBufBottomWrap = m_bufWrapSubPicBelow.getBuf(compID);
+      Pel    *dstBottomWrap = dBufBottomWrap.bufAt(0, 0);
+
+      // 3.4.3 copy recon wrap picture to back up buffer
+      Pel *srcTopWrap    = srcWrap - xmargin - ymargin * sWrap.stride;
+      Pel *srcBottomWrap = srcWrap - xmargin +  height * sWrap.stride;
+      for (int y = 0; y < ymargin; y++)
+      {
+        ::memcpy(dstTopWrap    + y *    dBufTopWrap.stride, srcTopWrap    + y * sWrap.stride, sizeof(Pel) * (2 * xmargin + width));
+        ::memcpy(dstBottomWrap + y * dBufBottomWrap.stride, srcBottomWrap + y * sWrap.stride, sizeof(Pel) * (2 * xmargin + width));
+      }
     }
   }
 }
@@ -899,6 +920,34 @@ void Picture::extendSubPicBorder(int POC, int subPicX0, int subPicY0, int subPic
       ::memcpy(dstTop, srcTop, sizeof(Pel)*(2 * xmargin + width));
       dstTop -= s.stride;
     }
+
+    // Appy padding for recon wrap buffer
+    if (cs->sps->getWrapAroundEnabledFlag())
+    {
+      // set recon wrap picture
+      PelBuf sWrap = M_BUFS(0, PIC_RECON_WRAP).get(compID);
+      Pel *srcWrap = sWrap.bufAt(left, top);
+
+      // apply padding on bottom
+      Pel *srcBottomWrap = srcWrap + sWrap.stride * (height - 1) - xmargin;
+      Pel *dstBottomWrap = srcBottomWrap + sWrap.stride;
+      for (int y = 0; y < ymargin; y++)
+      {
+        ::memcpy(dstBottomWrap, srcBottomWrap, sizeof(Pel)*(2 * xmargin + width));
+        dstBottomWrap += sWrap.stride;
+      }
+
+      // apply padding for top
+      // si is still (-marginX, SubpictureHeight-1)
+      Pel *srcTopWrap = srcWrap - xmargin;
+      Pel *dstTopWrap = srcTopWrap - sWrap.stride;
+      // si is now (-marginX, 0)
+      for (int y = 0; y < ymargin; y++)
+      {
+        ::memcpy(dstTopWrap, srcTopWrap, sizeof(Pel)*(2 * xmargin + width));
+        dstTopWrap -= sWrap.stride;
+      }
+    }
   } // end of for
 }
 
@@ -961,6 +1010,32 @@ void Picture::restoreSubPicBorder(int POC, int subPicX0, int subPicY0, int subPi
       ::memcpy(srcTop    + y * s.stride, dstTop    + y *    dBufTop.stride, sizeof(Pel) * (2 * xmargin + width));
       ::memcpy(srcBottom + y * s.stride, dstBottom + y * dBufBottom.stride, sizeof(Pel) * (2 * xmargin + width));
     }
+
+    // restore recon wrap buffer
+    if (cs->sps->getWrapAroundEnabledFlag())
+    {
+      // set recon wrap picture
+      PelBuf sWrap = M_BUFS(0, PIC_RECON_WRAP).get(compID);
+      Pel *srcWrap = sWrap.bufAt(left, top);
+
+      // set back up buffer for above
+      PelBuf dBufTopWrap = m_bufWrapSubPicAbove.getBuf(compID);
+      Pel    *dstTopWrap = dBufTopWrap.bufAt(0, 0);
+
+      // set back up buffer for below
+      PelBuf dBufBottomWrap = m_bufWrapSubPicBelow.getBuf(compID);
+      Pel    *dstBottomWrap = dBufBottomWrap.bufAt(0, 0);
+
+      // copy to recon wrap picture from back up buffer
+      Pel *srcTopWrap = srcWrap - xmargin - ymargin * sWrap.stride;
+      Pel *srcBottomWrap = srcWrap - xmargin + height * sWrap.stride;
+
+      for (int y = 0; y < ymargin; y++)
+      {
+        ::memcpy(srcTopWrap    + y * sWrap.stride, dstTopWrap    + y *    dBufTopWrap.stride, sizeof(Pel) * (2 * xmargin + width));
+        ::memcpy(srcBottomWrap + y * sWrap.stride, dstBottomWrap + y * dBufBottomWrap.stride, sizeof(Pel) * (2 * xmargin + width));
+      }
+    }
   }
 
   // 5.0 destroy the back up memory
@@ -968,22 +1043,18 @@ void Picture::restoreSubPicBorder(int POC, int subPicX0, int subPicY0, int subPi
   m_bufSubPicBelow.destroy();
   m_bufSubPicLeft.destroy();
   m_bufSubPicRight.destroy();
+  m_bufWrapSubPicAbove.destroy();
+  m_bufWrapSubPicBelow.destroy();
 }
 
-#if JVET_Q0764_WRAP_AROUND_WITH_RPR  
 void Picture::extendPicBorder( const PPS *pps )
-#else
-void Picture::extendPicBorder()
-#endif
 {
   if ( m_bIsBorderExtended )
   {
-#if JVET_Q0764_WRAP_AROUND_WITH_RPR
     if( isWrapAroundEnabled( pps ) && ( !m_wrapAroundValid || m_wrapAroundOffset != pps->getWrapAroundOffset() ) )
     {
       extendWrapBorder( pps );
     }
-#endif
     return;
   }
 
@@ -1024,7 +1095,6 @@ void Picture::extendPicBorder()
     }
 
     // reference picture with horizontal wrapped boundary
-#if JVET_Q0764_WRAP_AROUND_WITH_RPR
     if ( isWrapAroundEnabled( pps ) )
     {
       extendWrapBorder( pps );
@@ -1034,49 +1104,11 @@ void Picture::extendPicBorder()
       m_wrapAroundValid = false;
       m_wrapAroundOffset = 0;
     }
-#else
-    if (cs->sps->getWrapAroundEnabledFlag())
-    {
-      p = M_BUFS( 0, PIC_RECON_WRAP ).get( compID );
-      p.copyFrom(M_BUFS( 0, PIC_RECONSTRUCTION ).get( compID ));
-      piTxt = p.bufAt(0,0);
-      pi = piTxt;
-      int xoffset = cs->sps->getWrapAroundOffset() >> getComponentScaleX( compID, cs->area.chromaFormat );
-      for (int y = 0; y < p.height; y++)
-      {
-        for (int x = 0; x < xmargin; x++ )
-        {
-          if( x < xoffset )
-          {
-            pi[ -x - 1 ] = pi[ -x - 1 + xoffset ];
-            pi[  p.width + x ] = pi[ p.width + x - xoffset ];
-          }
-          else
-          {
-            pi[ -x - 1 ] = pi[ 0 ];
-            pi[  p.width + x ] = pi[ p.width - 1 ];
-          }
-        }
-        pi += p.stride;
-      }
-      pi -= (p.stride + xmargin);
-      for (int y = 0; y < ymargin; y++ )
-      {
-        ::memcpy( pi + (y+1)*p.stride, pi, sizeof(Pel)*(p.width + (xmargin << 1)));
-      }
-      pi -= ((p.height-1) * p.stride);
-      for (int y = 0; y < ymargin; y++ )
-      {
-        ::memcpy( pi - (y+1)*p.stride, pi, sizeof(Pel)*(p.width + (xmargin<<1)) );
-      }
-    }
-#endif
   }
 
   m_bIsBorderExtended = true;
 }
 
-#if JVET_Q0764_WRAP_AROUND_WITH_RPR
 void Picture::extendWrapBorder( const PPS *pps )
 {
   for(int comp=0; comp<getNumberValidComponents( cs->area.chromaFormat ); comp++)
@@ -1121,7 +1153,6 @@ void Picture::extendWrapBorder( const PPS *pps )
   m_wrapAroundOffset = pps->getWrapAroundOffset();
 }
 
-#endif
 PelBuf Picture::getBuf( const ComponentID compID, const PictureType &type )
 {
   return M_BUFS( ( type == PIC_ORIGINAL || type == PIC_TRUE_ORIGINAL || type == PIC_ORIGINAL_INPUT || type == PIC_TRUE_ORIGINAL_INPUT ) ? 0 : scheduler.getSplitPicId(), type ).getBuf( compID );

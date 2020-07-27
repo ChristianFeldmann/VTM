@@ -191,9 +191,9 @@ public:
   const GeneralHrdParams& getGeneralHrdParameters() { return m_generalHrdParams; }
 
   void                 setOlsHrdParameters(int tLayter, OlsHrdParams &olsHrdParam) { m_olsHrdParams[tLayter] = olsHrdParam; }
-  OlsHrdParams          getOlsHrdParameters() { return m_olsHrdParams[0]; }
-  OlsHrdParams*          getOlsHrdParametersAddr() { return &m_olsHrdParams[0]; }
-  const OlsHrdParams&    getOlsHrdParameters() const { return m_olsHrdParams[0]; }
+  OlsHrdParams           getOlsHrdParameters(int idx) { return m_olsHrdParams[idx]; }
+  OlsHrdParams*          getOlsHrdParametersAddr() { return m_olsHrdParams; }
+  const OlsHrdParams&    getOlsHrdParameters(int idx) const { return m_olsHrdParams[idx]; }
 
 
   void                       setBufferingPeriodSEI(const SEIBufferingPeriod* bp)  { bp->copyTo(m_bufferingPeriodSEI); m_bufferingPeriodInitialized = true; }

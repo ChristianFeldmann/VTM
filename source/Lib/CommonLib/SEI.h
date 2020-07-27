@@ -61,6 +61,7 @@ public:
     USER_DATA_UNREGISTERED               = 5,
     FILM_GRAIN_CHARACTERISTICS           = 19,
     FRAME_PACKING                        = 45,
+    PARAMETER_SETS_INCLUSION_INDICATION  = 129,
     DECODING_UNIT_INFO                   = 130,
     DECODED_PICTURE_HASH                 = 132,
     SCALABLE_NESTING                     = 133,
@@ -281,18 +282,14 @@ public:
     , m_sublayerInitialCpbRemovalDelayPresentFlag(false)
     , m_additionalConcatenationInfoPresentFlag (false)
     , m_maxInitialRemovalDelayForConcatenation (0)
-#if JVET_R0094_DPB_TID_OFFSET
     , m_sublayerDpbOutputOffsetsPresentFlag (false)
-#endif
     , m_altCpbParamsPresentFlag (false)
     , m_useAltCpbParamsFlag (false)
   {
     ::memset(m_initialCpbRemovalDelay, 0, sizeof(m_initialCpbRemovalDelay));
     ::memset(m_initialCpbRemovalOffset, 0, sizeof(m_initialCpbRemovalOffset));
     ::memset(m_cpbRemovalDelayDelta, 0, sizeof(m_cpbRemovalDelayDelta));
-#if JVET_R0094_DPB_TID_OFFSET
     ::memset(m_dpbOutputTidOffset, 0, sizeof(m_dpbOutputTidOffset));
-#endif
   }
   virtual ~SEIBufferingPeriod() {}
 
@@ -322,10 +319,8 @@ public:
   bool m_sublayerInitialCpbRemovalDelayPresentFlag;
   bool     m_additionalConcatenationInfoPresentFlag;
   uint32_t m_maxInitialRemovalDelayForConcatenation;
-#if JVET_R0094_DPB_TID_OFFSET
   bool     m_sublayerDpbOutputOffsetsPresentFlag;
   uint32_t m_dpbOutputTidOffset      [MAX_TLAYER];
-#endif
   bool     m_altCpbParamsPresentFlag;
   bool     m_useAltCpbParamsFlag;
 };
@@ -367,7 +362,6 @@ public:
   std::vector<uint32_t> m_numNalusInDuMinus1;
   std::vector<uint32_t> m_duCpbRemovalDelayMinus1;
   bool     m_cpbAltTimingInfoPresentFlag;
-#if JVET_R0413_HRD_TIMING_INFORMATION
   std::vector<std::vector<uint32_t>> m_nalCpbAltInitialRemovalDelayDelta;
   std::vector<std::vector<uint32_t>> m_nalCpbAltInitialRemovalOffsetDelta;
   std::vector<uint32_t>              m_nalCpbDelayOffset;
@@ -376,12 +370,6 @@ public:
   std::vector<std::vector<uint32_t>> m_vclCpbAltInitialRemovalOffsetDelta;
   std::vector<uint32_t>              m_vclCpbDelayOffset;
   std::vector<uint32_t>              m_vclDpbDelayOffset;
-#else
-  std::vector<std::vector<uint32_t>> m_cpbAltInitialCpbRemovalDelayDelta;
-  std::vector<std::vector<uint32_t>> m_cpbAltInitialCpbRemovalOffsetDelta;
-  std::vector<uint32_t>              m_cpbDelayOffset;
-  std::vector<uint32_t>              m_dpbDelayOffset;
-#endif
   int m_ptDisplayElementalPeriodsMinus1;
 };
 
@@ -465,6 +453,16 @@ public:
   bool m_upsampledAspectRatio;
 };
 
+class SEIParameterSetsInclusionIndication : public SEI
+{
+public:
+  PayloadType payloadType() const { return PARAMETER_SETS_INCLUSION_INDICATION; }
+  SEIParameterSetsInclusionIndication() {}
+  virtual ~SEIParameterSetsInclusionIndication() {}
+
+  int m_selfContainedClvsFlag;
+};
+
 class SEIMasteringDisplayColourVolume : public SEI
 {
 public:
@@ -493,16 +491,12 @@ public:
 
   SEIScalableNesting()
   : m_snOlsFlag (false)
-#if JVET_Q0397_SCAL_NESTING
   , m_snSubpicFlag (false)
-#endif
   , m_snNumOlssMinus1 (0)
   , m_snAllLayersFlag (false)
   , m_snNumLayersMinus1 (0)
-#if JVET_Q0397_SCAL_NESTING
   , m_snNumSubpics (1)
   , m_snSubpicIdLen (0)
-#endif
   , m_snNumSEIs(0)
   {}
 
@@ -512,20 +506,16 @@ public:
   }
 
   bool      m_snOlsFlag;
-#if JVET_Q0397_SCAL_NESTING
   bool      m_snSubpicFlag;
-#endif
   uint32_t  m_snNumOlssMinus1;
   uint32_t  m_snOlsIdxDeltaMinus1[MAX_NESTING_NUM_LAYER];
   uint32_t  m_snOlsIdx[MAX_NESTING_NUM_LAYER];
   bool      m_snAllLayersFlag;                      //value valid if m_nestingOlsFlag == 0
   uint32_t  m_snNumLayersMinus1;                    //value valid if m_nestingOlsFlag == 0 and m_nestingAllLayersFlag == 0
   uint8_t   m_snLayerId[MAX_NESTING_NUM_LAYER];     //value valid if m_nestingOlsFlag == 0 and m_nestingAllLayersFlag == 0. This can e.g. be a static array of 64 uint8_t values
-#if JVET_Q0397_SCAL_NESTING
   uint32_t  m_snNumSubpics;
   uint8_t   m_snSubpicIdLen;
   std::vector<uint16_t> m_snSubpicId;
-#endif
   uint32_t  m_snNumSEIs;
 
   SEIMessages m_nestedSEIs;
@@ -656,18 +646,14 @@ public:
   SEISubpicureLevelInfo()
   : m_numRefLevels(0)
   , m_explicitFractionPresentFlag (false)
-#if JVET_Q0404_CBR_SUBPIC
   , m_cbrConstraintFlag (false)
-#endif
   , m_numSubpics(0)
   {}
   virtual ~SEISubpicureLevelInfo() {}
 
   int       m_numRefLevels;
   bool      m_explicitFractionPresentFlag;
-#if JVET_Q0404_CBR_SUBPIC
   bool      m_cbrConstraintFlag;
-#endif
   int       m_numSubpics;
   std::vector<Level::Name>      m_refLevelIdc;
   std::vector<std::vector<int>> m_refLevelFraction;

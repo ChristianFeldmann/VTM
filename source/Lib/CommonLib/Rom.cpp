@@ -678,7 +678,6 @@ const int g_quantInterDefault8x8[8 * 8] =
 const uint32_t g_scalingListSize [SCALING_LIST_SIZE_NUM] = { 1, 4, 16, 64, 256, 1024, 4096, 16384 };
 const uint32_t g_scalingListSizeX[SCALING_LIST_SIZE_NUM] = { 1, 2,  4,  8,  16,   32,   64,   128 };
 
-#if JVET_R0166_SCALING_LISTS_CHROMA_444
 const uint32_t g_scalingListId[SCALING_LIST_SIZE_NUM][SCALING_LIST_NUM] =
 {
   {  0,  0,  0,  0,  0,  0},  // SCALING_LIST_1x1
@@ -690,7 +689,6 @@ const uint32_t g_scalingListId[SCALING_LIST_SIZE_NUM][SCALING_LIST_NUM] =
   { 26, 21, 22, 27, 24, 25},  // SCALING_LIST_64x64
   {  0,  0,  0,  0,  0,  0},  // SCALING_LIST_128x128
 };
-#endif
 
 
 Mv   g_reusedUniMVs[32][32][8][8][2][33];
@@ -723,7 +721,11 @@ void initGeoTemplate()
     if (g_angle2mask[angleIdx] == -1)
       continue;
     g_globalGeoWeights[g_angle2mask[angleIdx]] = new int16_t[GEO_WEIGHT_MASK_SIZE * GEO_WEIGHT_MASK_SIZE];
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+    g_globalGeoEncSADmask[g_angle2mask[angleIdx]] = new Pel[GEO_WEIGHT_MASK_SIZE * GEO_WEIGHT_MASK_SIZE];
+#else
     g_globalGeoEncSADmask[g_angle2mask[angleIdx]] = new int16_t[GEO_WEIGHT_MASK_SIZE * GEO_WEIGHT_MASK_SIZE];
+#endif
 
     int distanceX = angleIdx;
     int distanceY = (distanceX + (GEO_NUM_ANGLES >> 2)) % GEO_NUM_ANGLES;
@@ -775,7 +777,11 @@ void initGeoTemplate()
 }
 int16_t** g_GeoParams;
 int16_t*  g_globalGeoWeights   [GEO_NUM_PRESTORED_MASK];
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+Pel*      g_globalGeoEncSADmask[GEO_NUM_PRESTORED_MASK];
+#else
 int16_t*  g_globalGeoEncSADmask[GEO_NUM_PRESTORED_MASK];
+#endif
 int16_t   g_weightOffset       [GEO_NUM_PARTITION_MODE][GEO_NUM_CU_SIZE][GEO_NUM_CU_SIZE][2];
 int8_t    g_angle2mask[GEO_NUM_ANGLES] = { 0, -1, 1, 2, 3, 4, -1, -1, 5, -1, -1, 4, 3, 2, 1, -1, 0, -1, 1, 2, 3, 4, -1, -1, 5, -1, -1, 4, 3, 2, 1, -1 };
 int8_t    g_Dis[GEO_NUM_ANGLES] = { 8, 8, 8, 8, 4, 4, 2, 1, 0, -1, -2, -4, -4, -8, -8, -8, -8, -8, -8, -8, -4, -4, -2, -1, 0, 1, 2, 4, 4, 8, 8, 8 };

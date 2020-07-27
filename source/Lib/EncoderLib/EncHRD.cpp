@@ -109,9 +109,7 @@ void EncHRD::initHRDParameters(EncCfg* encCfg)
   m_generalHrdParams.setGeneralNalHrdParametersPresentFlag(rateCnt);
   m_generalHrdParams.setGeneralVclHrdParametersPresentFlag(rateCnt);
 
-#if JVET_Q0394_TIMING_SEI
   m_generalHrdParams.setGeneralSamePicTimingInAllOlsFlag(encCfg->getSamePicTimingInAllOLS());
-#endif
   useSubCpbParams &= (m_generalHrdParams.getGeneralNalHrdParametersPresentFlag() || m_generalHrdParams.getGeneralVclHrdParametersPresentFlag());
   m_generalHrdParams.setGeneralDecodingUnitHrdParamsPresentFlag(useSubCpbParams);
 
@@ -156,11 +154,10 @@ void EncHRD::initHRDParameters(EncCfg* encCfg)
 
   for (i = 0; i < MAX_TLAYER; i++)
   {
-    OlsHrdParams curOlsHrdParams = olsHrdParams[i];
-
-    curOlsHrdParams.setFixedPicRateGeneralFlag(1);
-    curOlsHrdParams.setElementDurationInTcMinus1(0);
-    curOlsHrdParams.setLowDelayHrdFlag(0);
+    olsHrdParams[i].setFixedPicRateGeneralFlag(1);
+    olsHrdParams[i].setFixedPicRateWithinCvsFlag(1);
+    olsHrdParams[i].setElementDurationInTcMinus1(0);
+    olsHrdParams[i].setLowDelayHrdFlag(0);
 
     //! \todo check for possible PTL violations
     // BitRate[ i ] = ( bit_rate_value_minus1[ i ] + 1 ) * 2^( 6 + bit_rate_scale )
@@ -180,17 +177,17 @@ void EncHRD::initHRDParameters(EncCfg* encCfg)
 
     for (j = 0; j < (m_generalHrdParams.getHrdCpbCntMinus1() + 1); j++)
     {
-      curOlsHrdParams.setBitRateValueMinus1(j, 0, (bitrateValue - 1));
-      curOlsHrdParams.setCpbSizeValueMinus1(j, 0, (cpbSizeValue - 1));
-      curOlsHrdParams.setDuCpbSizeValueMinus1(j, 0, (duCpbSizeValue - 1));
-      curOlsHrdParams.setDuBitRateValueMinus1(j, 0, (duBitRateValue - 1));
-      curOlsHrdParams.setCbrFlag(j, 0, false);
+      olsHrdParams[i].setBitRateValueMinus1(j, 0, (bitrateValue - 1));
+      olsHrdParams[i].setCpbSizeValueMinus1(j, 0, (cpbSizeValue - 1));
+      olsHrdParams[i].setDuCpbSizeValueMinus1(j, 0, (duCpbSizeValue - 1));
+      olsHrdParams[i].setDuBitRateValueMinus1(j, 0, (duBitRateValue - 1));
+      olsHrdParams[i].setCbrFlag(j, 0, false);
 
-      curOlsHrdParams.setBitRateValueMinus1(j, 1, (bitrateValue - 1));
-      curOlsHrdParams.setCpbSizeValueMinus1(j, 1, (cpbSizeValue - 1));
-      curOlsHrdParams.setDuCpbSizeValueMinus1(j, 1, (duCpbSizeValue - 1));
-      curOlsHrdParams.setDuBitRateValueMinus1(j, 1, (duBitRateValue - 1));
-      curOlsHrdParams.setCbrFlag(j, 1, false);
+      olsHrdParams[i].setBitRateValueMinus1(j, 1, (bitrateValue - 1));
+      olsHrdParams[i].setCpbSizeValueMinus1(j, 1, (cpbSizeValue - 1));
+      olsHrdParams[i].setDuCpbSizeValueMinus1(j, 1, (duCpbSizeValue - 1));
+      olsHrdParams[i].setDuBitRateValueMinus1(j, 1, (duBitRateValue - 1));
+      olsHrdParams[i].setCbrFlag(j, 1, false);
     }
   }
 }

@@ -369,11 +369,7 @@ void InterPrediction::xSubPuBio(PredictionUnit& pu, PelUnitBuf& predBuf, const R
       int filtersize = (compID == (COMPONENT_Y)) ? NTAPS_LUMA : NTAPS_CHROMA;
       cMv += Mv(-(((filtersize >> 1) - 1) << mvshiftTemp), -(((filtersize >> 1) - 1) << mvshiftTemp));
       bool wrapRef = false;
-#if JVET_Q0764_WRAP_AROUND_WITH_RPR
       if ( pu.cu->slice->getRefPic(refId, pu.refIdx[refId])->isWrapAroundEnabled( pu.cs->pps ) )
-#else
-      if (pu.cs->sps->getWrapAroundEnabledFlag())
-#endif
       {
         wrapRef = wrapClipMv(cMv, pu.blocks[0].pos(), pu.blocks[0].size(), pu.cs->sps, pu.cs->pps);
       }
@@ -478,11 +474,7 @@ void InterPrediction::xPredInterUni(const PredictionUnit& pu, const RefPicList& 
   {
     if( !isIBC && pu.cu->slice->getRefPic( eRefPicList, iRefIdx )->isRefScaled( pu.cs->pps ) == false )
     {
-#if JVET_Q0764_WRAP_AROUND_WITH_RPR
       if( !pu.cs->pps->getWrapAroundEnabledFlag() )
-#else
-      if( !sps.getWrapAroundEnabledFlag() )
-#endif
       {
         clipMv( mv[0], pu.cu->lumaPos(), pu.cu->lumaSize(), sps, *pu.cs->pps );
       }
@@ -685,11 +677,7 @@ void InterPrediction::xPredInterBlk ( const ComponentID& compID, const Predictio
 
   bool  wrapRef = false;
   Mv    mv(_mv);
-#if JVET_Q0764_WRAP_AROUND_WITH_RPR
   if( !isIBC && refPic->isWrapAroundEnabled( pu.cs->pps ) )
-#else
-  if( !isIBC && pu.cs->sps->getWrapAroundEnabledFlag() )
-#endif
   {
     wrapRef = wrapClipMv( mv, pu.blocks[0].pos(), pu.blocks[0].size(), pu.cs->sps, pu.cs->pps );
   }
@@ -779,7 +767,11 @@ void InterPrediction::xPredInterBlk ( const ComponentID& compID, const Predictio
   JVET_J0090_SET_CACHE_ENABLE((srcPadStride == 0) && (bioApplied == false)); // Enabled only in non-DMVR-non-BDOF process, In DMVR process, srcPadStride is always non-zero
   if (bioApplied && compID == COMPONENT_Y)
   {
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+    const int shift = IF_INTERNAL_FRAC_BITS(clpRng.bd);
+#else
     const int shift = std::max<int>(2, (IF_INTERNAL_PREC - clpRng.bd));
+#endif
     int xOffset = (xFrac < 8) ? 1 : 0;
     int yOffset = (yFrac < 8) ? 1 : 0;
     const Pel* refPel = refBuf.buf - yOffset * refBuf.stride - xOffset;
@@ -1079,11 +1071,7 @@ void InterPrediction::xPredAffineBlk(const ComponentID &compID, const Prediction
         iMvScaleTmpVer = tmpMv.getVer();
 
         // clip and scale
-#if JVET_Q0764_WRAP_AROUND_WITH_RPR
         if ( refPic->isWrapAroundEnabled( pu.cs->pps ) )
-#else
-        if (sps.getWrapAroundEnabledFlag())
-#endif
         {
           m_storedMv[h / AFFINE_MIN_BLOCK_SIZE * MVBUFFER_SIZE + w / AFFINE_MIN_BLOCK_SIZE].set(iMvScaleTmpHor, iMvScaleTmpVer);
           Mv tmpMv(iMvScaleTmpHor, iMvScaleTmpVer);
@@ -1108,11 +1096,7 @@ void InterPrediction::xPredAffineBlk(const ComponentID &compID, const Prediction
         Mv curMv = m_storedMv[((h << iScaleY) / AFFINE_MIN_BLOCK_SIZE) * MVBUFFER_SIZE + ((w << iScaleX) / AFFINE_MIN_BLOCK_SIZE)] +
           m_storedMv[((h << iScaleY) / AFFINE_MIN_BLOCK_SIZE + iScaleY)* MVBUFFER_SIZE + ((w << iScaleX) / AFFINE_MIN_BLOCK_SIZE + iScaleX)];
         roundAffineMv(curMv.hor, curMv.ver, 1);
-#if JVET_Q0764_WRAP_AROUND_WITH_RPR
         if ( refPic->isWrapAroundEnabled( pu.cs->pps ) )
-#else
-        if (sps.getWrapAroundEnabledFlag())
-#endif
         {
           wrapRef = wrapClipMv( curMv, Position( pu.Y().x + ( w << iScaleX ), pu.Y().y + ( h << iScaleY ) ), Size( blockWidth << iScaleX, blockHeight << iScaleY ), &sps, pu.cs->pps );
         }
@@ -1192,7 +1176,11 @@ void InterPrediction::xPredAffineBlk(const ComponentID &compID, const Prediction
       }
       if (enablePROF)
       {
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+        const int shift = IF_INTERNAL_FRAC_BITS(clpRng.bd);
+#else
         const int shift = std::max<int>(2, (IF_INTERNAL_PREC - clpRng.bd));
+#endif
         const int xOffset = xFrac >> 3;
         const int yOffset = yFrac >> 3;
 
@@ -1219,15 +1207,23 @@ void InterPrediction::xPredAffineBlk(const ComponentID &compID, const Prediction
         PelBuf gradYBuf = gradYExt.subBuf(0, 0, blockWidth + 2, blockHeight + 2);
         g_pelBufOP.profGradFilter(dstExtBuf.buf, dstExtBuf.stride, blockWidth + 2, blockHeight + 2, gradXBuf.stride, gradXBuf.buf, gradYBuf.buf, clpRng.bd);
 
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+        const Pel offset = (1 << (shift - 1)) + IF_INTERNAL_OFFS;
+#else
         const int shiftNum = std::max<int>(2, (IF_INTERNAL_PREC - clpRng.bd));
         const Pel offset = (1 << (shiftNum - 1)) + IF_INTERNAL_OFFS;
+#endif
         Pel* src = dstExtBuf.bufAt(PROF_BORDER_EXT_W, PROF_BORDER_EXT_H);
         Pel* gX = gradXBuf.bufAt(PROF_BORDER_EXT_W, PROF_BORDER_EXT_H);
         Pel* gY = gradYBuf.bufAt(PROF_BORDER_EXT_W, PROF_BORDER_EXT_H);
 
         Pel * dstY = dstBuf.bufAt(w, h);
 
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+        g_pelBufOP.applyPROF(dstY, dstBuf.stride, src, dstExtBuf.stride, blockWidth, blockHeight, gX, gY, gradXBuf.stride, dMvScaleHor, dMvScaleVer, blockWidth, bi, shift, offset, clpRng);
+#else
         g_pelBufOP.applyPROF(dstY, dstBuf.stride, src, dstExtBuf.stride, blockWidth, blockHeight, gX, gY, gradXBuf.stride, dMvScaleHor, dMvScaleVer, blockWidth, bi, shiftNum, offset, clpRng);
+#endif
       }
       }
     }
@@ -1280,7 +1276,11 @@ void InterPrediction::applyBiOptFlow(const PredictionUnit &pu, const CPelUnitBuf
 
   const ClpRng& clpRng = pu.cu->cs->slice->clpRng(COMPONENT_Y);
   const int   bitDepth = clipBitDepths.recon[toChannelType(COMPONENT_Y)];
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+  const int   shiftNum = IF_INTERNAL_FRAC_BITS(bitDepth) + 1;
+#else
   const int   shiftNum = IF_INTERNAL_PREC + 1 - bitDepth;
+#endif
   const int   offset = (1 << (shiftNum - 1)) + 2 * IF_INTERNAL_OFFS;
   const int   limit = ( 1 << 4 ) - 1;
 
@@ -1689,11 +1689,7 @@ void InterPrediction::xPrefetch(PredictionUnit& pu, PelUnitBuf &pcPad, RefPicLis
     cMv += Mv(-(((filtersize >> 1) - 1) << mvshiftTempHor),
       -(((filtersize >> 1) - 1) << mvshiftTempVer));
     bool wrapRef = false;
-#if JVET_Q0764_WRAP_AROUND_WITH_RPR
     if( refPic->isWrapAroundEnabled( pu.cs->pps ) )
-#else
-    if( pu.cs->sps->getWrapAroundEnabledFlag() )
-#endif
     {
       wrapRef = wrapClipMv( cMv, pu.blocks[0].pos(), pu.blocks[0].size(), pu.cs->sps, pu.cs->pps );
     }
@@ -1865,11 +1861,7 @@ void InterPrediction::xFinalPaddedMCForDMVR(PredictionUnit& pu, PelUnitBuf &pcYu
     m_iRefListIdx = refId;
     const Picture* refPic = pu.cu->slice->getRefPic( refId, pu.refIdx[refId] )->unscaledPic;
     Mv cMvClipped = cMv;
-#if JVET_Q0764_WRAP_AROUND_WITH_RPR
     if( !pu.cs->pps->getWrapAroundEnabledFlag() )
-#else
-    if( !pu.cs->sps->getWrapAroundEnabledFlag() )
-#endif
     {
       clipMv( cMvClipped, pu.lumaPos(), pu.lumaSize(), *pu.cs->sps, *pu.cs->pps );
     }
@@ -1963,11 +1955,7 @@ void InterPrediction::xinitMC(PredictionUnit& pu, const ClpRngs &clpRngs)
   Mv mergeMVL1(pu.mv[REF_PIC_LIST_1]);
 
   /*Clip the starting MVs*/
-#if JVET_Q0764_WRAP_AROUND_WITH_RPR
   if( !pu.cs->pps->getWrapAroundEnabledFlag() )
-#else
-  if( !pu.cs->sps->getWrapAroundEnabledFlag() )
-#endif
   {
     clipMv( mergeMVL0, pu.lumaPos(), pu.lumaSize(), *pu.cs->sps, *pu.cs->pps );
     clipMv( mergeMVL1, pu.lumaPos(), pu.lumaSize(), *pu.cs->sps, *pu.cs->pps );
@@ -2039,11 +2027,7 @@ void InterPrediction::xProcessDMVR(PredictionUnit& pu, PelUnitBuf &pcYuvDst, con
       int filtersize = (compID == (COMPONENT_Y)) ? NTAPS_LUMA : NTAPS_CHROMA;
       cMv += Mv(-(((filtersize >> 1) - 1) << mvshiftTemp), -(((filtersize >> 1) - 1) << mvshiftTemp));
       bool wrapRef = false;
-#if JVET_Q0764_WRAP_AROUND_WITH_RPR
       if ( pu.cs->pps->getWrapAroundEnabledFlag() )
-#else
-      if (pu.cs->sps->getWrapAroundEnabledFlag())
-#endif
       {
         wrapRef = wrapClipMv(cMv, pu.blocks[0].pos(), pu.blocks[0].size(), pu.cs->sps, pu.cs->pps);
       }

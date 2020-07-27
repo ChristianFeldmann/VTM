@@ -68,7 +68,11 @@ static void fullPelCopySSE( const ClpRng& clpRng, const void*_src, int srcStride
 {
   Tsrc* src = (Tsrc*)_src;
 
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+  int headroom = IF_INTERNAL_FRAC_BITS(clpRng.bd);
+#else
   int headroom = IF_INTERNAL_PREC - clpRng.bd;
+#endif
   int headroom_offset = 1 << ( headroom - 1 );
   int offset   = IF_INTERNAL_OFFS;
   __m128i voffset  = _mm_set1_epi16( offset );
@@ -131,7 +135,11 @@ static void fullPelCopyAVX2( const ClpRng& clpRng, const void*_src, int srcStrid
 #ifdef USE_AVX2
   Tsrc* src = (Tsrc*)_src;
 
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+  int headroom = IF_INTERNAL_FRAC_BITS(clpRng.bd);
+#else
   int headroom = IF_INTERNAL_PREC - clpRng.bd;
+#endif
   int offset   = 1 << ( headroom - 1 );
   int internal_offset = IF_INTERNAL_OFFS;
 
@@ -1184,7 +1192,11 @@ static void simdFilter( const ClpRng& clpRng, Pel const *src, int srcStride, Pel
   src -= ( N/2 - 1 ) * cStride;
 
   int offset;
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+  int headRoom = IF_INTERNAL_FRAC_BITS(clpRng.bd);
+#else
   int headRoom = std::max<int>( 2, ( IF_INTERNAL_PREC - clpRng.bd ) );
+#endif
   int shift    = IF_FILTER_PREC;
   // with the current settings (IF_INTERNAL_PREC = 14 and IF_FILTER_PREC = 6), though headroom can be
   // negative for bit depths greater than 14, shift will remain non-negative for bit depths of 8->20
@@ -1339,7 +1351,11 @@ void xWeightedGeoBlk_SSE(const PredictionUnit &pu, const uint32_t width, const u
 
   const char    log2WeightBase = 3;
   const ClpRng  clpRng = pu.cu->slice->clpRngs().comp[compIdx];
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+  const int32_t shiftWeighted = IF_INTERNAL_FRAC_BITS(clpRng.bd) + log2WeightBase;
+#else
   const int32_t shiftWeighted = std::max<int>(2, (IF_INTERNAL_PREC - clpRng.bd)) + log2WeightBase;
+#endif
   const int32_t offsetWeighted = (1 << (shiftWeighted - 1)) + (IF_INTERNAL_OFFS << log2WeightBase);
 
   int16_t wIdx = floorLog2(pu.lwidth()) - GEO_MIN_CU_LOG2;

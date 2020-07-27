@@ -127,15 +127,12 @@ bool CU::getRprScaling( const SPS* sps, const PPS* curPPS, Picture* refPic, int&
   CHECK(curPicWidth > refPicWidth * 8, "curPicWidth shall be less than or equal to refPicWidth * 8");
   CHECK(curPicHeight > refPicHeight * 8, "curPicHeight shall be less than or equal to refPicHeight * 8");
 
-#if JVET_R0114_NEGATIVE_SCALING_WINDOW_OFFSETS
   CHECK(SPS::getWinUnitX(sps->getChromaFormatIdc()) * (abs(curScalingWindow.getWindowLeftOffset()) + abs(curScalingWindow.getWindowRightOffset())) > curPPS->getPicWidthInLumaSamples(), "The value of SubWidthC * ( Abs(pps_scaling_win_left_offset) + Abs(pps_scaling_win_right_offset) ) shall be less than pic_width_in_luma_samples");
   CHECK(SPS::getWinUnitY(sps->getChromaFormatIdc()) * (abs(curScalingWindow.getWindowTopOffset()) + abs(curScalingWindow.getWindowBottomOffset())) > curPPS->getPicHeightInLumaSamples(), "The value of SubHeightC * ( Abs(pps_scaling_win_top_offset) + Abs(pps_scaling_win_bottom_offset) ) shall be less than pic_height_in_luma_samples");
-#endif
 
   return refPic->isRefScaled( curPPS );
 }
 
-#if JVET_R0058
 void CU::checkConformanceILRP(Slice *slice)
 {
   const int numRefList = (slice->getSliceType() == B_SLICE) ? (2) : (1);
@@ -190,7 +187,6 @@ void CU::checkConformanceILRP(Slice *slice)
 
   return;
 }
-#endif
 
 bool CU::isIntra(const CodingUnit &cu)
 {
@@ -615,7 +611,6 @@ int PU::getIntraMPMs( const PredictionUnit &pu, unsigned* mpm, const ChannelType
 
 bool PU::isMIP(const PredictionUnit &pu, const ChannelType &chType)
 {
-#if JVET_R0350_MIP_CHROMA_444_SINGLETREE
   if (chType == CHANNEL_TYPE_LUMA)
   {
     // Default case if chType is omitted.
@@ -625,17 +620,12 @@ bool PU::isMIP(const PredictionUnit &pu, const ChannelType &chType)
   {
     return isDMChromaMIP(pu) && (pu.intraDir[CHANNEL_TYPE_CHROMA] == DM_CHROMA_IDX);
   }
-#else
-  return (chType == CHANNEL_TYPE_LUMA && pu.cu->mipFlag);
-#endif
 }
 
-#if JVET_R0350_MIP_CHROMA_444_SINGLETREE
 bool PU::isDMChromaMIP(const PredictionUnit &pu)
 {
   return !pu.cu->isSepTree() && (pu.chromaFormat == CHROMA_444) && getCoLocatedLumaPU(pu).cu->mipFlag;
 }
-#endif
 
 uint32_t PU::getIntraDirLuma( const PredictionUnit &pu )
 {
@@ -662,14 +652,12 @@ void PU::getIntraChromaCandModes( const PredictionUnit &pu, unsigned modeList[NU
     modeList[6] = MDLM_T_IDX;
     modeList[7] = DM_CHROMA_IDX;
 
-#if JVET_R0350_MIP_CHROMA_444_SINGLETREE
     // If Direct Mode is MIP, mode cannot be already in the list.
     if (isDMChromaMIP(pu))
     {
       return;
     }
 
-#endif
     const uint32_t lumaMode = getCoLocatedIntraLumaMode(pu);
     for( int i = 0; i < 4; i++ )
     {
@@ -726,7 +714,6 @@ uint32_t PU::getFinalIntraMode( const PredictionUnit &pu, const ChannelType &chT
   return uiIntraMode;
 }
 
-#if JVET_R0350_MIP_CHROMA_444_SINGLETREE
 const PredictionUnit &PU::getCoLocatedLumaPU(const PredictionUnit &pu)
 {
   Position              topLeftPos = pu.blocks[pu.chType].lumaPos();
@@ -742,19 +729,11 @@ uint32_t PU::getCoLocatedIntraLumaMode(const PredictionUnit &pu)
 {
   return PU::getIntraDirLuma(PU::getCoLocatedLumaPU(pu));
 }
-#else
-uint32_t PU::getCoLocatedIntraLumaMode( const PredictionUnit &pu )
-{
-  Position topLeftPos = pu.blocks[pu.chType].lumaPos();
-  Position refPos = topLeftPos.offset( pu.blocks[pu.chType].lumaSize().width >> 1, pu.blocks[pu.chType].lumaSize().height >> 1 );
-  const PredictionUnit &lumaPU = pu.cu->isSepTree() ? *pu.cs->picture->cs->getPU( refPos, CHANNEL_TYPE_LUMA ) : *pu.cs->getPU( topLeftPos, CHANNEL_TYPE_LUMA );
 
-  return PU::getIntraDirLuma( lumaPU );
-}
-#endif
-
-int PU::getWideAngIntraMode( const TransformUnit &tu, const uint32_t dirMode, const ComponentID compID )
+int PU::getWideAngle( const TransformUnit &tu, const uint32_t dirMode, const ComponentID compID )
 {
+  //This function returns a wide angle index taking into account that the values 0 and 1 are reserved 
+  //for Planar and DC respectively, as defined in the Spec. Text.
   if( dirMode < 2 )
   {
     return ( int ) dirMode;

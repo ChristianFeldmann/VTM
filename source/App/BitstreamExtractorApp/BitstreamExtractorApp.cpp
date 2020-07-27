@@ -47,9 +47,7 @@
 
 BitstreamExtractorApp::BitstreamExtractorApp()
 :m_vpsId(0)
-#if JVET_Q0394_TIMING_SEI
 , m_removeTimingSEI (false)
-#endif
 
 {
 }
@@ -60,8 +58,8 @@ void BitstreamExtractorApp::xPrintVPSInfo (VPS *vps)
   msg (VERBOSE, "  VPS ID         : %d\n", vps->getVPSId());
   msg (VERBOSE, "  Max layers     : %d\n", vps->getMaxLayers());
   msg (VERBOSE, "  Max sub-layers : %d\n", vps->getMaxSubLayers());
-  msg (VERBOSE, "  Number of OLS  : %d\n", vps->getNumOutputLayerSets());
-  for (int olsIdx=0; olsIdx < vps->getNumOutputLayerSets(); olsIdx++)
+  msg (VERBOSE, "  Number of OLS  : %d\n", vps->getTotalNumOLSs());
+  for (int olsIdx=0; olsIdx < vps->getTotalNumOLSs(); olsIdx++)
   {
     vps->deriveTargetOutputLayerSet(olsIdx);
     msg (VERBOSE, "    OLS # %d\n", olsIdx);
@@ -116,7 +114,7 @@ bool BitstreamExtractorApp::xCheckSliceSubpicture(InputNALUnit &nalu, int target
   slice.setNalUnitLayerId(nalu.m_nuhLayerId);
   slice.setTLayer(nalu.m_temporalId);
 
-  m_hlSynaxReader.parseSliceHeader(&slice, &m_picHeader, &m_parameterSetManager, m_prevTid0Poc);
+  m_hlSynaxReader.parseSliceHeader(&slice, &m_picHeader, &m_parameterSetManager, m_prevTid0Poc, m_prevPicPOC);
 
   PPS *pps = m_parameterSetManager.getPPS(m_picHeader.getPPSId());
   CHECK (nullptr==pps, "referenced PPS not found");
@@ -352,6 +350,15 @@ void BitstreamExtractorApp::xWritePPS(PPS *pps, std::ostream& out, int layerId, 
   writeAnnexB (out, tmpAu);
 }
 
+// returns true, if the NAL unit is to be discarded
+bool BitstreamExtractorApp::xCheckNumSubLayers(InputNALUnit &nalu, VPS *vps)
+{
+  bool retval = (nalu.m_nalUnitType != NAL_UNIT_CODED_SLICE_IDR_N_LP) && (nalu.m_nalUnitType != NAL_UNIT_CODED_SLICE_IDR_W_RADL) && (nalu.m_nalUnitType != NAL_UNIT_CODED_SLICE_CRA);
+
+  retval &= nalu.m_temporalId >= vps->getNumSubLayersInLayerInOLS(m_targetOlsIdx, vps->getGeneralLayerIdx(nalu.m_nuhLayerId));
+
+  return retval;
+}
 
 uint32_t BitstreamExtractorApp::decode()
 {
@@ -369,9 +376,7 @@ uint32_t BitstreamExtractorApp::decode()
   bitstreamFileIn.seekg( 0, std::ios::beg );
 
   int unitCnt = 0;
-#if JVET_Q0404_CBR_SUBPIC
   bool lastSliceWritten= false;   // stores status of previous slice for associated filler data NAL units
-#endif
 
   VPS *vpsIdZero = new VPS();
   std::vector<uint8_t> empty;
@@ -442,14 +447,13 @@ uint32_t BitstreamExtractorApp::decode()
           // this initialization can be removed once the dummy VPS is properly initialized in the parameter set manager
           vps->deriveOutputLayerSets();
         }
-        uint32_t numOlss = vps->getNumOutputLayerSets();
+        uint32_t numOlss = vps->getTotalNumOLSs();
         CHECK(m_targetOlsIdx <0  || m_targetOlsIdx >= numOlss, "target Ols shall be in the range of OLSs specified by the VPS");
         std::vector<int> layerIdInOls = vps->getLayerIdsInOls(m_targetOlsIdx);
         bool isIncludedInTargetOls = std::find(layerIdInOls.begin(), layerIdInOls.end(), nalu.m_nuhLayerId) != layerIdInOls.end();
         writeInpuNalUnitToStream &= (isSpecialNalTypes || isIncludedInTargetOls);
-#if JVET_Q0394_TIMING_SEI
+        writeInpuNalUnitToStream &= !xCheckNumSubLayers(nalu, vps);
         m_removeTimingSEI = !vps->getGeneralHrdParameters()->getGeneralSamePicTimingInAllOlsFlag();
-#endif
       }
       if( nalu.m_nalUnitType == NAL_UNIT_SPS )
       {
@@ -566,6 +570,7 @@ uint32_t BitstreamExtractorApp::decode()
         APS* aps = new APS();
         m_hlSynaxReader.setBitstream( &nalu.getBitstream() );
         m_hlSynaxReader.parseAPS( aps );
+        msg (VERBOSE, "APS Info: APS ID = %d Type = %d Layer = %d\n", aps->getAPSId(), aps->getAPSType(), nalu.m_nuhLayerId);
         int apsId = aps->getAPSId();
         int apsType = aps->getAPSType();
         // note: storeAPS may invalidate the aps pointer!
@@ -607,11 +612,7 @@ uint32_t BitstreamExtractorApp::decode()
               }
             }
             // remove unqualified timing related SEI
-#if JVET_Q0394_TIMING_SEI
             if (sei->payloadType() == SEI::BUFFERING_PERIOD || (m_removeTimingSEI && sei->payloadType() == SEI::PICTURE_TIMING ) || sei->payloadType() == SEI::DECODING_UNIT_INFO)
-#else
-            if (sei->payloadType() == SEI::BUFFERING_PERIOD || sei->payloadType() == SEI::PICTURE_TIMING || sei->payloadType() == SEI::DECODING_UNIT_INFO)
-#endif
             {
               bool targetOlsIdxGreaterThanZero = m_targetOlsIdx > 0;
               writeInpuNalUnitToStream &= !targetOlsIdxGreaterThanZero;
@@ -630,12 +631,10 @@ uint32_t BitstreamExtractorApp::decode()
           // check for subpicture ID
           writeInpuNalUnitToStream = xCheckSliceSubpicture(nalu, m_subPicId);
         }
-#if JVET_Q0404_CBR_SUBPIC
         if (nalu.m_nalUnitType == NAL_UNIT_FD)
         {
           writeInpuNalUnitToStream = lastSliceWritten;
         }
-#endif
       }
       unitCnt++;
 
@@ -658,7 +657,6 @@ uint32_t BitstreamExtractorApp::decode()
         writeNaluContent (bitstreamFileOut, out);
       }
 
-#if JVET_Q0404_CBR_SUBPIC
       // update status of previous slice
       if (nalu.isSlice())
       {
@@ -671,7 +669,6 @@ uint32_t BitstreamExtractorApp::decode()
           lastSliceWritten=false;
         }
       }
-#endif
     }
   }
 

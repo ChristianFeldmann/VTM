@@ -70,12 +70,13 @@ struct ProfileFeatures
   uint32_t                 maxBitDepth;
   ChromaFormat             maxChromaFormat;
 
-  bool                     canUseLevel8p5;
+  bool                     canUseLevel15p5;
   uint32_t                 cpbVclFactor;
   uint32_t                 cpbNalFactor;
   uint32_t                 formatCapabilityFactorx1000;
-  uint32_t                 minCrScaleFactorx10;
+  uint32_t                 minCrScaleFactorx100;
   const LevelTierFeatures *pLevelTiersListInfo;
+  bool                     onePictureOnlyFlagMustBe1;
 };
 
 

@@ -155,9 +155,7 @@ public:
   virtual bool isSplitImplicit            ( const PartSplit split,                          const CodingStructure &cs ) = 0;
   virtual PartSplit getImplicitSplit      (                                                 const CodingStructure &cs ) = 0;
   bool isSepTree                          ( const CodingStructure &cs );
-#if JVET_R0334_PLT_CLEANUP
   bool isLocalSepTree                     ( const CodingStructure &cs );
-#endif
   bool isConsInter                        () { return modeType == MODE_TYPE_INTER; }
   bool isConsIntra                        () { return modeType == MODE_TYPE_INTRA; }
 };

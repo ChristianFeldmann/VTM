@@ -246,7 +246,11 @@ void CDTrace::dtrace_block_affinetf( int k, const PredictionUnit &pu, std::strin
 
 void CDTrace::dtrace_block_line(int k, const CodingUnit &cu, std::string stat_type, int x0, int y0, int x1, int y1)
 {
+#if BLOCK_STATS_AS_CSV
+  dtrace<false>( k, "BlockStat;%d;%4d;%4d;%2d;%2d;%s;%4d;%4d;%4d;%4d;\n", cu.slice->getPOC(), cu.lx(), cu.ly(), cu.lwidth(), cu.lheight(), stat_type.c_str(), x0, y0, x1, y1);
+#else
   dtrace<false>(k, "BlockStat: POC %d @(%4d,%4d) [%2dx%2d] %s={%4d,%4d,%4d,%4d}\n", cu.slice->getPOC(), cu.lx(), cu.ly(), cu.lwidth(), cu.lheight(), stat_type.c_str(), x0, y0, x1, y1);
+#endif
 }
 
 void CDTrace::dtrace_polygon_scalar(int k, int poc, const std::vector<Position> &polygon, std::string stat_type, signed value)
@@ -254,11 +258,21 @@ void CDTrace::dtrace_polygon_scalar(int k, int poc, const std::vector<Position> 
   assert(polygon.size() >= BLOCK_STATS_POLYGON_MIN_POINTS && "Not enough points to from polygon!");
   assert(polygon.size() <= BLOCK_STATS_POLYGON_MAX_POINTS && "Too many points. Unsupported polygon!");
   std::string polygonDescription;
+#if BLOCK_STATS_AS_CSV
+  for (auto position : polygon)
+  {
+    polygonDescription += std::to_string(position.x) + ";" + std::to_string(position.y) + ";";
+  }
+
+  dtrace<false>( k, "BlockStat;%d;%s%s;%d\n",poc, polygonDescription.c_str(), stat_type.c_str(), value);
+#else
   for (auto position : polygon)
   {
     polygonDescription += "(" + std::to_string(position.x) + ", " + std::to_string(position.y) + ")--";
   }
+
   dtrace<false>(k, "BlockStat: POC %d @[%s] %s=%d\n", poc, polygonDescription.c_str(), stat_type.c_str(), value);
+#endif
 }
 
 void CDTrace::dtrace_polygon_vector(int k, int poc, const std::vector<Position> &polygon, std::string stat_type, signed val_x, signed val_y)
@@ -266,11 +280,21 @@ void CDTrace::dtrace_polygon_vector(int k, int poc, const std::vector<Position> 
   assert(polygon.size() >= BLOCK_STATS_POLYGON_MIN_POINTS && "Not enough points to from polygon!");
   assert(polygon.size() <= BLOCK_STATS_POLYGON_MAX_POINTS && "Too many points. Unsupported polygon!");
   std::string polygonDescription;
+#if BLOCK_STATS_AS_CSV
+  for (auto position : polygon)
+  {
+    polygonDescription += std::to_string(position.x) + ";" + std::to_string(position.y) + ";";
+  }
+
+  dtrace<false>( k, "BlockStat;%d;%s%s;%d;%d\n",poc, polygonDescription.c_str(), stat_type.c_str(), val_x, val_y);
+#else
   for (auto position : polygon)
   {
     polygonDescription += "(" + std::to_string(position.x) + ", " + std::to_string(position.y) + ")--";
   }
+
   dtrace<false>(k, "BlockStat: POC %d @[%s] %s={%4d,%4d}\n", poc, polygonDescription.c_str(), stat_type.c_str(), val_x, val_y);
+#endif
 }
 
 void retrieveGeoPolygons(const CodingUnit& cu, std::vector<Position> (&geoPartitions)[2], Position (&linePositions)[2])
@@ -659,6 +683,19 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
                 if( pixMi.interDir == 1)
                 {
                   const Mv mv = pixMi.mv[REF_PIC_LIST_0];
+#if BLOCK_STATS_AS_CSV
+                  g_trace_ctx->dtrace<false>( 
+                    D_BLOCK_STATISTICS_ALL, 
+                    "BlockStat;%d;%4d;%4d;%2d;%2d;%s;%4d;%4d\n",
+                     cs.picture->poc,
+                     pu.lx() + 4*x,
+                     pu.ly() + 4*y,
+                     4,
+                     4,
+                     GetBlockStatisticName(BlockStatistic::MotionBufL0).c_str(),
+                     mv.hor,
+                     mv.ver);
+#else
                   g_trace_ctx->dtrace<false>(
                     D_BLOCK_STATISTICS_ALL,
                     "BlockStat: POC %d @(%4d,%4d) [%2dx%2d] %s={%4d,%4d}\n",
@@ -670,10 +707,24 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
                      GetBlockStatisticName(BlockStatistic::MotionBufL0).c_str(),
                      mv.hor,
                      mv.ver);
+#endif
                 }
                 else if( pixMi.interDir == 2)
                 {
                   const Mv mv = pixMi.mv[REF_PIC_LIST_1];
+#if BLOCK_STATS_AS_CSV
+                  g_trace_ctx->dtrace<false>( 
+                    D_BLOCK_STATISTICS_ALL, 
+                    "BlockStat;%d;%4d;%4d;%2d;%2d;%s;%4d;%4d\n",
+                     cs.picture->poc,
+                     pu.lx() + 4*x,
+                     pu.ly() + 4*y,
+                     4,
+                     4,
+                     GetBlockStatisticName(BlockStatistic::MotionBufL1).c_str(),
+                     mv.hor,
+                     mv.ver);
+#else
                   g_trace_ctx->dtrace<false>(
                     D_BLOCK_STATISTICS_ALL,
                     "BlockStat: POC %d @(%4d,%4d) [%2dx%2d] %s={%4d,%4d}\n",
@@ -685,39 +736,67 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
                      GetBlockStatisticName(BlockStatistic::MotionBufL1).c_str(),
                      mv.hor,
                      mv.ver);
+#endif
                 }
                 else if( pixMi.interDir == 3)
                 {
                   {
                     const Mv mv = pixMi.mv[REF_PIC_LIST_0];
-                    g_trace_ctx->dtrace<false>(
-                      D_BLOCK_STATISTICS_ALL,
-                      "BlockStat: POC %d @(%4d,%4d) [%2dx%2d] %s={%4d,%4d}\n",
-                      cs.picture->poc,
-                      pu.lx() + 4*x,
-                      pu.ly() + 4*y,
-                      4,
-                      4,
-                      GetBlockStatisticName(BlockStatistic::MotionBufL0).c_str(),
-                      mv.hor,
-                      mv.ver);
-                  }
+#if BLOCK_STATS_AS_CSV
+                  g_trace_ctx->dtrace<false>( 
+                    D_BLOCK_STATISTICS_ALL, 
+                    "BlockStat;%d;%4d;%4d;%2d;%2d;%s;%4d;%4d\n",
+                     cs.picture->poc,
+                     pu.lx() + 4*x,
+                     pu.ly() + 4*y,
+                     4,
+                     4,
+                     GetBlockStatisticName(BlockStatistic::MotionBufL0).c_str(),
+                     mv.hor,
+                     mv.ver);
+#else
+                  g_trace_ctx->dtrace<false>(
+                    D_BLOCK_STATISTICS_ALL,
+                    "BlockStat: POC %d @(%4d,%4d) [%2dx%2d] %s={%4d,%4d}\n",
+                     cs.picture->poc,
+                     pu.lx() + 4*x,
+                     pu.ly() + 4*y,
+                     4,
+                     4,
+                     GetBlockStatisticName(BlockStatistic::MotionBufL0).c_str(),
+                     mv.hor,
+                     mv.ver);
+#endif
+                  }                
                   {
                     const Mv mv = pixMi.mv[REF_PIC_LIST_1];
-                    g_trace_ctx->dtrace<false>(
-                      D_BLOCK_STATISTICS_ALL,
-                      "BlockStat: POC %d @(%4d,%4d) [%2dx%2d] %s={%4d,%4d}\n",
-                      cs.picture->poc,
-                      pu.lx() + 4*x,
-                      pu.ly() + 4*y,
-                      4,
-                      4,
-                      GetBlockStatisticName(BlockStatistic::MotionBufL1).c_str(),
-                      mv.hor,
-                      mv.ver);
-                  }
+#if BLOCK_STATS_AS_CSV
+                  g_trace_ctx->dtrace<false>( 
+                    D_BLOCK_STATISTICS_ALL, 
+                    "BlockStat;%d;%4d;%4d;%2d;%2d;%s;%4d;%4d\n",
+                     cs.picture->poc,
+                     pu.lx() + 4*x,
+                     pu.ly() + 4*y,
+                     4,
+                     4,
+                     GetBlockStatisticName(BlockStatistic::MotionBufL1).c_str(),
+                     mv.hor,
+                     mv.ver);
+#else
+                  g_trace_ctx->dtrace<false>(
+                    D_BLOCK_STATISTICS_ALL,
+                    "BlockStat: POC %d @(%4d,%4d) [%2dx%2d] %s={%4d,%4d}\n",
+                     cs.picture->poc,
+                     pu.lx() + 4*x,
+                     pu.ly() + 4*y,
+                     4,
+                     4,
+                     GetBlockStatisticName(BlockStatistic::MotionBufL1).c_str(),
+                     mv.hor,
+                     mv.ver);
+#endif
+                  }                                    
                 }
-
               }
             }
           }

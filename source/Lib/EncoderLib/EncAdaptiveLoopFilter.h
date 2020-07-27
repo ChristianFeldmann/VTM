@@ -268,9 +268,6 @@ private:
   uint8_t*               m_trainingCovControl;
   Pel*                   m_bufOrigin;
   PelBuf*                m_buf;
-#if !JVET_R0327_ONE_PASS_CCALF
-  uint64_t**             m_unfilteredDistortion;  // for different block size
-#endif
   uint64_t*              m_trainingDistortion[MAX_NUM_CC_ALF_FILTERS];    // for current block size
   uint64_t*              m_lumaSwingGreaterThanThresholdCount;
   uint64_t*              m_chromaSampleCountNearMidPoint;
@@ -294,9 +291,7 @@ public:
 #if ENABLE_QPA
     , const double lambdaChromaWeight
 #endif
-#if JVET_R0110_MIXED_LOSSLESS
     , Picture* pcPic, uint32_t numSliceSegments
-#endif
   );
   int getNewCcAlfApsId(CodingStructure &cs, int cIdx);
   void initCABACEstimator( CABACEncoder* cabacEncoder, CtxCache* ctxCache, Slice* pcSlice, ParameterSetMap<APS>* apsMap );
@@ -318,13 +313,21 @@ private:
   void   getFrameStat( AlfCovariance* frameCov, AlfCovariance** ctbCov, uint8_t* ctbEnableFlags, uint8_t* ctbAltIdx, const int numClasses, int altIdx );
   void   deriveStatsForFiltering( PelUnitBuf& orgYuv, PelUnitBuf& recYuv, CodingStructure& cs );
   void   getBlkStats(AlfCovariance* alfCovariace, const AlfFilterShape& shape, AlfClassifier** classifier, Pel* org, const int orgStride, Pel* rec, const int recStride, const CompArea& areaDst, const CompArea& area, const ChannelType channel, int vbCTUHeight, int vbPos);
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+  void   calcCovariance(Pel ELocal[MAX_NUM_ALF_LUMA_COEFF][MaxAlfNumClippingValues], const Pel *rec, const int stride, const AlfFilterShape& shape, const int transposeIdx, const ChannelType channel, int vbDistance);
+#else
   void   calcCovariance(int ELocal[MAX_NUM_ALF_LUMA_COEFF][MaxAlfNumClippingValues], const Pel *rec, const int stride, const AlfFilterShape& shape, const int transposeIdx, const ChannelType channel, int vbDistance);
+#endif
   void   deriveStatsForCcAlfFiltering(const PelUnitBuf &orgYuv, const PelUnitBuf &recYuv, const int compIdx,
                                       const int maskStride, const uint8_t filterIdc, CodingStructure &cs);
   void   getBlkStatsCcAlf(AlfCovariance &alfCovariance, const AlfFilterShape &shape, const PelUnitBuf &orgYuv,
                           const PelUnitBuf &recYuv, const UnitArea &areaDst, const UnitArea &area,
                           const ComponentID compID, const int yPos);
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+  void   calcCovarianceCcAlf(Pel ELocal[MAX_NUM_CC_ALF_CHROMA_COEFF][1], const Pel* rec, const int stride, const AlfFilterShape& shape, int vbDistance);
+#else
   void   calcCovarianceCcAlf(int ELocal[MAX_NUM_CC_ALF_CHROMA_COEFF][1], const Pel* rec, const int stride, const AlfFilterShape& shape, int vbDistance);
+#endif
   void   mergeClasses(const AlfFilterShape& alfShape, AlfCovariance* cov, AlfCovariance* covMerged, int clipMerged[MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_LUMA_COEFF], const int numClasses, short filterIndices[MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_CLASSES]);
 
 
@@ -365,12 +368,6 @@ private:
   int getMaxNumAlternativesChroma( );
   int  getCoeffRateCcAlf(short chromaCoeff[MAX_NUM_CC_ALF_FILTERS][MAX_NUM_CC_ALF_CHROMA_COEFF], bool filterEnabled[MAX_NUM_CC_ALF_FILTERS], uint8_t filterCount, ComponentID compID);
   void deriveCcAlfFilterCoeff( ComponentID compID, const PelUnitBuf& recYuv, const PelUnitBuf& recYuvExt, short filterCoeff[MAX_NUM_CC_ALF_FILTERS][MAX_NUM_CC_ALF_CHROMA_COEFF], const uint8_t filterIdx );
-#if !JVET_R0327_ONE_PASS_CCALF
-  void computeLog2BlockSizeDistortion(const Pel *org, int orgStride, const Pel *dec, int decStride, int height,
-                                      int width, uint64_t *distortionBuf, int distortionBufStride, int log2BlockWidth,
-                                      int log2BlockHeight, uint64_t &totalDistortion);
-#endif
-#if JVET_R0327_ONE_PASS_CCALF
   void determineControlIdcValues(CodingStructure &cs, const ComponentID compID, const PelBuf *buf, const int ctuWidthC,
                                  const int ctuHeightC, const int picWidthC, const int picHeightC,
                                  double **unfilteredDistortion, uint64_t *trainingDistortion[MAX_NUM_CC_ALF_FILTERS],
@@ -381,27 +378,13 @@ private:
                                  bool     filterEnabled[MAX_NUM_CC_ALF_FILTERS],
                                  uint8_t  mapFilterIdxToFilterIdc[MAX_NUM_CC_ALF_FILTERS + 1],
                                  uint8_t &ccAlfFilterCount);
-#else
-  void determineControlIdcValues(CodingStructure &cs, const ComponentID compID, const PelBuf *buf, const int ctuWidthC,
-                                 const int ctuHeightC, const int picWidthC, const int picHeightC,
-                                 uint64_t **unfilteredDistortion, uint64_t *trainingDistortion[MAX_NUM_CC_ALF_FILTERS],
-                                 uint64_t *lumaSwingGreaterThanThresholdCount,
-                                 uint64_t *chromaSampleCountNearMidPoint,
-                                 bool reuseFilterCoeff, uint8_t *trainingCovControl, uint8_t *filterControl,
-                                 uint64_t &curTotalDistortion, double &curTotalRate,
-                                 bool     filterEnabled[MAX_NUM_CC_ALF_FILTERS],
-                                 uint8_t  mapFilterIdxToFilterIdc[MAX_NUM_CC_ALF_FILTERS + 1],
-                                 uint8_t &ccAlfFilterCount);
-#endif
   void deriveCcAlfFilter( CodingStructure& cs, ComponentID compID, const PelUnitBuf& orgYuv, const PelUnitBuf& tempDecYuvBuf, const PelUnitBuf& dstYuv );
   std::vector<int> getAvailableCcAlfApsIds(CodingStructure& cs, ComponentID compID);
   void xSetupCcAlfAPS( CodingStructure& cs );
   void countLumaSwingGreaterThanThreshold(const Pel* luma, int lumaStride, int height, int width, int log2BlockWidth, int log2BlockHeight, uint64_t* lumaSwingGreaterThanThresholdCount, int lumaCountStride);
   void countChromaSampleValueNearMidPoint(const Pel* chroma, int chromaStride, int height, int width, int log2BlockWidth, int log2BlockHeight, uint64_t* chromaSampleCountNearMidPoint, int chromaSampleCountNearMidPointStride);
-#if JVET_R0327_ONE_PASS_CCALF
   void getFrameStatsCcalf(ComponentID compIdx, int filterIdc);
   void initDistortionCcalf();
-#endif
 };
 
 

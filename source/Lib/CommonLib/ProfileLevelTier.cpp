@@ -67,17 +67,20 @@ static const LevelTierFeatures mainLevelTierInfo[] =
     { Level::LEVEL5  ,  8912896, {    25000,   100000 },      200,       11,       10,  267386880ULL, {   25000,   100000 }, { 6, 4} },
     { Level::LEVEL5_1,  8912896, {    40000,   160000 },      200,       11,       10,  534773760ULL, {   40000,   160000 }, { 8, 4} },
     { Level::LEVEL5_2,  8912896, {    60000,   240000 },      200,       11,       10, 1069547520ULL, {   60000,   240000 }, { 8, 4} },
-    { Level::LEVEL6  , 35651584, {    60000,   240000 },      600,       22,       20, 1069547520ULL, {   60000,   240000 }, { 8, 4} },
+    { Level::LEVEL6  , 35651584, {    80000,   240000 },      600,       22,       20, 1069547520ULL, {   60000,   240000 }, { 8, 4} },
     { Level::LEVEL6_1, 35651584, {   120000,   480000 },      600,       22,       20, 2139095040ULL, {  120000,   480000 }, { 8, 4} },
-    { Level::LEVEL6_2, 35651584, {   240000,   800000 },      600,       22,       20, 4278190080ULL, {  240000,   800000 }, { 6, 4} },
-    { Level::LEVEL8_5, MAX_UINT, { MAX_UINT, MAX_UINT }, MAX_UINT, MAX_UINT, MAX_UINT, MAX_CNFUINT64, {MAX_UINT, MAX_UINT }, { 0, 0} },
+    { Level::LEVEL6_2, 35651584, {   180000,   800000 },      600,       22,       20, 4278190080ULL, {  240000,   800000 }, { 8, 4} },
+    { Level::LEVEL15_5, MAX_UINT, { MAX_UINT, MAX_UINT }, MAX_UINT, MAX_UINT, MAX_UINT, MAX_CNFUINT64, {MAX_UINT, MAX_UINT }, { 0, 0} },
     { Level::NONE    }
 };
 
 static const ProfileFeatures validProfiles[] =
-{   //  profile,                   pNameString,             maxBitDepth, maxChrFmt,  lvl8.5, cpbvcl, cpbnal, fcf*1000, mincr*10, levelInfo
-    { Profile::MAIN_10,            "Main_10",                        10, CHROMA_420, false,   1000,   1100,     1875,   10    , mainLevelTierInfo },
-    { Profile::MAIN_444_10,        "Main_444_10",                    10, CHROMA_444, false,   2500,   2750,     3750,    5    , mainLevelTierInfo },
+{   //  profile,                   pNameString,             maxBitDepth, maxChrFmt, lvl15.5, cpbvcl, cpbnal, fcf*1000, mincr*100, levelInfo
+    // most constrained profiles must appear first.
+    { Profile::MAIN_10,            "Main_10_Still_Picture",          10, CHROMA_420,  true,   1000,   1100,     1875,    100    , mainLevelTierInfo,  true },
+    { Profile::MAIN_444_10,        "Main_444_10_Still_Picture",      10, CHROMA_444,  true,   2500,   2750,     3750,     75    , mainLevelTierInfo,  true },
+    { Profile::MAIN_10,            "Main_10",                        10, CHROMA_420, false,   1000,   1100,     1875,    100    , mainLevelTierInfo, false },
+    { Profile::MAIN_444_10,        "Main_444_10",                    10, CHROMA_444, false,   2500,   2750,     3750,     75    , mainLevelTierInfo, false },
     { Profile::NONE, 0 }
 };
 
@@ -89,9 +92,10 @@ ProfileLevelTierFeatures::extractPTLInformation(const SPS &sps)
   m_tier = spsPtl.getTierFlag();
 
   // Identify the profile from the profile Idc, and possibly other constraints.
+  bool onePictureOnlyConstraintFlag=spsPtl.getConstraintInfo()->getOnePictureOnlyConstraintFlag();
   for(int32_t i=0; validProfiles[i].profile != Profile::NONE; i++)
   {
-    if (spsPtl.getProfileIdc() == validProfiles[i].profile)
+    if (spsPtl.getProfileIdc() == validProfiles[i].profile && !(validProfiles[i].onePictureOnlyFlagMustBe1 && !onePictureOnlyConstraintFlag))
     {
       m_pProfile = &(validProfiles[i]);
       break;
@@ -103,7 +107,7 @@ ProfileLevelTierFeatures::extractPTLInformation(const SPS &sps)
     // Now identify the level:
     const LevelTierFeatures *pLTF = m_pProfile->pLevelTiersListInfo;
     const Level::Name spsLevelName = spsPtl.getLevelIdc();
-    if (spsLevelName!=Level::LEVEL8_5 || m_pProfile->canUseLevel8p5)
+    if (spsLevelName!=Level::LEVEL15_5 || m_pProfile->canUseLevel15p5)
     {
       for(int i=0; pLTF[i].level!=Level::NONE; i++)
       {
@@ -118,7 +122,7 @@ ProfileLevelTierFeatures::extractPTLInformation(const SPS &sps)
 
 double ProfileLevelTierFeatures::getMinCr() const
 {
-  return (m_pLevelTier!=0 && m_pProfile!=0) ? (m_pProfile->minCrScaleFactorx10 * m_pLevelTier->minCrBase[m_tier?1:0])/10.0 : 0.0 ;
+  return (m_pLevelTier!=0 && m_pProfile!=0) ? (m_pProfile->minCrScaleFactorx100 * m_pLevelTier->minCrBase[m_tier?1:0])/100.0 : 0.0 ;
 }
 
 uint64_t ProfileLevelTierFeatures::getCpbSizeInBits() const

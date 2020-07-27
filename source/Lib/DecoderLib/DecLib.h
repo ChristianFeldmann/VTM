@@ -60,7 +60,7 @@ class InputNALUnit;
 //! \ingroup DecoderLib
 //! \{
 
-bool tryDecodePicture( Picture* pcPic, const int expectedPoc, const std::string& bitstreamFileName, bool bDecodeUntilPocFound = false, int debugCTU = -1, int debugPOC = -1 );
+bool tryDecodePicture( Picture* pcPic, const int expectedPoc, const std::string& bitstreamFileName, ParameterSetMap<APS> *apsMap = nullptr, bool bDecodeUntilPocFound = false, int debugCTU = -1, int debugPOC = -1 );
 // Class definition
 // ====================================================================================================================
 
@@ -72,10 +72,17 @@ private:
   bool m_isFirstGeneralHrd;
   GeneralHrdParams        m_prevGeneralHrdParams;
 
-  NalUnitType             m_associatedIRAPType; ///< NAL unit type of the associated IRAP picture
-  int                     m_associatedIRAPDecodingOrderNumber; ///< Decoding order number of the associated IRAP picture
+  int                     m_prevGDRInSameLayerPOC[MAX_VPS_LAYERS]; ///< POC number of the latest GDR picture
+  NalUnitType             m_associatedIRAPType[MAX_VPS_LAYERS]; ///< NAL unit type of the previous IRAP picture
+  int                     m_pocCRA[MAX_VPS_LAYERS];            ///< POC number of the previous CRA picture
+  int                     m_associatedIRAPDecodingOrderNumber[MAX_VPS_LAYERS]; ///< Decoding order number of the previous IRAP picture
   int                     m_decodingOrderCounter;
-  int                     m_pocCRA;            ///< POC number of the latest CRA picture
+  int                     m_puCounter;
+  bool                    m_seiInclusionFlag;
+  int                     m_prevGDRSubpicPOC[MAX_VPS_LAYERS][MAX_NUM_SUB_PICS];
+  int                     m_prevIRAPSubpicPOC[MAX_VPS_LAYERS][MAX_NUM_SUB_PICS];
+  NalUnitType             m_prevIRAPSubpicType[MAX_VPS_LAYERS][MAX_NUM_SUB_PICS];
+  int                     m_prevIRAPSubpicDecOrderNo[MAX_VPS_LAYERS][MAX_NUM_SUB_PICS];
   int                     m_pocRandomAccess;   ///< POC number of the random access point (the first IDR or CRA picture)
   int                     m_lastRasPoc;
 
@@ -113,6 +120,7 @@ private:
   uint32_t                m_uiSliceSegmentIdx;
   uint32_t                m_prevLayerID;
   int                     m_prevPOC;
+  int                     m_prevPicPOC;
   int                     m_prevTid0POC;
   bool                    m_bFirstSliceInPicture;
   bool                    m_firstSliceInSequence[MAX_VPS_LAYERS];
@@ -121,7 +129,7 @@ private:
   int                     m_skippedPOC;
   int                     m_lastPOCNoOutputPriorPics;
   bool                    m_isNoOutputPriorPics;
-  bool                    m_lastNoOutputBeforeRecoveryFlag;    //value of variable NoOutputBeforeRecoveryFlag  of the last CRA / GDR pic
+  bool                    m_lastNoOutputBeforeRecoveryFlag[MAX_VPS_LAYERS];    //value of variable NoOutputBeforeRecoveryFlag of the assocated CRA/GDR pic
   int                     m_sliceLmcsApsId;         //value of LmcsApsId, constraint is same id for all slices in one picture
   std::ostream           *m_pDecodedSEIOutputStream;
 
@@ -134,7 +142,13 @@ private:
   int                     m_debugPOC;
   int                     m_debugCTU;
 
-  std::vector<std::pair<NalUnitType, int>> m_accessUnitNals;
+  struct AccessUnitInfo
+  {
+    NalUnitType     m_nalUnitType; ///< nal_unit_type
+    uint32_t        m_temporalId;  ///< temporal_id
+    uint32_t        m_nuhLayerId;  ///< nuh_layer_id
+  };
+  std::vector<AccessUnitInfo> m_accessUnitNals;
   struct AccessUnitPicInfo
   {
     NalUnitType     m_nalUnitType; ///< nal_unit_type
@@ -143,6 +157,7 @@ private:
     int             m_POC;
   };
   std::vector<AccessUnitPicInfo> m_accessUnitPicInfo;
+  std::vector<AccessUnitPicInfo> m_firstAccessUnitPicInfo;
   struct NalUnitInfo
   {
     NalUnitType     m_nalUnitType; ///< nal_unit_type
@@ -153,25 +168,24 @@ private:
   std::vector<NalUnitInfo> m_nalUnitInfo[MAX_VPS_LAYERS];
   std::vector<int> m_accessUnitApsNals;
   std::vector<int> m_accessUnitSeiTids;
+  std::vector<bool> m_accessUnitNoOutputPriorPicFlags;
 
   // NAL unit type, layer ID, and SEI payloadType
   std::vector<std::tuple<NalUnitType, int, SEI::PayloadType>> m_accessUnitSeiPayLoadTypes;
 
-#if JVET_R0201_PREFIX_SUFFIX_APS_CLEANUP
   std::vector<NalUnitType> m_pictureUnitNals;
-#endif
-#if JVET_Q0488_SEI_REPETITION_CONSTRAINT
   std::list<InputNALUnit*> m_pictureSeiNalus; 
-#endif 
 
   VPS*                    m_vps;
   int                     m_maxDecSubPicIdx;
   int                     m_maxDecSliceAddrInSubPic;
+  int                     m_clsVPSid;
 
 public:
   int                     m_targetSubPicIdx;
 
   DCI*                    m_dci;
+  ParameterSetMap<APS>*   m_apsMapEnc;
 public:
   DecLib();
   virtual ~DecLib();
@@ -194,8 +208,9 @@ public:
   void  finishPictureLight(int& poc, PicList*& rpcListPic );
   void  checkNoOutputPriorPics (PicList* rpcListPic);
   void  checkNalUnitConstraints( uint32_t naluType );
-  void updateAssociatedIRAP();
-
+  void  updateAssociatedIRAP();
+  void  updatePrevGDRInSameLayer();
+  void  updatePrevIRAPAndGDRSubpic();
 
   bool  getNoOutputPriorPicsFlag () const   { return m_isNoOutputPriorPics; }
   void  setNoOutputPriorPicsFlag (bool val) { m_isNoOutputPriorPics = val; }
@@ -217,16 +232,16 @@ public:
   void checkTidLayerIdInAccessUnit();
   void resetAccessUnitSeiPayLoadTypes()   { m_accessUnitSeiPayLoadTypes.clear(); }
   void checkSEIInAccessUnit();
-#if JVET_Q0488_SEI_REPETITION_CONSTRAINT
+  void isCvsStart();
+  void checkIncludedInFirstAu();
+  void CheckNoOutputPriorPicFlagsInAccessUnit();
+  void resetAccessUnitNoOutputPriorPicFlags() { m_accessUnitNoOutputPriorPicFlags.clear(); }
   void checkSeiInPictureUnit();
   void resetPictureSeiNalus();
-#endif 
   bool isSliceNaluFirstInAU( bool newPicture, InputNALUnit &nalu );
 
-#if JVET_R0201_PREFIX_SUFFIX_APS_CLEANUP
   void checkAPSInPictureUnit();
   void resetPictureUnitNals() { m_pictureUnitNals.clear(); }
-#endif
 
   const VPS* getVPS()                     { return m_vps; }
   void deriveTargetOutputLayerSet( const int targetOlsIdx ) { if( m_vps != nullptr ) m_vps->deriveTargetOutputLayerSet( targetOlsIdx ); }
@@ -236,13 +251,17 @@ public:
     m_cTrQuantScalingList.init(nullptr, MAX_TB_SIZEY, false, false, false, false);
   }
 
+  void  setAPSMapEnc( ParameterSetMap<APS>* apsMap ) { m_apsMapEnc = apsMap;  }
+  bool  isNewPicture( std::ifstream *bitstreamFile, class InputByteStream *bytestream );
+  bool  isNewAccessUnit( bool newPicture, std::ifstream *bitstreamFile, class InputByteStream *bytestream );
 protected:
   void  xUpdateRasInit(Slice* slice);
 
   Picture * xGetNewPicBuffer( const SPS &sps, const PPS &pps, const uint32_t temporalLayer, const int layerId );
   void  xCreateLostPicture( int iLostPOC, const int layerId );
   void  xCreateUnavailablePicture(int iUnavailablePoc, bool longTermFlag, const int layerId, const bool interLayerRefPicFlag);
-  void  xActivateParameterSets( const int layerId );
+  void  checkParameterSetsInclusionSEIconstraints(const InputNALUnit nalu);
+  void  xActivateParameterSets( const InputNALUnit nalu );
   void  xCheckParameterSetConstraints( const int layerId );
   void      xDecodePicHeader( InputNALUnit& nalu );
   bool      xDecodeSlice(InputNALUnit &nalu, int &iSkipFrame, int iPOCLastDisplay);

@@ -315,9 +315,8 @@ static int applyQPAdaptationChroma (Picture* const pcPic, Slice* const pcSlice, 
  \param rpcSlice      slice header class
  \param isField       true for field coding
  */
-void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr, const int iGOPid, Slice*& rpcSlice, const bool isField
-  , bool isEncodeLtRef
-)
+void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr, const int iGOPid, Slice*& rpcSlice, const bool isField,
+                            bool isEncodeLtRef, int layerId)
 {
   double dQP;
   double dLambda;
@@ -329,6 +328,8 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
   rpcSlice->setPic( pcPic );
   rpcSlice->setPicHeader( picHeader );
   rpcSlice->initSlice();
+  rpcSlice->setNalUnitLayerId(layerId);
+
   int multipleFactor = m_pcCfg->getUseCompositeRef() ? 2 : 1;
   if (m_pcCfg->getUseCompositeRef() && isEncodeLtRef)
   {
@@ -340,7 +341,6 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
   }
   rpcSlice->setPOC( pocCurr );
 
-#if JVET_R0271_SLICE_LEVEL_DQ_SDH_RRC
   if( m_pcCfg->getCostMode() != COST_LOSSLESS_CODING )
   {
     rpcSlice->setDepQuantEnabledFlag( m_pcCfg->getDepQuantEnabledFlag() );
@@ -354,29 +354,11 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
   {
     rpcSlice->setDepQuantEnabledFlag( false ); //should be disabled for lossless
     rpcSlice->setSignDataHidingEnabledFlag( false ); //should be disabled for lossless
-#if JVET_R0143_TSRCdisableLL
     if( m_pcCfg->getTSRCdisableLL() )
     {
       rpcSlice->setTSResidualCodingDisabledFlag( true );
     }
-#else
-    rpcSlice->setTSResidualCodingDisabledFlag( true );
-#endif
   }
-#else
-#if JVET_R0143_TSRCdisableLL
-  if( ( m_pcCfg->getCostMode() == COST_LOSSLESS_CODING ) && m_pcCfg->getTSRCdisableLL() )
-#else
-  if( m_pcCfg->getCostMode() == COST_LOSSLESS_CODING )
-#endif
-  {
-    rpcSlice->setTSResidualCodingDisabledFlag(true);
-  }
-  else
-  {
-    rpcSlice->setTSResidualCodingDisabledFlag(false);
-  }
-#endif
 
 #if SHARP_LUMA_DELTA_QP
   pcPic->fieldPic = isField;
@@ -432,23 +414,24 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
   SliceType eSliceType;
 
   eSliceType=B_SLICE;
+  const bool useIlRef = m_pcCfg->getAvoidIntraInDepLayer() && rpcSlice->getPic()->cs->vps && m_pcCfg->getNumRefLayers(rpcSlice->getPic()->cs->vps->getGeneralLayerIdx(layerId));
   if (m_pcCfg->getIntraPeriod() > 0 )
   {
     if(!(isField && pocLast == 1) || !m_pcCfg->getEfficientFieldIRAPEnabled())
     {
       if(m_pcCfg->getDecodingRefreshType() == 3)
       {
-        eSliceType = (pocLast == 0 || pocCurr % (m_pcCfg->getIntraPeriod() * multipleFactor) == 0 || m_pcGOPEncoder->getGOPSize() == 0) ? I_SLICE : eSliceType;
+        eSliceType = (pocLast == 0 || pocCurr % (m_pcCfg->getIntraPeriod() * multipleFactor) == 0 || m_pcGOPEncoder->getGOPSize() == 0) && (!useIlRef) ? I_SLICE : eSliceType;
       }
       else
       {
-        eSliceType = (pocLast == 0 || (pocCurr - (isField ? 1 : 0)) % (m_pcCfg->getIntraPeriod() * multipleFactor) == 0 || m_pcGOPEncoder->getGOPSize() == 0) ? I_SLICE : eSliceType;
+        eSliceType = (pocLast == 0 || (pocCurr - (isField ? 1 : 0)) % (m_pcCfg->getIntraPeriod() * multipleFactor) == 0 || m_pcGOPEncoder->getGOPSize() == 0) && (!useIlRef) ? I_SLICE : eSliceType;
       }
     }
   }
   else
   {
-    eSliceType = (pocLast == 0 || pocCurr - (isField ? 1 : 0) == 0 || m_pcGOPEncoder->getGOPSize() == 0) ? I_SLICE : eSliceType;
+    eSliceType = (pocLast == 0 || pocCurr == 0 || m_pcGOPEncoder->getGOPSize() == 0) ? I_SLICE : eSliceType;
   }
 
   rpcSlice->setDepth        ( depth );
@@ -605,18 +588,19 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
       {
         if(m_pcCfg->getDecodingRefreshType() == 3)
         {
-          eSliceType = (pocLast == 0 || (pocCurr) % (m_pcCfg->getIntraPeriod() * multipleFactor) == 0 || m_pcGOPEncoder->getGOPSize() == 0) ? I_SLICE : eSliceType;
+          eSliceType = (pocLast == 0 || pocCurr % (m_pcCfg->getIntraPeriod() * multipleFactor) == 0 || m_pcGOPEncoder->getGOPSize() == 0) && (!useIlRef) ? I_SLICE : eSliceType;
         }
         else
         {
-          eSliceType = (pocLast == 0 || (pocCurr - (isField ? 1 : 0)) % (m_pcCfg->getIntraPeriod() * multipleFactor) == 0 || m_pcGOPEncoder->getGOPSize() == 0) ? I_SLICE : eSliceType;
+          eSliceType = (pocLast == 0 || (pocCurr - (isField ? 1 : 0)) % (m_pcCfg->getIntraPeriod() * multipleFactor) == 0 || m_pcGOPEncoder->getGOPSize() == 0) && (!useIlRef) ? I_SLICE : eSliceType;
         }
       }
-      else
-      {
-        eSliceType = (pocLast == 0 || pocCurr - (isField ? 1 : 0) == 0 || m_pcGOPEncoder->getGOPSize() == 0) ? I_SLICE : eSliceType;
-      }
     }
+    else
+    {
+      eSliceType = (pocLast == 0 || pocCurr == 0 || m_pcGOPEncoder->getGOPSize() == 0) ? I_SLICE : eSliceType;
+    }
+
     rpcSlice->setSliceType        ( eSliceType );
   }
 
@@ -628,9 +612,7 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
 
   rpcSlice->setSliceQp           ( iQP );
   rpcSlice->setSliceQpDelta      ( 0 );
-#if JVET_R0110_MIXED_LOSSLESS
   pcPic->setLossyQPValue(iQP);
-#endif
 #if !W0038_CQP_ADJ
   rpcSlice->setSliceChromaQpDelta( COMPONENT_Cb, 0 );
   rpcSlice->setSliceChromaQpDelta( COMPONENT_Cr, 0 );
@@ -661,15 +643,12 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
       {
         rpcSlice->setDeblockingFilterBetaOffsetDiv2( m_pcCfg->getGOPEntry(iGOPid).m_betaOffsetDiv2 + m_pcCfg->getLoopFilterBetaOffset()  );
         rpcSlice->setDeblockingFilterTcOffsetDiv2( m_pcCfg->getGOPEntry(iGOPid).m_tcOffsetDiv2 + m_pcCfg->getLoopFilterTcOffset() );
-#if JVET_R0078_DISABLE_CHROMA_DBF_OFFSET_SINGALLING
         if( rpcSlice->getPPS()->getPPSChromaToolFlag() )
         {
-#endif
           rpcSlice->setDeblockingFilterCbBetaOffsetDiv2( m_pcCfg->getGOPEntry(iGOPid).m_CbBetaOffsetDiv2 + m_pcCfg->getLoopFilterCbBetaOffset() );
           rpcSlice->setDeblockingFilterCbTcOffsetDiv2( m_pcCfg->getGOPEntry(iGOPid).m_CbTcOffsetDiv2 + m_pcCfg->getLoopFilterCbTcOffset() );
           rpcSlice->setDeblockingFilterCrBetaOffsetDiv2( m_pcCfg->getGOPEntry(iGOPid).m_CrBetaOffsetDiv2 + m_pcCfg->getLoopFilterCrBetaOffset() );
           rpcSlice->setDeblockingFilterCrTcOffsetDiv2( m_pcCfg->getGOPEntry(iGOPid).m_CrTcOffsetDiv2 + m_pcCfg->getLoopFilterCrTcOffset() );
-#if JVET_R0078_DISABLE_CHROMA_DBF_OFFSET_SINGALLING
         }
         else
         {
@@ -678,7 +657,6 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
           rpcSlice->setDeblockingFilterCrBetaOffsetDiv2( rpcSlice->getDeblockingFilterBetaOffsetDiv2() );
           rpcSlice->setDeblockingFilterCrTcOffsetDiv2( rpcSlice->getDeblockingFilterTcOffsetDiv2() );
         }
-#endif
       }
       else
       {
@@ -703,12 +681,12 @@ void EncSlice::initEncSlice(Picture* pcPic, const int pocLast, const int pocCurr
     rpcSlice->setDeblockingFilterCrTcOffsetDiv2( 0 );
   }
 
-  pcPic->layer =  temporalId;
+  pcPic->temporalId =  temporalId;
   if(eSliceType==I_SLICE)
   {
-    pcPic->layer = 0;
+    pcPic->temporalId = 0;
   }
-  rpcSlice->setTLayer( pcPic->layer );
+  rpcSlice->setTLayer( pcPic->temporalId );
 
   rpcSlice->setDisableSATDForRD(false);
 
@@ -1152,7 +1130,6 @@ void EncSlice::setSearchRange( Slice* pcSlice )
   }
 }
 
-#if JVET_R0110_MIXED_LOSSLESS
 void EncSlice::setLosslessSlice(Picture* pcPic, bool islossless) 
 {
   Slice* slice = pcPic->slices[getSliceSegmentIdx()];
@@ -1165,11 +1142,7 @@ void EncSlice::setLosslessSlice(Picture* pcPic, bool islossless)
       int losslessQp = LOSSLESS_AND_MIXED_LOSSLESS_RD_COST_TEST_QP - ((slice->getSPS()->getBitDepth(CHANNEL_TYPE_LUMA) - 8) * 6);
       slice->setSliceQp(losslessQp); // update the slice/base QPs
 
-#if JVET_R0143_TSRCdisableLL
      slice->setTSResidualCodingDisabledFlag(m_pcCfg->getTSRCdisableLL() ? true : false);
-#else
-     slice->setTSResidualCodingDisabledFlag(true);
-#endif 
 
     }
     else
@@ -1179,7 +1152,6 @@ void EncSlice::setLosslessSlice(Picture* pcPic, bool islossless)
     }
   }
 }
-#endif
 
 
 /**
@@ -1512,9 +1484,7 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
   RdCost*         pRdCost         = pEncLib->getRdCost( PARL_PARAM0( dataId ) );
   EncCfg*         pCfg            = pEncLib;
   RateCtrl*       pRateCtrl       = pEncLib->getRateCtrl();
-#if JVET_R0110_MIXED_LOSSLESS
   pRdCost->setLosslessRDCost(pcSlice->isLossless());
-#endif
 #if RDOQ_CHROMA_LAMBDA
   pTrQuant    ->setLambdas( pcSlice->getLambdas() );
 #else
@@ -1580,11 +1550,7 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
         for (int idx = 0; idx < n; idx++)
         {
           Picture *refPic = pcSlice->getRefPic((RefPicList)rlist, idx);
-#if JVET_R0058
           if (!refPic->getSubPicSaved() && refPic->numSubpics > 1)
-#else
-          if (!refPic->getSubPicSaved())
-#endif
           {
             refPic->saveSubPicBorder(refPic->getPOC(), subPicX, subPicY, subPicWidth, subPicHeight);
             refPic->extendSubPicBorder(refPic->getPOC(), subPicX, subPicY, subPicWidth, subPicHeight);
@@ -1631,7 +1597,7 @@ void EncSlice::encodeCtus( Picture* pcPic, const bool bCompressEntireSlice, cons
       else
       {
         bpp = pRateCtrl->getRCPic()->getLCUTargetBpp(pcSlice->isIRAP());
-        if ( pcPic->slices[0]->isIRAP())
+        if ( pcPic->slices[0]->isIntra())
         {
           estLambda = pRateCtrl->getRCPic()->getLCUEstLambdaAndQP(bpp, pcSlice->getSliceQp(), &estQP);
         }
@@ -1822,11 +1788,7 @@ void EncSlice::encodeSlice   ( Picture* pcPic, OutputBitstream* pcSubstreams, ui
 
   Slice *const pcSlice               = pcPic->slices[getSliceSegmentIdx()];
   const bool wavefrontsEnabled         = pcSlice->getSPS()->getEntropyCodingSyncEnabledFlag();
-#if JVET_R0165_OPTIONAL_ENTRY_POINT
   const bool entryPointsPresentFlag    = pcSlice->getSPS()->getEntryPointsPresentFlag();
-#else
-  const bool wavefrontsEntryPointsFlag = (wavefrontsEnabled) ? pcSlice->getSPS()->getEntropyCodingSyncEntryPointsPresentFlag() : false;
-#endif
   uint32_t substreamSize               = 0;
   pcSlice->resetNumberOfSubstream();
 
@@ -1916,11 +1878,7 @@ void EncSlice::encodeSlice   ( Picture* pcPic, OutputBitstream* pcSubstreams, ui
         // write sub-stream size
         substreamSize += (pcSubstreams[uiSubStrm].getNumberOfWrittenBits() >> 3) + pcSubstreams[uiSubStrm].countStartCodeEmulations();
         pcSlice->increaseNumberOfSubstream();
-#if JVET_R0165_OPTIONAL_ENTRY_POINT
         if( entryPointsPresentFlag )
-#else
-        if( isLastCTUinTile || (isLastCTUinWPP && wavefrontsEntryPointsFlag) )
-#endif
         {
           pcSlice->addSubstreamSize(substreamSize);
           substreamSize = 0;

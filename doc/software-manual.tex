@@ -205,7 +205,7 @@ fontsize=\footnotesize}
 \maketitle
 \begin{abstract}
 This document is a user manual describing usage of the VTM reference software
-for the VVC project. It applies to version 9.0 of the software.
+for the VVC project. It applies to version 9.2 of the software.
 \end{abstract}
 
 \tableofcontents
@@ -954,25 +954,15 @@ multiple matches.
 \Default{none} &
 Specifies the profile to which the encoded bitstream complies.
 
-Valid HEVC Ver. 1 values are: none, main, main10, main-still-picture
-
-Valid HEVC Ver. 2 (RExt) values are: main-RExt, high-throughput-RExt,
-monochrome, monochrome12, monochrome16, main12, main_422_10,
-main_422_12, main_444, main_444_10, main_444_12, main_444_16,
-main_intra, main_10_intra, main_12_intra, main_422_10_intra, main_422_12_intra,
-main_444_intra, main_444_10_intra, main_444_12_intra, main_444_16_intra.
-
-When main-RExt is specified, the constraint flags are either manually specified, or calculated via the other supplied settings.
-
-Compatibility flags are automatically determined according to the profile.
-NB: There is currently only limited validation that the encoder configuration complies with the profile, level and tier constraints.
+Valid VVC Ver. 1 values are: none, main_10, main_10_still_picture, main_444_10, main_444_10_still_picture.
+When one of the still picture profiles are selected, the OnePictureOnlyConstraintFlag setting will be forced to 1.
 \\
 
 \Option{Level} &
 %\ShortOption{\None} &
 \Default{none} &
 Specifies the level to which the encoded bitstream complies.
-Valid values are: none, 1, 2, 2.1, 3, 3.1, 4, 4.1, 5, 5.1, 5.2, 6, 6.1, 6.2, 8.5
+Valid values are: none, 1, 2, 2.1, 3, 3.1, 4, 4.1, 5, 5.1, 5.2, 6, 6.1, 6.2, 15.5
 
 NB: There is currently only limited validation that the encoder configuration complies with the profile, level and tier constraints.
 \\
@@ -1019,7 +1009,7 @@ For --profile=main-RExt, specifies the value of general_intra_constraint_flag to
 \Option{OnePictureOnlyConstraintFlag} &
 %\ShortOption{\None} &
 \Default{false} &
-For --profile=main-RExt, specifies the value of general_one_picture_only_constraint_flag to use for RExt profiles.
+Specifies the value of general_one_picture_only_constraint_flag.
 \\
 
 \Option{LowerBitRateConstraintFlag} &
@@ -1064,6 +1054,12 @@ Specifies the value of all_layers_independent_constraint_flag
 Specifies the value of one_tile_per_pic_constraint_flag
 \\
 
+\Option{PicHeaderInSliceHeaderConstraintFlag} &
+%\ShortOption{\None} &
+\Default{false} &
+Specifies the value of pic_header_in_slice_header_constraint_flag
+\\
+
 \Option{OneSlicePerPicConstraintFlag} &
 %\ShortOption{\None} &
 \Default{false} &
@@ -1098,7 +1094,7 @@ Specifies the value to use to derive the vps_max_layers_minus1 for layered codin
 
 \Option{MaxSubLayers} &
 %\ShortOption{\None} &
-\Default{1} &
+\Default{7} &
 Specifies the maximum number of temporal sublayers to signal in the VPS
 \\
 
@@ -1185,6 +1181,18 @@ Specifies the index of the PTL that applies to the i-th OLS (with i an integer g
 \Default{1} &
 Indicates that all OLSs are using the same (not nested) picture timing SEI message, i.e. picture timing SEI will not 
 be included in scalable nesting SEI messages (if scalable nesting SEI is enabled).
+\\
+
+\Option{MaxTidILRefPicsPlus1} &
+%\ShortOption{\None} &
+\Default{-1} &
+Specifies the maximum temporal ID for inter-layer reference pictures plus 1. The value 0 allows only to use IRAP pictures for inter-layer prediction.
+\\
+
+\Option{AvoidIntraInDepLayer} &
+%\ShortOption{\None} &
+\Default{1} &
+Replaces I slices in dependent layers with B slices, except for all-intra configuration (IntraPeriod=1).
 \\
 \end{OptionTableNoShorthand}
 
@@ -3021,7 +3029,7 @@ The table below lists the SEI messages defined for Version 1 and Range-Extension
    47 & Display orientation                      & Table \ref{tab:sei-display-orientation} \\
    56 & Green Metadata                           & Table \ref{tab:sei-green-metadata} \\
   128 & Structure of pictures information        & Table \ref{tab:sei-sop-info} \\
-  129 & Active parameter sets                    & Table \ref{tab:sei-active-parameter-sets} \\
+  129 & Parameter sets inclusion indication      & Table \ref{tab:sei-parameter-sets-inclusion-indication} \\
   130 & Decoding unit information                & Table \ref{tab:sei-decoding-unit-info} \\
   131 & Temporal sub-layer zero index            & Table \ref{tab:sei-temporal-level-0} \\
   132 & Decoded picture hash                     & Table \ref{tab:sei-decoded-picture-hash} \\
@@ -3405,11 +3413,14 @@ Enables or disables the insertion of the Structure of pictures information SEI m
 
 
 
-\begin{OptionTableNoShorthand}{Active parameter sets SEI message encoder parameters}{tab:sei-active-parameter-sets}
-\Option{SEIActiveParameterSets} &
+\begin{OptionTableNoShorthand}{Parameter sets inclusion indication SEI message encoder parameters}{tab:sei-parameter-sets-inclusion-indication}
+\Option{SEIParameterSetsInclusionIndication} &
 \Default{0} &
-Enables or disables the insertion of the Active parameter sets
-SEI messages.
+Enables or disables the insertion of the Parameter sets inclusion SEI messages.
+\\
+\Option{SEISelfContainedClvsFlag} &
+\Default{0} &
+When equal to 1, the SEI specifies that the CLVS contains all the required NAL units for decoding the CLVS that is associated with the SEI message and that sublayer up-switching within the CLVS works without a need of fetching parameter sets from PUs earlier in decoding order than the PU containing the picture at which the sublayer up-switching occurs.
 \\
 \end{OptionTableNoShorthand}
 

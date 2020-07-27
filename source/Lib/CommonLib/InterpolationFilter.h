@@ -50,6 +50,9 @@
 #define IF_INTERNAL_OFFS (1<<(IF_INTERNAL_PREC-1)) ///< Offset used internally
 #define IF_INTERNAL_PREC_BILINEAR 10 ///< Number of bits for internal precision
 #define IF_FILTER_PREC_BILINEAR   4  ///< Bilinear filter coeff precision so that intermediate value will not exceed 16 bit for SIMD - bit exact
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+#define IF_INTERNAL_FRAC_BITS(bd) std::max(2, IF_INTERNAL_PREC - int(bd))
+#endif
 /**
  * \brief Interpolation filter class
  */

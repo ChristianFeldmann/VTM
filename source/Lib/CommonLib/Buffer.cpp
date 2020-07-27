@@ -94,16 +94,32 @@ void addBIOAvgCore(const Pel* src0, int src0Stride, const Pel* src1, int src1Str
     for (int x = 0; x < width; x += 4)
     {
       b = tmpx * (gradX0[x] - gradX1[x]) + tmpy * (gradY0[x] - gradY1[x]);
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+      dst[x] = ClipPel(rightShift((src0[x] + src1[x] + b + offset), shift), clpRng);
+#else
       dst[x] = ClipPel((int16_t)rightShift((src0[x] + src1[x] + b + offset), shift), clpRng);
+#endif
 
       b = tmpx * (gradX0[x + 1] - gradX1[x + 1]) + tmpy * (gradY0[x + 1] - gradY1[x + 1]);
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+      dst[x + 1] = ClipPel(rightShift((src0[x + 1] + src1[x + 1] + b + offset), shift), clpRng);
+#else
       dst[x + 1] = ClipPel((int16_t)rightShift((src0[x + 1] + src1[x + 1] + b + offset), shift), clpRng);
+#endif
 
       b = tmpx * (gradX0[x + 2] - gradX1[x + 2]) + tmpy * (gradY0[x + 2] - gradY1[x + 2]);
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+      dst[x + 2] = ClipPel(rightShift((src0[x + 2] + src1[x + 2] + b + offset), shift), clpRng);
+#else
       dst[x + 2] = ClipPel((int16_t)rightShift((src0[x + 2] + src1[x + 2] + b + offset), shift), clpRng);
+#endif
 
       b = tmpx * (gradX0[x + 3] - gradX1[x + 3]) + tmpy * (gradY0[x + 3] - gradY1[x + 3]);
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+      dst[x + 3] = ClipPel(rightShift((src0[x + 3] + src1[x + 3] + b + offset), shift), clpRng);
+#else
       dst[x + 3] = ClipPel((int16_t)rightShift((src0[x + 3] + src1[x + 3] + b + offset), shift), clpRng);
+#endif
     }
     dst += dstStride;       src0 += src0Stride;     src1 += src1Stride;
     gradX0 += gradStride; gradX1 += gradStride; gradY0 += gradStride; gradY1 += gradStride;
@@ -361,7 +377,11 @@ void AreaBuf<Pel>::addWeightedAvg(const AreaBuf<const Pel> &other1, const AreaBu
   const unsigned src2Stride = other2.stride;
   const unsigned destStride = stride;
   const int clipbd = clpRng.bd;
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+  const int shiftNum = IF_INTERNAL_FRAC_BITS(clipbd) + log2WeightBase;
+#else
   const int shiftNum = std::max<int>(2, (IF_INTERNAL_PREC - clipbd)) + log2WeightBase;
+#endif
   const int offset = (1 << (shiftNum - 1)) + (IF_INTERNAL_OFFS << log2WeightBase);
 
 #define ADD_AVG_OP( ADDR ) dest[ADDR] = ClipPel( rightShift( ( src0[ADDR]*w0 + src2[ADDR]*w1 + offset ), shiftNum ), clpRng )
@@ -454,7 +474,11 @@ void AreaBuf<Pel>::addAvg( const AreaBuf<const Pel> &other1, const AreaBuf<const
   const unsigned src2Stride = other2.stride;
   const unsigned destStride =        stride;
   const int     clipbd      = clpRng.bd;
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+  const int shiftNum = IF_INTERNAL_FRAC_BITS(clipbd) + 1;
+#else
   const int     shiftNum    = std::max<int>(2, (IF_INTERNAL_PREC - clipbd)) + 1;
+#endif
   const int     offset      = (1 << (shiftNum - 1)) + 2 * IF_INTERNAL_OFFS;
 
 #if ENABLE_SIMD_OPT_BUFFER && defined(TARGET_SIMD_X86)
@@ -489,7 +513,11 @@ void AreaBuf<Pel>::toLast( const ClpRng& clpRng )
   const uint32_t srcStride = stride;
 
   const int  clipbd    = clpRng.bd;
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+  const int shiftNum = IF_INTERNAL_FRAC_BITS(clipbd);
+#else
   const int  shiftNum  = std::max<int>(2, (IF_INTERNAL_PREC - clipbd));
+#endif
   const int  offset    = ( 1 << ( shiftNum - 1 ) ) + IF_INTERNAL_OFFS;
 
   if (width == 1)
@@ -562,7 +590,11 @@ void AreaBuf<Pel>::roundToOutputBitdepth( const AreaBuf<const Pel> &src, const C
   const unsigned destStride = stride;
 
   const int32_t clipbd            = clpRng.bd;
+#if JVET_R0351_HIGH_BIT_DEPTH_SUPPORT
+  const int32_t shiftDefault      = IF_INTERNAL_FRAC_BITS(clipbd);
+#else
   const int32_t shiftDefault      = std::max<int>(2, (IF_INTERNAL_PREC - clipbd));
+#endif
   const int32_t offsetDefault     = (1<<(shiftDefault-1)) + IF_INTERNAL_OFFS;
 
   if( width == 1 )

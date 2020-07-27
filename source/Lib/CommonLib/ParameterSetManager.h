@@ -86,7 +86,16 @@ public:
   {
     m_paramsetMap.clear();
   }
-
+  void storePS( int psId, T *ps )
+  {
+    CHECK( psId >= m_maxId, "Invalid PS id" );
+    if( m_paramsetMap.find( psId ) != m_paramsetMap.end() )
+    {
+      delete m_paramsetMap[psId].parameterSet;
+    }
+    m_paramsetMap[psId].parameterSet = ps;
+    m_paramsetMap[psId].bChanged = true;
+  }
   void storePS(int psId, T *ps, const std::vector<uint8_t> *pNaluData)
   {
     CHECK( psId >= m_maxId, "Invalid PS id" );
@@ -137,34 +146,20 @@ public:
     {
       CHECK( m_paramsetMap.find( apsId ) == m_paramsetMap.end(), "APS does not exist" );
       APS* existedAPS = m_paramsetMap[apsId].parameterSet;
-#if JVET_R0201_PREFIX_SUFFIX_APS_CLEANUP
       bool sameNalUnitType = aps->getHasPrefixNalUnitType() == existedAPS->getHasPrefixNalUnitType();
+      bool samePU = aps->getLayerId() == existedAPS->getLayerId();
       if( aps->getAPSType() == LMCS_APS )
       {
-        CHECK( sameNalUnitType && aps->getReshaperAPSInfo() != existedAPS->getReshaperAPSInfo(), "All APS NAL units with a particular value of nal_unit_type, a particular value of aps_adaptation_parameter_set_id, and a particular value of aps_params_type within a PU shall have the same content" );
+        CHECK( samePU && sameNalUnitType && aps->getReshaperAPSInfo() != existedAPS->getReshaperAPSInfo(), "All APS NAL units with a particular value of nal_unit_type, a particular value of aps_adaptation_parameter_set_id, and a particular value of aps_params_type within a PU shall have the same content" );
       }
       else if( aps->getAPSType() == ALF_APS )
       {
-        CHECK( sameNalUnitType && aps->getAlfAPSParam() != existedAPS->getAlfAPSParam(), "All APS NAL units with a particular value of nal_unit_type, a particular value of aps_adaptation_parameter_set_id, and a particular value of aps_params_type within a PU shall have the same content" );
+        CHECK( samePU && sameNalUnitType && aps->getAlfAPSParam() != existedAPS->getAlfAPSParam(), "All APS NAL units with a particular value of nal_unit_type, a particular value of aps_adaptation_parameter_set_id, and a particular value of aps_params_type within a PU shall have the same content" );
       }
       else if( aps->getAPSType() == SCALING_LIST_APS )
       {
-        CHECK( sameNalUnitType && aps->getScalingList() != existedAPS->getScalingList(), "All APS NAL units with a particular value of nal_unit_type, a particular value of aps_adaptation_parameter_set_id, and a particular value of aps_params_type within a PU shall have the same content" );
+        CHECK( samePU && sameNalUnitType && aps->getScalingList() != existedAPS->getScalingList(), "All APS NAL units with a particular value of nal_unit_type, a particular value of aps_adaptation_parameter_set_id, and a particular value of aps_params_type within a PU shall have the same content" );
       }
-#else
-      if( aps->getAPSType() == LMCS_APS )
-      {
-        CHECK( aps->getReshaperAPSInfo() != existedAPS->getReshaperAPSInfo(), "All APS NAL units with a particular value of adaptation_parameter_set_id and a particular value of aps_params_type within an access unit shall have the same content" );
-      }
-      else if( aps->getAPSType() == ALF_APS )
-      {
-        CHECK( aps->getAlfAPSParam() != existedAPS->getAlfAPSParam(), "All APS NAL units with a particular value of adaptation_parameter_set_id and a particular value of aps_params_type within an access unit shall have the same content" );
-      }
-      else if( aps->getAPSType() == SCALING_LIST_APS )
-      {
-        CHECK( aps->getScalingList() != existedAPS->getScalingList(), "All APS NAL units with a particular value of adaptation_parameter_set_id and a particular value of aps_params_type within an access unit shall have the same content" );
-      }
-#endif
       else
       {
         CHECK( true, "Wrong APS type" );
@@ -268,10 +263,10 @@ public:
   ParameterSetMap<APS>* getApsMap() { return &m_apsMap; }
   // store adaptation parameter set and take ownership of it
   // warning: aps object cannot be used after storing (repeated parameter sets are directly deleted)
-  void           storeAPS(APS *aps, const std::vector<uint8_t> &naluData)    { m_apsMap.storePS(aps->getAPSId() + (MAX_NUM_APS * aps->getAPSType()), aps, &naluData); };
-  APS*           getAPS(int apsId, int apsType)                              { return m_apsMap.getPS(apsId + (MAX_NUM_APS * apsType)); };
-  bool           getAPSChangedFlag(int apsId, int apsType) const             { return m_apsMap.getChangedFlag(apsId + (MAX_NUM_APS * apsType)); }
-  void           clearAPSChangedFlag(int apsId, int apsType)                 { m_apsMap.clearChangedFlag(apsId + ( MAX_NUM_APS * apsType)); }
+  void           storeAPS(APS *aps, const std::vector<uint8_t> &naluData)    { m_apsMap.storePS( ( aps->getAPSId() << NUM_APS_TYPE_LEN ) + aps->getAPSType(), aps, &naluData); };
+  APS*           getAPS(int apsId, int apsType)                              { return m_apsMap.getPS( ( apsId << NUM_APS_TYPE_LEN ) + apsType ); };
+  bool           getAPSChangedFlag(int apsId, int apsType) const             { return m_apsMap.getChangedFlag( ( apsId << NUM_APS_TYPE_LEN ) + apsType ); }
+  void           clearAPSChangedFlag(int apsId, int apsType)                 { m_apsMap.clearChangedFlag( ( apsId << NUM_APS_TYPE_LEN ) + apsType ); }
   APS*           getFirstAPS()                                               { return m_apsMap.getFirstPS(); };
   bool           activateAPS(int apsId, int apsType);
   const SPS*     getActiveSPS()const                                         { return m_spsMap.getPS(m_activeSPSId); };

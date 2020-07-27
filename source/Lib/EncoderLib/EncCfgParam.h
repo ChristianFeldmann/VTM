@@ -44,6 +44,18 @@
 
 namespace EncCfgParam {
 
+class CfgVPSParameters
+{
+public:
+  CfgVPSParameters()
+  : m_maxTidILRefPicsPlus1(-1)
+  {}
+
+  virtual ~CfgVPSParameters(){}
+
+  int m_maxTidILRefPicsPlus1;
+};
+
 class CfgSEISubpictureLevel
 {
 public:

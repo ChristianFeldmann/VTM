@@ -198,12 +198,12 @@ bool vtmDecoderWrapper::initAndCheckFrameRetrieval()
 
     if( referredVPS == nullptr || referredVPS->m_numLayersInOls[referredVPS->m_targetOlsIdx] == 1 )
     {
-      this->numReorderPicsHighestTid = activeSPS->getNumReorderPics( temporalId );
+      this->numReorderPicsHighestTid = activeSPS->getMaxNumReorderPics( temporalId );
       this->maxDecPicBufferingHighestTid = activeSPS->getMaxDecPicBuffering( temporalId );
     }
     else
     {
-      this->numReorderPicsHighestTid = referredVPS->getNumReorderPics( temporalId );
+      this->numReorderPicsHighestTid = referredVPS->getMaxNumReorderPics( temporalId );
       this->maxDecPicBufferingHighestTid = referredVPS->getMaxDecPicBuffering( temporalId );
     }
 
@@ -281,7 +281,6 @@ bool isNewPicture(InputNALUnit &nalu)
     case NAL_UNIT_CODED_SLICE_CRA:
     case NAL_UNIT_CODED_SLICE_GDR:
     case NAL_UNIT_RESERVED_IRAP_VCL_11:
-    case NAL_UNIT_RESERVED_IRAP_VCL_12:
       return libCheckPictureHeaderInSliceHeaderFlag(nalu);
       
     // NUT that are not the start of a new picture
@@ -479,7 +478,7 @@ extern "C" {
       {
         d->nrOfTimesToCheckForOutputPictures++;
       }
-      if (!bNewPicture && ((nalu.m_nalUnitType >= NAL_UNIT_CODED_SLICE_TRAIL && nalu.m_nalUnitType <= NAL_UNIT_RESERVED_IRAP_VCL_12)
+      if (!bNewPicture && ((nalu.m_nalUnitType >= NAL_UNIT_CODED_SLICE_TRAIL && nalu.m_nalUnitType <= NAL_UNIT_RESERVED_IRAP_VCL_11)
         || (nalu.m_nalUnitType >= NAL_UNIT_CODED_SLICE_IDR_W_RADL && nalu.m_nalUnitType <= NAL_UNIT_CODED_SLICE_GDR)))
       {
         d->nrOfTimesToCheckForOutputPictures++;
@@ -644,9 +643,9 @@ extern "C" {
     if (pcPic == NULL)
       return -1;
 
-    if (c == LIBVTMDEC_LUMA || pcPic->chromaFormat == CHROMA_444)
+    if (c == LIBVTMDEC_LUMA || pcPic->chromaFormat == ChromaFormat::_444)
       return pcPic->lwidth();
-    if (pcPic->chromaFormat == CHROMA_422 || pcPic->chromaFormat == CHROMA_420)
+    if (pcPic->chromaFormat == ChromaFormat::_422 || pcPic->chromaFormat == ChromaFormat::_420)
       return pcPic->lwidth() / 2;
     return -1;
   }
@@ -659,9 +658,9 @@ extern "C" {
     if (pcPic == NULL)
       return -1;
 
-    if (c == LIBVTMDEC_LUMA || pcPic->chromaFormat == CHROMA_444 || pcPic->chromaFormat == CHROMA_422)
+    if (c == LIBVTMDEC_LUMA || pcPic->chromaFormat == ChromaFormat::_444 || pcPic->chromaFormat == ChromaFormat::_422)
       return pcPic->lheight();
-    if (pcPic->chromaFormat == CHROMA_420)
+    if (pcPic->chromaFormat == ChromaFormat::_420)
       return pcPic->lheight() / 2;
     return -1;
   }
@@ -718,13 +717,13 @@ extern "C" {
     if (pcPic == NULL)
       return LIBVTMDEC_CHROMA_UNKNOWN;
 
-    if (pcPic->chromaFormat == CHROMA_400)
+    if (pcPic->chromaFormat == ChromaFormat::_400)
       return LIBVTMDEC_CHROMA_400;
-    if (pcPic->chromaFormat == CHROMA_420)
+    if (pcPic->chromaFormat == ChromaFormat::_420)
       return LIBVTMDEC_CHROMA_420;
-    if (pcPic->chromaFormat == CHROMA_422)
+    if (pcPic->chromaFormat == ChromaFormat::_422)
       return LIBVTMDEC_CHROMA_422;
-    if (pcPic->chromaFormat == CHROMA_444)
+    if (pcPic->chromaFormat == ChromaFormat::_444)
       return LIBVTMDEC_CHROMA_444;
     return LIBVTMDEC_CHROMA_UNKNOWN;
   }
@@ -739,9 +738,9 @@ extern "C" {
 
     const BitDepths &bitDepths = pcPic->cs->sps->getBitDepths();
     if (c == LIBVTMDEC_LUMA)
-      return bitDepths.recon[CHANNEL_TYPE_LUMA];
+      return bitDepths[ChannelType::LUMA];
     if (c == LIBVTMDEC_CHROMA_U || c == LIBVTMDEC_CHROMA_V)
-      return bitDepths.recon[CHANNEL_TYPE_CHROMA];
+      return bitDepths[ChannelType::CHROMA];
     return -1;
   }
 

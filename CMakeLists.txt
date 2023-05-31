@@ -1,159 +1,110 @@
-# minimum required cmake version
-cmake_minimum_required( VERSION 3.5 FATAL_ERROR )
+cmake_minimum_required(VERSION 3.11)
 
-# project name
-if( EXTENSION_360_VIDEO )
-  project( NextSoftware360 )
+project(vtmdecoder)
+
+include(FetchContent)
+set(FETCHCONTENT_QUIET FALSE)
+
+# Latest VTM
+# UPDATE_DISCONNECTED disables updating, i.e. to get a new version
+# of VTM you will have to delete your build/ folder.
+# This is necessary because, when a git tag is not provided, the
+# git update mechanism always triggers an `update` even if the files
+# have not changed. This in turn causes the patch command to be
+# executed, which causes an error as the file is no longer as
+# expected.
+FetchContent_Declare(
+  VTM
+  GIT_REPOSITORY https://vcgit.hhi.fraunhofer.de/jvet/VVCSoftware_VTM
+  GIT_PROGRESS TRUE
+  UPDATE_DISCONNECTED TRUE
+  PATCH_COMMAND git apply ${CMAKE_CURRENT_SOURCE_DIR}/vtm-cmake.patch
+)
+FetchContent_MakeAvailable(VTM)
+
+# executable
+set( LIB_NAME vtmdecoder )
+
+# get source files
+file( GLOB SRC_FILES "src/*.cpp" )
+
+# get include files
+file( GLOB INC_FILES "src/*.h" )
+
+# get additional libs for gcc on Ubuntu systems
+if( CMAKE_SYSTEM_NAME STREQUAL "Linux" )
+  if( CMAKE_CXX_COMPILER_ID STREQUAL "GNU" )
+    if( USE_ADDRESS_SANITIZER )
+      set( ADDITIONAL_LIBS asan )
+    endif()
+  endif()
+endif()
+
+# NATVIS files for Visual Studio
+if( MSVC )
+  file( GLOB NATVIS_FILES "../../VisualStudio/*.natvis" )
+  # extend the stack size on windows to 2MB
+  set( CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} /STACK:0x200000" )
+endif()
+
+# add executable
+add_library( ${LIB_NAME} SHARED  ${SRC_FILES} ${INC_FILES} ${NATVIS_FILES} )
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
+
+if( SET_ENABLE_TRACING )
+  if( ENABLE_TRACING )
+    target_compile_definitions( ${LIB_NAME} PUBLIC ENABLE_TRACING=1 )
+  else()
+    target_compile_definitions( ${LIB_NAME} PUBLIC ENABLE_TRACING=0 )
+  endif()
+endif()
+
+if( OpenMP_FOUND )
+  if( SET_ENABLE_SPLIT_PARALLELISM )
+    if( ENABLE_SPLIT_PARALLELISM )
+      target_compile_definitions( ${LIB_NAME} PUBLIC ENABLE_SPLIT_PARALLELISM=1 )
+    else()
+      target_compile_definitions( ${LIB_NAME} PUBLIC ENABLE_SPLIT_PARALLELISM=0 )
+    endif()
+  endif()
+  if( SET_ENABLE_WPP_PARALLELISM )
+    if( ENABLE_WPP_PARALLELISM )
+      target_compile_definitions( ${LIB_NAME} PUBLIC ENABLE_WPP_PARALLELISM=1 )
+    else()
+      target_compile_definitions( ${LIB_NAME} PUBLIC ENABLE_WPP_PARALLELISM=0 )
+    endif()
+  endif()
 else()
-  project( NextSoftware )
+  target_compile_definitions( ${LIB_NAME} PUBLIC ENABLE_SPLIT_PARALLELISM=0 )
+  target_compile_definitions( ${LIB_NAME} PUBLIC ENABLE_WPP_PARALLELISM=0 )
 endif()
 
-# use ccache
-find_program( CCACHE_FOUND ccache )
-if( CCACHE_FOUND )
-  message( STATUS "ccache found. using it." )
-  set_property( GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache )
-  set_property( GLOBAL PROPERTY RULE_LAUNCH_LINK ccache )
+if( CMAKE_COMPILER_IS_GNUCC AND BUILD_STATIC )
+  set( ADDITIONAL_LIBS ${ADDITIONAL_LIBS} -static -static-libgcc -static-libstdc++ )
+  target_compile_definitions( ${LIB_NAME} PUBLIC ENABLE_WPP_STATIC_LINK=1 )
 endif()
 
-# set default CMAKE_BUILD_TYPE to Release if not set
-if( NOT CMAKE_BUILD_TYPE )
-  set( CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE )
+target_link_libraries( ${LIB_NAME} CommonLib DecoderLib Utilities ${ADDITIONAL_LIBS} )
+
+# lldb custom data formatters
+if( XCODE )
+  add_dependencies( ${LIB_NAME} Install${PROJECT_NAME}LldbFiles )
 endif()
 
 if( CMAKE_SYSTEM_NAME STREQUAL "Linux" )
-  if( CMAKE_CXX_COMPILER_ID STREQUAL "GNU" )
-    set( USE_ADDRESS_SANITIZER OFF CACHE BOOL "Compiles with -sanitize=address and links to libasan" )
-  endif()
+  add_custom_command( TARGET ${LIB_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy
+                                                          $<$<CONFIG:Debug>:${CMAKE_ARCHIVE_OUTPUT_DIRECTORY_DEBUG}/libvtmdecoder.so>
+                                                          $<$<CONFIG:Release>:${CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE}/libvtmdecoder.so>
+                                                          $<$<CONFIG:RelWithDebInfo>:${CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELWITHDEBINFO}/libvtmdecoder.so>
+                                                          $<$<CONFIG:MinSizeRel>:${CMAKE_ARCHIVE_OUTPUT_DIRECTORY_MINSIZEREL}/libvtmdecoder.so>
+                                                          $<$<CONFIG:Debug>:${CMAKE_SOURCE_DIR}/bin/libvtmdecoder.so>
+                                                          $<$<CONFIG:Release>:${CMAKE_SOURCE_DIR}/bin/libvtmdecoder.so>
+                                                          $<$<CONFIG:RelWithDebInfo>:${CMAKE_SOURCE_DIR}/bin/libvtmdecoder.so>
+                                                          $<$<CONFIG:MinSizeRel>:${CMAKE_SOURCE_DIR}/bin/libvtmdecoder.so> )
 endif()
 
-set( EXTENSION_360_VIDEO OFF CACHE BOOL "If EXTENSION_360_VIDEO is on, 360Lib will be added" )
-set( EXTENSION_HDRTOOLS OFF CACHE BOOL "If EXTENSION_HDRTOOLS is on, HDRLib will be added" )
-set( SET_ENABLE_TRACING OFF CACHE BOOL "Set ENABLE_TRACING as a compiler flag" )
-set( ENABLE_TRACING OFF CACHE BOOL "If SET_ENABLE_TRACING is on, it will be set to this value" )
+# example: place header files in different folders
+source_group( "Natvis Files" FILES ${NATVIS_FILES} )
 
-if( CMAKE_COMPILER_IS_GNUCC )
-  set( BUILD_STATIC OFF CACHE BOOL "Build static executables" )
-endif()
-
-# set c++11
-set( CMAKE_CXX_STANDARD 11 )
-set( CMAKE_CXX_STANDARD_REQUIRED ON )
-
-# compile everything position independent (even static libraries)
-set( CMAKE_POSITION_INDEPENDENT_CODE TRUE )
-
-# set verbose compile options
-#set( CMAKE_VERBOSE_MAKEFILE ON )
-
-# use folders in IDEs for projects (e.g. lib sample app test)
-set_property( GLOBAL PROPERTY USE_FOLDERS ON )
-
-# Include a utility module providing functions, macros, and settings
-include( ${CMAKE_SOURCE_DIR}/cmake/CMakeBuild/cmake/modules/BBuildEnv.cmake )
-
-# Enable multithreading
-bb_multithreading()
-
-find_package(OpenMP)
-
-if( OpenMP_FOUND )
-  set( CMAKE_C_FLAGS          "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}" )
-  set( CMAKE_CXX_FLAGS        "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}" )
-  set( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}" )
-  
-  set( SET_ENABLE_SPLIT_PARALLELISM OFF CACHE BOOL "Set ENABLE_SPLIT_PARALLELISM as a compiler flag" )
-  set( ENABLE_SPLIT_PARALLELISM     OFF CACHE BOOL "If SET_ENABLE_SPLIT_PARALLELISM is on, it will be set to this value" )
-  set( SET_ENABLE_WPP_PARALLELISM   OFF CACHE BOOL "Set ENABLE_WPP_PARALLELISM as a compiler flag" )
-  set( ENABLE_WPP_PARALLELISM       OFF CACHE BOOL "If SET_ENABLE_WPP_PARALLELISM is on, it will be set to this value" )
-endif()
-
-# Enable warnings for some generators and toolsets.
-# bb_enable_warnings( gcc warnings-as-errors -Wno-sign-compare )
-# bb_enable_warnings( gcc -Wno-unused-variable )
-# bb_enable_warnings( gcc-4.8 warnings-as-errors -Wno-unused-variable )
-# for gcc 8.2:
-bb_enable_warnings( gcc warnings-as-errors -Wno-sign-compare -Wno-class-memaccess)
-
-if( XCODE )
-  bb_enable_warnings( clang warnings-as-errors
-                            -Wno-deprecated-declarations
-                            -Wno-unknown-attributes
-                            -Wno-deprecated-register
-                            -Wno-pessimizing-move
-                            -Wno-absolute-value
-                            -Wno-unused-const-variable )
-else()
-  bb_enable_warnings( clang warnings-as-errors
-                            -Wno-unknown-attributes
-                            -Wno-deprecated-register
-                            -Wno-pessimizing-move
-                            -Wno-absolute-value
-                            -Wno-unused-const-variable )
-endif()
-#bb_enable_warnings( clang warnings-as-errors )
-
-# enable warnings
-bb_enable_warnings( msvc warnings-as-errors "/wd4996" )
-
-# enable sse4.1 build for all source files for gcc and clang
-if( UNIX OR MINGW )
-  add_compile_options( "-msse4.1" )
-endif()
-
-# enable parallel build for Visual Studio
-if( MSVC )
-  add_compile_options( "/MP" )
-  add_compile_options( "/EHsc" )
-endif()
-
-# set address sanitizer compiler arguments
-if( CMAKE_CXX_COMPILER_ID STREQUAL "GNU" )
-  if( CMAKE_SYSTEM_NAME STREQUAL "Linux" )
-    if( USE_ADDRESS_SANITIZER )
-      # add compile options
-      add_compile_options( "-fsanitize=address" )
-      add_link_options( "-fsanitize=address" )
-    endif()
-  endif()
-
-  if( CMAKE_CXX_COMPILER_VERSION VERSION_LESS 5.0 )
-    add_compile_options( "-fabi-version=6" )
-  endif()
-endif()
-
-# modify .lldbinit for lldb custom data formatters
-if( XCODE )
-  set( LLDB_INSTALL_ROOT "$ENV{HOME}/.lldb.d" )
-  set( LLDBINIT_FILE "$ENV{HOME}/.lldbinit" )
-  set( ENABLE_LLDBINIT_UPDATE ON )
-  # add custom target to install LLDB files.
-  add_subdirectory( "lldb" )
-endif()
-
-# add needed subdirectories
-add_subdirectory( "source/Lib/CommonLib" )
-add_subdirectory( "source/Lib/CommonAnalyserLib" )
-if( EXTENSION_360_VIDEO )
-  add_subdirectory( "source/Lib/Lib360" )
-  add_subdirectory( "source/Lib/AppEncHelper360" )
-endif()
-if ( EXTENSION_HDRTOOLS )
-  add_subdirectory( "source/Lib/HDRLib")
-endif()
-add_subdirectory( "source/Lib/DecoderAnalyserLib" )
-add_subdirectory( "source/Lib/DecoderLib" )
-add_subdirectory( "source/Lib/EncoderLib" )
-add_subdirectory( "source/Lib/Utilities" )
-
-add_subdirectory( "source/App/DecoderAnalyserApp" )
-add_subdirectory( "source/App/DecoderApp" )
-add_subdirectory( "source/App/DecoderLib" )
-add_subdirectory( "source/App/EncoderApp" )
-add_subdirectory( "source/App/SEIRemovalApp" )
-add_subdirectory( "source/App/Parcat" )
-add_subdirectory( "source/App/StreamMergeApp" )
-add_subdirectory( "source/App/BitstreamExtractorApp" )
-if( EXTENSION_360_VIDEO )
-  add_subdirectory( "source/App/utils/360ConvertApp" )
-endif()
+# set the folder where to place the projects
+set_target_properties( ${LIB_NAME}  PROPERTIES FOLDER app LINKER_LANGUAGE CXX )

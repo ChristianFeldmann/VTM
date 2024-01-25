@@ -1,0 +1,13 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index cb85f8dc6..74d5193b8 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -55,7 +55,7 @@ set( CMAKE_POSITION_INDEPENDENT_CODE TRUE )
+ set_property( GLOBAL PROPERTY USE_FOLDERS ON )
+ 
+ # Include a utility module providing functions, macros, and settings
+-include( ${CMAKE_SOURCE_DIR}/cmake/CMakeBuild/cmake/modules/BBuildEnv.cmake )
++include( ${CMAKE_CURRENT_LIST_DIR}/cmake/CMakeBuild/cmake/modules/BBuildEnv.cmake )
+ 
+ # Enable warnings for some generators and toolsets.
+ # bb_enable_warnings( gcc warnings-as-errors -Wno-sign-compare )

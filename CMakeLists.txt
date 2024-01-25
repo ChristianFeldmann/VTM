@@ -51,6 +51,8 @@ endif()
 add_library( ${LIB_NAME} SHARED  ${SRC_FILES} ${INC_FILES} ${NATVIS_FILES} )
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
+target_compile_features( ${LIB_NAME} PUBLIC cxx_std_14 )
+
 if( SET_ENABLE_TRACING )
   if( ENABLE_TRACING )
     target_compile_definitions( ${LIB_NAME} PUBLIC ENABLE_TRACING=1 )
